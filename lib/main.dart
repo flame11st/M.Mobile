@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'Widgets/mHome.dart';
+import 'package:provider/provider.dart';
+import 'Widgets/MHome.dart';
+import 'Widgets/MState.dart';
 
 
 void main() {
-  runApp(MaterialApp(
-    title: 'MovieDiary',
-    home: MHome(),
-  ));
+  runApp(
+    ChangeNotifierProvider(
+      builder: (context) => MState(),
+      child: MaterialApp(
+        title: 'MovieDiary',
+        home: MHome(),
+    )));
 }

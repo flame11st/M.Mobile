@@ -3,10 +3,15 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'MState.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<MState>(context);
+
     return BottomAppBar(
       color: Colors.cyanAccent,
       shape: CircularNotchedRectangle(),
@@ -18,7 +23,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
               icon: const Icon(Icons.menu),
               onPressed: () {
-                print('Menu button pressed');
+                provider.setIsUserAuthorized(!provider.isUserAuthorized);
               },
             ),
           ],
