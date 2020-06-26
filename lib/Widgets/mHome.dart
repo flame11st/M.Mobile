@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'bottomNavigationBar.dart';
+import 'MovieList.dart';
 
 class MHome extends StatefulWidget {
   @override
@@ -26,11 +28,16 @@ class MHomeState extends State<MHome> {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.blue, //or set color with: Color(0xFF0000FF)
+    ));
+
     return MaterialApp(
         home: Scaffold(
-          body: Center(
-            child: Text(text),
+          appBar: AppBar(
+            backgroundColor: Colors.black26,
           ),
+          body: MovieList(),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
               print('Floating action button pressed');
