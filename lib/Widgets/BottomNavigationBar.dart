@@ -13,17 +13,16 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final provider = Provider.of<MState>(context);
 
     return BottomAppBar(
-      color: Colors.cyanAccent,
+      color: Color(0xff00adb5),
       shape: CircularNotchedRectangle(),
       child: IconTheme(
-        data: IconThemeData(color: Colors.black54),
+        data: IconThemeData(color: Colors.white),
         child: Row(
           children: [
             IconButton(
               tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
               icon: const Icon(Icons.menu),
-              onPressed: () {
-                provider.setIsUserAuthorized(!provider.isUserAuthorized);
+                onPressed: () {
               },
             ),
           ],

@@ -14,7 +14,7 @@ class MyMoviesState extends State<MyMovies> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black26,
+        backgroundColor: Color(0xff222831),
       ),
       body: MovieList(),
       floatingActionButton: FloatingActionButton(
@@ -22,9 +22,11 @@ class MyMoviesState extends State<MyMovies> {
           print('Floating action button pressed');
         },
         child: const Icon(Icons.add),
-        backgroundColor: Colors.black,
+        backgroundColor: Color(0xffeeeeee),
+        foregroundColor: Color(0xff222831),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      backgroundColor: Color(0xff222831),
       bottomNavigationBar: MoviesBottomNavigationBar(),
     );
   }

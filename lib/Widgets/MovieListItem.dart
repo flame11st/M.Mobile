@@ -19,9 +19,9 @@ class MovieListItemState extends State<MovieListItem> {
       },
       child: Center(
         child: AnimatedContainer(
-          height: selected ? 250.0 : 75.0,
+          height: selected ? 500.0 : 120.0,
           margin: EdgeInsets.fromLTRB(0, 10, 0, 10),
-          color: Colors.black26,
+          color: Color(0xff393e46),
           duration: Duration(milliseconds: 200),
         ),
       ),
