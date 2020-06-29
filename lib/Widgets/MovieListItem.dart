@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 class MovieListItem extends StatefulWidget {
+//  final String asd;
+//  const MovieListItem ({ Key key, this.asd }): super(key: key);
+
   @override
   State<StatefulWidget> createState() {
     return MovieListItemState();
@@ -9,6 +12,11 @@ class MovieListItem extends StatefulWidget {
 
 class MovieListItemState extends State<MovieListItem> {
   bool selected = false;
+//  String x;
+//
+//  MovieListItemState(String asd) {
+//    x = asd;
+//  }
 
   Widget build(BuildContext context) {
     return GestureDetector(

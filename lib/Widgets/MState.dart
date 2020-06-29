@@ -23,7 +23,7 @@ class MState with ChangeNotifier {
         var storedUserId = await storage.read(key: 'userId');
         var storedUserName = await storage.read(key: 'userName');
 
-        this.token = storedToken + '1';
+        this.token = storedToken;
         this.refreshToken = storedRefreshToken;
         this.userId = storedUserId;
         this.userName = storedUserName;
