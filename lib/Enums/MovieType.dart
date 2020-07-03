@@ -1,0 +1,4 @@
+enum MovieType {
+    movie,
+    tv
+}

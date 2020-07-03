@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mmobile/Objects/Movie.dart';
 import '../Services/ServiceAgent.dart';
 
 class MState with ChangeNotifier {
@@ -16,6 +17,7 @@ class MState with ChangeNotifier {
     String userId = '';
     String token = '';
     String refreshToken = '';
+    List<Movie> userMovies;
 
     void setInitialData() async {
         var storedToken = await storage.read(key: 'token');
@@ -45,6 +47,10 @@ class MState with ChangeNotifier {
 
         await storage.write(key: 'token', value: token);
         await storage.write(key: 'refreshToken', value: refreshToken);
+    }
+
+    void setUserMovies(List<Movie> userMovies) async {
+        this.userMovies = userMovies;
     }
 
     Future<void> setInitialUserData(String token, String refreshToken, String userId, String userName) async {
