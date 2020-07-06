@@ -17,7 +17,7 @@ class MState with ChangeNotifier {
     String userId = '';
     String token = '';
     String refreshToken = '';
-    List<Movie> userMovies;
+    List<Movie> userMovies = new List<Movie>();
 
     void setInitialData() async {
         var storedToken = await storage.read(key: 'token');
@@ -51,6 +51,7 @@ class MState with ChangeNotifier {
 
     void setUserMovies(List<Movie> userMovies) async {
         this.userMovies = userMovies;
+        notifyListeners();
     }
 
     Future<void> setInitialUserData(String token, String refreshToken, String userId, String userName) async {

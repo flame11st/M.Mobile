@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'BottomNavigationBar.dart';
 import 'MState.dart';
@@ -34,17 +35,15 @@ class MyMoviesState extends State<MyMovies> {
     }).toList();
 
     provider.setUserMovies(movies);
-    var x = '';
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MState>(context);
 
-
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xff222831),
+        backgroundColor: MColors.PrimaryColor,
       ),
       body: MovieList(),
       floatingActionButton: FloatingActionButton(
@@ -52,11 +51,11 @@ class MyMoviesState extends State<MyMovies> {
           print('Floating action button pressed');
         },
         child: const Icon(Icons.add),
-        backgroundColor: Color(0xffeeeeee),
-        foregroundColor: Color(0xff222831),
+        backgroundColor: MColors.FontsColor,
+        foregroundColor: MColors.PrimaryColor,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      backgroundColor: Color(0xff222831),
+      backgroundColor: MColors.PrimaryColor,
       bottomNavigationBar: MoviesBottomNavigationBar(),
     );
   }

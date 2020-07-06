@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 
 import 'MState.dart';
@@ -13,7 +14,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final provider = Provider.of<MState>(context);
 
     return BottomAppBar(
-      color: Color(0xff00adb5),
+      color: MColors.AdditionalColor,
       shape: CircularNotchedRectangle(),
       child: IconTheme(
         data: IconThemeData(color: Colors.white),
