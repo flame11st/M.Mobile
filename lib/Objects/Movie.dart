@@ -28,6 +28,10 @@ class Movie {
 
     //  TODO: Map json class fields
     factory Movie.fromJson(Map<String, dynamic> json) {
+        var actors = json['actors'].map((model) {
+            return Person.fromJson(model);
+        }).toList().cast<Person>();
+
         return Movie(
             id: json['id'],
             title: json['title'],
@@ -42,7 +46,7 @@ class Movie {
             movieRate: json['movieRate'],
             movieType: MovieType.values[json['movieType']],
             countries: json['countries'],
-            actors: new List<Person>(),
+            actors: actors,
             directors: new List<Person>(),
             seasonsCount: json['seasonsCount'],
             averageTimeOfEpisode: json['averageTimeOfEpisode'],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'MState.dart';
 import 'MovieListItem.dart';
@@ -21,7 +22,7 @@ class MovieListState extends State<MovieList> {
     final provider = Provider.of<MState>(context);
 
     return Container(
-      color: Color(0xff222831),
+      color: MColors.PrimaryColor,
       child: ListView(
         padding: EdgeInsets.all(10),
         children: [

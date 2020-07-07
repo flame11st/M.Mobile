@@ -26,6 +26,9 @@ class MyMoviesState extends State<MyMovies> {
 
   setUserMovies() async {
     final provider = Provider.of<MState>(context);
+
+    if(provider.userMovies.length > 0) return;
+
     serviceAgent.state = provider;
     final moviesResponse = await serviceAgent.getUserMovies(provider.userId);
 

@@ -41,14 +41,14 @@ class MovieListItemState extends State<MovieListItem> {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withOpacity(0.1),
-                          offset: Offset(-3.0, -3.0),
+                          color: Colors.white.withOpacity(0.15),
+                          offset: Offset(-4.0, -4.0),
                           blurRadius: 6,
                         ),
                         BoxShadow(
                           color: Colors.black.withOpacity(0.4),
-                          offset: Offset(3.0, 3.0),
-                          blurRadius: 4,
+                          offset: Offset(4.0, 4.0),
+                          blurRadius: 6,
                         ),
                       ],
                       borderRadius: BorderRadius.circular(12.0),
@@ -104,32 +104,32 @@ class MovieListItemState extends State<MovieListItem> {
                         child: Material(
                           type: MaterialType.transparency,
                           child: Container(
-                            padding: EdgeInsets.all(20),
+                            padding: EdgeInsets.fromLTRB(15, 0, 15, 15),
                             decoration: BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.1),
-                                  offset: Offset(-6.0, -6.0),
-                                  spreadRadius: -1,
-                                  blurRadius: 5,
+                                  color: Colors.white.withOpacity(0.2),
+                                  offset: Offset(-4.0, -4.0),
+//                                  spreadRadius: -1,
+                                  blurRadius: 12,
                                 ),
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.4),
                                   offset: Offset(6.0, 6.0),
-                                  blurRadius: 5,
-                                  spreadRadius: -5,
+                                  blurRadius: 12,
+//                                  spreadRadius: -5,
                                 ),
                               ],
                               borderRadius: BorderRadius.circular(20.0),
                               color: MColors.PrimaryColor,
                             ),
-                            margin: EdgeInsets.fromLTRB(20, 40, 20, 20),
+                            margin: EdgeInsets.fromLTRB(12, 40, 12, 20),
 //                                    color: MColors.SecondaryColor,
                             child: ListView(
 //                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
                                 Container(
-                                  height: 80,
+                                  height: 100,
                                   padding: EdgeInsets.all(10),
                                   margin: EdgeInsets.only(bottom: 15),
                                   decoration: BoxDecoration(
@@ -151,7 +151,8 @@ class MovieListItemState extends State<MovieListItem> {
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
                                     children: <Widget>[
                                       Text(movie.title,
                                           style: MTextStyles.ExpandedTitle),
@@ -159,19 +160,22 @@ class MovieListItemState extends State<MovieListItem> {
                                         children: <Widget>[
                                           Text(movie.year.toString(),
                                               style: MTextStyles.BodyText),
-                                          SizedBox(width: 15,),
-                                          Text(movie.duration.toString() + ' min',
+                                          SizedBox(
+                                            width: 15,
+                                          ),
+                                          Text(
+                                              movie.duration.toString() +
+                                                  ' min',
                                               style: MTextStyles.BodyText),
                                         ],
-                                      )
+                                      ),
+                                      Text(movie.genres.join(' ,'),
+                                          style: MTextStyles.BodyText)
                                     ],
                                   ),
                                 ),
-//                                LinearProgressIndicator(
-//                                  value: movie.rating / 100,
-//                                  valueColor: new AlwaysStoppedAnimation<Color>(Colors.red),
-//                                  backgroundColor: Colors.cyanAccent,
-//                                ),
+                                Text(movie.tagline,
+                                    style: MTextStyles.BodyText),
                                 Row(
                                   children: <Widget>[
                                     Container(
@@ -179,83 +183,138 @@ class MovieListItemState extends State<MovieListItem> {
                                       decoration: BoxDecoration(
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.white.withOpacity(0.1),
+                                            color:
+                                                Colors.white.withOpacity(0.1),
                                             offset: Offset(-4.0, -4.0),
                                             blurRadius: 4,
                                           ),
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.4),
+                                            color:
+                                                Colors.black.withOpacity(0.4),
                                             offset: Offset(4.0, 4.0),
                                             blurRadius: 2,
                                           ),
                                         ],
-                                        borderRadius: BorderRadius.circular(10.0),
+                                        borderRadius:
+                                            BorderRadius.circular(10.0),
                                       ),
                                       child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8.0),
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
                                         child: CachedNetworkImage(
-                                          imageUrl: imageBaseUrl + movie.posterPath,
-                                          height: 180,
+                                          imageUrl:
+                                              imageBaseUrl + movie.posterPath,
+                                          height: 160,
                                           fit: BoxFit.fill,
-                                          width: 120,
+                                          width: 100,
 //                                        placeholder: (context, url) => CircularProgressIndicator(),
                                         ),
                                       ),
                                     ),
                                     Expanded(
                                       child: Container(
-                                          height: 180,
-                                          margin: EdgeInsets.only(left: 15),
-                                          padding: EdgeInsets.all(10),
+                                          height: 160,
+                                          margin: EdgeInsets.only(left: 10),
                                           child: Column(
                                             crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: <Widget>[
-                                              Text(movie.tagline,
-                                                  style: MTextStyles.BodyText),
-                                              Text(movie.genres.join(' ,'),
+                                              Text(
+                                                  movie.actors
+                                                      .map(
+                                                          (actor) => actor.name)
+                                                      .join(' ,'),
                                                   style: MTextStyles.BodyText),
                                               Text(movie.countries,
                                                   style: MTextStyles.BodyText)
                                             ],
-                                          )
+                                          )),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                    margin: EdgeInsets.only(bottom: 15),
+                                    decoration: BoxDecoration(
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.white.withOpacity(0.2),
+                                          offset: Offset(-4.0, -4.0),
+                                          blurRadius: 8,
+                                        ),
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.4),
+                                          offset: Offset(4.0, 4.0),
+                                          blurRadius: 8,
+                                        ),
+                                      ],
+                                      borderRadius: BorderRadius.circular(10.0),
+                                    ),
+                                    child: LinearPercentIndicator(
+                                      width: MediaQuery.of(context).size.width -
+                                          90,
+                                      animation: true,
+                                      lineHeight: 25.0,
+                                      animationDuration: 2000,
+                                      percent: 0.9,
+                                      center: new Text(
+                                        "70%",
+                                        style: new TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 20.0),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                            Container(
-                                margin: EdgeInsets.only(bottom: 15),
-                                decoration: BoxDecoration(
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.white.withOpacity(0.2),
-                                      offset: Offset(-4.0, -4.0),
-                                      blurRadius: 8,
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.4),
-                                      offset: Offset(4.0, 4.0),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                child: LinearPercentIndicator(
-                                  width: MediaQuery.of(context).size.width - 85,
-                                  animation: true,
-                                  lineHeight: 25.0,
-                                  animationDuration: 2000,
-                                  percent: 0.9,
-                                  center: new Text(
-                                    "70.0%",
-                                    style:
-                                    new TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
-                                  ),
-                                  linearStrokeCap: LinearStrokeCap.roundAll,
-                                  progressColor: Colors.greenAccent,
-                                )),
-                                Text(movie.overview, style: MTextStyles.BodyText)
+                                      linearStrokeCap: LinearStrokeCap.roundAll,
+                                      progressColor: Colors.greenAccent,
+                                    )),
+                                    DefaultTabController(
+                                            length: 2,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: MColors.PrimaryColor,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.white.withOpacity(0.2),
+                                                    offset: Offset(-4.0, -4.0),
+                                                    blurRadius: 8,
+                                                  ),
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.4),
+                                                    offset: Offset(4.0, 4.0),
+                                                    blurRadius: 8,
+                                                  ),
+                                                ],
+                                                borderRadius: BorderRadius.circular(10.0),
+                                              ),
+                                              child: Column(
+                                                children: <Widget>[
+                                                  Container(
+                                                    height: 50,
+                                                    width: 250,
+                                                    child: TabBar(
+                                                      tabs: [
+                                                        for (final tab in ["First","Second"]) Tab(text: tab),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    width: 250,
+                                                    height: 200,
+                                                    child: TabBarView(
+                                                      children: [
+                                                        for (final tab in ["First","Second"])
+                                                          Center(
+                                                            child: Text(tab),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                            )
+                                    )
+//                                Text(movie.overview,
+//                                    style: MTextStyles.BodyText)
                               ],
                             ),
                           ),
