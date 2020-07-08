@@ -7,6 +7,8 @@ import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
+import 'BottomNavigationBarExpanded.dart';
+
 class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
 
@@ -208,6 +210,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                       ),
                     ))),
           ),
-        ));
+        ),
+    bottomNavigationBar: MoviesBottomNavigationBarExpanded());
   }
 }
