@@ -45,16 +45,16 @@ class MovieListItemState extends State<MovieListItem> {
                         BoxShadow(
                           color: Colors.white.withOpacity(0.15),
                           offset: Offset(-4.0, -4.0),
-                          blurRadius: 6,
+                          blurRadius: 12,
                         ),
                         BoxShadow(
                           color: Colors.black.withOpacity(0.4),
-                          offset: Offset(4.0, 4.0),
-                          blurRadius: 6,
+                          offset: Offset(6.0, 6.0),
+                          blurRadius: 12,
                         ),
                       ],
                       borderRadius: BorderRadius.circular(12.0),
-                      color: MColors.PrimaryColor,
+                      color: MColors.SecondaryColor,
                     ),
                     child: Row(
                       children: <Widget>[
