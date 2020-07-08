@@ -66,7 +66,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                               padding: EdgeInsets.all(10),
                               margin: EdgeInsets.only(bottom: 15),
                               decoration: BoxDecoration(
-                                color: MColors.PrimaryColor,
+                                color: MColors.SecondaryColor,
                                 boxShadow: BoxShadowNeomorph.shadow,
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
@@ -116,6 +116,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                   decoration: BoxDecoration(
                                     boxShadow: BoxShadowNeomorph.shadow,
                                     borderRadius: BorderRadius.circular(10.0),
+                                    color: MColors.PrimaryColor
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8.0),
@@ -131,8 +132,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                 Column(
                                   children: <Widget>[
                                     Container(
-                                      height: 130,
-                                      width: 130,
+                                      height: 116,
+                                      width: 116,
                                       decoration: new BoxDecoration(
                                           color: MColors.PrimaryColor,
                                           shape: BoxShape.circle,
@@ -140,7 +141,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                               BoxShadowNeomorph.circleShadow),
                                       child: CircularPercentIndicator(
                                         radius: 110.0,
-                                        lineWidth: 10.0,
+                                        lineWidth: 6.0,
                                         percent: movie.scores > 0 &&
                                                 movie.rating == 0
                                             ? 1
@@ -198,58 +199,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                     style: MTextStyles.BodyText)
                               ],
                             ),
-//                            DefaultTabController(
-//                                length: 2,
-//                                child: Container(
-//                                  decoration: BoxDecoration(
-//                                    color: MColors.PrimaryColor,
-//                                    boxShadow: [
-//                                      BoxShadow(
-//                                        color: Colors.white.withOpacity(0.2),
-//                                        offset: Offset(-4.0, -4.0),
-//                                        blurRadius: 8,
-//                                      ),
-//                                      BoxShadow(
-//                                        color: Colors.black.withOpacity(0.4),
-//                                        offset: Offset(4.0, 4.0),
-//                                        blurRadius: 8,
-//                                      ),
-//                                    ],
-//                                    borderRadius: BorderRadius.circular(10.0),
-//                                  ),
-//                                  child: Column(
-//                                    children: <Widget>[
-//                                      Container(
-//                                        height: 50,
-//                                        width: 250,
-//                                        child: TabBar(
-//                                          tabs: [
-//                                            for (final tab in [
-//                                              "First",
-//                                              "Second"
-//                                            ])
-//                                              Tab(text: tab),
-//                                          ],
-//                                        ),
-//                                      ),
-//                                      Container(
-//                                        width: 250,
-//                                        height: 200,
-//                                        child: TabBarView(
-//                                          children: [
-//                                            for (final tab in [
-//                                              "First",
-//                                              "Second"
-//                                            ])
-//                                              Center(
-//                                                child: Text(tab),
-//                                              ),
-//                                          ],
-//                                        ),
-//                                      )
-//                                    ],
-//                                  ),
-//                                ))
                             SizedBox(
                               height: 20,
                             ),

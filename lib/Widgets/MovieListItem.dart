@@ -43,14 +43,14 @@ class MovieListItemState extends State<MovieListItem> {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withOpacity(0.3),
                           offset: Offset(-4.0, -4.0),
-                          blurRadius: 12,
+                          blurRadius: 6,
                         ),
                         BoxShadow(
                           color: Colors.black.withOpacity(0.4),
-                          offset: Offset(6.0, 6.0),
-                          blurRadius: 12,
+                          offset: Offset(4.0, 4.0),
+                          blurRadius: 6,
                         ),
                       ],
                       borderRadius: BorderRadius.circular(12.0),
