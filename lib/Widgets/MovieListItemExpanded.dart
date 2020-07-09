@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
@@ -183,28 +184,57 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
                                 SizedBox(height: 10),
-                                Text(
-                                    "Directed by: " +
-                                        movie.directors
+                                RichText( text: TextSpan(
+                                  style: MTextStyles.BodyText,
+                                  children: <TextSpan>[
+                                    new TextSpan(text: 'Directed by: ', style: MTextStyles.SubtitleText),
+                                    new TextSpan(text: movie.directors
                                             .map((actor) => actor.name)
-                                            .join(' ,'),
-                                    style: MTextStyles.BodyText),
+                                            .join(', ')),
+                                  ],
+                                )),
                                 SizedBox(height: 10),
-                                Text(
-                                    "Starring: " +
-                                        movie.actors
+                                RichText( text: TextSpan(
+                                  style: MTextStyles.BodyText,
+                                  children: <TextSpan>[
+                                    new TextSpan(text: 'Starring: ', style: MTextStyles.SubtitleText),
+                                    new TextSpan(text: movie.actors
                                             .map((actor) => actor.name)
-                                            .join(' ,'),
-                                    style: MTextStyles.BodyText),
+                                            .join(', ')),
+                                  ],
+                                )),
                                 SizedBox(height: 10),
-                                Text("Countries: " + movie.countries,
-                                    style: MTextStyles.BodyText)
+                                RichText( text: TextSpan(
+                                  style: MTextStyles.BodyText,
+                                  children: <TextSpan>[
+                                    new TextSpan(text: 'Countries: ', style: MTextStyles.SubtitleText),
+                                    new TextSpan(text: movie.countries.replaceAll(',', ', ')),
+                                  ],
+                                )),
+                                SizedBox(
+                                  height: 20,
+                                ),
+//                                Expanded(child: Text(movie.overview, style: MTextStyles.BodyText),),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(maxHeight: 150),
+                                  child: Scrollbar(
+                                    child: SingleChildScrollView(
+                                            scrollDirection: Axis.vertical,
+                                            child: SizedBox(
+                                              child: RichText( text: TextSpan(
+                                                style: MTextStyles.BodyText,
+                                                children: <TextSpan>[
+                                                  new TextSpan(text: 'Overview: ', style: MTextStyles.SubtitleText),
+                                                  new TextSpan(text: movie.overview.replaceAll(',', ', ')),
+                                                ],
+                                              ))
+                                            )
+                                    ),
+                                  ),
+                                )
                               ],
                             ),
-                            SizedBox(
-                              height: 20,
-                            ),
-                            Text(movie.overview, style: MTextStyles.BodyText)
+
                           ],
                         ),
                       ),

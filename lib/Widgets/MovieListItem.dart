@@ -59,7 +59,7 @@ class MovieListItemState extends State<MovieListItem> {
                     child: Row(
                       children: <Widget>[
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(12.0),
                           child: Image.network(
                             imageBaseUrl + movie.posterPath,
                             height: 120,

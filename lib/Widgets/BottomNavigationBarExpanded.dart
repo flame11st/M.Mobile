@@ -8,6 +8,7 @@ import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
 import 'package:provider/provider.dart';
 
 import 'MState.dart';
+import 'Shared/MIconButton.dart';
 
 class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   @override
@@ -22,8 +23,8 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withOpacity(0.2),
-              offset: Offset(-6.0, -6.0),
+              color: Colors.white.withOpacity(0.15),
+              offset: Offset(-4.0, -4.0),
               blurRadius: 16,
             ),
             BoxShadow(
@@ -33,9 +34,23 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
             ),
           ],
           color: MColors.PrimaryColor,
-          borderRadius: BorderRadius.circular(10.0),
+          borderRadius: BorderRadius.circular(30.0),
         ),
-        child: Text("")
+        child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+                MIconButton(
+                    icon: Icon(Icons.thumb_up, color: MColors.FontsColor,),
+                ),
+                MIconButton(
+                    icon: Icon(Icons.thumb_down, color: MColors.FontsColor,),
+                ),
+                MIconButton(
+                    icon: Icon(Icons.add_to_queue, color: MColors.FontsColor,),
+                )
+            ],
+        )
+
       )
 
     );

@@ -22,6 +22,7 @@ class MovieListState extends State<MovieList> {
     final provider = Provider.of<MState>(context);
 
     return Container(
+      margin: EdgeInsets.only(top: 20),
       color: MColors.PrimaryColor,
       child: ListView(
         padding: EdgeInsets.all(10),

@@ -45,9 +45,9 @@ class MyMoviesState extends State<MyMovies> {
     final provider = Provider.of<MState>(context);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: MColors.PrimaryColor,
-      ),
+//      appBar: AppBar(
+//        backgroundColor: MColors.PrimaryColor,
+//      ),
       body: MovieList(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
