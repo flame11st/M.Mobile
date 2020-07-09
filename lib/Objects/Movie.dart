@@ -14,7 +14,7 @@ class Movie {
   final List<Person> actors;
   final List<Person> directors;
   final List<String> genres;
-  final int movieRate;
+  int movieRate;
   final MovieType movieType;
   final int year;
   final int averageTimeOfEpisode;

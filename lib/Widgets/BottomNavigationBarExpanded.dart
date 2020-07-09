@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
 import 'package:provider/provider.dart';
@@ -11,10 +12,12 @@ import 'MState.dart';
 import 'Shared/MIconButton.dart';
 
 class MoviesBottomNavigationBarExpanded extends StatelessWidget {
+  final movieId;
+
+  const MoviesBottomNavigationBarExpanded({Key key, this.movieId}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<MState>(context);
-
     return BottomAppBar(
       color: MColors.PrimaryColor,
       child: Container(
@@ -41,12 +44,18 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
             children: <Widget>[
                 MIconButton(
                     icon: Icon(Icons.thumb_up, color: MColors.FontsColor,),
+                    movieId: movieId,
+                    movieRate: MovieRate.liked,
                 ),
                 MIconButton(
                     icon: Icon(Icons.thumb_down, color: MColors.FontsColor,),
+                    movieId: movieId,
+                    movieRate: MovieRate.notLiked,
                 ),
                 MIconButton(
                     icon: Icon(Icons.add_to_queue, color: MColors.FontsColor,),
+                    movieId: movieId,
+                    movieRate: MovieRate.addedToWatchlist,
                 )
             ],
         )

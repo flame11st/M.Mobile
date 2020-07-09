@@ -1,10 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
+
+import 'Shared/MIconButton.dart';
 
 class MovieListItem extends StatefulWidget {
   final Movie movie;
@@ -96,6 +99,11 @@ class MovieListItemState extends State<MovieListItem> {
                             ),
                           ),
                         ),
+                        MIconButton(
+                          icon: Icon(Icons.thumb_up, color: MColors.FontsColor,),
+                          movieId: movie.id,
+                          movieRate: MovieRate.liked,
+                        )
                       ],
                     )),
               ))),

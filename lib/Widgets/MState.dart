@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import '../Services/ServiceAgent.dart';
 
@@ -67,5 +68,31 @@ class MState with ChangeNotifier {
         await storage.write(key: 'userId', value: userId);
         await storage.write(key: 'userName', value: userName);
         await storage.write(key: 'refreshToken', value: refreshToken);
+    }
+
+    getWatchlistMovies() {
+      final result = this.userMovies.where((movie) => movie.movieRate == MovieRate.addedToWatchlist);
+      return result;
+    }
+
+    getViewedMovies() {
+      final result = this.userMovies.where((movie) => movie.movieRate == MovieRate.liked || movie.movieRate == MovieRate.notLiked);
+      return result;
+    }
+
+    changeMovieRate(String movieId, int movieRate) async {
+      if (movieId == null) return;
+
+      await serviceAgent.rateMovie(movieId, userId, movieRate);
+
+      final foundMovies = this.userMovies.where((movie) => movie.id == movieId);
+
+      if (foundMovies.length != 0) {
+        foundMovies.first.movieRate = movieRate;
+      }
+
+      await new Future.delayed(const Duration(seconds: 2));
+
+      notifyListeners();
     }
 }

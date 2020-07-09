@@ -19,10 +19,10 @@ class MyMovies extends StatefulWidget {
 class MyMoviesState extends State<MyMovies> {
   final serviceAgent = new ServiceAgent();
 
-  didChangeDependencies() {
-    super.didChangeDependencies();
-    setUserMovies();
-  }
+//  didChangeDependencies() {
+//    super.didChangeDependencies();
+//    setUserMovies();
+//  }
 
   setUserMovies() async {
     final provider = Provider.of<MState>(context);
@@ -42,7 +42,7 @@ class MyMoviesState extends State<MyMovies> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<MState>(context);
+    setUserMovies();
 
     return Scaffold(
 //      appBar: AppBar(
