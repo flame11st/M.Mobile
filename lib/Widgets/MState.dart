@@ -71,12 +71,14 @@ class MState with ChangeNotifier {
     }
 
     getWatchlistMovies() {
-      final result = this.userMovies.where((movie) => movie.movieRate == MovieRate.addedToWatchlist);
+      final result = this.userMovies.where((movie) => movie.movieRate == MovieRate.addedToWatchlist).toList();
       return result;
     }
 
     getViewedMovies() {
-      final result = this.userMovies.where((movie) => movie.movieRate == MovieRate.liked || movie.movieRate == MovieRate.notLiked);
+      final result = this.userMovies
+              .where((movie) => movie.movieRate == MovieRate.liked || movie.movieRate == MovieRate.notLiked)
+              .toList();
       return result;
     }
 
@@ -90,8 +92,8 @@ class MState with ChangeNotifier {
       if (foundMovies.length != 0) {
         foundMovies.first.movieRate = movieRate;
       }
-
-      await new Future.delayed(const Duration(seconds: 2));
+/*
+      await new Future.delayed(const Duration(seconds: 2));*/
 
       notifyListeners();
     }

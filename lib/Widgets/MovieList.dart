@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_neumorphic/flutter_neumorphic.dart';
+import 'package:mmobile/Objects/Movie.dart';
+//import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'MState.dart';
@@ -17,12 +18,21 @@ class MovieListState extends State<MovieList> {
     super.didChangeDependencies();
   }
 
+  Widget _buildItem(Movie movie, Animation animation) {
+    return SizeTransition(
+      sizeFactor: animation,
+      child: MovieListItem(movie: movie)
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MState>(context);
+    final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+    final List<Movie> watchlistMovies = provider.getViewedMovies();
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: MColors.PrimaryColor,
@@ -30,6 +40,7 @@ class MovieListState extends State<MovieList> {
             tabs: [
               Tab(child: Text('Watchlist', style: MTextStyles.TabTitle,)),
               Tab(child: Text('Viewed', style: MTextStyles.TabTitle,)),
+              Tab(child: Text('TEST', style: MTextStyles.TabTitle,)),
             ],
           ),
         ),
@@ -38,13 +49,20 @@ class MovieListState extends State<MovieList> {
           child: TabBarView(
             children: [
               ListView(padding: EdgeInsets.all(10), children: [
-                for (final movie in provider.getWatchlistMovies())
+                for (final movie in watchlistMovies)
                   MovieListItem(movie: movie)
               ]),
               ListView(padding: EdgeInsets.all(10), children: [
                 for (final movie in provider.getViewedMovies())
                   MovieListItem(movie: movie)
               ]),
+              AnimatedList(
+                key: _listKey,
+                initialItemCount: watchlistMovies.length,
+                itemBuilder: (context, index, animation) {
+                  return _buildItem(watchlistMovies[index], animation);
+                },
+              )
             ],
           ),
         )

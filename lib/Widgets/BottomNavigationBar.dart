@@ -4,15 +4,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:provider/provider.dart';
-
-import 'MState.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<MState>(context);
-
     return BottomAppBar(
       color: MColors.AdditionalColor,
       shape: CircularNotchedRectangle(),
