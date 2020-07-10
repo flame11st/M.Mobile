@@ -28,8 +28,7 @@ class MovieListState extends State<MovieList> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MState>(context);
-    final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-    final List<Movie> watchlistMovies = provider.getViewedMovies();
+    final List<Movie> watchlistMovies = provider.watchlistMovies;
 
     return DefaultTabController(
       length: 3,
@@ -49,15 +48,15 @@ class MovieListState extends State<MovieList> {
           child: TabBarView(
             children: [
               ListView(padding: EdgeInsets.all(10), children: [
-                for (final movie in watchlistMovies)
+                for (final movie in provider.watchlistMovies)
                   MovieListItem(movie: movie)
               ]),
               ListView(padding: EdgeInsets.all(10), children: [
-                for (final movie in provider.getViewedMovies())
+                for (final movie in provider.viewedMovies)
                   MovieListItem(movie: movie)
               ]),
               AnimatedList(
-                key: _listKey,
+                key: provider.listKey,
                 initialItemCount: watchlistMovies.length,
                 itemBuilder: (context, index, animation) {
                   return _buildItem(watchlistMovies[index], animation);
