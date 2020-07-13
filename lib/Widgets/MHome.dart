@@ -7,6 +7,7 @@ import 'MState.dart';
 import 'MyMovies.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Services/ServiceAgent.dart';
+import 'Providers/UserState.dart';
 
 class MHome extends StatefulWidget {
   @override
@@ -18,7 +19,7 @@ class MHome extends StatefulWidget {
 class MHomeState extends State<MHome> {
     @override
     Widget build(BuildContext context) {
-        final provider = Provider.of<MState>(context);
+        final provider = Provider.of<UserState>(context);
 
         SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
           statusBarColor: MColors.PrimaryColor,

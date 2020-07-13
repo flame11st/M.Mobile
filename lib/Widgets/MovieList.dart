@@ -5,6 +5,7 @@ import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'MState.dart';
 import 'MovieListItem.dart';
+import 'Providers/MoviesState.dart';
 
 class MovieList extends StatefulWidget {
   @override
@@ -18,20 +19,17 @@ class MovieListState extends State<MovieList> {
     super.didChangeDependencies();
   }
 
-  Widget _buildItem(Movie movie, Animation animation) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: MovieListItem(movie: movie)
-    );
-  }
+  List<String> _data = ['Horse', 'Cow', 'Camel', 'Sheep', 'Goat'];
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<MState>(context);
+    final provider = Provider.of<MoviesState>(context);
     final List<Movie> watchlistMovies = provider.watchlistMovies;
+    final List<Movie> viewedMovies = provider.viewedMovies;
 
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: MColors.PrimaryColor,
@@ -39,7 +37,7 @@ class MovieListState extends State<MovieList> {
             tabs: [
               Tab(child: Text('Watchlist', style: MTextStyles.TabTitle,)),
               Tab(child: Text('Viewed', style: MTextStyles.TabTitle,)),
-              Tab(child: Text('TEST', style: MTextStyles.TabTitle,)),
+//              Tab(child: Text('TEST', style: MTextStyles.TabTitle,)),
             ],
           ),
         ),
@@ -47,21 +45,27 @@ class MovieListState extends State<MovieList> {
           color: MColors.PrimaryColor,
           child: TabBarView(
             children: [
-              ListView(padding: EdgeInsets.all(10), children: [
-                for (final movie in provider.watchlistMovies)
-                  MovieListItem(movie: movie)
-              ]),
-              ListView(padding: EdgeInsets.all(10), children: [
-                for (final movie in provider.viewedMovies)
-                  MovieListItem(movie: movie)
-              ]),
               AnimatedList(
-                key: provider.listKey,
+                key: provider.watchlistKey,
                 initialItemCount: watchlistMovies.length,
                 itemBuilder: (context, index, animation) {
-                  return _buildItem(watchlistMovies[index], animation);
+                  return provider.buildItem(watchlistMovies[index], animation);
                 },
-              )
+              ),
+              AnimatedList(
+                key: provider.viewedListKey,
+                initialItemCount: viewedMovies.length,
+                itemBuilder: (context, index, animation) {
+                  return provider.buildItem(viewedMovies[index], animation);
+                },
+              ),
+//              AnimatedList(
+//                key: provider.listKey,
+//                initialItemCount: watchlistMovies.length,
+//                itemBuilder: (context, index, animation) {
+//                  return provider.buildItem(watchlistMovies[index], animation);
+//                },
+//              ),
             ],
           ),
         )

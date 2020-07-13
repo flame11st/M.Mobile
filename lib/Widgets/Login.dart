@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'MState.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Services/ServiceAgent.dart';
+import 'Providers/UserState.dart';
 
 class Login extends StatefulWidget {
     @override
@@ -19,7 +20,7 @@ class LoginState extends State<Login> {
     final serviceAgent = ServiceAgent();
     final storage = new FlutterSecureStorage();
 
-    login(MState state) async {
+    login(UserState state) async {
         var response = await serviceAgent.login(emailController.text, passwordController.text);
 
         if (response.statusCode == 200) {
@@ -36,7 +37,7 @@ class LoginState extends State<Login> {
 
     @override
         Widget build(BuildContext context) {
-            final provider = Provider.of<MState>(context);
+            final provider = Provider.of<UserState>(context);
 
             final emailField = TextField(
                 controller: emailController,

@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import 'BottomNavigationBar.dart';
 import 'MState.dart';
 import 'MovieList.dart';
+import 'Providers/MoviesState.dart';
+import 'Providers/UserState.dart';
 
 class MyMovies extends StatefulWidget {
   @override
@@ -25,19 +27,20 @@ class MyMoviesState extends State<MyMovies> {
 //  }
 
   setUserMovies() async {
-    final provider = Provider.of<MState>(context);
+    final moviesState = Provider.of<MoviesState>(context);
+    final userState = Provider.of<UserState>(context);
 
-    if(provider.userMovies.length > 0) return;
+    if(moviesState.watchlistMovies.length > 0 || moviesState.viewedMovies.length > 0) return;
 
-    serviceAgent.state = provider;
-    final moviesResponse = await serviceAgent.getUserMovies(provider.userId);
+    serviceAgent.state = userState;
+    final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
     Iterable iterableMovies = json.decode(moviesResponse.body);
     List<Movie> movies = iterableMovies.map((model) {
       return Movie.fromJson(model);
     }).toList();
 
-    provider.setUserMovies(movies);
+    moviesState.setUserMovies(movies);
   }
 
   @override

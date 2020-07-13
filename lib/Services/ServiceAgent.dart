@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:mmobile/Widgets/MState.dart';
+import 'package:mmobile/Widgets/Providers/UserState.dart';
 
 class ServiceAgent {
-  MState state;
+  UserState state;
   final baseUrl = "https://mwebapi1.azurewebsites.net/api/";
 
 //    final baseUrl = "https://localhost:44321/";

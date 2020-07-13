@@ -42,7 +42,7 @@ class MovieListItemState extends State<MovieListItem> {
                 type: MaterialType.transparency,
                 child: Container(
                     height: 120.0,
-                    margin: EdgeInsets.fromLTRB(0, 10, 0, 10),
+                    margin: EdgeInsets.fromLTRB(10, 10, 10, 10),
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
