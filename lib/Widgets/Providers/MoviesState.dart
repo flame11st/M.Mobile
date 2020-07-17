@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/Movie.dart';
-import 'package:mmobile/Widgets/MyMovies.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
 
@@ -45,48 +46,70 @@ class MoviesState with ChangeNotifier {
   changeMovieRate(String movieId, int movieRate) async {
     if (movieId == null) return;
 
-    var foundMovies = userMovies.where((movie) => movie.id == movieId);
+    var foundMovies = userMovies.where((m) => m.id == movieId);
+    Movie movieToRate;
 
     if (foundMovies.length == 0) {
-      // TODO: Add initial adding logic
-      return;
+      final moviesResponse = await serviceAgent.getMovie(movieId);
+      movieToRate = Movie.fromJson(json.decode(moviesResponse.body));
+      userMovies.add(movieToRate);
+    } else {
+      movieToRate = foundMovies.first;
     }
 
-    final foundMovie = foundMovies.first;
-    recalculateMovieRating(foundMovie, movieRate);
+    recalculateMovieRating(movieToRate, movieRate);
 
     if (movieRate == MovieRate.liked || movieRate == MovieRate.notLiked) {
-      if (foundMovie.movieRate == MovieRate.addedToWatchlist) {
-        final index = watchlistMovies.indexOf(foundMovie);
-
-        viewedMovies.add(foundMovie);
-        watchlistMovies.removeAt(index);
-
-        AnimatedListRemovedItemBuilder builder = (context, animation) {
-          return buildItem(foundMovie, animation);
-        };
-
-        watchlistKey.currentState.removeItem(index, builder);
-      }
-
-      foundMovie.movieRate = movieRate;
-
+      addMovieToViewed(movieToRate, movieRate);
     } else if (movieRate == MovieRate.addedToWatchlist) {
-//      final foundMovie = viewedMovies.where((movie) => movie.id == movieId).first;
-      final index = viewedMovies.indexOf(foundMovie);
-
-      watchlistMovies.add(foundMovie);
-      viewedMovies.removeAt(index);
-
-      AnimatedListRemovedItemBuilder builder = (context, animation) {
-        return buildItem(foundMovie, animation);
-      };
-
-      foundMovie.movieRate = movieRate;
-      viewedListKey.currentState.removeItem(index, builder);
+      addMovieToWatchlist(movieToRate, movieRate);
+    } else if (movieRate == MovieRate.notRated) {
+      removeMovieRate(movieToRate);
     }
 
     notifyListeners();
+  }
+
+  void removeMovieRate(Movie movieToRate) {
+    if (movieToRate.movieRate == MovieRate.notLiked || movieToRate.movieRate == MovieRate.liked) {
+      removeMovieFromList(movieToRate, viewedMovies, viewedListKey);
+    } else if (movieToRate.movieRate == MovieRate.addedToWatchlist) {
+      removeMovieFromList(movieToRate, watchlistMovies, watchlistKey);
+    }
+
+    userMovies.remove(movieToRate);
+  }
+
+  void addMovieToWatchlist(Movie movieToAdd, int movieRate) {
+    if (movieToAdd.movieRate != 0) {
+      removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
+    }
+
+    watchlistMovies.add(movieToAdd);
+    watchlistKey.currentState.insertItem(viewedMovies.length);
+    movieToAdd.movieRate = movieRate;
+  }
+
+  void addMovieToViewed(Movie movieToAdd, int movieRate) {
+    if (movieToAdd.movieRate == MovieRate.addedToWatchlist) {
+      removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
+    }
+
+    viewedListKey.currentState.insertItem(viewedMovies.length);
+    viewedMovies.add(movieToAdd);
+
+    movieToAdd.movieRate = movieRate;
+  }
+
+  void removeMovieFromList(Movie movieToRemove, List<Movie> moviesList, GlobalKey<AnimatedListState> key) {
+    final index = moviesList.indexOf(movieToRemove);
+    moviesList.removeAt(index);
+
+    AnimatedListRemovedItemBuilder builder = (context, animation) {
+      return buildItem(movieToRemove, animation);
+    };
+
+    key.currentState.removeItem(index, builder);
   }
 
   recalculateMovieRating(Movie movie, int updatedRate) {

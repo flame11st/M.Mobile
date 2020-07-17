@@ -4,13 +4,15 @@ import 'package:mmobile/Variables/Variables.dart';
 
 import 'MIconRateButton.dart';
 
-class MovieRateButtons extends StatelessWidget{
+class MovieRateButtons extends StatelessWidget {
   final String movieId;
   final int movieRate;
   final String additionalText;
   final width;
 
-  const MovieRateButtons({Key key, this.movieId, this.movieRate, this.additionalText, this.width}) : super(key: key);
+  const MovieRateButtons(
+      {Key key, this.movieId, this.movieRate, this.additionalText, this.width})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -37,46 +39,50 @@ class MovieRateButtons extends StatelessWidget{
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            if (additionalText != null) Text(additionalText, style: MTextStyles.BodyText,),
+            if (additionalText != null)
+              Text(
+                additionalText,
+                style: MTextStyles.BodyText,
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 MIconRateButton(
-                  icon: Icon(
-                      Icons.thumb_up,
+                  icon: Icon(Icons.thumb_up,
                       color: movieRate == MovieRate.liked
                           ? Colors.greenAccent
                           : MColors.FontsColor),
                   movieId: movieId,
-                  movieRate: MovieRate.liked,
+                  movieRate: movieRate == MovieRate.liked
+                      ? MovieRate.notRated
+                      : MovieRate.liked,
                   width: width,
                 ),
                 MIconRateButton(
-                  icon: Icon(
-                      Icons.thumb_down,
+                  icon: Icon(Icons.thumb_down,
                       color: movieRate == MovieRate.notLiked
                           ? Colors.redAccent
                           : MColors.FontsColor),
                   movieId: movieId,
-                  movieRate: MovieRate.notLiked,
+                  movieRate: movieRate == MovieRate.notLiked
+                      ? MovieRate.notRated
+                      : MovieRate.notLiked,
                   width: width,
                 ),
                 MIconRateButton(
-                  icon: Icon(
-                      Icons.add_to_queue,
+                  icon: Icon(Icons.add_to_queue,
                       color: movieRate == MovieRate.addedToWatchlist
                           ? MColors.AdditionalColor
                           : MColors.FontsColor),
                   movieId: movieId,
-                  movieRate: MovieRate.addedToWatchlist,
+                  movieRate: movieRate == MovieRate.addedToWatchlist
+                      ? MovieRate.notRated
+                      : MovieRate.addedToWatchlist,
                   width: width,
                 )
               ],
             )
           ],
-        )
-
-    );
+        ));
   }
-
 }

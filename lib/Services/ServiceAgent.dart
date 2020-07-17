@@ -26,6 +26,10 @@ class ServiceAgent {
     return get('User/GetUserMovies?userId=$userId');
   }
 
+  getMovie(String movieId) {
+    return get('movies/GetMovie?id=$movieId');
+  }
+
   search(String query) {
     return get('movies/Search?query=$query');
   }
