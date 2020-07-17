@@ -148,11 +148,11 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                       child: CircularPercentIndicator(
                                         radius: 110.0,
                                         lineWidth: 6.0,
-                                        percent: movie.scores > 0 &&
+                                        percent: movie.allVotes > 0 &&
                                                 movie.rating == 0
                                             ? 1
                                             : movie.rating / 100,
-                                        center: movie.scores > 0
+                                        center: movie.allVotes > 0
                                             ? Column(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
@@ -161,7 +161,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                                       style:
                                                           MTextStyles.BodyText),
                                                   SizedBox(height: 5),
-                                                  Text("Votes: ${movie.scores}",
+                                                  Text("Votes: ${movie.allVotes}",
                                                       style:
                                                           MTextStyles.BodyText)
                                                 ],
@@ -244,6 +244,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     ))),
           ),
         ),
-    bottomNavigationBar: MoviesBottomNavigationBarExpanded(movieId: movie.id,));
+    bottomNavigationBar: MoviesBottomNavigationBarExpanded(movieId: movie.id, movieRate: movie.movieRate,));
   }
 }

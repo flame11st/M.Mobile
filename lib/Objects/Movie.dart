@@ -8,8 +8,10 @@ class Movie {
   final String tagline;
   final String posterPath;
   final int duration;
-  final int rating;
-  final int scores;
+  int rating;
+  int allVotes;
+  int likedVotes;
+  int dislikedVotes;
   final String countries;
   final List<Person> actors;
   final List<Person> directors;
@@ -24,7 +26,7 @@ class Movie {
   final int imdbVotes;
 
   Movie({this.id, this.title, this.overview, this.tagline, this.posterPath,
-    this.duration, this.rating, this.scores, this.countries, this.actors, this.directors,
+    this.duration, this.rating, this.allVotes, this.likedVotes, this.dislikedVotes, this.countries, this.actors, this.directors,
     this.genres, this.movieRate, this.movieType, this.year, this.averageTimeOfEpisode,
     this.inProduction, this.seasonsCount, this.imdbRate, this.imdbVotes});
 
@@ -38,6 +40,9 @@ class Movie {
       return Person.fromJson(model);
     }).toList().cast<Person>();
 
+    int likedVotes = json['likedVotes'];
+    int dislikedVotes = json['unlikedVotes'];
+
     return Movie(
         id: json['id'],
         title: json['title'],
@@ -47,8 +52,10 @@ class Movie {
         genres: json['genres'].cast<String>(),
         year: json['year'],
         duration: json['duration'],
-        rating: json['rating'],
-        scores: json['scores'],
+        rating: getMovieRating(likedVotes, dislikedVotes),
+        allVotes: likedVotes + dislikedVotes,
+        likedVotes: likedVotes,
+        dislikedVotes: dislikedVotes,
         movieRate: json['movieRate'],
         movieType: MovieType.values[json['movieType']],
         countries: json['countries'],
@@ -60,5 +67,12 @@ class Movie {
         imdbRate: json['imdbRate'] / 10,
         imdbVotes: json['imdbVotes']
     );
+  }
+
+  static int getMovieRating(int likedVotes, int dislikedVotes) {
+    final result = likedVotes + dislikedVotes != 0
+        ? (100 / (likedVotes + dislikedVotes)) * likedVotes : 0;
+
+    return result.toInt();
   }
 }

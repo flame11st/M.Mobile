@@ -1,13 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
-
-import 'Shared/MIconButton.dart';
+import 'Shared/BoxShadowNeomorph.dart';
+import 'Shared/MovieRateButtons.dart';
 
 class MovieListItem extends StatefulWidget {
   final Movie movie;
@@ -80,29 +77,59 @@ class MovieListItemState extends State<MovieListItem> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
                                 Text(movie.title, style: MTextStyles.Title),
-                                Text(movie.year.toString(),
-                                    style: MTextStyles.BodyText),
-                                Text(movie.genres.join(', '),
-                                    style: MTextStyles.BodyText),
                                 Row(
                                   children: <Widget>[
-                                    Text((movie.movieType == MovieType.movie
-                                        ? movie.duration.toString()
-                                        : movie.averageTimeOfEpisode.toString()) + ' min',
+                                    Text(movie.year.toString(),
                                         style: MTextStyles.BodyText),
-                                    SizedBox(width: 30,),
+                                    SizedBox(
+                                      width: 30,
+                                    ),
+                                    Text(
+                                        (movie.movieType == MovieType.movie
+                                                ? movie.duration.toString()
+                                                : movie.averageTimeOfEpisode
+                                                    .toString()) +
+                                            ' min',
+                                        style: MTextStyles.BodyText),
+                                    SizedBox(
+                                      width: 30,
+                                    ),
                                     if (movie.seasonsCount > 0)
-                                      Text("Seasons: ${movie.seasonsCount}", style: MTextStyles.BodyText)
+                                      Text("Seasons: ${movie.seasonsCount}",
+                                          style: MTextStyles.BodyText)
                                   ],
-                                )
+                                ),
+                                Text(movie.genres.join(', '),
+                                    style: MTextStyles.BodyText),
                               ],
                             ),
                           ),
                         ),
-                        MIconButton(
-                          icon: Icon(Icons.thumb_up, color: MColors.FontsColor,),
-                          movieId: movie.id,
-                          movieRate: MovieRate.liked,
+                        Container(
+                          width: 40,
+                          margin: EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            boxShadow: BoxShadowNeomorph.circleShadow,
+                            color: MColors.SecondaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.more_vert,
+                              color: MColors.FontsColor,
+                            ),
+                            onPressed: () async {
+                              showModalBottomSheet<void>(
+                                  backgroundColor: Colors.transparent,
+                                  context: context,
+                                  builder: (BuildContext context) =>
+                                      MovieRateButtons(
+                                        movieRate: movie.movieRate,
+                                        movieId: movie.id,
+                                        additionalText: movie.title,
+                                      ));
+                            },
+                          ),
                         )
                       ],
                     )),

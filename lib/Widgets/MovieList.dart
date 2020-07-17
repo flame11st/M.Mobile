@@ -19,9 +19,6 @@ class MovieListState extends State<MovieList> {
     super.didChangeDependencies();
   }
 
-  List<String> _data = ['Horse', 'Cow', 'Camel', 'Sheep', 'Goat'];
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MoviesState>(context);
@@ -37,7 +34,6 @@ class MovieListState extends State<MovieList> {
             tabs: [
               Tab(child: Text('Watchlist', style: MTextStyles.TabTitle,)),
               Tab(child: Text('Viewed', style: MTextStyles.TabTitle,)),
-//              Tab(child: Text('TEST', style: MTextStyles.TabTitle,)),
             ],
           ),
         ),
@@ -46,6 +42,7 @@ class MovieListState extends State<MovieList> {
           child: TabBarView(
             children: [
               AnimatedList(
+                padding: EdgeInsets.only(bottom: 75),
                 key: provider.watchlistKey,
                 initialItemCount: watchlistMovies.length,
                 itemBuilder: (context, index, animation) {
@@ -53,19 +50,13 @@ class MovieListState extends State<MovieList> {
                 },
               ),
               AnimatedList(
+                padding: EdgeInsets.only(bottom: 75),
                 key: provider.viewedListKey,
                 initialItemCount: viewedMovies.length,
                 itemBuilder: (context, index, animation) {
                   return provider.buildItem(viewedMovies[index], animation);
                 },
               ),
-//              AnimatedList(
-//                key: provider.listKey,
-//                initialItemCount: watchlistMovies.length,
-//                itemBuilder: (context, index, animation) {
-//                  return provider.buildItem(watchlistMovies[index], animation);
-//                },
-//              ),
             ],
           ),
         )

@@ -90,7 +90,7 @@ class LoginState extends State<Login> {
                                 loginButton,
                                 SizedBox(
                                     height: 15.0,
-                                ),
+                                )
                             ],
                         )
                     ),

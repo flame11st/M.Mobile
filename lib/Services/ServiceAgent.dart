@@ -26,6 +26,10 @@ class ServiceAgent {
     return get('User/GetUserMovies?userId=$userId');
   }
 
+  search(String query) {
+    return get('movies/Search?query=$query');
+  }
+
   rateMovie(String movieId, String userId, int movieRate) {
     return post('User/RateMovie', jsonEncode({
       'MovieId': movieId,
@@ -35,15 +39,18 @@ class ServiceAgent {
   }
 
   get(String uri) async {
-    var response = await http.get(baseUrl + uri,
-        headers: {HttpHeaders.authorizationHeader: "Bearer ${state.token}"});
+    Map<String, String> headers = {};
+    if (state != null) headers.putIfAbsent(HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+
+    var response = await http.get(baseUrl + uri, headers: headers);
 
     if (response.statusCode == 401) {
+      headers.clear();
       bool isTokenRefreshed = await refreshAccessToken();
       if (isTokenRefreshed) {
-        response = await http.get(baseUrl + uri, headers: {
-          HttpHeaders.authorizationHeader: "Bearer ${state.token}"
-        });
+        if (state != null) headers.putIfAbsent(HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+
+        response = await http.get(baseUrl + uri, headers: headers);
       }
     }
 
@@ -51,10 +58,10 @@ class ServiceAgent {
   }
 
   post(String uri, postData) async {
-    var response = await http.post(baseUrl + uri, body: postData, headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-      HttpHeaders.authorizationHeader: "Bearer ${state.token}"
-    });
+    var headers = {'Content-Type': 'application/json; charset=UTF-8'};
+    if (state != null) headers.putIfAbsent(HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+
+    var response = await http.post(baseUrl + uri, body: postData, headers: headers);
 
     if (response.statusCode == 401) {
       bool isTokenRefreshed = await refreshAccessToken();
