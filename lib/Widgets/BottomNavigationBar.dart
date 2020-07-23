@@ -32,11 +32,16 @@ class MoviesBottomNavigationBar extends StatelessWidget {
         color: Colors.transparent,
         shape: CircularNotchedRectangle(),
         child: Container(
-            height: 70,
+            height: 65,
             width: double.infinity,
-            margin: EdgeInsets.all(5),
+//            margin: EdgeInsets.all(5),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(30.0)),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30.0),
+                topRight: Radius.circular(30.0),
+//                bottomLeft: Radius.circular(30.0),
+//                bottomRight: Radius.circular(30.0)
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.white.withOpacity(0.3),

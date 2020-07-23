@@ -43,7 +43,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
 
   @override
   Widget build(BuildContext context) {
-
+    final imageUrl = movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     return Scaffold(
         backgroundColor: MColors.PrimaryColor,
         body: Center(
@@ -127,7 +127,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8.0),
                                     child: CachedNetworkImage(
-                                      imageUrl: imageBaseUrl + movie.posterPath,
+                                      imageUrl: imageBaseUrl + imageUrl,
                                       height: 150,
                                       fit: BoxFit.fill,
                                       width: 100,

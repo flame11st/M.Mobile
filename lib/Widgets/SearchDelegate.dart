@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/MovieSearchDTO.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/MovieListItem.dart';
 import 'package:mmobile/Widgets/MovieSearchItem.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
@@ -14,8 +13,11 @@ class MSearchDelegate extends SearchDelegate {
   final serviceAgent = new ServiceAgent();
   UserState userState;
   String oldQuery;
+  bool isLoading = false;
 
   searchMovies(BuildContext context, StateSetter setState) async {
+    isLoading = true;
+
     if (userState == null) {
       userState = Provider.of<UserState>(context);
       serviceAgent.state = userState;
@@ -26,7 +28,9 @@ class MSearchDelegate extends SearchDelegate {
     // Debounce
     final queryToDebounce = query;
     await Future.delayed(Duration(milliseconds: 500));
-    if (queryToDebounce != query) return;
+    if (queryToDebounce != query) {
+      return;
+    }
 
     final moviesResponse = await serviceAgent.search(query);
 
@@ -44,6 +48,7 @@ class MSearchDelegate extends SearchDelegate {
         return movie;
       }).toList();
 
+      isLoading = false;
       setState(() => this.foundMovies = foundMovies);
     }
   }
@@ -72,13 +77,13 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    final provider = Provider.of<MoviesState>(context);
-
-    return ListView(
-      children: <Widget>[
-        for (final movie in provider.userMovies) MovieListItem(movie: movie)
-      ],
-    );
+    return Container(
+        color: MColors.PrimaryColor,
+        child: ListView(
+          children: <Widget>[
+            for (final movie in foundMovies) MovieSearchItem(movie: movie)
+          ],
+        ));
   }
 
   @override
@@ -86,6 +91,8 @@ class MSearchDelegate extends SearchDelegate {
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setState) {
         if (query == '') {
+          oldQuery = '';
+          isLoading = false;
           setState(() => foundMovies.clear());
         } else if (query != oldQuery) {
           oldQuery = query;
@@ -93,12 +100,21 @@ class MSearchDelegate extends SearchDelegate {
         }
 
         return Container(
-            color: MColors.PrimaryColor,
+            color: Theme.of(context).primaryColor,
             child: ListView(
               children: <Widget>[
+                if (isLoading) LinearProgressIndicator(),
                 for (final movie in foundMovies) MovieSearchItem(movie: movie)
               ],
             ));
     });
+  }
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    assert(context != null);
+    final ThemeData theme = Theme.of(context);
+    assert(theme != null);
+    return theme;
   }
 }

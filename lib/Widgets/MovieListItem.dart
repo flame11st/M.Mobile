@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -28,6 +29,7 @@ class MovieListItemState extends State<MovieListItem> {
   }
 
   Widget build(BuildContext context) {
+    final imageUrl = movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     return GestureDetector(
       onTap: () {
         showFullMovie(context);
@@ -60,8 +62,8 @@ class MovieListItemState extends State<MovieListItem> {
                       children: <Widget>[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12.0),
-                          child: Image.network(
-                            imageBaseUrl + movie.posterPath,
+                          child: CachedNetworkImage(
+                            imageUrl: imageBaseUrl + imageUrl,
                             height: 120,
                             fit: BoxFit.fill,
                             width: 80,

@@ -37,6 +37,15 @@ class MovieListState extends State<MovieList> {
             ],
           ),
         ),
+//          bottomNavigationBar: BottomAppBar(
+//            color: MColors.PrimaryColor,
+//            child: TabBar(
+//              tabs: [
+//                Tab(child: Text('Watchlist', style: MTextStyles.TabTitle,)),
+//                Tab(child: Text('Viewed', style: MTextStyles.TabTitle,)),
+//              ],
+//            ),
+//          ),
         body: Container(
           color: MColors.PrimaryColor,
           child: TabBarView(

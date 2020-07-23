@@ -11,8 +11,7 @@ import 'Shared/MovieRateButtons.dart';
 
 class MovieSearchItem extends StatelessWidget {
   final MovieSearchDTO movie;
-  final imageBaseUrl =
-      'https://moviediarystorage.blob.core.windows.net/movies';
+  final imageBaseUrl = 'https://moviediarystorage.blob.core.windows.net/movies';
 
   const MovieSearchItem({Key key, this.movie}) : super(key: key);
   final iconSize = 20.0;
@@ -20,6 +19,8 @@ class MovieSearchItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl =
+        movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     return Container(
         height: 120.0,
         margin: EdgeInsets.fromLTRB(10, 10, 10, 10),
@@ -44,7 +45,7 @@ class MovieSearchItem extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12.0),
               child: Image.network(
-                imageBaseUrl + movie.posterPath,
+                imageBaseUrl + imageUrl,
                 height: 120,
                 fit: BoxFit.fill,
                 width: 80,
@@ -59,49 +60,56 @@ class MovieSearchItem extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    RichText( text: TextSpan(
+                    RichText(
+                        text: TextSpan(
                       style: MTextStyles.BodyText,
                       children: <TextSpan>[
-                        new TextSpan(text: movie.title, style: MTextStyles.Title),
+                        new TextSpan(
+                            text: movie.title, style: MTextStyles.Title),
                         new TextSpan(text: ' (${movie.year})'),
                       ],
                     )),
-                    Text(movie.genres.join(', '),
-                        style: MTextStyles.BodyText),
+                    Text(movie.genres.join(', '), style: MTextStyles.BodyText),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: <Widget>[
                         MIconRateButton(
-                          icon: Icon(
-                              Icons.thumb_up,
+                          icon: Icon(Icons.thumb_up,
                               color: movie.movieRate == MovieRate.liked
                                   ? Colors.greenAccent
                                   : MColors.FontsColor,
                               size: iconSize),
                           movieId: movie.id,
-                          movieRate: MovieRate.liked,
+                          movieRate: movie.movieRate == MovieRate.liked
+                              ? MovieRate.notRated
+                              : MovieRate.liked,
                           width: width,
                         ),
                         MIconRateButton(
                           icon: Icon(
-                              Icons.thumb_down,
-                              color: movie.movieRate == MovieRate.notLiked
-                                  ? Colors.redAccent
-                                  : MColors.FontsColor,
-                              size: iconSize,),
+                            Icons.thumb_down,
+                            color: movie.movieRate == MovieRate.notLiked
+                                ? Colors.redAccent
+                                : MColors.FontsColor,
+                            size: iconSize,
+                          ),
                           movieId: movie.id,
-                          movieRate: MovieRate.notLiked,
+                          movieRate: movie.movieRate == MovieRate.notLiked
+                              ? MovieRate.notRated
+                              : MovieRate.notLiked,
                           width: width,
                         ),
                         MIconRateButton(
-                          icon: Icon(
-                              Icons.add_to_queue,
-                              color: movie.movieRate == MovieRate.addedToWatchlist
-                                  ? MColors.AdditionalColor
-                                  : MColors.FontsColor,
+                          icon: Icon(Icons.add_to_queue,
+                              color:
+                                  movie.movieRate == MovieRate.addedToWatchlist
+                                      ? MColors.AdditionalColor
+                                      : MColors.FontsColor,
                               size: iconSize),
                           movieId: movie.id,
-                          movieRate: MovieRate.addedToWatchlist,
+                          movieRate: movie.movieRate == MovieRate.addedToWatchlist
+                              ? MovieRate.notRated
+                              : MovieRate.addedToWatchlist,
                           width: width,
                         )
                       ],

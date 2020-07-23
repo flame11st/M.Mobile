@@ -45,9 +45,6 @@ class MyMoviesState extends State<MyMovies> {
     setUserMovies();
 
     return Scaffold(
-//      appBar: AppBar(
-//        backgroundColor: MColors.PrimaryColor,
-//      ),
       body: Stack(
         children: <Widget>[
           MovieList(),
@@ -55,10 +52,10 @@ class MyMoviesState extends State<MyMovies> {
               alignment: Alignment.bottomCenter,
               child: MoviesBottomNavigationBar()),
           Align(
-            alignment: Alignment(0.0, 0.97),
+            alignment: Alignment(0.0, 0.985),
             child: Container(
-                height: 60.0,
-                width: 60.0,
+                height: 55.0,
+                width: 55.0,
                 child: FittedBox(
                   child: FloatingActionButton(
 
@@ -70,7 +67,7 @@ class MyMoviesState extends State<MyMovies> {
                     },
                     child: const Icon(
                       Icons.add,
-                      size: 35,
+                      size: 40,
                     ),
                     backgroundColor: MColors.AdditionalColor,
                     foregroundColor: MColors.PrimaryColor,

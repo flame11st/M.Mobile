@@ -31,6 +31,23 @@ class MHomeState extends State<MHome> {
 
         return MaterialApp(
             home: widgetToReturn,
+            theme: ThemeData(
+              // Define the default brightness and colors.
+              brightness: Brightness.dark,
+              primaryColor: MColors.PrimaryColor,
+              accentColor: MColors.AdditionalColor,
+
+              // Define the default font family.
+//              fontFamily: 'Roboto',
+
+              // Define the default TextTheme. Use this to specify the default
+              // text styling for headlines, titles, bodies of text, and more.
+              textTheme: TextTheme(
+                headline1:
+                TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
+                headline6: MTextStyles.BodyText,
+              ),
+            )
         );
     }
 }

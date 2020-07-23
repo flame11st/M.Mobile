@@ -85,8 +85,10 @@ class MoviesState with ChangeNotifier {
       removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
     }
 
+    if (watchlistKey.currentState != null)
+      watchlistKey.currentState.insertItem(viewedMovies.length);
     watchlistMovies.add(movieToAdd);
-    watchlistKey.currentState.insertItem(viewedMovies.length);
+
     movieToAdd.movieRate = movieRate;
   }
 
@@ -95,7 +97,9 @@ class MoviesState with ChangeNotifier {
       removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
     }
 
-    viewedListKey.currentState.insertItem(viewedMovies.length);
+    if (viewedListKey.currentState != null)
+      viewedListKey.currentState.insertItem(viewedMovies.length);
+
     viewedMovies.add(movieToAdd);
 
     movieToAdd.movieRate = movieRate;
