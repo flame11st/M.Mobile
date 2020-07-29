@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
 
+import 'MoviesFilter.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MIconButton.dart';
 
@@ -60,16 +61,23 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
                 MIconButton(
-                  icon: Icon(Icons.movie_filter, color: MColors.FontsColor,),
+                  icon: Icon(
+                    Icons.movie_filter,
+                    color: MColors.FontsColor,
+                  ),
                   onPressedCallback: () async {
                     showModalBottomSheet<void>(
-                        backgroundColor: Colors.transparent,
-                        context: context,
+                      backgroundColor: Colors.transparent,
+                      context: context,
+                      builder: (BuildContext context) => MoviesFilter()
                     );
                   },
                 ),
                 MIconButton(
-                  icon: Icon(Icons.settings, color: MColors.FontsColor,),
+                  icon: Icon(
+                    Icons.settings,
+                    color: MColors.FontsColor,
+                  ),
                   onPressedCallback: () {},
                 ),
 //                FloatingActionButton(
@@ -83,7 +91,9 @@ class MoviesBottomNavigationBar extends StatelessWidget {
 //                  backgroundColor: MColors.AdditionalColor,
 //                  foregroundColor: MColors.PrimaryColor,
 //                ),
-              SizedBox(width: 80,),
+                SizedBox(
+                  width: 80,
+                ),
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.all(Radius.circular(30.0)),
@@ -95,9 +105,14 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                   child: Row(
                     children: <Widget>[
                       IconButton(
-                          icon: Icon(Icons.monetization_on, color: Colors.greenAccent,)
-                      ),
-                      Text('Premium', style: MTextStyles.BodyText,)
+                          icon: Icon(
+                        Icons.monetization_on,
+                        color: Colors.greenAccent,
+                      )),
+                      Text(
+                        'Premium',
+                        style: MTextStyles.BodyText,
+                      )
                     ],
                   ),
                 )

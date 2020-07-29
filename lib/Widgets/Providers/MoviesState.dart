@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
+import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
@@ -12,6 +13,10 @@ class MoviesState with ChangeNotifier {
   List<Movie> userMovies = new List<Movie>();
   List<Movie> watchlistMovies = new List<Movie>();
   List<Movie> viewedMovies = new List<Movie>();
+  bool moviesOnly = false;
+  bool tvOnly = false;
+  bool likedOnly = false;
+  bool notLikedOnly = false;
 
   void setUserMovies(List<Movie> userMovies) async {
     this.userMovies = userMovies;
@@ -29,17 +34,28 @@ class MoviesState with ChangeNotifier {
     notifyListeners();
   }
 
+  changeMoviesOnlyFilter() {
+    moviesOnly = !moviesOnly;
+
+    notifyListeners();
+  }
+
   getWatchlistMovies() {
-    final result = this.userMovies.where((movie) =>
-    movie.movieRate == MovieRate.addedToWatchlist).toList();
+    var result = watchlistMovies;
+
+    if (moviesOnly) {
+      result = result.where((element) => element.movieType == MovieType.movie).toList();
+    }
+
     return result;
   }
 
   getViewedMovies() {
-    final result = this.userMovies
-        .where((movie) =>
-    movie.movieRate == MovieRate.liked || movie.movieRate == MovieRate.notLiked)
-        .toList();
+    var result = viewedMovies;
+
+    if (moviesOnly) {
+      result = result.where((element) => element.movieType == MovieType.movie).toList();
+    }
     return result;
   }
 

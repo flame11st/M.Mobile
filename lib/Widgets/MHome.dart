@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'Login.dart';
-import 'MState.dart';
 import 'MyMovies.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../Services/ServiceAgent.dart';
 import 'Providers/UserState.dart';
 
 class MHome extends StatefulWidget {
@@ -36,6 +33,7 @@ class MHomeState extends State<MHome> {
               brightness: Brightness.dark,
               primaryColor: MColors.PrimaryColor,
               accentColor: MColors.AdditionalColor,
+              hintColor: MColors.FontsColor,
 
               // Define the default font family.
 //              fontFamily: 'Roboto',
@@ -43,8 +41,7 @@ class MHomeState extends State<MHome> {
               // Define the default TextTheme. Use this to specify the default
               // text styling for headlines, titles, bodies of text, and more.
               textTheme: TextTheme(
-                headline1:
-                TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
+                headline1: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
                 headline6: MTextStyles.BodyText,
               ),
             )

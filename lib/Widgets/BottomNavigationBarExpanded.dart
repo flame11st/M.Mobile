@@ -3,9 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
-import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
 import 'package:provider/provider.dart';
 
 import 'MState.dart';
