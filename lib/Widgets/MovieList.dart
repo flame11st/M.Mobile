@@ -22,8 +22,8 @@ class MovieListState extends State<MovieList> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MoviesState>(context);
-    final List<Movie> watchlistMovies = provider.getWatchlistMovies();
-    final List<Movie> viewedMovies = provider.getViewedMovies();
+    final List<Movie> watchlistMovies = provider.watchlistMovies;
+    final List<Movie> viewedMovies = provider.viewedMovies;
 
     return DefaultTabController(
       length: 2,

@@ -31,6 +31,9 @@ class MoviesFilter extends StatelessWidget {
                                     icon: Icons.tv,
                                     text: 'TV',
                                     isActive: moviesState.tvOnly,
+                                  onPressedCallback: () {
+                                    moviesState.changeTVOnlyFilter();
+                                  },
                                 ),
                                 FilterIcon(
                                     icon: Icons.thumb_up,
