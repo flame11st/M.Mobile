@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'BoxShadowNeomorph.dart';
 
 class FilterIcon extends StatelessWidget {
@@ -11,18 +12,30 @@ class FilterIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final color = isActive ? Theme.of(context).accentColor : Theme.of(context).hintColor;
+    final color = isActive ? Theme.of(context).accentColor : Theme.of(context).hintColor;
     return GestureDetector(
         onTap: () => onPressedCallback(),
         child: Container(
-            height: 70,
-            width: 70,
+            height: 50,
+            width: 130,
             decoration: new BoxDecoration(
                 color: Theme.of(context).primaryColor,
-                shape: BoxShape.circle,
-                boxShadow: BoxShadowNeomorph.circleShadow),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+                borderRadius: BorderRadius.circular(10.0),
+                boxShadow: [
+                    BoxShadow(
+                        color: color.withOpacity(0.2),
+                        offset: Offset(-2.0, -2.0),
+                        blurRadius: 4,
+                    ),
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.6),
+                        offset: Offset(4.0, 4.0),
+                        blurRadius: 6,
+                    ),
+                ]
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
                 Icon(
                   icon,

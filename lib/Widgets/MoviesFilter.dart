@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/FilterButton.dart';
+import 'package:fluttericon/font_awesome_icons.dart';
 
 class MoviesFilter extends StatelessWidget {
     @override
@@ -9,18 +11,28 @@ class MoviesFilter extends StatelessWidget {
         final moviesState = Provider.of<MoviesState>(context);
 
         return Container(
-                height: 200,
-                color: Theme
-                        .of(context)
-                        .primaryColor,
+                height: 150,
+                decoration: BoxDecoration(
+                    color: Theme
+                            .of(context)
+                            .primaryColor,
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(30.0),
+                        topRight: Radius.circular(30.0),
+//                bottomLeft: Radius.circular(30.0),
+//                bottomRight: Radius.circular(30.0)
+                    ),
+                ),
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
+//                        Text('Filters', style: MTextStyles.ExpandedTitle,),
                         Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: <Widget>[
+                                Text('Type:', style: MTextStyles.BodyText,),
                                 FilterIcon(
-                                    icon: Icons.movie,
+                                    icon: FontAwesome.video,
                                     text: 'Movies',
                                     isActive: moviesState.moviesOnly,
                                     onPressedCallback: () {
@@ -29,19 +41,25 @@ class MoviesFilter extends StatelessWidget {
                                 ),
                                 FilterIcon(
                                     icon: Icons.tv,
-                                    text: 'TV',
+                                    text: 'TV shows',
                                     isActive: moviesState.tvOnly,
                                   onPressedCallback: () {
                                     moviesState.changeTVOnlyFilter();
                                   },
                                 ),
+                            ],
+                        ),
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: <Widget>[
+                                Text('Rate:', style: MTextStyles.BodyText,),
                                 FilterIcon(
-                                    icon: Icons.thumb_up,
+                                    icon: Icons.favorite_border,
                                     text: 'Liked',
                                     isActive: moviesState.likedOnly,
                                 ),
                                 FilterIcon(
-                                    icon: Icons.thumb_down,
+                                    icon: FontAwesome.thumbs_down,
                                     text: 'Not Liked',
                                     isActive: moviesState.notLikedOnly,
                                 ),
