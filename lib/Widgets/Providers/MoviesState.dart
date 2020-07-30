@@ -30,52 +30,130 @@ class MoviesState with ChangeNotifier {
 
     this.viewedMovies = userMovies
         .where((movie) =>
-    movie.movieRate == MovieRate.liked ||
-        movie.movieRate == MovieRate.notLiked)
+            movie.movieRate == MovieRate.liked ||
+            movie.movieRate == MovieRate.notLiked)
         .toList();
 
     notifyListeners();
   }
 
+  bool isWatchlist() {
+    var result = watchlistKey.currentState != null;
+
+    return result;
+  }
+
   changeMoviesOnlyFilter() {
     moviesOnly = !moviesOnly;
 
-    refreshMovies();
+    refreshMoviesByType();
   }
 
   changeTVOnlyFilter() {
     tvOnly = !tvOnly;
 
-    refreshMovies();
+    refreshMoviesByType();
   }
 
   changeLikedOnlyFilter() {
     likedOnly = !likedOnly;
 
-    refreshMovies();
+    refreshMoviesByRate();
   }
 
   changeNotLikedOnlyFilter() {
     notLikedOnly = !notLikedOnly;
 
-    refreshMovies();
+    refreshMoviesByRate();
   }
 
-  refreshMovies() {
+  refreshMoviesByType() {
     var initialWatchlistMovies = userMovies
         .where((movie) => movie.movieRate == MovieRate.addedToWatchlist)
         .toList();
 
     var initialViewedMovies = userMovies
         .where((movie) =>
-    movie.movieRate == MovieRate.liked ||
-        movie.movieRate == MovieRate.notLiked)
+            movie.movieRate == MovieRate.liked ||
+            movie.movieRate == MovieRate.notLiked)
         .toList();
 
-    refreshMoviesList(watchlistMovies, initialWatchlistMovies, watchlistKey);
-    refreshMoviesList(viewedMovies, initialViewedMovies, viewedListKey);
+    refreshMoviesListByType(
+        watchlistMovies, initialWatchlistMovies, watchlistKey);
+    refreshMoviesListByType(viewedMovies, initialViewedMovies, viewedListKey);
 
     notifyListeners();
+  }
+
+  refreshMoviesByRate() {
+    var initialViewedMovies = userMovies
+        .where((movie) =>
+            movie.movieRate == MovieRate.liked ||
+            movie.movieRate == MovieRate.notLiked)
+        .toList();
+
+    refreshMoviesListByRate(viewedMovies, initialViewedMovies, viewedListKey);
+
+    notifyListeners();
+  }
+
+  void refreshMoviesListByType(List<Movie> moviesList,
+      List<Movie> initialMoviesList, GlobalKey<AnimatedListState> key) {
+    if (moviesOnly && !tvOnly) {
+      var tv =
+          moviesList.where((movie) => movie.movieType == MovieType.tv).toList();
+
+      removeMoviesFromList(tv, moviesList, key);
+    }
+
+    if (!moviesOnly && tvOnly) {
+      var moviesInList = moviesList
+          .where((movie) => movie.movieType == MovieType.movie)
+          .toList();
+
+      removeMoviesFromList(moviesInList, moviesList, key);
+    }
+
+    if ((!moviesOnly && !tvOnly) || (moviesOnly && tvOnly)) {
+      if (initialMoviesList.length != moviesList.length) {
+        initialMoviesList.forEach((movie) {
+          if (!moviesList.contains(movie)) {
+            addMovieToList(
+                movie, moviesList, key, initialMoviesList.indexOf(movie));
+          }
+        });
+      }
+    }
+  }
+
+  void refreshMoviesListByRate(List<Movie> moviesList,
+      List<Movie> initialMoviesList, GlobalKey<AnimatedListState> key) {
+    if (likedOnly && !notLikedOnly) {
+      var notLiked = moviesList
+          .where((movie) => movie.movieRate == MovieRate.notLiked)
+          .toList();
+
+      removeMoviesFromList(notLiked, moviesList, key);
+    }
+
+    if (!likedOnly && notLikedOnly) {
+      var liked = moviesList
+          .where((movie) => movie.movieRate == MovieRate.liked)
+          .toList();
+
+      removeMoviesFromList(liked, moviesList, key);
+    }
+
+    if ((!likedOnly && !notLikedOnly) || (likedOnly && tvOnly)) {
+      if (initialMoviesList.length != moviesList.length) {
+        initialMoviesList.forEach((movie) {
+          if (!moviesList.contains(movie)) {
+            addMovieToList(
+                movie, moviesList, key, initialMoviesList.indexOf(movie));
+          }
+        });
+      }
+    }
   }
 
   getWatchlistMovies() {
@@ -139,39 +217,13 @@ class MoviesState with ChangeNotifier {
     userMovies.remove(movieToRate);
   }
 
-
-  void refreshMoviesList(List<Movie> moviesList, List<Movie> initialMoviesList, GlobalKey<AnimatedListState> key) {
-    if (moviesOnly && !tvOnly) {
-      var tv = moviesList.where((movie) =>
-      movie.movieType == MovieType.tv).toList();
-
-      removeMoviesFromList(tv, moviesList, key);
-    }
-
-    if (!moviesOnly && tvOnly) {
-      var moviesInWatchlist = moviesList.where((movie) =>
-      movie.movieType == MovieType.movie).toList();
-
-      removeMoviesFromList(moviesInWatchlist, moviesList, key);
-    }
-
-    if ((!moviesOnly && !tvOnly) || (moviesOnly && tvOnly)) {
-      if (initialMoviesList.length != moviesList.length) {
-        initialMoviesList.forEach((movie) {
-          if (!moviesList.contains(movie)) {
-            addMovieToList(movie, moviesList, key, initialMoviesList.indexOf(movie));
-          }
-        });
-      }
-    }
-  }
-
   void addMovieToWatchlist(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate != 0) {
       removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
     }
 
-    addMovieToList(movieToAdd, watchlistMovies, watchlistKey, watchlistMovies.length);
+    addMovieToList(
+        movieToAdd, watchlistMovies, watchlistKey, watchlistMovies.length);
 
     movieToAdd.movieRate = movieRate;
   }
@@ -179,17 +231,20 @@ class MoviesState with ChangeNotifier {
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate == MovieRate.addedToWatchlist) {
       removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
+    } else if (movieToAdd.movieRate == MovieRate.liked ||
+        movieToAdd.movieRate == MovieRate.notLiked) {
+      removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
     }
 
-    addMovieToList(movieToAdd, viewedMovies, viewedListKey, viewedMovies.length);
+    addMovieToList(
+        movieToAdd, viewedMovies, viewedListKey, viewedMovies.length);
 
     movieToAdd.movieRate = movieRate;
   }
 
   void addMovieToList(Movie movieToAdd, List<Movie> moviesList,
       GlobalKey<AnimatedListState> key, int index) {
-    if (key.currentState != null)
-      key.currentState.insertItem(index);
+    if (key.currentState != null) key.currentState.insertItem(index);
 
     moviesList.insert(index, movieToAdd);
   }
@@ -210,8 +265,7 @@ class MoviesState with ChangeNotifier {
       return buildItem(movieToRemove, animation);
     };
 
-    if (key.currentState != null)
-      key.currentState.removeItem(index, builder);
+    if (key.currentState != null) key.currentState.removeItem(index, builder);
   }
 
   recalculateMovieRating(Movie movie, int updatedRate) {
@@ -227,9 +281,9 @@ class MoviesState with ChangeNotifier {
 
   //Animated List area
   final GlobalKey<AnimatedListState> watchlistKey =
-  GlobalKey<AnimatedListState>();
+      GlobalKey<AnimatedListState>();
   final GlobalKey<AnimatedListState> viewedListKey =
-  GlobalKey<AnimatedListState>();
+      GlobalKey<AnimatedListState>();
 
   Widget buildItem(Movie movie, Animation animation) {
     return SizeTransition(

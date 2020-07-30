@@ -6,7 +6,6 @@ import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'BottomNavigationBar.dart';
-import 'MState.dart';
 import 'MovieList.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';

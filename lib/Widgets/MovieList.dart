@@ -3,8 +3,6 @@ import 'package:mmobile/Objects/Movie.dart';
 //import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
-import 'MState.dart';
-import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
 
 class MovieList extends StatefulWidget {
@@ -37,15 +35,6 @@ class MovieListState extends State<MovieList> {
             ],
           ),
         ),
-//          bottomNavigationBar: BottomAppBar(
-//            color: MColors.PrimaryColor,
-//            child: TabBar(
-//              tabs: [
-//                Tab(child: Text('Watchlist', style: MTextStyles.TabTitle,)),
-//                Tab(child: Text('Viewed', style: MTextStyles.TabTitle,)),
-//              ],
-//            ),
-//          ),
         body: Container(
           color: MColors.PrimaryColor,
           child: TabBarView(
@@ -71,16 +60,5 @@ class MovieListState extends State<MovieList> {
         )
       ),
     );
-
-//      Container(
-//      margin: EdgeInsets.only(top: 20),
-//      color: MColors.PrimaryColor,
-//      child: ListView(
-//        padding: EdgeInsets.all(10),
-//        children: [
-//          for ( final movie in provider.userMovies) MovieListItem(movie: movie)
-//        ],
-//      ),
-//    );
   }
 }

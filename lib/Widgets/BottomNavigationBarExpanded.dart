@@ -4,10 +4,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:provider/provider.dart';
-
-import 'MState.dart';
-import 'Shared/MIconRateButton.dart';
 import 'Shared/MovieRateButtons.dart';
 
 class MoviesBottomNavigationBarExpanded extends StatelessWidget {

@@ -4,31 +4,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:provider/provider.dart';
 
 import 'MoviesFilter.dart';
+import 'Providers/MoviesState.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MIconButton.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-//    return BottomAppBar(
-//      color: MColors.AdditionalColor,
-////      shape: CircularNotchedRectangle(),
-//      child: IconTheme(
-//        data: IconThemeData(color: Colors.white),
-//        child: Row(
-//          children: [
-//            IconButton(
-//              tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
-//              icon: const Icon(Icons.menu),
-//                onPressed: () {
-//              },
-//            ),
-//          ],
-//        ),
-//      ),
-//    );
+    final moviesState = Provider.of<MoviesState>(context);
+    final isAnyFilterSelected = moviesState.moviesOnly ||
+        moviesState.tvOnly ||
+        (!moviesState.isWatchlist() && (moviesState.likedOnly ||
+        moviesState.notLikedOnly));
+
     return BottomAppBar(
         color: Colors.transparent,
         shape: CircularNotchedRectangle(),
@@ -63,14 +54,13 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                 MIconButton(
                   icon: Icon(
                     Icons.movie_filter,
-                    color: MColors.FontsColor,
+                    color: isAnyFilterSelected ? Theme.of(context).accentColor : Theme.of(context).hintColor,
                   ),
                   onPressedCallback: () async {
                     showModalBottomSheet<void>(
-                      backgroundColor: Colors.transparent,
-                      context: context,
-                      builder: (BuildContext context) => MoviesFilter()
-                    );
+                        backgroundColor: Colors.transparent,
+                        context: context,
+                        builder: (BuildContext context) => MoviesFilter());
                   },
                 ),
                 MIconButton(
@@ -80,17 +70,6 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                   ),
                   onPressedCallback: () {},
                 ),
-//                FloatingActionButton(
-//                  onPressed: () {
-//                    print('Floating action button pressed');
-//                  },
-//                  child: const Icon(
-//                    Icons.add,
-//                    size: 35,
-//                  ),
-//                  backgroundColor: MColors.AdditionalColor,
-//                  foregroundColor: MColors.PrimaryColor,
-//                ),
                 SizedBox(
                   width: 80,
                 ),
