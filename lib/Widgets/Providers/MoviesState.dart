@@ -17,6 +17,8 @@ class MoviesState with ChangeNotifier {
   bool tvOnly = false;
   bool likedOnly = false;
   bool notLikedOnly = false;
+  var selectedRates = {MovieRate.liked, MovieRate.notLiked};
+  var selectedTypes = {MovieType.movie, MovieType.tv};
 
   void setUserMovies(List<Movie> userMovies) async {
     this.userMovies = userMovies;
@@ -46,136 +48,106 @@ class MoviesState with ChangeNotifier {
   changeMoviesOnlyFilter() {
     moviesOnly = !moviesOnly;
 
-    refreshMoviesByType();
+    if (moviesOnly) {
+      selectedTypes.remove(MovieType.tv);
+    } else {
+      selectedTypes.add(MovieType.tv);
+    }
+
+    refreshMovies();
   }
 
   changeTVOnlyFilter() {
     tvOnly = !tvOnly;
 
-    refreshMoviesByType();
+    if (tvOnly) {
+      selectedTypes.remove(MovieType.movie);
+    } else {
+      selectedTypes.add(MovieType.movie);
+    }
+
+    refreshMovies();
   }
 
   changeLikedOnlyFilter() {
     likedOnly = !likedOnly;
 
-    refreshMoviesByRate();
+    if (likedOnly) {
+      selectedRates.remove(MovieRate.notLiked);
+    } else {
+      selectedRates.add(MovieRate.notLiked);
+    }
+
+    refreshMovies();
   }
 
   changeNotLikedOnlyFilter() {
     notLikedOnly = !notLikedOnly;
 
-    refreshMoviesByRate();
+    if (notLikedOnly) {
+      selectedRates.remove(MovieRate.liked);
+    } else {
+      selectedRates.add(MovieRate.liked);
+    }
+
+    refreshMovies();
   }
 
-  refreshMoviesByType() {
-    var initialWatchlistMovies = userMovies
-        .where((movie) => movie.movieRate == MovieRate.addedToWatchlist)
-        .toList();
+  refreshMovies() {
+    var actualWatchlistMovies = getWatchlistMovies();
+    var actualViewedMovies = getViewedMovies();
 
-    var initialViewedMovies = userMovies
-        .where((movie) =>
-            movie.movieRate == MovieRate.liked ||
-            movie.movieRate == MovieRate.notLiked)
-        .toList();
-
-    refreshMoviesListByType(
-        watchlistMovies, initialWatchlistMovies, watchlistKey);
-    refreshMoviesListByType(viewedMovies, initialViewedMovies, viewedListKey);
+    refreshMoviesList(watchlistMovies, actualWatchlistMovies, watchlistKey);
+    refreshMoviesList(viewedMovies, actualViewedMovies, viewedListKey);
 
     notifyListeners();
   }
 
-  refreshMoviesByRate() {
-    var initialViewedMovies = userMovies
-        .where((movie) =>
-            movie.movieRate == MovieRate.liked ||
-            movie.movieRate == MovieRate.notLiked)
-        .toList();
+  void refreshMoviesList(List<Movie> moviesList, List<Movie> actualMoviesList,
+      GlobalKey<AnimatedListState> key) {
+    var moviesToAdd = new List<Movie>();
+    var moviesToRemove = new List<Movie>();
 
-    refreshMoviesListByRate(viewedMovies, initialViewedMovies, viewedListKey);
+    actualMoviesList.forEach((movie) {
+      if (!moviesList.contains(movie)) moviesToAdd.add(movie);
+    });
 
-    notifyListeners();
-  }
+    moviesList.forEach((movie) {
+      if (!actualMoviesList.contains(movie)) moviesToRemove.add(movie);
+    });
 
-  void refreshMoviesListByType(List<Movie> moviesList,
-      List<Movie> initialMoviesList, GlobalKey<AnimatedListState> key) {
-    if (moviesOnly && !tvOnly) {
-      var tv =
-          moviesList.where((movie) => movie.movieType == MovieType.tv).toList();
+    moviesToAdd.forEach((movie) {
+      addMovieToList(movie, moviesList, key, actualMoviesList.indexOf(movie));
+    });
 
-      removeMoviesFromList(tv, moviesList, key);
-    }
-
-    if (!moviesOnly && tvOnly) {
-      var moviesInList = moviesList
-          .where((movie) => movie.movieType == MovieType.movie)
-          .toList();
-
-      removeMoviesFromList(moviesInList, moviesList, key);
-    }
-
-    if ((!moviesOnly && !tvOnly) || (moviesOnly && tvOnly)) {
-      if (initialMoviesList.length != moviesList.length) {
-        initialMoviesList.forEach((movie) {
-          if (!moviesList.contains(movie)) {
-            addMovieToList(
-                movie, moviesList, key, initialMoviesList.indexOf(movie));
-          }
-        });
-      }
-    }
-  }
-
-  void refreshMoviesListByRate(List<Movie> moviesList,
-      List<Movie> initialMoviesList, GlobalKey<AnimatedListState> key) {
-    if (likedOnly && !notLikedOnly) {
-      var notLiked = moviesList
-          .where((movie) => movie.movieRate == MovieRate.notLiked)
-          .toList();
-
-      removeMoviesFromList(notLiked, moviesList, key);
-    }
-
-    if (!likedOnly && notLikedOnly) {
-      var liked = moviesList
-          .where((movie) => movie.movieRate == MovieRate.liked)
-          .toList();
-
-      removeMoviesFromList(liked, moviesList, key);
-    }
-
-    if ((!likedOnly && !notLikedOnly) || (likedOnly && tvOnly)) {
-      if (initialMoviesList.length != moviesList.length) {
-        initialMoviesList.forEach((movie) {
-          if (!moviesList.contains(movie)) {
-            addMovieToList(
-                movie, moviesList, key, initialMoviesList.indexOf(movie));
-          }
-        });
-      }
-    }
+    moviesToRemove.forEach((movie) {
+      removeMovieFromList(movie, moviesList, key);
+    });
   }
 
   getWatchlistMovies() {
-    var result = watchlistMovies;
-
-    if (moviesOnly) {
-      result = result
-          .where((element) => element.movieType == MovieType.movie)
-          .toList();
-    }
+    var result = userMovies
+        .where((movie) =>
+            movie.movieRate == MovieRate.addedToWatchlist &&
+            (selectedTypes.length == 0 ||
+                selectedTypes.contains(movie.movieType)))
+        .toList();
 
     return result;
   }
 
   getViewedMovies() {
-    var result = viewedMovies;
+    var selectedRates = this.selectedRates;
 
-    if (moviesOnly) {
-      result = result
-          .where((element) => element.movieType == MovieType.movie)
-          .toList();
-    }
+    if (selectedRates.length == 0) selectedRates = {MovieRate.liked, MovieRate.notLiked};
+
+    var result = userMovies
+        .where((movie) =>
+            (selectedTypes.length == 0 ||
+                selectedTypes.contains(movie.movieType)) &&
+                selectedRates.contains(movie.movieRate))
+        .toList();
+
     return result;
   }
 
@@ -247,13 +219,6 @@ class MoviesState with ChangeNotifier {
     if (key.currentState != null) key.currentState.insertItem(index);
 
     moviesList.insert(index, movieToAdd);
-  }
-
-  void removeMoviesFromList(List<Movie> moviesToRemove, List<Movie> moviesList,
-      GlobalKey<AnimatedListState> key) {
-    moviesToRemove.forEach((movie) {
-      removeMovieFromList(movie, moviesList, key);
-    });
   }
 
   void removeMovieFromList(Movie movieToRemove, List<Movie> moviesList,

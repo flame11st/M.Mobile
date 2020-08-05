@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 //
 //class MColors {
@@ -33,4 +34,8 @@ class MTextStyles {
       fontSize: 15.0,
       color: MColors.SecondaryFontsColor,
       fontWeight: FontWeight.bold);
+}
+
+class MyGlobals {
+  static GlobalKey scaffoldKey;
 }

@@ -25,8 +25,7 @@ class MyMoviesState extends State<MyMovies> {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    if (moviesState.watchlistMovies.length > 0 ||
-        moviesState.viewedMovies.length > 0) return;
+    if (moviesState.userMovies.length > 0) return;
 
     serviceAgent.state = userState;
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
@@ -75,21 +74,6 @@ class MyMoviesState extends State<MyMovies> {
           ))
         ],
       ),
-//
-//      floatingActionButton: FloatingActionButton(
-//        onPressed: () {
-//          print('Floating action button pressed');
-//        },
-//        child: const Icon(
-//          Icons.add,
-//          size: 35,
-//        ),
-//        backgroundColor: MColors.AdditionalColor,
-//        foregroundColor: MColors.PrimaryColor,
-//      ),
-//      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-//      backgroundColor: Colors.transparent,
-//      bottomNavigationBar: MoviesBottomNavigationBar(),
     );
   }
 }

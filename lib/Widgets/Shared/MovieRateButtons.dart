@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Variables/Variables.dart';
 
@@ -48,7 +49,7 @@ class MovieRateButtons extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 MIconRateButton(
-                  icon: Icon(Icons.thumb_up,
+                  icon: Icon(Icons.favorite_border,
                       color: movieRate == MovieRate.liked
                           ? Colors.greenAccent
                           : MColors.FontsColor),
@@ -59,7 +60,7 @@ class MovieRateButtons extends StatelessWidget {
                   width: width,
                 ),
                 MIconRateButton(
-                  icon: Icon(Icons.thumb_down,
+                  icon: Icon(FontAwesome5.ban,
                       color: movieRate == MovieRate.notLiked
                           ? Colors.redAccent
                           : MColors.FontsColor),

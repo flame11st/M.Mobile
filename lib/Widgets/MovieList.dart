@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
+
 //import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +23,7 @@ class MovieListState extends State<MovieList> {
     final provider = Provider.of<MoviesState>(context);
     final List<Movie> watchlistMovies = provider.watchlistMovies;
     final List<Movie> viewedMovies = provider.viewedMovies;
+    MyGlobals.scaffoldKey = new GlobalKey();
 
     return DefaultTabController(
       length: 2,
@@ -30,8 +32,16 @@ class MovieListState extends State<MovieList> {
           backgroundColor: MColors.PrimaryColor,
           title: TabBar(
             tabs: [
-              Tab(child: Text('Watchlist', style: MTextStyles.TabTitle,)),
-              Tab(child: Text('Viewed', style: MTextStyles.TabTitle,)),
+              Tab(
+                  child: Text(
+                'Watchlist',
+                style: MTextStyles.TabTitle,
+              )),
+              Tab(
+                  child: Text(
+                'Viewed',
+                style: MTextStyles.TabTitle,
+              )),
             ],
           ),
         ),
@@ -57,7 +67,8 @@ class MovieListState extends State<MovieList> {
               ),
             ],
           ),
-        )
+        ),
+        key: MyGlobals.scaffoldKey,
       ),
     );
   }

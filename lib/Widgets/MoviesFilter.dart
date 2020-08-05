@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/FilterButton.dart';
 import 'package:fluttericon/font_awesome_icons.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:fluttericon/elusive_icons.dart';
+
 
 class MoviesFilter extends StatelessWidget {
   @override
@@ -67,7 +70,7 @@ class MoviesFilter extends StatelessWidget {
                   }
                 ),
                 FilterIcon(
-                  icon: FontAwesome.thumbs_down,
+                  icon: FontAwesome5.ban,
                   text: 'Not Liked',
                   isActive: moviesState.notLikedOnly,
                   onPressedCallback: () {
