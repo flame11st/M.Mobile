@@ -52,17 +52,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     child: Material(
                       type: MaterialType.transparency,
                       child: Container(
-//                        padding: EdgeInsets.fromLTRB(15, 0, 15, 15),
-//                        decoration: BoxDecoration(
-//                          boxShadow: BoxShadowNeomorph.shadow,
-//                          borderRadius: BorderRadius.circular(20.0),
-//
-//                        ),
                         color: MColors.PrimaryColor,
                         margin: EdgeInsets.fromLTRB(12, 20, 12, 20),
-//                                    color: MColors.SecondaryColor,
                         child: ListView(
-//                              crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Container(
                               height: 100,

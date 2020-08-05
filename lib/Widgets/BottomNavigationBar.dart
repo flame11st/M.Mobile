@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'MoviesFilter.dart';
 import 'Providers/MoviesState.dart';
+import 'Settings.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MIconButton.dart';
 
@@ -63,12 +64,18 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                         builder: (BuildContext context) => MoviesFilter());
                   },
                 ),
-                MIconButton(
-                  icon: Icon(
-                    Icons.settings,
-                    color: MColors.FontsColor,
+                Hero(
+                  tag: 'settings',
+                  child: MIconButton(
+                    icon: Icon(
+                      Icons.settings,
+                      color: MColors.FontsColor,
+                    ),
+                    onPressedCallback: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (ctx) => Settings()));
+                    },
                   ),
-                  onPressedCallback: () {},
                 ),
                 SizedBox(
                   width: 80,
