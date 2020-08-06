@@ -11,17 +11,21 @@ class MIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width != null ? width : 50,
-      decoration: BoxDecoration(
-        boxShadow: BoxShadowNeomorph.circleShadow,
-        color: MColors.PrimaryColor,
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        icon: icon,
-        onPressed: () => onPressedCallback(),
-      )
-    );
+    return Material(
+        shadowColor: Colors.transparent,
+        color: Colors.transparent,
+        child: Container(
+            width: width != null ? width : 50,
+            decoration: BoxDecoration(
+              boxShadow: BoxShadowNeomorph.circleShadow,
+              color: MColors.PrimaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: icon,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+              onPressed: () => onPressedCallback(),
+            )));
   }
 }
