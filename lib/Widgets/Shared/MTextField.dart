@@ -14,33 +14,36 @@ class MTextField extends StatelessWidget {
         children: <Widget>[
           Padding(
             padding: EdgeInsets.only(left: 15),
-            child: Text(text, style: MTextStyles.Title,),
+            child: Text(
+              text,
+              style: MTextStyles.Title,
+            ),
           ),
-      Container(
-        margin: EdgeInsets.only(top: 10),
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: Colors.white.withOpacity(0.25),
-                offset: Offset(-4.0, -4.0),
-                blurRadius: 6,
+          Container(
+              margin: EdgeInsets.only(top: 10),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.25),
+                    offset: Offset(-4.0, -4.0),
+                    blurRadius: 6,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.6),
+                    offset: Offset(6.0, 6.0),
+                    blurRadius: 8,
+                  ),
+                ],
+                borderRadius: BorderRadius.circular(32.0),
+                color: Theme.of(context).primaryColor,
               ),
-              BoxShadow(
-                color: Colors.black.withOpacity(0.6),
-                offset: Offset(6.0, 6.0),
-                blurRadius: 8,
-              ),
-            ],
-            borderRadius: BorderRadius.circular(32.0),
-            color: Theme.of(context).primaryColor,
-          ),
-          child: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-                contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(32.0))),
-          ))
-    ]);
+              child: TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                    contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(32.0))),
+              ))
+        ]);
   }
 }
