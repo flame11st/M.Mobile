@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
@@ -31,6 +32,9 @@ class MyMoviesState extends State<MyMovies> {
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
     Iterable iterableMovies = json.decode(moviesResponse.body);
+
+    if (iterableMovies.length == 0) return;
+
     List<Movie> movies = iterableMovies.map((model) {
       return Movie.fromJson(model);
     }).toList();
@@ -38,9 +42,22 @@ class MyMoviesState extends State<MyMovies> {
     moviesState.setUserMovies(movies);
   }
 
+  setUserInfo() async {
+    final userState = Provider.of<UserState>(context);
+
+    if (userState.user != null) return;
+
+    serviceAgent.state = userState;
+    final userInfoResponse = await serviceAgent.getUserInfo(userState.userId);
+    final user = User.fromJson(json.decode(userInfoResponse.body));
+
+    userState.user = user;
+  }
+
   @override
   Widget build(BuildContext context) {
     setUserMovies();
+    setUserInfo();
 
     return Scaffold(
       resizeToAvoidBottomPadding: false,

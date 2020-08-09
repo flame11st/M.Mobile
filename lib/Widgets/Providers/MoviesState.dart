@@ -244,10 +244,19 @@ class MoviesState with ChangeNotifier {
     movie.rating = Movie.getMovieRating(movie.likedVotes, movie.dislikedVotes);
   }
 
+  clear() {
+    watchlistKey = new GlobalKey<AnimatedListState>();
+    viewedListKey = new GlobalKey<AnimatedListState>();
+
+    userMovies.clear();
+    watchlistMovies.clear();
+    viewedMovies.clear();
+  }
+
   //Animated List area
-  final GlobalKey<AnimatedListState> watchlistKey =
+  GlobalKey<AnimatedListState> watchlistKey =
       GlobalKey<AnimatedListState>();
-  final GlobalKey<AnimatedListState> viewedListKey =
+  GlobalKey<AnimatedListState> viewedListKey =
       GlobalKey<AnimatedListState>();
 
   Widget buildItem(Movie movie, Animation animation) {

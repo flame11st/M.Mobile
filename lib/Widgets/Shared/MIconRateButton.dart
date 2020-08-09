@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
-import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/MoviesState.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MIconButton.dart';
 import 'package:provider/provider.dart';
+import 'MSnackBar.dart';
 
 class MIconRateButton extends StatelessWidget {
   final icon;
@@ -62,22 +61,7 @@ class MIconRateButton extends StatelessWidget {
 
         await new Future.delayed(const Duration(milliseconds: 300));
 
-        Scaffold.of(MyGlobals.scaffoldKey.currentContext).showSnackBar(SnackBar(
-          content: Container(
-              height: 40,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                  child: Text(
-                text,
-                style: TextStyle(
-                    color: Theme.of(MyGlobals.scaffoldKey.currentContext)
-                        .primaryColor,
-                    fontSize: 16),
-              ))),
-          duration: Duration(seconds: 2),
-          backgroundColor:
-              Theme.of(MyGlobals.scaffoldKey.currentContext).accentColor,
-        ));
+        MSnackBar.showSnackBar(text, true, null);
 
         await new Future.delayed(const Duration(milliseconds: 300));
 

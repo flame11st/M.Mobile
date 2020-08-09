@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mmobile/Objects/User.dart';
 import '../../Services/ServiceAgent.dart';
 
 class UserState with ChangeNotifier {
@@ -16,6 +17,7 @@ class UserState with ChangeNotifier {
   String userId = '';
   String token = '';
   String refreshToken = '';
+  User user;
 
   void setInitialData() async {
     var storedToken = await storage.read(key: 'token');
@@ -36,6 +38,15 @@ class UserState with ChangeNotifier {
 
     isAppLoaded = true;
 
+    notifyListeners();
+  }
+
+  logout() async {
+    isUserAuthorized = false;
+    user = null;
+    userId = null;
+
+    await storage.deleteAll();
     notifyListeners();
   }
 

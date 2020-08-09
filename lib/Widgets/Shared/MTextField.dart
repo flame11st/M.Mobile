@@ -16,13 +16,13 @@ class MTextField extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withOpacity(0.20),
+              color: Colors.white.withOpacity(0.2),
               offset: Offset(-4.0, -4.0),
               blurRadius: 6,
             ),
             BoxShadow(
               color: Colors.black.withOpacity(0.6),
-              offset: Offset(6.0, 6.0),
+              offset: Offset(5.0, 5.0),
               blurRadius: 6,
             ),
           ],

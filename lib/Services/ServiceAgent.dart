@@ -26,6 +26,38 @@ class ServiceAgent {
     return get('User/GetUserMovies?userId=$userId');
   }
 
+  getUserInfo(String userId) {
+    return get('User/GetUserInfo?userId=$userId');
+  }
+
+  changeUserInfo(String userId, String name, String email) {
+    return post(
+        'User/ChangeUserInfo',
+        jsonEncode(<String, String>{
+          'Id': userId,
+          'Name': name,
+          'Email': email,
+        }));
+  }
+
+  changeUserPassword(String userId, String oldPassword, String newPassword) {
+    return post(
+        'User/ChangeUserPassword',
+        jsonEncode(<String, String>{
+          'UserId': userId,
+          'OldPassword': oldPassword,
+          'NewPassword': newPassword,
+        }));
+  }
+
+  clearUserMovies(String userId) {
+    return get('User/ClearUserMovies?userId=$userId');
+  }
+
+  deleteUser(String userId) {
+    return get('User/DeleteUser?userId=$userId');
+  }
+
   getMovie(String movieId) {
     return get('movies/GetMovie?id=$movieId');
   }
@@ -35,16 +67,20 @@ class ServiceAgent {
   }
 
   rateMovie(String movieId, String userId, int movieRate) {
-    return post('User/RateMovie', jsonEncode({
-      'MovieId': movieId,
-      'UserId': userId,
-      'MovieRate': movieRate,
-    }));
+    return post(
+        'User/RateMovie',
+        jsonEncode({
+          'MovieId': movieId,
+          'UserId': userId,
+          'MovieRate': movieRate,
+        }));
   }
 
   get(String uri) async {
     Map<String, String> headers = {};
-    if (state != null) headers.putIfAbsent(HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+    if (state != null)
+      headers.putIfAbsent(
+          HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
     var response = await http.get(baseUrl + uri, headers: headers);
 
@@ -52,7 +88,9 @@ class ServiceAgent {
       headers.clear();
       bool isTokenRefreshed = await refreshAccessToken();
       if (isTokenRefreshed) {
-        if (state != null) headers.putIfAbsent(HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+        if (state != null)
+          headers.putIfAbsent(
+              HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
         response = await http.get(baseUrl + uri, headers: headers);
       }
@@ -63,14 +101,18 @@ class ServiceAgent {
 
   post(String uri, postData) async {
     var headers = {'Content-Type': 'application/json; charset=UTF-8'};
-    if (state != null) headers.putIfAbsent(HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+    if (state != null)
+      headers.putIfAbsent(
+          HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
-    var response = await http.post(baseUrl + uri, body: postData, headers: headers);
+    var response =
+        await http.post(baseUrl + uri, body: postData, headers: headers);
 
     if (response.statusCode == 401) {
       bool isTokenRefreshed = await refreshAccessToken();
       if (isTokenRefreshed) {
-        response = await http.post(baseUrl + uri, body: postData, headers: <String, String>{
+        response = await http
+            .post(baseUrl + uri, body: postData, headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
           HttpHeaders.authorizationHeader: "Bearer ${state.token}"
         });
