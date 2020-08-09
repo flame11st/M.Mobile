@@ -43,6 +43,7 @@ class MyMoviesState extends State<MyMovies> {
     setUserMovies();
 
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       body: Stack(
         children: <Widget>[
           MovieList(),

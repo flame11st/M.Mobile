@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
-
-import 'package:flutter_neumorphic/flutter_neumorphic.dart';
+import 'Shared/MIconButton.dart';
 import 'Shared/MTextField.dart';
+import 'package:fluttericon/entypo_icons.dart';
 
 class Settings extends StatefulWidget {
   @override
@@ -18,80 +18,178 @@ class SettingsState extends State<Settings> {
   final oldPasswordController = TextEditingController();
   final newPasswordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  bool showPasswordChanging = false;
+  bool showRemoveUserButtons = false;
+
+  //          decoration: InputDecoration(
+//            contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+//          ),
 
   @override
   Widget build(BuildContext context) {
-    final nameField = MTextField(controller: nameController, text: "Name",);
-    final emailField = MTextField(controller: emailController, text: "Email",);
-    final oldPasswordField = MTextField(controller: oldPasswordController, text: "Old Password",);
-    final newPasswordField = MTextField(controller: newPasswordController, text: "New Password",);
-    final confirmPasswordField = MTextField(controller: confirmPasswordController, text: "Confirm Password",);
+    final nameField = MTextField(
+        text: "Name",
+        child: TextField(
+          controller: nameController,
+        ));
+    final emailField = MTextField(
+        text: "Email",
+        child: TextField(
+          controller: emailController,
+        ));
 
-    final divider = Divider(
-      color: Theme.of(context).hintColor,
-      thickness: 1,
-      endIndent: 0,
+    final changePasswordField = MTextField(
+      text: 'Change Password',
+      button: MButton(
+        text: 'Change',
+        onPressedCallback: () => {},
+      ),
+      child: new Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(height: 10,),
+          Text('Old Password'),
+          TextField(
+            controller: oldPasswordController,
+          ),
+          SizedBox(height: 5,),
+          Text('New Password'),
+          TextField(
+            controller: newPasswordController,
+          ),
+          SizedBox(height: 5,),
+          Text('Confirm Password'),
+          TextField(
+            controller: confirmPasswordController,
+          )
+        ],
+      ),
     );
 
-    return Material(
-        child: Container(
-            margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-            padding: EdgeInsets.all(20),
-            color: Theme.of(context).primaryColor,
-            child: ListView(
-//              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: <Widget>[
-                    Hero(
-                        tag: 'settings',
-                        child: Icon(
-                          Icons.settings,
-                          size: 30,
-                        )),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Text(
-                      'Settings',
-                      style: MTextStyles.BodyText,
-                    )
-                  ],
-                ),
-                nameField,
-                divider,
-                emailField,
-                divider,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    RichText( text: TextSpan(
-                      style: MTextStyles.BodyText,
-                      children: <TextSpan>[
-                        new TextSpan(text: 'User movies count:   ', style: MTextStyles.Title),
-                        new TextSpan(text: '54')
-                      ],
-                    )),
-                    MButton(
-                      text: 'Clear all',
-                      onPressedCallback: () => {},
-                    )
-                  ],
-                ),
-                divider,
-                  Text('Change password', style: MTextStyles.Title,),
-                oldPasswordField,
-                newPasswordField,
-                confirmPasswordField,
-
-                MButton(
-                  text: 'Close',
-                  onPressedCallback: () => Navigator.of(context).pop(),
-                ),
+    final userMoviesCountField = MTextField(child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        RichText(
+            text: TextSpan(
+              style: MTextStyles.BodyText,
+              children: <TextSpan>[
+                new TextSpan(
+                    text: 'User movies count:   ',
+                    style: MTextStyles.Title),
+                new TextSpan(text: '54')
               ],
-            )));
+            )),
+        MButton(
+          text: 'Clear all',
+          onPressedCallback: () => {},
+        )
+      ],
+    ));
+
+    final removeUserField = MTextField(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          SizedBox(width: 10),
+          Expanded(
+            child: Opacity(
+              opacity: showRemoveUserButtons ? 1 : 0,
+              child: Column(
+                children: <Widget>[
+                  Text(
+                    'Are you want to remove user?',
+                    style: MTextStyles.BodyText,
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    mainAxisAlignment:
+                    MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      MIconButton(
+                        icon: Icon(
+                          Icons.check,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                      MIconButton(
+                        icon: Icon(
+                          Icons.close,
+                          color: Colors.greenAccent,
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+          MButton(
+            text: 'Remove user',
+            onPressedCallback: () => {
+              setState(() =>
+              showRemoveUserButtons = !showRemoveUserButtons)
+            },
+          )
+        ],
+      ),
+    );
+
+    final headingField = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            IconButton(
+              icon: new Icon(Icons.arrow_back, size: 25,),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            Hero(
+                tag: 'settings',
+                child: Icon(
+                  Icons.settings,
+                  size: 25,
+                )),
+            SizedBox(
+              width: 10,
+            ),
+            Text(
+              'Settings',
+              style: MTextStyles.BodyText,
+            )
+          ],
+        ),
+        IconButton(
+          icon: new Icon(Entypo.logout, size: 25,),
+          onPressed: () => Navigator.of(context).pop(),
+        )
+      ],
+    );
+
+    return Scaffold(
+        backgroundColor: Theme.of(context).primaryColor,
+        body: Container(
+          child: SingleChildScrollView(
+            child: Container(
+                margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                padding: EdgeInsets.all(20),
+                color: Theme.of(context).primaryColor,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    headingField,
+                    nameField,
+                    emailField,
+                    userMoviesCountField,
+                    changePasswordField,
+                    removeUserField
+                  ],
+                )),
+          ),
+        ));
   }
 }

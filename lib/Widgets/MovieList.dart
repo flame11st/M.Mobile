@@ -28,6 +28,7 @@ class MovieListState extends State<MovieList> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        resizeToAvoidBottomPadding: false,
         appBar: AppBar(
           backgroundColor: MColors.PrimaryColor,
           title: TabBar(
