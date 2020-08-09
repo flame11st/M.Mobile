@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
 
-class MTextField extends StatelessWidget {
+class MCard extends StatelessWidget {
   final text;
   final child;
   final button;
 
-  MTextField({this.text, this.child, this.button});
+  MCard({this.text, this.child, this.button});
 
   @override
   Widget build(BuildContext context) {

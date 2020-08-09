@@ -13,7 +13,7 @@ class MSnackBar {
                           child: Text(
                               text,
                               style: TextStyle(
-                                      color: Theme.of(MyGlobals.scaffoldKey.currentContext)
+                                      color: Theme.of(context)
                                               .primaryColor,
                                       fontSize: 16),
                           ))),

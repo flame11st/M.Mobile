@@ -55,6 +55,8 @@ class MovieListState extends State<MovieList> {
                 key: provider.watchlistKey,
                 initialItemCount: watchlistMovies.length,
                 itemBuilder: (context, index, animation) {
+                  if (watchlistMovies.length <= index) return null;
+
                   return provider.buildItem(watchlistMovies[index], animation);
                 },
               ),
@@ -63,6 +65,8 @@ class MovieListState extends State<MovieList> {
                 key: provider.viewedListKey,
                 initialItemCount: viewedMovies.length,
                 itemBuilder: (context, index, animation) {
+                  if (viewedMovies.length <= index) return null;
+
                   return provider.buildItem(viewedMovies[index], animation);
                 },
               ),

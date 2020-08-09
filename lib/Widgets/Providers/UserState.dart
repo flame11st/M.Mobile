@@ -13,6 +13,7 @@ class UserState with ChangeNotifier {
 
   bool isUserAuthorized = false;
   bool isAppLoaded = false;
+  bool isSignedInThroughGoogle = false;
   String userName = '';
   String userId = '';
   String token = '';

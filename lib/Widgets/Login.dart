@@ -1,100 +1,184 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fluttericon/entypo_icons.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:mmobile/Variables/Validators.dart';
+import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Widgets/Shared/MCard.dart';
+import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Services/ServiceAgent.dart';
 import 'Providers/UserState.dart';
+import 'Shared/MButton.dart';
 
 class Login extends StatefulWidget {
-    @override
-    State<StatefulWidget> createState() {
-        return LoginState();
-    }
+  @override
+  State<StatefulWidget> createState() {
+    return LoginState();
+  }
 }
 
 class LoginState extends State<Login> {
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final serviceAgent = ServiceAgent();
-    final storage = new FlutterSecureStorage();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final serviceAgent = ServiceAgent();
+  final storage = new FlutterSecureStorage();
 
-    login(UserState state) async {
-        var response = await serviceAgent.login(emailController.text, passwordController.text);
+  final _formKey = GlobalKey<FormState>();
 
-        if (response.statusCode == 200) {
-            var responseJson = json.decode(response.body);
-            var accessToken = responseJson['access_token'];
-            var refreshToken = responseJson['refresh_token'];
-            var userId = responseJson['userId'];
-            var userName = responseJson['username'];
+  bool signInButtonActive = false;
 
-            state.setInitialUserData(accessToken, refreshToken, userId, userName);
-        } else {
-        }
+  @override
+  void initState() {
+    super.initState();
+
+    emailController.addListener(setSignInButtonActive);
+    passwordController.addListener(setSignInButtonActive);
+  }
+
+  @override
+  void dispose() {
+    passwordController.dispose();
+    emailController.dispose();
+
+    super.dispose();
+  }
+
+  setSignInButtonActive() {
+    var signInButtonActive = _formKey.currentState != null &&
+        _formKey.currentState.validate() &&
+        emailController.text.length > 0 &&
+        passwordController.text.length > 0;
+
+    if (signInButtonActive == this.signInButtonActive) return;
+
+    setState(() {
+      this.signInButtonActive = signInButtonActive;
+    });
+  }
+
+  login(UserState state) async {
+    var response =
+        await serviceAgent.login(emailController.text, passwordController.text);
+
+    if (response.statusCode == 200) {
+      var responseJson = json.decode(response.body);
+      var accessToken = responseJson['access_token'];
+      var refreshToken = responseJson['refresh_token'];
+      var userId = responseJson['userId'];
+      var userName = responseJson['username'];
+
+      state.setInitialUserData(accessToken, refreshToken, userId, userName);
+    } else {
+      MSnackBar.showSnackBar(
+          'Login failed', false, MyGlobals.scaffoldLoginKey.currentContext);
     }
+  }
 
-    @override
-        Widget build(BuildContext context) {
-            final provider = Provider.of<UserState>(context);
+  @override
+  Widget build(BuildContext context) {
+    if (MyGlobals.scaffoldLoginKey == null)
+      MyGlobals.scaffoldLoginKey = new GlobalKey();
 
-            final emailField = TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                    contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                    hintText: "Email",
-                    border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(32.0))),
-            );
+    final provider = Provider.of<UserState>(context);
 
-            final passwordField = TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                    contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                    hintText: "Password",
-                    border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(32.0))),
-            );
+    final emailField = TextFormField(
+      validator: (value) => emailController.text.isNotEmpty
+          ? Validators.emailValidator(emailController.text)
+          : null,
+      controller: emailController,
+      decoration: InputDecoration(
+          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+          hintText: "Email",
+          hintStyle: MTextStyles.BodyText),
+    );
 
-            final loginButton = Material(
-                elevation: 5.0,
-                borderRadius: BorderRadius.circular(30.0),
-                color: Color(0xff01A0C7),
-                child: MaterialButton(
-                    minWidth: MediaQuery.of(context).size.width,
-                    padding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                    onPressed: () {
-                        login(provider);
-                    },
-                    child: Text("Login",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-            ));
+    final passwordField = TextFormField(
+      validator: (value) => passwordController.text.isNotEmpty
+          ? Validators.passwordValidator(passwordController.text)
+          : null,
+      controller: passwordController,
+      obscureText: true,
+      decoration: InputDecoration(
+          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+          hintText: "Password",
+          hintStyle: MTextStyles.BodyText),
+    );
 
-            return Scaffold (
-                body: Center(
-                    child: Container(
-                        child: Column(
-                            children: <Widget>[
-                                SizedBox(height: 45.0),
-                                emailField,
-                                SizedBox(height: 25.0),
-                                passwordField,
-                                SizedBox(
-                                    height: 35.0,
-                                ),
-                                loginButton,
-                                SizedBox(
-                                    height: 15.0,
-                                )
-                            ],
-                        )
+    final loginButton = MButton(
+      text: 'Sign in',
+      onPressedCallback: () => login(provider),
+      active: signInButtonActive,
+      width: MediaQuery.of(context).size.width,
+      height: 40,
+      prependIcon: Entypo.login,
+    );
+
+    final googleLoginButton = MButton(
+      text: 'Sign in with Google',
+      onPressedCallback: () => {},
+      active: true,
+      width: MediaQuery.of(context).size.width,
+      height: 50,
+      prependIcon: FontAwesome5.google,
+    );
+
+    final signUpButton = MButton(
+      text: 'Sign up',
+      onPressedCallback: () => {},
+      active: true,
+      width: MediaQuery.of(context).size.width,
+      height: 50,
+      prependIcon: FontAwesome5.user_plus,
+    );
+
+    return Scaffold(
+        backgroundColor: Theme.of(context).primaryColor,
+        body: Container(
+          margin: EdgeInsets.only(top: 40),
+          key: MyGlobals.scaffoldLoginKey,
+          child: SingleChildScrollView(
+            child: Container(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                color: Theme.of(context).primaryColor,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(
+                      'Hello & Welcome to Moviediary',
+                      style: TextStyle(fontSize: 25),
                     ),
-                ),
-        );
-    }
-
+                    SizedBox(
+                      height: 30,
+                    ),
+                    MCard(
+                      child: Container(
+                          child: Form(
+                        key: _formKey,
+                        child: Column(
+                          children: <Widget>[
+                            emailField,
+                            SizedBox(height: 25.0),
+                            passwordField,
+                            SizedBox(height: 35.0),
+                            loginButton,
+                          ],
+                        ),
+                      )),
+                    ),
+                    SizedBox(
+                      height: 40,
+                    ),
+                    googleLoginButton,
+                    SizedBox(
+                      height: 30,
+                    ),
+                    signUpButton,
+                  ],
+                )),
+          ),
+        ));
+  }
 }

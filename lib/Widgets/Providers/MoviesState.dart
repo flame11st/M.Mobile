@@ -125,7 +125,7 @@ class MoviesState with ChangeNotifier {
     });
   }
 
-  getWatchlistMovies() {
+  List<Movie> getWatchlistMovies() {
     var result = userMovies
         .where((movie) =>
             movie.movieRate == MovieRate.addedToWatchlist &&
@@ -136,7 +136,7 @@ class MoviesState with ChangeNotifier {
     return result;
   }
 
-  getViewedMovies() {
+  List<Movie> getViewedMovies() {
     var selectedRates = this.selectedRates;
 
     if (selectedRates.length == 0) selectedRates = {MovieRate.liked, MovieRate.notLiked};
@@ -245,12 +245,10 @@ class MoviesState with ChangeNotifier {
   }
 
   clear() {
-    watchlistKey = new GlobalKey<AnimatedListState>();
-    viewedListKey = new GlobalKey<AnimatedListState>();
+    getWatchlistMovies().forEach((element) => removeMovieFromList(element, watchlistMovies, watchlistKey));
+    getViewedMovies().forEach((element) => removeMovieFromList(element, viewedMovies, viewedListKey));
 
     userMovies.clear();
-    watchlistMovies.clear();
-    viewedMovies.clear();
   }
 
   //Animated List area

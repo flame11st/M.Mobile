@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
+import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
@@ -9,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MIconButton.dart';
-import 'Shared/MTextField.dart';
+import 'Shared/MCard.dart';
 import 'package:fluttericon/entypo_icons.dart';
 
 class Settings extends StatefulWidget {
@@ -126,36 +127,17 @@ class SettingsState extends State<Settings> {
     }
   }
 
-  removeUser(String userId) async {
+  removeUser(
+      String userId, UserState userState, MoviesState moviesState) async {
     var removeUserResponse = await serviceAgent.deleteUser(userId);
 
     if (removeUserResponse.statusCode == 200) {
-      //TODO: Add logout logic here
+      userState.logout();
+      moviesState.clear();
+      Navigator.of(context).pop();
+    } else {
+      MSnackBar.showSnackBar('Something went wrong', false, context);
     }
-  }
-
-  String emailValidator(String value) {
-    Pattern pattern =
-        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
-    RegExp regex = new RegExp(pattern);
-
-    return !regex.hasMatch(value) ? 'E-mail must be valid' : null;
-  }
-
-  String passwordValidator(String value) {
-    final result = value.length < 8
-        ? 'Password length should be more then 8 characters'
-        : null;
-
-    return result;
-  }
-
-  String passwordsMatchValidator(String oldValue, String newValue) {
-    if (oldValue.length < 8 || newValue.length < 8) return null;
-
-    final result = oldValue != newValue ? 'Passwords does not match' : null;
-
-    return result;
   }
 
   @override
@@ -197,7 +179,47 @@ class SettingsState extends State<Settings> {
     if (initialUserEmail == null)
       emailController.text = initialUserEmail = userState.user.email;
 
-    final nameField = MTextField(
+    final headingField = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Hero(
+                tag: 'settings',
+                child: Icon(
+                  Icons.settings,
+                  size: 25,
+                )),
+            SizedBox(
+              width: 10,
+            ),
+            Text(
+              'Settings',
+              style: MTextStyles.BodyText,
+            )
+          ],
+        ),
+        Row(children: <Widget>[
+          Text(
+            'Logout',
+            style: MTextStyles.BodyText,
+          ),
+          IconButton(
+            icon: new Icon(
+              Entypo.logout,
+              size: 25,
+            ),
+            onPressed: () {
+              userState.logout();
+              moviesState.clear();
+              Navigator.of(context).pop();
+            },
+          )
+        ],),
+      ],
+    );
+
+    final nameField = MCard(
       text: "Name",
       child: Form(
         key: _formNameKey,
@@ -209,14 +231,14 @@ class SettingsState extends State<Settings> {
         ),
       ),
       button: MButton(
-        text: 'Apply',
+        text: 'Change name',
         onPressedCallback: () => changeUserInfo(userState.userId,
             nameController.text, initialUserEmail, userState.user, 'Name'),
         active: nameButtonActive,
       ),
     );
 
-    final emailField = MTextField(
+    final emailField = MCard(
       text: "Email",
       child: Form(
           key: _formEmailKey,
@@ -224,19 +246,44 @@ class SettingsState extends State<Settings> {
             validator: (value) {
               return emailController.text.isEmpty
                   ? 'Email can\'t be empty'
-                  : emailValidator(emailController.text);
+                  : Validators.emailValidator(emailController.text);
             },
             controller: emailController,
           )),
       button: MButton(
-        text: 'Apply',
+        text: 'Change Email',
         onPressedCallback: () => changeUserInfo(userState.userId,
             initialUserName, emailController.text, userState.user, 'Email'),
         active: emailButtonActive,
       ),
     );
 
-    final changePasswordField = MTextField(
+    final userMoviesCountField = MCard(
+        child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        RichText(
+            text: TextSpan(
+          style: MTextStyles.BodyText,
+          children: <TextSpan>[
+            new TextSpan(
+                text: 'User movies count:   ', style: MTextStyles.Title),
+            new TextSpan(text: userMoviesCount.toString())
+          ],
+        )),
+        MButton(
+          text: 'Clear all',
+          onPressedCallback: () {
+            clearUserMovies(userState.userId);
+            moviesState.clear();
+          },
+          active: true,
+        )
+      ],
+    ));
+
+    final changePasswordField = MCard(
         text: 'Change Password',
         button: MButton(
           text: 'Change',
@@ -255,7 +302,7 @@ class SettingsState extends State<Settings> {
               Text('Old Password'),
               TextFormField(
                 validator: (value) => oldPasswordController.text.isNotEmpty
-                    ? passwordValidator(oldPasswordController.text)
+                    ? Validators.passwordValidator(oldPasswordController.text)
                     : null,
                 controller: oldPasswordController,
                 obscureText: true,
@@ -268,9 +315,11 @@ class SettingsState extends State<Settings> {
                 validator: (value) {
                   if (newPasswordController.text.isEmpty) return null;
 
-                  var result = passwordValidator(newPasswordController.text);
+                  var result =
+                      Validators.passwordValidator(newPasswordController.text);
                   if (result == null)
-                    result = passwordsMatchValidator(newPasswordController.text,
+                    result = Validators.passwordsMatchValidator(
+                        newPasswordController.text,
                         confirmPasswordController.text);
                   return result;
                 },
@@ -285,10 +334,11 @@ class SettingsState extends State<Settings> {
                 validator: (value) {
                   if (confirmPasswordController.text.isEmpty) return null;
 
-                  var result =
-                      passwordValidator(confirmPasswordController.text);
+                  var result = Validators.passwordValidator(
+                      confirmPasswordController.text);
                   if (result == null)
-                    result = passwordsMatchValidator(newPasswordController.text,
+                    result = Validators.passwordsMatchValidator(
+                        newPasswordController.text,
                         confirmPasswordController.text);
                   return result;
                 },
@@ -299,29 +349,7 @@ class SettingsState extends State<Settings> {
           ),
         ));
 
-    final userMoviesCountField = MTextField(
-        child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        RichText(
-            text: TextSpan(
-          style: MTextStyles.BodyText,
-          children: <TextSpan>[
-            new TextSpan(
-                text: 'User movies count:   ', style: MTextStyles.Title),
-            new TextSpan(text: userMoviesCount.toString())
-          ],
-        )),
-        MButton(
-          text: 'Clear all',
-          onPressedCallback: () {clearUserMovies(userState.userId); moviesState.clear(); },
-          active: true,
-        )
-      ],
-    ));
-
-    final removeUserField = MTextField(
+    final removeUserField = MCard(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
@@ -349,12 +377,14 @@ class SettingsState extends State<Settings> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
                       MIconButton(
-                        icon: Icon(
-                          Icons.check,
-                          color: Colors.redAccent,
-                        ),
-                        onPressedCallback: () => removeUser(userState.userId),
-                      ),
+                          icon: Icon(
+                            Icons.check,
+                            color: Colors.redAccent,
+                          ),
+                          onPressedCallback: () {
+                            removeUser(
+                                userState.userId, userState, moviesState);
+                          }),
                       MIconButton(
                         icon: Icon(
                           Icons.close,
@@ -373,36 +403,6 @@ class SettingsState extends State<Settings> {
       ),
     );
 
-    final headingField = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Hero(
-                tag: 'settings',
-                child: Icon(
-                  Icons.settings,
-                  size: 25,
-                )),
-            SizedBox(
-              width: 10,
-            ),
-            Text(
-              'Settings',
-              style: MTextStyles.BodyText,
-            )
-          ],
-        ),
-        IconButton(
-          icon: new Icon(
-            Entypo.logout,
-            size: 25,
-          ),
-          onPressed: () { userState.logout(); moviesState.clear(); Navigator.of(context).pop();},
-        )
-      ],
-    );
-
     return Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
         appBar: AppBar(
@@ -419,7 +419,7 @@ class SettingsState extends State<Settings> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     nameField,
-                    emailField,
+                    if (!userState.isSignedInThroughGoogle) emailField,
                     userMoviesCountField,
                     changePasswordField,
                     removeUserField
