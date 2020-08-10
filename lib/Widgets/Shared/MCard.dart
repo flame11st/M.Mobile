@@ -5,20 +5,21 @@ class MCard extends StatelessWidget {
   final text;
   final child;
   final button;
+  final double padding;
 
-  MCard({this.text, this.child, this.button});
+  MCard({this.text, this.child, this.button, this.padding});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: EdgeInsets.all(20),
+        padding: EdgeInsets.all(padding != null ? padding : 20),
         margin: EdgeInsets.only(top: 20),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
               color: Colors.white.withOpacity(0.2),
               offset: Offset(-4.0, -4.0),
-              blurRadius: 6,
+              blurRadius: 3,
             ),
             BoxShadow(
               color: Colors.black.withOpacity(0.6),

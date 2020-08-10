@@ -40,4 +40,5 @@ class MyGlobals {
   static GlobalKey scaffoldKey;
   static GlobalKey scaffoldSettingsKey;
   static GlobalKey scaffoldLoginKey;
+  static GlobalKey scaffoldSignUpKey;
 }

@@ -22,6 +22,20 @@ class ServiceAgent {
         }));
   }
 
+  signUp(String name, String email, String password) {
+    return post(
+        'Identity/SignUp',
+        jsonEncode(<String, String>{
+          'Email': email,
+          'Name': name,
+          'Password': password,
+        }));
+  }
+
+  googleLogin(String idToken) {
+    return get('Identity/GoogleLogin?idToken=$idToken&isAndroid=true');
+  }
+
   getUserMovies(String userId) {
     return get('User/GetUserMovies?userId=$userId');
   }

@@ -199,23 +199,30 @@ class SettingsState extends State<Settings> {
             )
           ],
         ),
-        Row(children: <Widget>[
-          Text(
-            'Logout',
-            style: MTextStyles.BodyText,
-          ),
-          IconButton(
-            icon: new Icon(
-              Entypo.logout,
-              size: 25,
-            ),
-            onPressed: () {
-              userState.logout();
-              moviesState.clear();
-              Navigator.of(context).pop();
-            },
-          )
-        ],),
+        Row(
+          children: <Widget>[
+            MaterialButton(
+              child: Row(
+                children: <Widget>[
+                  Text(
+                    'Sign out',
+                    style: MTextStyles.BodyText,
+                  ),
+                  SizedBox(width: 10,),
+                  new Icon(
+                    Entypo.logout,
+                    size: 25,
+                  )
+                ],
+              ),
+              onPressed: () {
+                userState.logout();
+                moviesState.clear();
+                Navigator.of(context).pop();
+              },
+            )
+          ],
+        ),
       ],
     );
 
@@ -419,9 +426,9 @@ class SettingsState extends State<Settings> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     nameField,
-                    if (!userState.isSignedInThroughGoogle) emailField,
+                    if (!userState.isSignedInWithGoogle) emailField,
                     userMoviesCountField,
-                    changePasswordField,
+                    if (!userState.isSignedInWithGoogle) changePasswordField,
                     removeUserField
                   ],
                 )),

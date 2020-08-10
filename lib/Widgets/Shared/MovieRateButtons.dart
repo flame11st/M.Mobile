@@ -24,14 +24,14 @@ class MovieRateButtons extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withOpacity(0.2),
               offset: Offset(-4.0, -4.0),
-              blurRadius: 16,
+              blurRadius: 4,
             ),
             BoxShadow(
               color: Colors.black.withOpacity(0.4),
-              offset: Offset(6.0, 6.0),
-              blurRadius: 8,
+              offset: Offset(4.0, 4.0),
+              blurRadius: 6,
             ),
           ],
           color: MColors.PrimaryColor,

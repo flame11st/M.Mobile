@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Objects/User.dart';
@@ -13,7 +15,7 @@ class UserState with ChangeNotifier {
 
   bool isUserAuthorized = false;
   bool isAppLoaded = false;
-  bool isSignedInThroughGoogle = false;
+  bool isSignedInWithGoogle = false;
   String userName = '';
   String userId = '';
   String token = '';
@@ -40,6 +42,17 @@ class UserState with ChangeNotifier {
     isAppLoaded = true;
 
     notifyListeners();
+  }
+
+  processLoginResponse(String response, bool isSignedInWithGoogle) {
+    var responseJson = json.decode(response);
+    var accessToken = responseJson['access_token'];
+    var refreshToken = responseJson['refresh_token'];
+    var userId = responseJson['userId'];
+    var userName = responseJson['username'];
+
+    isSignedInWithGoogle = isSignedInWithGoogle;
+    setInitialUserData(accessToken, refreshToken, userId, userName);
   }
 
   logout() async {

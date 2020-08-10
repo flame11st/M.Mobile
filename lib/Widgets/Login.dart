@@ -7,11 +7,14 @@ import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
+import 'package:mmobile/Widgets/SignUp.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Services/ServiceAgent.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MButton.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -25,7 +28,8 @@ class LoginState extends State<Login> {
   final passwordController = TextEditingController();
   final serviceAgent = ServiceAgent();
   final storage = new FlutterSecureStorage();
-
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
 
   bool signInButtonActive = false;
@@ -46,6 +50,25 @@ class LoginState extends State<Login> {
     super.dispose();
   }
 
+  signInWithGoogle() async {
+    final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
+
+    final GoogleSignInAuthentication googleSignInAuthentication =
+        await googleSignInAccount.authentication;
+
+    var response =
+        await serviceAgent.googleLogin(googleSignInAuthentication.idToken);
+
+    if (response.statusCode == 200) {
+      processLoginResponse(response.body, true);
+    } else {
+      MSnackBar.showSnackBar('Sign in with Google failed', false,
+          MyGlobals.scaffoldLoginKey.currentContext);
+    }
+  }
+
+  void signOutGoogle() async {}
+
   setSignInButtonActive() {
     var signInButtonActive = _formKey.currentState != null &&
         _formKey.currentState.validate() &&
@@ -59,30 +82,28 @@ class LoginState extends State<Login> {
     });
   }
 
-  login(UserState state) async {
+  login() async {
     var response =
         await serviceAgent.login(emailController.text, passwordController.text);
 
     if (response.statusCode == 200) {
-      var responseJson = json.decode(response.body);
-      var accessToken = responseJson['access_token'];
-      var refreshToken = responseJson['refresh_token'];
-      var userId = responseJson['userId'];
-      var userName = responseJson['username'];
-
-      state.setInitialUserData(accessToken, refreshToken, userId, userName);
+      processLoginResponse(response.body, false);
     } else {
-      MSnackBar.showSnackBar(
-          'Login failed', false, MyGlobals.scaffoldLoginKey.currentContext);
+      MSnackBar.showSnackBar('Incorrect Email or Password', false,
+          MyGlobals.scaffoldLoginKey.currentContext);
     }
+  }
+
+  processLoginResponse(String response, bool isSignedInWithGoogle) {
+    final userState = Provider.of<UserState>(context);
+
+    userState.processLoginResponse(response, isSignedInWithGoogle);
   }
 
   @override
   Widget build(BuildContext context) {
     if (MyGlobals.scaffoldLoginKey == null)
       MyGlobals.scaffoldLoginKey = new GlobalKey();
-
-    final provider = Provider.of<UserState>(context);
 
     final emailField = TextFormField(
       validator: (value) => emailController.text.isNotEmpty
@@ -109,7 +130,7 @@ class LoginState extends State<Login> {
 
     final loginButton = MButton(
       text: 'Sign in',
-      onPressedCallback: () => login(provider),
+      onPressedCallback: () => login(),
       active: signInButtonActive,
       width: MediaQuery.of(context).size.width,
       height: 40,
@@ -118,16 +139,19 @@ class LoginState extends State<Login> {
 
     final googleLoginButton = MButton(
       text: 'Sign in with Google',
-      onPressedCallback: () => {},
+      onPressedCallback: () => signInWithGoogle(),
       active: true,
       width: MediaQuery.of(context).size.width,
       height: 50,
-      prependIcon: FontAwesome5.google,
+      prependImage: AssetImage("Assets/google_logo.png"),
     );
 
     final signUpButton = MButton(
       text: 'Sign up',
-      onPressedCallback: () => {},
+      onPressedCallback: () {
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (ctx) => SignUp()));
+      },
       active: true,
       width: MediaQuery.of(context).size.width,
       height: 50,

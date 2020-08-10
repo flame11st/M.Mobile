@@ -7,7 +7,7 @@ class MSnackBar {
 
       Scaffold.of(context).showSnackBar(SnackBar(
           content: Container(
-                  height: 30,
+                  height: 40,
                   child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(

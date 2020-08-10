@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "4993407912",
+    "firebase_url": "https://watchlist-ec3a7.firebaseio.com",
+    "project_id": "watchlist-ec3a7",
+    "storage_bucket": "watchlist-ec3a7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:4993407912:android:6a3a467fc86684e6529b9d",
+        "android_client_info": {
+          "package_name": "com.flame.moviediary"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "4993407912-a9ugatquhaepklcppg6nht3rigbbumu6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.flame.moviediary",
+            "certificate_hash": "4b72c8fa45a98a34efa97719d40f8cca0263d083"
+          }
+        },
+        {
+          "client_id": "4993407912-p7knjg5p6vv4aq404ckgtcbfc63pn93f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByjUIQx03bSPIJJQfnIi_Rc54ddPfTOYE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "4993407912-dakflmq66sk3vshr6qnm3ld2cvjp6l44.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

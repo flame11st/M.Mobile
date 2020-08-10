@@ -1,4 +1,4 @@
-package com.example.mmobile
+package com.flame.moviediary
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity
