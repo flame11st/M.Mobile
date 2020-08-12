@@ -34,7 +34,7 @@ class MovieRateButtons extends StatelessWidget {
               blurRadius: 6,
             ),
           ],
-          color: MColors.PrimaryColor,
+          color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.circular(30.0),
         ),
         child: Column(
@@ -52,7 +52,7 @@ class MovieRateButtons extends StatelessWidget {
                   icon: Icon(Icons.favorite_border,
                       color: movieRate == MovieRate.liked
                           ? Colors.greenAccent
-                          : MColors.FontsColor),
+                          : Theme.of(context).hintColor),
                   movieId: movieId,
                   movieRate: movieRate == MovieRate.liked
                       ? MovieRate.notRated
@@ -63,7 +63,7 @@ class MovieRateButtons extends StatelessWidget {
                   icon: Icon(FontAwesome5.ban,
                       color: movieRate == MovieRate.notLiked
                           ? Colors.redAccent
-                          : MColors.FontsColor),
+                          : Theme.of(context).hintColor),
                   movieId: movieId,
                   movieRate: movieRate == MovieRate.notLiked
                       ? MovieRate.notRated
@@ -73,8 +73,8 @@ class MovieRateButtons extends StatelessWidget {
                 MIconRateButton(
                   icon: Icon(Icons.add_to_queue,
                       color: movieRate == MovieRate.addedToWatchlist
-                          ? MColors.AdditionalColor
-                          : MColors.FontsColor),
+                          ? Theme.of(context).accentColor
+                          : Theme.of(context).hintColor),
                   movieId: movieId,
                   movieRate: movieRate == MovieRate.addedToWatchlist
                       ? MovieRate.notRated

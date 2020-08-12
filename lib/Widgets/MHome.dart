@@ -19,7 +19,7 @@ class MHomeState extends State<MHome> {
         final provider = Provider.of<UserState>(context);
 
         SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-          statusBarColor: MColors.PrimaryColor,
+          statusBarColor: Theme.of(context).primaryColor,
         ));
 
         Widget widgetToReturn = provider.isAppLoaded
@@ -34,6 +34,7 @@ class MHomeState extends State<MHome> {
               primaryColor: MColors.PrimaryColor,
               accentColor: MColors.AdditionalColor,
               hintColor: MColors.FontsColor,
+              cardColor: MColors.SecondaryColor,
 
               textTheme: TextTheme(
                 headline1: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),

@@ -38,7 +38,7 @@ class MovieSearchItem extends StatelessWidget {
             ),
           ],
           borderRadius: BorderRadius.circular(12.0),
-          color: MColors.SecondaryColor,
+          color: Theme.of(context).cardColor,
         ),
         child: Row(
           children: <Widget>[
@@ -77,7 +77,7 @@ class MovieSearchItem extends StatelessWidget {
                           icon: Icon(Icons.thumb_up,
                               color: movie.movieRate == MovieRate.liked
                                   ? Colors.greenAccent
-                                  : MColors.FontsColor,
+                                  : Theme.of(context).hintColor,
                               size: iconSize),
                           movieId: movie.id,
                           movieRate: movie.movieRate == MovieRate.liked
@@ -90,7 +90,7 @@ class MovieSearchItem extends StatelessWidget {
                             Icons.thumb_down,
                             color: movie.movieRate == MovieRate.notLiked
                                 ? Colors.redAccent
-                                : MColors.FontsColor,
+                                : Theme.of(context).hintColor,
                             size: iconSize,
                           ),
                           movieId: movie.id,
@@ -103,8 +103,8 @@ class MovieSearchItem extends StatelessWidget {
                           icon: Icon(Icons.add_to_queue,
                               color:
                                   movie.movieRate == MovieRate.addedToWatchlist
-                                      ? MColors.AdditionalColor
-                                      : MColors.FontsColor,
+                                      ? Theme.of(context).accentColor
+                                      : Theme.of(context).hintColor,
                               size: iconSize),
                           movieId: movie.id,
                           movieRate: movie.movieRate == MovieRate.addedToWatchlist

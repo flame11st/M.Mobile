@@ -47,7 +47,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                   blurRadius: 7,
                 ),
               ],
-              color: MColors.PrimaryColor,
+              color: Theme.of(context).primaryColor,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -69,7 +69,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                   child: MIconButton(
                     icon: Icon(
                       Icons.settings,
-                      color: MColors.FontsColor,
+                      color: Theme.of(context).hintColor,
                     ),
                     onPressedCallback: () {
                       Navigator.of(context).push(MaterialPageRoute(
@@ -84,7 +84,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.all(Radius.circular(30.0)),
                     boxShadow: BoxShadowNeomorph.circleShadow,
-                    color: MColors.PrimaryColor,
+                    color: Theme.of(context).primaryColor,
 //                    shape: BoxShape.circle,
                   ),
                   padding: EdgeInsets.only(right: 10),

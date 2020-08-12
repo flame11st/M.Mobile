@@ -165,17 +165,23 @@ class LoginState extends State<Login> {
           key: MyGlobals.scaffoldLoginKey,
           child: SingleChildScrollView(
             child: Container(
-                padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                 color: Theme.of(context).primaryColor,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
+//                    Image(image: AssetImage("Assets/mdIcon_V.png"), width: 100,),
+//                    Image(image: AssetImage("Assets/mdIcon_V_2.png"), width: 100,),
+                    Image(image: AssetImage("Assets/mdIcon_V_3.png"), width: 100,),
+                    SizedBox(
+                      height: 10,
+                    ),
                     Text(
-                      'Hello & Welcome to Moviediary',
+                      'MovieDiary',
                       style: TextStyle(fontSize: 25),
                     ),
                     SizedBox(
-                      height: 30,
+                      height: 10,
                     ),
                     MCard(
                       child: Container(

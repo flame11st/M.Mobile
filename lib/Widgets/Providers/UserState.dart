@@ -51,7 +51,7 @@ class UserState with ChangeNotifier {
     var userId = responseJson['userId'];
     var userName = responseJson['username'];
 
-    isSignedInWithGoogle = isSignedInWithGoogle;
+    this.isSignedInWithGoogle = isSignedInWithGoogle;
     setInitialUserData(accessToken, refreshToken, userId, userName);
   }
 

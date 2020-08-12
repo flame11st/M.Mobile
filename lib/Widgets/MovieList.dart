@@ -30,7 +30,7 @@ class MovieListState extends State<MovieList> {
       child: Scaffold(
         resizeToAvoidBottomPadding: false,
         appBar: AppBar(
-          backgroundColor: MColors.PrimaryColor,
+          backgroundColor: Theme.of(context).primaryColor,
           title: TabBar(
             tabs: [
               Tab(
@@ -47,7 +47,7 @@ class MovieListState extends State<MovieList> {
           ),
         ),
         body: Container(
-          color: MColors.PrimaryColor,
+          color: Theme.of(context).primaryColor,
           child: TabBarView(
             children: [
               AnimatedList(

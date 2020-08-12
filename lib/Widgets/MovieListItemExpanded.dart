@@ -90,7 +90,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           decoration: BoxDecoration(
                   boxShadow: BoxShadowNeomorph.shadow,
                   borderRadius: BorderRadius.circular(10.0),
-                  color: MColors.PrimaryColor
+                  color: Theme.of(context).primaryColor
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8.0),
@@ -109,7 +109,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               height: 116,
               width: 116,
               decoration: new BoxDecoration(
-                      color: MColors.PrimaryColor,
+                      color: Theme.of(context).primaryColor,
                       shape: BoxShape.circle,
                       boxShadow:
                       BoxShadowNeomorph.circleShadow),
@@ -205,7 +205,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     );
 
     return Scaffold(
-        backgroundColor: MColors.PrimaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         body: Container(
           child: Hero(
             tag: 'movie-hero-animation' + movie.id,
@@ -216,7 +216,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                       child: Material(
                         type: MaterialType.transparency,
                         child: Container(
-                          color: MColors.PrimaryColor,
+                          color: Theme.of(context).primaryColor,
                           child: Column(
                             children: <Widget>[
                               topCard,

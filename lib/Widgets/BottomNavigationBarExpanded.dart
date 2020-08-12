@@ -15,7 +15,7 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
-      color: MColors.PrimaryColor,
+      color: Theme.of(context).primaryColor,
       child: MovieRateButtons(
         movieId: movieId,
         movieRate: movieRate,

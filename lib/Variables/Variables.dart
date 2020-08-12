@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 
 class MColors {
   static const PrimaryColor = Color(0xff232931);
-  static const SecondaryColor = Color(0xff343a42);
+  static const SecondaryColor = Color(0xff252D37);
   static const AdditionalColor = Color(0xff00adb5);
   static const FontsColor = Color(0xffeeeeee);
   static const SecondaryFontsColor = Color(0xff00adb5);

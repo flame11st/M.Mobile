@@ -85,8 +85,8 @@ class MyMoviesState extends State<MyMovies> {
                       Icons.add,
                       size: 40,
                     ),
-                    backgroundColor: MColors.AdditionalColor,
-                    foregroundColor: MColors.PrimaryColor,
+                    backgroundColor: Theme.of(context).accentColor,
+                    foregroundColor: Theme.of(context).primaryColor,
                   ),
                 )
           ))

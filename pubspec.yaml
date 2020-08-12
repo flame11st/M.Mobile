@@ -29,6 +29,12 @@ dependencies:
   fluttericon: ^1.0.7
   google_sign_in: ^4.5.1
   firebase_auth: ^0.16.1
+  flutter_launcher_icons: ^0.7.5
+
+flutter_icons:
+  image_path: "Assets/mdIcon_V_2.png"
+  android: true
+  ios: true
 
 
   # The following adds the Cupertino Icons font to your application.

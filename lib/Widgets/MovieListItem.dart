@@ -47,16 +47,16 @@ class MovieListItemState extends State<MovieListItem> {
                         BoxShadow(
                           color: Colors.white.withOpacity(0.3),
                           offset: Offset(-3.0, -3.0),
-                          blurRadius: 4,
+                          blurRadius: 3,
                         ),
                         BoxShadow(
                           color: Colors.black.withOpacity(0.4),
                           offset: Offset(4.0, 4.0),
-                          blurRadius: 6,
+                          blurRadius: 4,
                         ),
                       ],
                       borderRadius: BorderRadius.circular(12.0),
-                      color: MColors.SecondaryColor,
+                      color: Theme.of(context).cardColor,
                     ),
                     child: Row(
                       children: <Widget>[
@@ -112,13 +112,13 @@ class MovieListItemState extends State<MovieListItem> {
                           margin: EdgeInsets.only(right: 10),
                           decoration: BoxDecoration(
                             boxShadow: BoxShadowNeomorph.circleShadow,
-                            color: MColors.SecondaryColor,
+                            color: Theme.of(context).cardColor,
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
                             icon: Icon(
                               Icons.more_vert,
-                              color: MColors.FontsColor,
+                              color: Theme.of(context).hintColor,
                             ),
                             onPressed: () async {
                               showModalBottomSheet<void>(

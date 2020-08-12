@@ -18,7 +18,7 @@ class MIconButton extends StatelessWidget {
             width: width != null ? width : 50,
             decoration: BoxDecoration(
               boxShadow: BoxShadowNeomorph.circleShadow,
-              color: MColors.PrimaryColor,
+              color: Theme.of(context).primaryColor,
               shape: BoxShape.circle,
             ),
             child: IconButton(

@@ -78,7 +78,7 @@ class MSearchDelegate extends SearchDelegate {
   @override
   Widget buildResults(BuildContext context) {
     return Container(
-        color: MColors.PrimaryColor,
+        color: Theme.of(context).primaryColor,
         child: ListView(
           children: <Widget>[
             for (final movie in foundMovies) MovieSearchItem(movie: movie)
