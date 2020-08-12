@@ -23,8 +23,8 @@ class MCard extends StatelessWidget {
             ),
             BoxShadow(
               color: Colors.black.withOpacity(0.6),
-              offset: Offset(5.0, 5.0),
-              blurRadius: 6,
+              offset: Offset(4.0, 4.0),
+              blurRadius: 3,
             ),
           ],
           borderRadius: BorderRadius.circular(12.0),
@@ -37,7 +37,7 @@ class MCard extends StatelessWidget {
               children: <Widget>[
                 if (text != null) Text(
                   text,
-                  style: MTextStyles.Title,
+                  style: Theme.of(context).textTheme.headline3,
                 ),
                 if (button != null) button
               ],

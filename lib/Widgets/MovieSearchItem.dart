@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
-import 'package:mmobile/Enums/MovieType.dart';
-import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MovieSearchDTO.dart';
-import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
-import 'Shared/BoxShadowNeomorph.dart';
+import 'package:provider/provider.dart';
 import 'Shared/MIconRateButton.dart';
-import 'Shared/MovieRateButtons.dart';
 
 class MovieSearchItem extends StatelessWidget {
   final MovieSearchDTO movie;
@@ -62,14 +57,14 @@ class MovieSearchItem extends StatelessWidget {
                   children: <Widget>[
                     RichText(
                         text: TextSpan(
-                      style: MTextStyles.BodyText,
+                      style: Theme.of(context).textTheme.headline5,
                       children: <TextSpan>[
                         new TextSpan(
-                            text: movie.title, style: MTextStyles.Title),
+                            text: movie.title, style: Theme.of(context).textTheme.headline3),
                         new TextSpan(text: ' (${movie.year})'),
                       ],
                     )),
-                    Text(movie.genres.join(', '), style: MTextStyles.BodyText),
+                    Text(movie.genres.join(', '), style: Theme.of(context).textTheme.headline5),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: <Widget>[

@@ -21,6 +21,7 @@ class MovieListState extends State<MovieList> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MoviesState>(context);
+
     final List<Movie> watchlistMovies = provider.watchlistMovies;
     final List<Movie> viewedMovies = provider.viewedMovies;
     MyGlobals.scaffoldKey = new GlobalKey();
@@ -32,16 +33,25 @@ class MovieListState extends State<MovieList> {
         appBar: AppBar(
           backgroundColor: Theme.of(context).primaryColor,
           title: TabBar(
+            indicatorColor: Theme.of(context).accentColor,
+          labelColor: Theme.of(context).accentColor,
+            unselectedLabelColor: Theme.of(context).hintColor,
             tabs: [
               Tab(
                   child: Text(
                 'Watchlist',
-                style: MTextStyles.TabTitle,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
               )),
               Tab(
                   child: Text(
                 'Viewed',
-                style: MTextStyles.TabTitle,
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
               )),
             ],
           ),

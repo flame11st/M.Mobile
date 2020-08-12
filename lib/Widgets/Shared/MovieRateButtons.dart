@@ -43,7 +43,7 @@ class MovieRateButtons extends StatelessWidget {
             if (additionalText != null)
               Text(
                 additionalText,
-                style: MTextStyles.BodyText,
+                style: Theme.of(context).textTheme.headline5,
               ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,

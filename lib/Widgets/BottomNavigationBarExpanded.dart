@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:provider/provider.dart';
 import 'Shared/MovieRateButtons.dart';
 
 class MoviesBottomNavigationBarExpanded extends StatelessWidget {
@@ -14,7 +15,7 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomAppBar(
+ return BottomAppBar(
       color: Theme.of(context).primaryColor,
       child: MovieRateButtons(
         movieId: movieId,

@@ -4,7 +4,6 @@ import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
-
 import 'Providers/UserState.dart';
 import 'Shared/MButton.dart';
 import 'Shared/MCard.dart';
@@ -87,7 +86,7 @@ class SignUpState extends State<SignUp> {
             decoration: InputDecoration(
                     contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
                     hintText: "Name",
-                    hintStyle: MTextStyles.BodyText),
+                    hintStyle: Theme.of(context).textTheme.headline5),
         );
 
         final emailField = TextFormField(
@@ -98,7 +97,7 @@ class SignUpState extends State<SignUp> {
             decoration: InputDecoration(
                     contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
                     hintText: "Email",
-                    hintStyle: MTextStyles.BodyText),
+                    hintStyle: Theme.of(context).textTheme.headline5),
         );
 
         final passwordField = TextFormField(
@@ -118,7 +117,7 @@ class SignUpState extends State<SignUp> {
             decoration: InputDecoration(
                     contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
                     hintText: "Password",
-                    hintStyle: MTextStyles.BodyText),
+                    hintStyle: Theme.of(context).textTheme.headline5),
         );
 
         final confirmPasswordField = TextFormField(
@@ -138,7 +137,7 @@ class SignUpState extends State<SignUp> {
             decoration: InputDecoration(
                     contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
                     hintText: "Confirm Password",
-                    hintStyle: MTextStyles.BodyText),
+                    hintStyle: Theme.of(context).textTheme.headline5),
         );
 
         final signUpButton = MButton(

@@ -2,8 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
+import 'package:provider/provider.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MovieRateButtons.dart';
 
@@ -30,6 +30,7 @@ class MovieListItemState extends State<MovieListItem> {
 
   Widget build(BuildContext context) {
     final imageUrl = movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
+
     return GestureDetector(
       onTap: () {
         showFullMovie(context);
@@ -52,7 +53,7 @@ class MovieListItemState extends State<MovieListItem> {
                         BoxShadow(
                           color: Colors.black.withOpacity(0.4),
                           offset: Offset(4.0, 4.0),
-                          blurRadius: 4,
+                          blurRadius: 3,
                         ),
                       ],
                       borderRadius: BorderRadius.circular(12.0),
@@ -78,11 +79,11 @@ class MovieListItemState extends State<MovieListItem> {
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                Text(movie.title, style: MTextStyles.Title),
+                                Text(movie.title, style: Theme.of(context).textTheme.headline3),
                                 Row(
                                   children: <Widget>[
                                     Text(movie.year.toString(),
-                                        style: MTextStyles.BodyText),
+                                        style: Theme.of(context).textTheme.headline5),
                                     SizedBox(
                                       width: 30,
                                     ),
@@ -92,17 +93,17 @@ class MovieListItemState extends State<MovieListItem> {
                                                 : movie.averageTimeOfEpisode
                                                     .toString()) +
                                             ' min',
-                                        style: MTextStyles.BodyText),
+                                        style: Theme.of(context).textTheme.headline5),
                                     SizedBox(
                                       width: 30,
                                     ),
                                     if (movie.seasonsCount > 0)
                                       Text("Seasons: ${movie.seasonsCount}",
-                                          style: MTextStyles.BodyText)
+                                          style: Theme.of(context).textTheme.headline5)
                                   ],
                                 ),
                                 Text(movie.genres.join(', '),
-                                    style: MTextStyles.BodyText),
+                                    style: Theme.of(context).textTheme.headline5),
                               ],
                             ),
                           ),

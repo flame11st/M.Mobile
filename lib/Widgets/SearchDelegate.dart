@@ -113,6 +113,7 @@ class MSearchDelegate extends SearchDelegate {
   @override
   ThemeData appBarTheme(BuildContext context) {
     assert(context != null);
+    //TODO: Consider to use MTheme
     final ThemeData theme = Theme.of(context);
     assert(theme != null);
     return theme;

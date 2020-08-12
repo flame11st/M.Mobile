@@ -3,11 +3,12 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
-import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Variables/Themes.dart';
 import 'package:provider/provider.dart';
 
 import 'MoviesFilter.dart';
 import 'Providers/MoviesState.dart';
+import 'Providers/ThemeState.dart';
 import 'Settings.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MIconButton.dart';
@@ -15,16 +16,14 @@ import 'Shared/MIconButton.dart';
 class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final themeState = Provider.of<ThemeState>(context);
     final moviesState = Provider.of<MoviesState>(context);
     final isAnyFilterSelected = moviesState.moviesOnly ||
         moviesState.tvOnly ||
-        (!moviesState.isWatchlist() && (moviesState.likedOnly ||
-        moviesState.notLikedOnly));
+        (!moviesState.isWatchlist() &&
+            (moviesState.likedOnly || moviesState.notLikedOnly));
 
-    return BottomAppBar(
-        color: Colors.transparent,
-        shape: CircularNotchedRectangle(),
-        child: Container(
+    return Container(
             height: 65,
             width: double.infinity,
 //            margin: EdgeInsets.all(5),
@@ -39,12 +38,12 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                 BoxShadow(
                   color: Colors.white.withOpacity(0.3),
                   offset: Offset(-4.0, -4.0),
-                  blurRadius: 7,
+                  blurRadius: 3,
                 ),
                 BoxShadow(
                   color: Colors.black.withOpacity(0.4),
-                  offset: Offset(6.0, 6.0),
-                  blurRadius: 7,
+                  offset: Offset(-4.0, -4.0),
+                  blurRadius: 3,
                 ),
               ],
               color: Theme.of(context).primaryColor,
@@ -55,13 +54,15 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                 MIconButton(
                   icon: Icon(
                     Icons.movie_filter,
-                    color: isAnyFilterSelected ? Theme.of(context).accentColor : Theme.of(context).hintColor,
+                    color: isAnyFilterSelected
+                            ? Theme.of(context).accentColor
+                            : Theme.of(context).hintColor,
                   ),
                   onPressedCallback: () async {
                     showModalBottomSheet<void>(
-                        backgroundColor: Colors.transparent,
-                        context: context,
-                        builder: (BuildContext context) => MoviesFilter());
+                            backgroundColor: Colors.transparent,
+                            context: context,
+                            builder: (BuildContext context) => MoviesFilter());
                   },
                 ),
                 Hero(
@@ -72,8 +73,8 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                       color: Theme.of(context).hintColor,
                     ),
                     onPressedCallback: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (ctx) => Settings()));
+                      Navigator.of(context).push(
+                              MaterialPageRoute(builder: (ctx) => Settings()));
                     },
                   ),
                 ),
@@ -91,19 +92,22 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                   child: Row(
                     children: <Widget>[
                       IconButton(
-                          icon: Icon(
-                        Icons.monetization_on,
-                        color: Colors.greenAccent,
-                      )),
+                        icon: Icon(
+                          Icons.monetization_on,
+                          color: Colors.greenAccent,
+                        ),
+                        onPressed: () => {
+                          themeState.selectTheme(themeState.selectedTheme == Themes.classicDark ? Themes.classicLight : Themes.classicDark)
+                        },),
                       Text(
                         'Premium',
-                        style: MTextStyles.BodyText,
+                        style: Theme.of(context).textTheme.headline5,
                       )
                     ],
                   ),
                 )
               ],
-            )));
+            ));
 //
   }
 }

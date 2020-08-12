@@ -113,7 +113,7 @@ class LoginState extends State<Login> {
       decoration: InputDecoration(
           contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
           hintText: "Email",
-          hintStyle: MTextStyles.BodyText),
+          hintStyle: Theme.of(context).textTheme.headline5),
     );
 
     final passwordField = TextFormField(
@@ -125,7 +125,7 @@ class LoginState extends State<Login> {
       decoration: InputDecoration(
           contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
           hintText: "Password",
-          hintStyle: MTextStyles.BodyText),
+          hintStyle: Theme.of(context).textTheme.headline5),
     );
 
     final loginButton = MButton(
@@ -178,7 +178,7 @@ class LoginState extends State<Login> {
                     ),
                     Text(
                       'MovieDiary',
-                      style: TextStyle(fontSize: 25),
+                      style: TextStyle(fontSize: 25, color: Theme.of(context).hintColor),
                     ),
                     SizedBox(
                       height: 10,

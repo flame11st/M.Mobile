@@ -195,7 +195,7 @@ class SettingsState extends State<Settings> {
             ),
             Text(
               'Settings',
-              style: MTextStyles.BodyText,
+              style: Theme.of(context).textTheme.headline5,
             )
           ],
         ),
@@ -206,12 +206,13 @@ class SettingsState extends State<Settings> {
                 children: <Widget>[
                   Text(
                     'Sign out',
-                    style: MTextStyles.BodyText,
+                    style: Theme.of(context).textTheme.headline5,
                   ),
                   SizedBox(width: 10,),
                   new Icon(
                     Entypo.logout,
                     size: 25,
+                    color: Theme.of(context).hintColor,
                   )
                 ],
               ),
@@ -231,6 +232,8 @@ class SettingsState extends State<Settings> {
       child: Form(
         key: _formNameKey,
         child: TextFormField(
+          style: Theme.of(context).textTheme.headline5,
+          decoration: InputDecoration(fillColor: Colors.redAccent, ),
           validator: (value) {
             return nameController.text.isEmpty ? 'Name can\'t be empty' : null;
           },
@@ -250,6 +253,7 @@ class SettingsState extends State<Settings> {
       child: Form(
           key: _formEmailKey,
           child: TextFormField(
+            style: Theme.of(context).textTheme.headline5,
             validator: (value) {
               return emailController.text.isEmpty
                   ? 'Email can\'t be empty'
@@ -272,10 +276,10 @@ class SettingsState extends State<Settings> {
       children: <Widget>[
         RichText(
             text: TextSpan(
-          style: MTextStyles.BodyText,
+          style: Theme.of(context).textTheme.headline5,
           children: <TextSpan>[
             new TextSpan(
-                text: 'User movies count:   ', style: MTextStyles.Title),
+                text: 'User movies count:   ', style: Theme.of(context).textTheme.headline3),
             new TextSpan(text: userMoviesCount.toString())
           ],
         )),
@@ -306,8 +310,9 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 10,
               ),
-              Text('Old Password'),
+              Text('Old Password', style: Theme.of(context).textTheme.headline5,),
               TextFormField(
+                style: Theme.of(context).textTheme.headline5,
                 validator: (value) => oldPasswordController.text.isNotEmpty
                     ? Validators.passwordValidator(oldPasswordController.text)
                     : null,
@@ -317,8 +322,9 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 5,
               ),
-              Text('New Password'),
+              Text('New Password', style: Theme.of(context).textTheme.headline5,),
               TextFormField(
+                style: Theme.of(context).textTheme.headline5,
                 validator: (value) {
                   if (newPasswordController.text.isEmpty) return null;
 
@@ -336,8 +342,9 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 5,
               ),
-              Text('Confirm Password'),
+              Text('Confirm Password', style: Theme.of(context).textTheme.headline5,),
               TextFormField(
+                style: Theme.of(context).textTheme.headline5,
                 validator: (value) {
                   if (confirmPasswordController.text.isEmpty) return null;
 
@@ -375,7 +382,7 @@ class SettingsState extends State<Settings> {
                 children: <Widget>[
                   Text(
                     'Are you want to remove user?',
-                    style: MTextStyles.BodyText,
+                    style: Theme.of(context).textTheme.headline5,
                   ),
                   SizedBox(
                     height: 10,

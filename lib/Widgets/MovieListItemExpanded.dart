@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:provider/provider.dart';
 import 'BottomNavigationBarExpanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
@@ -50,14 +50,14 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         MainAxisAlignment.spaceAround,
         children: <Widget>[
           Text(movie.title,
-                  style: MTextStyles.ExpandedTitle),
+                  style: Theme.of(context).textTheme.headline2),
           SizedBox(
             height: 10,
           ),
           Row(
             children: <Widget>[
               Text(movie.year.toString(),
-                      style: MTextStyles.BodyText),
+                      style: Theme.of(context).textTheme.headline5),
               SizedBox(
                 width: 15,
               ),
@@ -66,19 +66,19 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                               ? movie.duration.toString()
                               : movie.averageTimeOfEpisode.toString())+
                               ' min',
-                      style: MTextStyles.BodyText),
+                      style: Theme.of(context).textTheme.headline5),
               SizedBox(
                 width: 15,
               ),
               if (movie.seasonsCount > 0)
-                Text("Seasons: ${movie.seasonsCount}", style: MTextStyles.BodyText)
+                Text("Seasons: ${movie.seasonsCount}", style: Theme.of(context).textTheme.headline5)
             ],
           ),
           SizedBox(
             height: 10,
           ),
           Text(movie.genres.join(' ,'),
-                  style: MTextStyles.BodyText)
+                  style: Theme.of(context).textTheme.headline5)
         ],
       ),
     );
@@ -127,15 +127,15 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                   children: <Widget>[
                     Text("${movie.rating}%",
                             style:
-                            MTextStyles.BodyText),
+                            Theme.of(context).textTheme.headline5),
                     SizedBox(height: 5),
                     Text("Votes: ${movie.allVotes}",
                             style:
-                            MTextStyles.BodyText)
+                            Theme.of(context).textTheme.headline5)
                   ],
                 )
                         : Text("Not rated",
-                        style: MTextStyles.BodyText),
+                        style: Theme.of(context).textTheme.headline5),
                 progressColor: getProgressColor(),
               ),
             ),
@@ -144,7 +144,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             ),
             Text(
               "Imdb: ${movie.imdbRate} (${movie.imdbVotes})",
-              style: MTextStyles.BodyText,
+              style: Theme.of(context).textTheme.headline5,
             )
           ],
         )
@@ -157,17 +157,17 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       children: <Widget>[
         if (movie.tagline != null)
           RichText( text: TextSpan(
-            style: MTextStyles.BodyText,
+            style: Theme.of(context).textTheme.headline5,
             children: <TextSpan>[
-              new TextSpan(text: 'Tagline: ', style: MTextStyles.SubtitleText),
+              new TextSpan(text: 'Tagline: ', style: Theme.of(context).textTheme.headline4),
               new TextSpan(text: movie.tagline),
             ],
           )),
         SizedBox(height: 10),
         RichText( text: TextSpan(
-          style: MTextStyles.BodyText,
+          style: Theme.of(context).textTheme.headline5,
           children: <TextSpan>[
-            new TextSpan(text: 'Directed by: ', style: MTextStyles.SubtitleText),
+            new TextSpan(text: 'Directed by: ', style: Theme.of(context).textTheme.headline4),
             new TextSpan(text: movie.directors
                     .map((actor) => actor.name)
                     .join(', ')),
@@ -175,9 +175,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         )),
         SizedBox(height: 10),
         RichText( text: TextSpan(
-          style: MTextStyles.BodyText,
+          style: Theme.of(context).textTheme.headline5,
           children: <TextSpan>[
-            new TextSpan(text: 'Starring: ', style: MTextStyles.SubtitleText),
+            new TextSpan(text: 'Starring: ', style: Theme.of(context).textTheme.headline4),
             new TextSpan(text: movie.actors
                     .map((actor) => actor.name)
                     .join(', ')),
@@ -185,9 +185,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         )),
         SizedBox(height: 10),
         RichText( text: TextSpan(
-          style: MTextStyles.BodyText,
+          style: Theme.of(context).textTheme.headline5,
           children: <TextSpan>[
-            new TextSpan(text: 'Countries: ', style: MTextStyles.SubtitleText),
+            new TextSpan(text: 'Countries: ', style: Theme.of(context).textTheme.headline4),
             new TextSpan(text: movie.countries.replaceAll(',', ', ')),
           ],
         )),
@@ -195,9 +195,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           height: 15,
         ),
         RichText( text: TextSpan(
-          style: MTextStyles.BodyText,
+          style: Theme.of(context).textTheme.headline5,
           children: <TextSpan>[
-            new TextSpan(text: 'Overview: ', style: MTextStyles.SubtitleText),
+            new TextSpan(text: 'Overview: ', style: Theme.of(context).textTheme.headline4),
             new TextSpan(text: movie.overview.replaceAll(',', ', ')),
           ],
         ))

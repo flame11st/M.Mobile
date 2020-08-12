@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/FilterButton.dart';
@@ -28,13 +27,13 @@ class MoviesFilter extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-//            Text('Filters', style: MTextStyles.ExpandedTitle,),
+//            Text('Filters', style: Theme.of(context).textTheme.headline2,),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 Text(
                   'Type:',
-                  style: MTextStyles.BodyText,
+                  style: Theme.of(context).textTheme.headline5,
                 ),
                 FilterIcon(
                   icon: FontAwesome.video,
@@ -59,7 +58,7 @@ class MoviesFilter extends StatelessWidget {
               children: <Widget>[
                 Text(
                   'Rate:',
-                  style: MTextStyles.BodyText,
+                  style: Theme.of(context).textTheme.headline5,
                 ),
                 FilterIcon(
                   icon: Icons.favorite_border,
