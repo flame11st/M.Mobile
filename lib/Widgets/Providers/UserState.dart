@@ -44,6 +44,12 @@ class UserState with ChangeNotifier {
     notifyListeners();
   }
 
+  void setAppIsLoaded(bool value) {
+    isAppLoaded = value;
+
+    notifyListeners();
+  }
+
   processLoginResponse(String response, bool isSignedInWithGoogle) {
     var responseJson = json.decode(response);
     var accessToken = responseJson['access_token'];

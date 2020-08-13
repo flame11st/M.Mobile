@@ -5,6 +5,7 @@ import 'package:fluttericon/entypo_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Widgets/Providers/LoaderState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:mmobile/Widgets/SignUp.dart';
@@ -32,6 +33,7 @@ class LoginState extends State<Login> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
 
+  bool isLoaderHided = false;
   bool signInButtonActive = false;
 
   @override
@@ -51,6 +53,9 @@ class LoginState extends State<Login> {
   }
 
   signInWithGoogle() async {
+    final loaderState = Provider.of<LoaderState>(context);
+    loaderState.setIsLoaderVisible(true);
+
     final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
 
     final GoogleSignInAuthentication googleSignInAuthentication =
@@ -62,6 +67,7 @@ class LoginState extends State<Login> {
     if (response.statusCode == 200) {
       processLoginResponse(response.body, true);
     } else {
+      loaderState.setIsLoaderVisible(false);
       MSnackBar.showSnackBar('Sign in with Google failed', false,
           MyGlobals.scaffoldLoginKey.currentContext);
     }
@@ -83,12 +89,17 @@ class LoginState extends State<Login> {
   }
 
   login() async {
+    final loaderState = Provider.of<LoaderState>(context);
+    loaderState.setIsLoaderVisible(true);
+
     var response =
         await serviceAgent.login(emailController.text, passwordController.text);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, false);
     } else {
+      loaderState.setIsLoaderVisible(false);
+
       MSnackBar.showSnackBar('Incorrect Email or Password', false,
           MyGlobals.scaffoldLoginKey.currentContext);
     }
@@ -102,6 +113,12 @@ class LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
+    if (!isLoaderHided) {
+      final loaderState = Provider.of<LoaderState>(context);
+      loaderState.setIsLoaderVisible(false);
+      isLoaderHided = true;
+    }
+
     if (MyGlobals.scaffoldLoginKey == null)
       MyGlobals.scaffoldLoginKey = new GlobalKey();
 
@@ -172,13 +189,10 @@ class LoginState extends State<Login> {
                   children: <Widget>[
 //                    Image(image: AssetImage("Assets/mdIcon_V.png"), width: 100,),
 //                    Image(image: AssetImage("Assets/mdIcon_V_2.png"), width: 100,),
-                    Image(image: AssetImage("Assets/mdIcon_V_3.png"), width: 100,),
-                    SizedBox(
-                      height: 10,
-                    ),
+                    Hero(tag: 'logo', child: Image(image: AssetImage("Assets/mdIcon_V_3.png"), width: 100,)),
                     Text(
-                      'MovieDiary',
-                      style: TextStyle(fontSize: 25, color: Theme.of(context).hintColor),
+                      '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂',
+                      style: TextStyle(fontSize: 35, color: Theme.of(context).accentColor),
                     ),
                     SizedBox(
                       height: 10,

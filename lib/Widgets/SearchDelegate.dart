@@ -50,6 +50,8 @@ class MSearchDelegate extends SearchDelegate {
 
       isLoading = false;
       setState(() => this.foundMovies = foundMovies);
+    } else {
+      isLoading = false;
     }
   }
 

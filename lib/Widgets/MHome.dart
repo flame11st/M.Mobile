@@ -4,7 +4,9 @@ import 'package:mmobile/Objects/MColorTheme.dart';
 import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Widgets/Providers/LoaderState.dart';
 import 'package:provider/provider.dart';
+import 'LoadingAnimation.dart';
 import 'Login.dart';
 import 'MyMovies.dart';
 import 'Providers/ThemeState.dart';
@@ -22,6 +24,8 @@ class MHomeState extends State<MHome> {
   Widget build(BuildContext context) {
     final themeState = Provider.of<ThemeState>(context);
     final provider = Provider.of<UserState>(context);
+    final loaderState = Provider.of<LoaderState>(context);
+
     MTheme theme = themeState.selectedTheme;
     var style = SystemUiOverlayStyle(
         statusBarColor: theme.colorTheme.additionalColor,
@@ -55,10 +59,15 @@ class MHomeState extends State<MHome> {
 
     Widget widgetToReturn = provider.isAppLoaded
         ? provider.isUserAuthorized ? MyMovies() : Login()
-        : Text("Not loaded");
+        : Text('');
 
     return MaterialApp(
-        home: widgetToReturn,
+        home: Stack(
+          children: <Widget>[
+            widgetToReturn,
+            if (loaderState.isLoaderVisible) LoadingAnimation(),
+          ],
+        ),
         theme: ThemeData(
           // Define the default brightness and colors.
           brightness: theme.brightness,

@@ -68,7 +68,7 @@ class MovieListItemState extends State<MovieListItem> {
                             height: 120,
                             fit: BoxFit.fill,
                             width: 80,
-//                                        placeholder: (context, url) => CircularProgressIndicator(),
+//                            placeholder: (context, url) => CircularProgressIndicator(),
                           ),
                         ),
                         Expanded(

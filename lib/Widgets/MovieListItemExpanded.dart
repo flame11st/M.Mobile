@@ -42,44 +42,44 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
+    final imageUrl =
+        movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     final topCard = MCard(
       padding: 15,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-        MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
-          Text(movie.title,
-                  style: Theme.of(context).textTheme.headline2),
+          Text(movie.title, style: Theme.of(context).textTheme.headline2),
           SizedBox(
             height: 10,
           ),
           Row(
             children: <Widget>[
               Text(movie.year.toString(),
-                      style: Theme.of(context).textTheme.headline5),
+                  style: Theme.of(context).textTheme.headline5),
               SizedBox(
                 width: 15,
               ),
               Text(
-                      (movie.movieType == MovieType.movie
-                              ? movie.duration.toString()
-                              : movie.averageTimeOfEpisode.toString())+
-                              ' min',
-                      style: Theme.of(context).textTheme.headline5),
+                  (movie.movieType == MovieType.movie
+                          ? movie.duration.toString()
+                          : movie.averageTimeOfEpisode.toString()) +
+                      ' min',
+                  style: Theme.of(context).textTheme.headline5),
               SizedBox(
                 width: 15,
               ),
               if (movie.seasonsCount > 0)
-                Text("Seasons: ${movie.seasonsCount}", style: Theme.of(context).textTheme.headline5)
+                Text("Seasons: ${movie.seasonsCount}",
+                    style: Theme.of(context).textTheme.headline5)
             ],
           ),
           SizedBox(
             height: 10,
           ),
           Text(movie.genres.join(', '),
-                  style: Theme.of(context).textTheme.headline5)
+              style: Theme.of(context).textTheme.headline5)
         ],
       ),
     );
@@ -101,56 +101,33 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             ),
           ),
         ),
-//        Container(
-//          padding: EdgeInsets.all(3),
-//          decoration: BoxDecoration(
-//                  boxShadow: BoxShadowNeomorph.circleShadow,
-//                  borderRadius: BorderRadius.circular(10.0),
-//                  color: Theme.of(context).primaryColor
-//          ),
-//          child: ClipRRect(
-//            borderRadius: BorderRadius.circular(8.0),
-//            child: CachedNetworkImage(
-//              imageUrl: imageBaseUrl + imageUrl,
-//              height: 150,
-//              fit: BoxFit.fill,
-//              width: 100,
-////                                        placeholder: (context, url) => CircularProgressIndicator(),
-//            ),
-//          ),
-//        ),
         Column(
           children: <Widget>[
             Container(
               height: 116,
               width: 116,
               decoration: new BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      shape: BoxShape.circle,
-                      boxShadow:
-                      BoxShadowNeomorph.circleShadow),
+                  color: Theme.of(context).primaryColor,
+                  shape: BoxShape.circle,
+                  boxShadow: BoxShadowNeomorph.circleShadow),
               child: CircularPercentIndicator(
                 radius: 110.0,
                 lineWidth: 6.0,
-                percent: movie.allVotes > 0 &&
-                        movie.rating == 0
-                        ? 1
-                        : movie.rating / 100,
+                percent: movie.allVotes > 0 && movie.rating == 0
+                    ? 1
+                    : movie.rating / 100,
                 center: movie.allVotes > 0
-                        ? Column(
-                  mainAxisAlignment:
-                  MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text("${movie.rating}%",
-                            style:
-                            Theme.of(context).textTheme.headline5),
-                    SizedBox(height: 5),
-                    Text("Votes: ${movie.allVotes}",
-                            style:
-                            Theme.of(context).textTheme.headline5)
-                  ],
-                )
-                        : Text("Not rated",
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Text("${movie.rating}%",
+                              style: Theme.of(context).textTheme.headline5),
+                          SizedBox(height: 5),
+                          Text("Votes: ${movie.allVotes}",
+                              style: Theme.of(context).textTheme.headline5)
+                        ],
+                      )
+                    : Text("Not rated",
                         style: Theme.of(context).textTheme.headline5),
                 progressColor: getProgressColor(),
               ),
@@ -174,15 +151,17 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         if (movie.tagline != null)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         SizedBox(height: 10),
-        MTextField(subtitleText: 'Directed by', bodyText: movie.directors
-                .map((actor) => actor.name)
-                .join(', ')),
+        MTextField(
+            subtitleText: 'Directed by',
+            bodyText: movie.directors.map((actor) => actor.name).join(', ')),
         SizedBox(height: 10),
-        MTextField(subtitleText: 'Starring', bodyText: movie.actors
-                .map((actor) => actor.name)
-                .join(', ')),
+        MTextField(
+            subtitleText: 'Starring',
+            bodyText: movie.actors.map((actor) => actor.name).join(', ')),
         SizedBox(height: 10),
-        MTextField(subtitleText: 'Countries', bodyText: movie.countries.replaceAll(',', ', ')),
+        MTextField(
+            subtitleText: 'Countries',
+            bodyText: movie.countries.replaceAll(',', ', ')),
         SizedBox(
           height: 15,
         ),
@@ -190,33 +169,35 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       ],
     );
 
-    return Scaffold(
-        backgroundColor: Theme.of(context).primaryColor,
-        body: Container(
-          child: Hero(
-            tag: 'movie-hero-animation' + movie.id,
-            child: SingleChildScrollView (child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                      margin: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: Container(
-                          color: Theme.of(context).primaryColor,
-                          child: Column(
-                            children: <Widget>[
-                              topCard,
-                              SizedBox(height: 20),
-                              contentBody,
-                              SizedBox(height: 20),
-                              textFields,
-                            ],
-                          ),
+    return GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Scaffold(
+            backgroundColor: Theme.of(context).primaryColor,
+            body: Hero(
+              tag: 'movie-hero-animation' + movie.id,
+              child: SingleChildScrollView(
+                child: Container(
+                    margin: EdgeInsets.fromLTRB(12, 20, 12, 20),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: Container(
+                        color: Theme.of(context).primaryColor,
+                        child: Column(
+                          children: <Widget>[
+                            topCard,
+                            SizedBox(height: 20),
+                            contentBody,
+                            SizedBox(height: 20),
+                            textFields,
+                          ],
                         ),
-                      )),
+                      ),
+                    )),
+              ),
             ),
-            ),
-          )),
-    bottomNavigationBar: MoviesBottomNavigationBarExpanded(movieId: movie.id, movieRate: movie.movieRate,));
+            bottomNavigationBar: MoviesBottomNavigationBarExpanded(
+              movieId: movie.id,
+              movieRate: movie.movieRate,
+            )));
   }
 }

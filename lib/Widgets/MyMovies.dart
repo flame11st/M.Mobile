@@ -8,6 +8,7 @@ import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'BottomNavigationBar.dart';
 import 'MovieList.dart';
+import 'Providers/LoaderState.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'SearchDelegate.dart';
@@ -26,20 +27,25 @@ class MyMoviesState extends State<MyMovies> {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    if (moviesState.userMovies.length > 0) return;
+    if (moviesState.userMovies.length > 0) {
+      return;
+    }
 
     serviceAgent.state = userState;
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
     Iterable iterableMovies = json.decode(moviesResponse.body);
 
-    if (iterableMovies.length == 0) return;
+    if (iterableMovies.length != 0) {
+      List<Movie> movies = iterableMovies.map((model) {
+        return Movie.fromJson(model);
+      }).toList();
 
-    List<Movie> movies = iterableMovies.map((model) {
-      return Movie.fromJson(model);
-    }).toList();
+      moviesState.setUserMovies(movies);
+    }
 
-    moviesState.setUserMovies(movies);
+    final loaderState = Provider.of<LoaderState>(context);
+    loaderState.setIsLoaderVisible(false);
   }
 
   setUserInfo() async {

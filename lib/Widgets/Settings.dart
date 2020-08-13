@@ -184,12 +184,10 @@ class SettingsState extends State<Settings> {
       children: <Widget>[
         Row(
           children: <Widget>[
-            Hero(
-                tag: 'settings',
-                child: Icon(
+            Icon(
                   Icons.settings,
                   size: 25,
-                )),
+                ),
             SizedBox(
               width: 10,
             ),
