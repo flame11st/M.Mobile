@@ -61,7 +61,7 @@ class MHomeState extends State<MHome> {
         home: widgetToReturn,
         theme: ThemeData(
           // Define the default brightness and colors.
-//          brightness: Brightness.light,
+          brightness: theme.brightness,
           primaryColor: theme.colorTheme.primaryColor,
           accentColor: theme.colorTheme.additionalColor,
           hintColor: theme.colorTheme.fontsColor,

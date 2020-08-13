@@ -49,9 +49,11 @@ class MovieRateButtons extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 MIconRateButton(
-                  icon: Icon(Icons.favorite_border,
-                      color: movieRate == MovieRate.liked
-                          ? Colors.greenAccent
+                  color: movieRate == MovieRate.liked
+                      ? Colors.greenAccent
+                      : Theme.of(context).primaryColor,
+                  icon: Icon(Icons.favorite_border, color: movieRate == MovieRate.liked
+                          ? Theme.of(context).primaryColor
                           : Theme.of(context).hintColor),
                   movieId: movieId,
                   movieRate: movieRate == MovieRate.liked
@@ -60,9 +62,11 @@ class MovieRateButtons extends StatelessWidget {
                   width: width,
                 ),
                 MIconRateButton(
-                  icon: Icon(FontAwesome5.ban,
-                      color: movieRate == MovieRate.notLiked
-                          ? Colors.redAccent
+                  color: movieRate == MovieRate.notLiked
+                      ? Colors.redAccent
+                      : Theme.of(context).primaryColor,
+                  icon: Icon(FontAwesome5.ban, color: movieRate == MovieRate.notLiked
+                          ? Theme.of(context).primaryColor
                           : Theme.of(context).hintColor),
                   movieId: movieId,
                   movieRate: movieRate == MovieRate.notLiked
@@ -71,9 +75,12 @@ class MovieRateButtons extends StatelessWidget {
                   width: width,
                 ),
                 MIconRateButton(
+                  color: movieRate == MovieRate.addedToWatchlist
+                      ? Theme.of(context).accentColor
+                      : Theme.of(context).primaryColor,
                   icon: Icon(Icons.add_to_queue,
-                      color: movieRate == MovieRate.addedToWatchlist
-                          ? Theme.of(context).accentColor
+                          color: movieRate == MovieRate.addedToWatchlist
+                          ? Theme.of(context).primaryColor
                           : Theme.of(context).hintColor),
                   movieId: movieId,
                   movieRate: movieRate == MovieRate.addedToWatchlist

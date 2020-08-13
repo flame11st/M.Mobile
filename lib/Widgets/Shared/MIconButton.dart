@@ -6,8 +6,9 @@ class MIconButton extends StatelessWidget {
   final onPressedCallback;
   final icon;
   final width;
+  final color;
 
-  MIconButton({this.icon, this.onPressedCallback, this.width});
+  MIconButton({this.icon, this.onPressedCallback, this.width, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +19,7 @@ class MIconButton extends StatelessWidget {
             width: width != null ? width : 50,
             decoration: BoxDecoration(
               boxShadow: BoxShadowNeomorph.circleShadow,
-              color: Theme.of(context).primaryColor,
+              color: color == null ? Theme.of(context).primaryColor : color,
               shape: BoxShape.circle,
             ),
             child: IconButton(

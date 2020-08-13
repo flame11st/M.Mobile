@@ -6,6 +6,7 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
+import 'package:mmobile/Widgets/Shared/MTextField.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'BottomNavigationBarExpanded.dart';
@@ -77,7 +78,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           SizedBox(
             height: 10,
           ),
-          Text(movie.genres.join(' ,'),
+          Text(movie.genres.join(', '),
                   style: Theme.of(context).textTheme.headline5)
         ],
       ),
@@ -86,12 +87,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     final contentBody = Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: <Widget>[
-        Container(
-          decoration: BoxDecoration(
-                  boxShadow: BoxShadowNeomorph.shadow,
-                  borderRadius: BorderRadius.circular(10.0),
-                  color: Theme.of(context).primaryColor
-          ),
+        MCard(
+          padding: 2,
+          marginTop: 0,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8.0),
             child: CachedNetworkImage(
@@ -103,6 +101,24 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             ),
           ),
         ),
+//        Container(
+//          padding: EdgeInsets.all(3),
+//          decoration: BoxDecoration(
+//                  boxShadow: BoxShadowNeomorph.circleShadow,
+//                  borderRadius: BorderRadius.circular(10.0),
+//                  color: Theme.of(context).primaryColor
+//          ),
+//          child: ClipRRect(
+//            borderRadius: BorderRadius.circular(8.0),
+//            child: CachedNetworkImage(
+//              imageUrl: imageBaseUrl + imageUrl,
+//              height: 150,
+//              fit: BoxFit.fill,
+//              width: 100,
+////                                        placeholder: (context, url) => CircularProgressIndicator(),
+//            ),
+//          ),
+//        ),
         Column(
           children: <Widget>[
             Container(
@@ -156,51 +172,21 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
         if (movie.tagline != null)
-          RichText( text: TextSpan(
-            style: Theme.of(context).textTheme.headline5,
-            children: <TextSpan>[
-              new TextSpan(text: 'Tagline: ', style: Theme.of(context).textTheme.headline4),
-              new TextSpan(text: movie.tagline),
-            ],
-          )),
+          MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         SizedBox(height: 10),
-        RichText( text: TextSpan(
-          style: Theme.of(context).textTheme.headline5,
-          children: <TextSpan>[
-            new TextSpan(text: 'Directed by: ', style: Theme.of(context).textTheme.headline4),
-            new TextSpan(text: movie.directors
-                    .map((actor) => actor.name)
-                    .join(', ')),
-          ],
-        )),
+        MTextField(subtitleText: 'Directed by', bodyText: movie.directors
+                .map((actor) => actor.name)
+                .join(', ')),
         SizedBox(height: 10),
-        RichText( text: TextSpan(
-          style: Theme.of(context).textTheme.headline5,
-          children: <TextSpan>[
-            new TextSpan(text: 'Starring: ', style: Theme.of(context).textTheme.headline4),
-            new TextSpan(text: movie.actors
-                    .map((actor) => actor.name)
-                    .join(', ')),
-          ],
-        )),
+        MTextField(subtitleText: 'Starring', bodyText: movie.actors
+                .map((actor) => actor.name)
+                .join(', ')),
         SizedBox(height: 10),
-        RichText( text: TextSpan(
-          style: Theme.of(context).textTheme.headline5,
-          children: <TextSpan>[
-            new TextSpan(text: 'Countries: ', style: Theme.of(context).textTheme.headline4),
-            new TextSpan(text: movie.countries.replaceAll(',', ', ')),
-          ],
-        )),
+        MTextField(subtitleText: 'Countries', bodyText: movie.countries.replaceAll(',', ', ')),
         SizedBox(
           height: 15,
         ),
-        RichText( text: TextSpan(
-          style: Theme.of(context).textTheme.headline5,
-          children: <TextSpan>[
-            new TextSpan(text: 'Overview: ', style: Theme.of(context).textTheme.headline4),
-            new TextSpan(text: movie.overview.replaceAll(',', ', ')),
-          ],
-        ))
+        MTextField(subtitleText: 'Overview', bodyText: movie.overview),
       ],
     );
 
