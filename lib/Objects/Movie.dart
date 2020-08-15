@@ -39,8 +39,8 @@ class Movie {
 //    var directors = json['directors'].map((model) {
 //      return Person.fromJson(model);
 //    }).toList().cast<Person>();
-    var actors = json['actors'].toList().cast<String>();
-    var directors = json['directors'].toList().cast<String>();
+    var actors = json['actors'].cast<String>();
+    var directors = json['directors'].cast<String>();
 
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];
