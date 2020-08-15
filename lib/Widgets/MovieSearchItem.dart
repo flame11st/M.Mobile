@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/MovieSearchDTO.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +18,7 @@ class MovieSearchItem extends StatelessWidget {
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     return Container(
-        height: 120.0,
+        height: 100.0,
         margin: EdgeInsets.fromLTRB(10, 10, 10, 10),
         decoration: BoxDecoration(
           boxShadow: [
@@ -41,9 +42,9 @@ class MovieSearchItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(12.0),
               child: Image.network(
                 imageBaseUrl + imageUrl,
-                height: 120,
+                height: 100,
                 fit: BoxFit.fill,
-                width: 80,
+                width: 66,
 //                                        placeholder: (context, url) => CircularProgressIndicator(),
               ),
             ),
@@ -64,16 +65,18 @@ class MovieSearchItem extends StatelessWidget {
                         new TextSpan(text: ' (${movie.year})'),
                       ],
                     )),
-                    Text(movie.genres.join(', '), style: Theme.of(context).textTheme.headline5),
+
+//                    Text(movie.genres.join(', '), style: Theme.of(context).textTheme.headline5),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: <Widget>[
                         MIconRateButton(
-                          icon: Icon(Icons.thumb_up,
-                              color: movie.movieRate == MovieRate.liked
-                                  ? Colors.greenAccent
-                                  : Theme.of(context).hintColor,
-                              size: iconSize),
+                          color: movie.movieRate == MovieRate.liked
+                              ? Colors.greenAccent
+                              : Theme.of(context).primaryColor,
+                          icon: Icon(Icons.favorite_border, color: movie.movieRate == MovieRate.liked
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).hintColor),
                           movieId: movie.id,
                           movieRate: movie.movieRate == MovieRate.liked
                               ? MovieRate.notRated
@@ -81,13 +84,12 @@ class MovieSearchItem extends StatelessWidget {
                           width: width,
                         ),
                         MIconRateButton(
-                          icon: Icon(
-                            Icons.thumb_down,
-                            color: movie.movieRate == MovieRate.notLiked
-                                ? Colors.redAccent
-                                : Theme.of(context).hintColor,
-                            size: iconSize,
-                          ),
+                          color: movie.movieRate == MovieRate.notLiked
+                              ? Colors.redAccent
+                              : Theme.of(context).primaryColor,
+                          icon: Icon(FontAwesome5.ban, color: movie.movieRate == MovieRate.notLiked
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).hintColor),
                           movieId: movie.id,
                           movieRate: movie.movieRate == MovieRate.notLiked
                               ? MovieRate.notRated
@@ -95,12 +97,13 @@ class MovieSearchItem extends StatelessWidget {
                           width: width,
                         ),
                         MIconRateButton(
+                          color: movie.movieRate == MovieRate.addedToWatchlist
+                              ? Theme.of(context).accentColor
+                              : Theme.of(context).primaryColor,
                           icon: Icon(Icons.add_to_queue,
-                              color:
-                                  movie.movieRate == MovieRate.addedToWatchlist
-                                      ? Theme.of(context).accentColor
-                                      : Theme.of(context).hintColor,
-                              size: iconSize),
+                              color: movie.movieRate == MovieRate.addedToWatchlist
+                                  ? Theme.of(context).primaryColor
+                                  : Theme.of(context).hintColor),
                           movieId: movie.id,
                           movieRate: movie.movieRate == MovieRate.addedToWatchlist
                               ? MovieRate.notRated

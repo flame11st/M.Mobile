@@ -30,15 +30,7 @@ class Movie {
     this.genres, this.movieRate, this.movieType, this.year, this.averageTimeOfEpisode,
     this.inProduction, this.seasonsCount, this.imdbRate, this.imdbVotes});
 
-  //  TODO: Map json class fields
   factory Movie.fromJson(Map<String, dynamic> json) {
-//    var actors = json['actors'].map((model) {
-//      return Person.fromJson(model);
-//    }).toList().cast<Person>();
-//
-//    var directors = json['directors'].map((model) {
-//      return Person.fromJson(model);
-//    }).toList().cast<Person>();
     var actors = json['actors'].cast<String>();
     var directors = json['directors'].cast<String>();
 

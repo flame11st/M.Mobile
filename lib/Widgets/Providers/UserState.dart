@@ -27,11 +27,13 @@ class UserState with ChangeNotifier {
     var storedRefreshToken = await storage.read(key: 'refreshToken');
     var storedUserId = await storage.read(key: 'userId');
     var storedUserName = await storage.read(key: 'userName');
+    var storedSignedInWithGoogle = await storage.read(key: 'isSignedInWithGoogle');
 
     this.token = storedToken;
     this.refreshToken = storedRefreshToken;
     this.userId = storedUserId;
     this.userName = storedUserName;
+    this.isSignedInWithGoogle = storedSignedInWithGoogle == "true";
 
     serviceAgent.state = this;
     var authorizationResponse = await serviceAgent.checkAuthorization();
@@ -57,8 +59,7 @@ class UserState with ChangeNotifier {
     var userId = responseJson['userId'];
     var userName = responseJson['username'];
 
-    this.isSignedInWithGoogle = isSignedInWithGoogle;
-    setInitialUserData(accessToken, refreshToken, userId, userName);
+    setInitialUserData(accessToken, refreshToken, userId, userName, isSignedInWithGoogle);
   }
 
   logout() async {
@@ -79,12 +80,13 @@ class UserState with ChangeNotifier {
   }
 
   Future<void> setInitialUserData(String token, String refreshToken,
-      String userId, String userName) async {
+      String userId, String userName, bool isSignedInWithGoogle) async {
     this.token = token;
     this.refreshToken = refreshToken;
     this.userId = userId;
     this.userName = userName;
     this.isUserAuthorized = true;
+    this.isSignedInWithGoogle = isSignedInWithGoogle;
 
     notifyListeners();
 
@@ -92,5 +94,6 @@ class UserState with ChangeNotifier {
     await storage.write(key: 'userId', value: userId);
     await storage.write(key: 'userName', value: userName);
     await storage.write(key: 'refreshToken', value: refreshToken);
+    await storage.write(key: 'isSignedInWithGoogle', value: isSignedInWithGoogle.toString());
   }
 }
