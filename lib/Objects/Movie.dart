@@ -13,8 +13,8 @@ class Movie {
   int likedVotes;
   int dislikedVotes;
   final String countries;
-  final List<Person> actors;
-  final List<Person> directors;
+  final List<String> actors;
+  final List<String> directors;
   final List<String> genres;
   int movieRate;
   final MovieType movieType;
@@ -32,13 +32,15 @@ class Movie {
 
   //  TODO: Map json class fields
   factory Movie.fromJson(Map<String, dynamic> json) {
-    var actors = json['actors'].map((model) {
-      return Person.fromJson(model);
-    }).toList().cast<Person>();
-
-    var directors = json['directors'].map((model) {
-      return Person.fromJson(model);
-    }).toList().cast<Person>();
+//    var actors = json['actors'].map((model) {
+//      return Person.fromJson(model);
+//    }).toList().cast<Person>();
+//
+//    var directors = json['directors'].map((model) {
+//      return Person.fromJson(model);
+//    }).toList().cast<Person>();
+    var actors = json['actors'].toList().cast<String>();
+    var directors = json['directors'].toList().cast<String>();
 
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];

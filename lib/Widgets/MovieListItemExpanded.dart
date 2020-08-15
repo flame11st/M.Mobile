@@ -153,11 +153,11 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         SizedBox(height: 10),
         MTextField(
             subtitleText: 'Directed by',
-            bodyText: movie.directors.map((actor) => actor.name).join(', ')),
+            bodyText: movie.directors.map((director) => director).join(', ')),
         SizedBox(height: 10),
         MTextField(
             subtitleText: 'Starring',
-            bodyText: movie.actors.map((actor) => actor.name).join(', ')),
+            bodyText: movie.actors.map((actor) => actor).join(', ')),
         SizedBox(height: 10),
         MTextField(
             subtitleText: 'Countries',
