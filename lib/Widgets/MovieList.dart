@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
-
-//import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
@@ -38,21 +36,35 @@ class MovieListState extends State<MovieList> {
             unselectedLabelColor: Theme.of(context).hintColor,
             tabs: [
               Tab(
-                  child: Text(
-                'Watchlist',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-              )),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(Icons.queue_play_next),
+                      SizedBox(width: 7,),
+                      Text(
+                        'Watchlist',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    ],
+                  )),
               Tab(
-                  child: Text(
-                'Viewed',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-              )),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(Icons.check),
+                      SizedBox(width: 5,),
+                      Text(
+                        'Viewed',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    ],
+                  )),
             ],
           ),
         ),

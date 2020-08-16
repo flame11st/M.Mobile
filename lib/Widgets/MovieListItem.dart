@@ -29,7 +29,8 @@ class MovieListItemState extends State<MovieListItem> {
   }
 
   Widget build(BuildContext context) {
-    final imageUrl = movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
+    final imageUrl =
+        movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
 
     return GestureDetector(
       onTap: () {
@@ -41,7 +42,7 @@ class MovieListItemState extends State<MovieListItem> {
               child: Material(
                 type: MaterialType.transparency,
                 child: Container(
-                    height: 120.0,
+                    height: 122.0,
                     margin: EdgeInsets.fromLTRB(10, 10, 10, 10),
                     decoration: BoxDecoration(
                       boxShadow: [
@@ -61,8 +62,13 @@ class MovieListItemState extends State<MovieListItem> {
                     ),
                     child: Row(
                       children: <Widget>[
+                        SizedBox(
+                          width: 2,
+                        ),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(12.0),
+                          borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              bottomLeft: Radius.circular(12)),
                           child: CachedNetworkImage(
                             imageUrl: imageBaseUrl + imageUrl,
                             height: 120,
@@ -79,11 +85,15 @@ class MovieListItemState extends State<MovieListItem> {
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                Text(movie.title, style: Theme.of(context).textTheme.headline3),
+                                Text(movie.title,
+                                    style:
+                                        Theme.of(context).textTheme.headline3),
                                 Row(
                                   children: <Widget>[
                                     Text(movie.year.toString(),
-                                        style: Theme.of(context).textTheme.headline5),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5),
                                     SizedBox(
                                       width: 30,
                                     ),
@@ -93,17 +103,22 @@ class MovieListItemState extends State<MovieListItem> {
                                                 : movie.averageTimeOfEpisode
                                                     .toString()) +
                                             ' min',
-                                        style: Theme.of(context).textTheme.headline5),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5),
                                     SizedBox(
                                       width: 30,
                                     ),
                                     if (movie.seasonsCount > 0)
                                       Text("Seasons: ${movie.seasonsCount}",
-                                          style: Theme.of(context).textTheme.headline5)
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5)
                                   ],
                                 ),
                                 Text(movie.genres.join(', '),
-                                    style: Theme.of(context).textTheme.headline5),
+                                    style:
+                                        Theme.of(context).textTheme.headline5),
                               ],
                             ),
                           ),
@@ -127,10 +142,11 @@ class MovieListItemState extends State<MovieListItem> {
                                   context: context,
                                   builder: (BuildContext context) =>
                                       MovieRateButtons(
-                                        movieRate: movie.movieRate,
-                                        movieId: movie.id,
-                                        additionalText: movie.title,
-                                      ));
+                                          movieRate: movie.movieRate,
+                                          movieId: movie.id,
+                                          movieTitle: movie.title,
+                                          showTitle: true,
+                                          addMargin: false));
                             },
                           ),
                         )

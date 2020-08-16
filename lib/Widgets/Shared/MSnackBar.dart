@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
 import 'package:mmobile/Variables/Variables.dart';
 
 class MSnackBar {
@@ -8,7 +9,7 @@ class MSnackBar {
     Scaffold.of(context).showSnackBar(SnackBar(
       content: Container(
           margin: EdgeInsets.all(0),
-          height: 35,
+          height: 40,
           child: Align(
               alignment: Alignment.centerLeft,
               child: Text(

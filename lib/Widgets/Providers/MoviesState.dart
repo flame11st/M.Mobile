@@ -224,6 +224,9 @@ class MoviesState with ChangeNotifier {
   void removeMovieFromList(Movie movieToRemove, List<Movie> moviesList,
       GlobalKey<AnimatedListState> key) {
     final index = moviesList.indexOf(movieToRemove);
+
+    if (index == -1) return;
+
     moviesList.removeAt(index);
 
     AnimatedListRemovedItemBuilder builder = (context, animation) {

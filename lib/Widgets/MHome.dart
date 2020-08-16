@@ -5,6 +5,7 @@ import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
+import 'package:mmobile/Widgets/WelcomeTutorial.dart';
 import 'package:provider/provider.dart';
 import 'LoadingAnimation.dart';
 import 'Login.dart';
@@ -23,7 +24,7 @@ class MHomeState extends State<MHome> {
   @override
   Widget build(BuildContext context) {
     final themeState = Provider.of<ThemeState>(context);
-    final provider = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
 
     MTheme theme = themeState.selectedTheme;
@@ -57,8 +58,8 @@ class MHomeState extends State<MHome> {
 //      SystemChrome.setSystemUIOverlayStyle(style);
 
 
-    Widget widgetToReturn = provider.isAppLoaded
-        ? provider.isUserAuthorized ? MyMovies() : Login()
+    Widget widgetToReturn = userState.isAppLoaded
+        ? userState.isUserAuthorized ? MyMovies() : Login()
         : Text('');
 
     return MaterialApp(

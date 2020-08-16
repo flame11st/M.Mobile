@@ -11,11 +11,12 @@ class MIconRateButton extends StatelessWidget {
   final icon;
   final int movieRate;
   final String movieId;
+  final String movieTitle;
   final serviceAgent = new ServiceAgent();
   final width;
   final color;
 
-  MIconRateButton({this.icon, this.movieRate, this.movieId, this.width, this.color});
+  MIconRateButton({this.icon, this.movieRate, this.movieId, this.width, this.color, this.movieTitle});
 
   rateMovie(String movieId, int movieRate, MoviesState moviesState,
       UserState userState) async {
@@ -41,16 +42,16 @@ class MIconRateButton extends StatelessWidget {
         isViewedMovie = true;
     }
 
-    var text = 'The item $action to your Watchlist!';
+    var text = '"$movieTitle" $action to your Watchlist!';
 
     if (movieRate == MovieRate.notRated)
-      text = 'The item removed from your movies!';
+      text = '"$movieTitle" removed from your movies!';
 
     if (movieRate == MovieRate.liked || movieRate == MovieRate.notLiked) {
       if (isViewedMovie) {
-        text = 'Rate of the item changed!';
+        text = '"$movieTitle" rate changed!';
       } else {
-        text = 'The item $action to your viewed movies!';
+        text = '"$movieTitle" $action to your viewed movies!';
       }
     }
 

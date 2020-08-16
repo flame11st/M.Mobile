@@ -9,7 +9,7 @@ import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MTextField.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
-import 'BottomNavigationBarExpanded.dart';
+import 'MoviesBottomNavigationBarExpanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
@@ -91,12 +91,12 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           padding: 2,
           marginTop: 0,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
+            borderRadius: BorderRadius.circular(12.0),
             child: CachedNetworkImage(
               imageUrl: imageBaseUrl + imageUrl,
-              height: 150,
+              height: 180,
               fit: BoxFit.fill,
-              width: 100,
+              width: 120,
 //                                        placeholder: (context, url) => CircularProgressIndicator(),
             ),
           ),
@@ -198,6 +198,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             bottomNavigationBar: MoviesBottomNavigationBarExpanded(
               movieId: movie.id,
               movieRate: movie.movieRate,
+              movieTitle: movie.title,
             )));
   }
 }

@@ -8,6 +8,7 @@ class MButton extends StatelessWidget {
   final double height;
   final double width;
   final prependIcon;
+  final appendIcon;
   final prependImage;
 
   MButton({
@@ -17,7 +18,7 @@ class MButton extends StatelessWidget {
     this.height,
     this.width,
     this.prependIcon,
-    this.prependImage,
+    this.prependImage, this.appendIcon,
   });
 
   @override
@@ -64,6 +65,16 @@ class MButton extends StatelessWidget {
                   width: 10,
                 ),
               Text(text, style: TextStyle(color: color, fontSize: 15)),
+              if (appendIcon != null)
+                SizedBox(
+                  width: 10,
+                ),
+              if (appendIcon != null)
+                Icon(
+                  appendIcon,
+                  size: 20,
+                  color: color,
+                ),
             ],
           ),
         ));

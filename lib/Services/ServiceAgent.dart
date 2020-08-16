@@ -33,7 +33,7 @@ class ServiceAgent {
   }
 
   googleLogin(String idToken) {
-    return get('Identity/GoogleLogin?idToken=$idToken&isAndroid=true');
+    return get('Identity/GoogleLoginAndroid?idToken=$idToken');
   }
 
   getUserMovies(String userId) {

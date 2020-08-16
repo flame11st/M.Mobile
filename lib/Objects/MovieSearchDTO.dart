@@ -14,7 +14,7 @@ class MovieSearchDTO {
         id: json['id'],
         title: json['title'],
         posterPath: json['posterPath'],
-        genres: json['genres'].cast<String>(),
+//        genres: json['genres'].cast<String>(),
         year: json['year'],
 //        movieRate: json['movieRate'],
     );

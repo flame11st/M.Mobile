@@ -71,6 +71,7 @@ class MovieSearchItem extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: <Widget>[
                         MIconRateButton(
+                          movieTitle: movie.title,
                           color: movie.movieRate == MovieRate.liked
                               ? Colors.greenAccent
                               : Theme.of(context).primaryColor,
@@ -84,6 +85,7 @@ class MovieSearchItem extends StatelessWidget {
                           width: width,
                         ),
                         MIconRateButton(
+                          movieTitle: movie.title,
                           color: movie.movieRate == MovieRate.notLiked
                               ? Colors.redAccent
                               : Theme.of(context).primaryColor,
@@ -97,6 +99,7 @@ class MovieSearchItem extends StatelessWidget {
                           width: width,
                         ),
                         MIconRateButton(
+                          movieTitle: movie.title,
                           color: movie.movieRate == MovieRate.addedToWatchlist
                               ? Theme.of(context).accentColor
                               : Theme.of(context).primaryColor,

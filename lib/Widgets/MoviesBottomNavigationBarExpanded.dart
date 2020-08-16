@@ -10,18 +10,20 @@ import 'Shared/MovieRateButtons.dart';
 class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   final String movieId;
   final int movieRate;
+  final String movieTitle;
 
-  const MoviesBottomNavigationBarExpanded({Key key, this.movieId, this.movieRate}) : super(key: key);
+  const MoviesBottomNavigationBarExpanded(
+      {Key key, this.movieId, this.movieRate, this.movieTitle})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
- return BottomAppBar(
-      color: Theme.of(context).primaryColor,
-      child: MovieRateButtons(
-        movieId: movieId,
-        movieRate: movieRate,
-      )
-    );
+    return BottomAppBar(
+        color: Theme.of(context).primaryColor,
+        child: MovieRateButtons(
+          movieId: movieId,
+          movieRate: movieRate,
+          movieTitle: movieTitle,
+        ));
   }
 }
-

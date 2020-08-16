@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
-import 'package:mmobile/Variables/Variables.dart';
 
 import 'MIconRateButton.dart';
 
 class MovieRateButtons extends StatelessWidget {
   final String movieId;
+  final String movieTitle;
   final int movieRate;
-  final String additionalText;
   final width;
+  final bool showTitle;
+  final bool addMargin;
 
   const MovieRateButtons(
-      {Key key, this.movieId, this.movieRate, this.additionalText, this.width})
+      {Key key,
+      this.movieId,
+      this.movieRate,
+      this.width,
+      this.movieTitle,
+      this.showTitle,
+      this.addMargin})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        height: additionalText == null ? 60 : 110,
-        margin: EdgeInsets.fromLTRB(10, 5, 10, 10),
+        height: showTitle != null && showTitle ? 110 : 60,
+        margin: addMargin != null && !addMargin
+            ? EdgeInsets.all(0)
+            : EdgeInsets.fromLTRB(10, 5, 10, 10),
         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
         decoration: BoxDecoration(
           boxShadow: [
@@ -35,24 +44,32 @@ class MovieRateButtons extends StatelessWidget {
             ),
           ],
           color: Theme.of(context).primaryColor,
-          borderRadius: BorderRadius.circular(30.0),
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30.0),
+              topRight: Radius.circular(30.0),
+              bottomLeft: Radius.circular(
+                  addMargin == null || addMargin == true ? 30.0 : 0),
+              bottomRight: Radius.circular(
+                  addMargin == null || addMargin == true ? 30.0 : 0)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            if (additionalText != null)
+            if (showTitle != null && showTitle)
               Text(
-                additionalText,
-                style: Theme.of(context).textTheme.headline5,
+                movieTitle,
+                style: Theme.of(context).textTheme.headline2,
               ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 MIconRateButton(
+                  movieTitle: movieTitle,
                   color: movieRate == MovieRate.liked
                       ? Colors.greenAccent
                       : Theme.of(context).primaryColor,
-                  icon: Icon(Icons.favorite_border, color: movieRate == MovieRate.liked
+                  icon: Icon(Icons.favorite_border,
+                      color: movieRate == MovieRate.liked
                           ? Theme.of(context).primaryColor
                           : Theme.of(context).hintColor),
                   movieId: movieId,
@@ -62,10 +79,12 @@ class MovieRateButtons extends StatelessWidget {
                   width: width,
                 ),
                 MIconRateButton(
+                  movieTitle: movieTitle,
                   color: movieRate == MovieRate.notLiked
                       ? Colors.redAccent
                       : Theme.of(context).primaryColor,
-                  icon: Icon(FontAwesome5.ban, color: movieRate == MovieRate.notLiked
+                  icon: Icon(FontAwesome5.ban,
+                      color: movieRate == MovieRate.notLiked
                           ? Theme.of(context).primaryColor
                           : Theme.of(context).hintColor),
                   movieId: movieId,
@@ -75,11 +94,12 @@ class MovieRateButtons extends StatelessWidget {
                   width: width,
                 ),
                 MIconRateButton(
+                  movieTitle: movieTitle,
                   color: movieRate == MovieRate.addedToWatchlist
                       ? Theme.of(context).accentColor
                       : Theme.of(context).primaryColor,
                   icon: Icon(Icons.add_to_queue,
-                          color: movieRate == MovieRate.addedToWatchlist
+                      color: movieRate == MovieRate.addedToWatchlist
                           ? Theme.of(context).primaryColor
                           : Theme.of(context).hintColor),
                   movieId: movieId,

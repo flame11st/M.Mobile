@@ -14,8 +14,9 @@ class MSearchDelegate extends SearchDelegate {
   UserState userState;
   String oldQuery;
   bool isLoading = false;
+  StateSetter setStateFunction;
 
-  searchMovies(BuildContext context, StateSetter setState) async {
+  searchMovies(BuildContext context) async {
     isLoading = true;
 
     if (userState == null) {
@@ -28,20 +29,21 @@ class MSearchDelegate extends SearchDelegate {
     // Debounce
     final queryToDebounce = query;
     await Future.delayed(Duration(milliseconds: 500));
-    if (queryToDebounce != query) {
-      return;
-    }
+    if (queryToDebounce != query) return;
 
     final moviesResponse = await serviceAgent.search(query);
+
+    if (queryToDebounce != oldQuery) return;
 
     if (moviesResponse.statusCode == 200) {
       Iterable iterableMovies = json.decode(moviesResponse.body);
       final foundMovies = iterableMovies.map((model) {
         return MovieSearchDTO.fromJson(model);
       }).map((movie) {
-        final userMoviesList = moviesState.userMovies.where((um) => um.id == movie.id);
+        final userMoviesList =
+            moviesState.userMovies.where((um) => um.id == movie.id);
 
-        if(userMoviesList.length > 0) {
+        if (userMoviesList.length > 0) {
           movie.movieRate = userMoviesList.first.movieRate;
         }
 
@@ -49,7 +51,7 @@ class MSearchDelegate extends SearchDelegate {
       }).toList();
 
       isLoading = false;
-      setState(() => this.foundMovies = foundMovies);
+      setStateFunction(() => this.foundMovies = foundMovies);
     } else {
       isLoading = false;
     }
@@ -79,36 +81,47 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    return Container(
-        color: Theme.of(context).primaryColor,
-        child: ListView(
-          children: <Widget>[
-            for (final movie in foundMovies) MovieSearchItem(movie: movie)
-          ],
-        ));
+    return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+      this.setStateFunction = setState;
+      return Container(
+          color: Theme.of(context).primaryColor,
+          child: ListView(
+            children: <Widget>[
+              SizedBox(
+                  height: 5,
+                  child: isLoading ? LinearProgressIndicator() : Text('')),
+              for (final movie in foundMovies) MovieSearchItem(movie: movie)
+            ],
+          ));
+    });
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
     return StatefulBuilder(
-      builder: (BuildContext context, StateSetter setState) {
-        if (query == '') {
-          oldQuery = '';
-          isLoading = false;
-          setState(() => foundMovies.clear());
-        } else if (query != oldQuery) {
-          oldQuery = query;
-          searchMovies(context, setState);
-        }
+        builder: (BuildContext context, StateSetter setState) {
+      this.setStateFunction = setState;
 
-        return Container(
-            color: Theme.of(context).primaryColor,
-            child: ListView(
-              children: <Widget>[
-                if (isLoading) LinearProgressIndicator(),
-                for (final movie in foundMovies) MovieSearchItem(movie: movie)
-              ],
-            ));
+      if (query == '') {
+        oldQuery = '';
+        isLoading = false;
+        setState(() => foundMovies.clear());
+      } else if (query != oldQuery) {
+        oldQuery = query;
+        searchMovies(context);
+      }
+
+      return Container(
+          color: Theme.of(context).primaryColor,
+          child: ListView(
+            children: <Widget>[
+              SizedBox(
+                  height: 5,
+                  child: isLoading ? LinearProgressIndicator() : Text('')),
+              for (final movie in foundMovies) MovieSearchItem(movie: movie)
+            ],
+          ));
     });
   }
 
