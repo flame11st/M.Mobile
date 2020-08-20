@@ -1,14 +1,21 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
+import 'package:collection/collection.dart';
 
 class MoviesState with ChangeNotifier {
+  MoviesState() {
+    setInitialData();
+  }
+
   final serviceAgent = new ServiceAgent();
+  final storage = new FlutterSecureStorage();
 
   List<Movie> userMovies = new List<Movie>();
   List<Movie> watchlistMovies = new List<Movie>();
@@ -20,15 +27,32 @@ class MoviesState with ChangeNotifier {
   var selectedRates = {MovieRate.liked, MovieRate.notLiked};
   var selectedTypes = {MovieType.movie, MovieType.tv};
 
-  void setUserMovies(List<Movie> userMovies) async {
+  bool isMoviesRequested = false;
+
+
+  Future<void> setInitialData() async {
+    var storedMovies = await storage.read(key: 'movies');
+    Iterable iterableMovies = json.decode(storedMovies);
+
+    if (iterableMovies.length != 0) {
+      List<Movie> movies = iterableMovies.map((model) {
+        return Movie.fromJson(model);
+      }).toList();
+
+      setInitialUserMovies(movies);
+    }
+    var x = 10;
+  }
+
+  void setInitialUserMovies(List<Movie> userMovies) async {
     this.userMovies = userMovies;
     this.watchlistMovies = userMovies
         .where((movie) => movie.movieRate == MovieRate.addedToWatchlist)
         .toList();
 
-    for (int offset = 0; offset < watchlistMovies.length; offset++) {
-      watchlistKey.currentState.insertItem(offset);
-    }
+//    for (int offset = 0; offset < watchlistMovies.length; offset++) {
+//      watchlistKey.currentState.insertItem(offset);
+//    }
 
     this.viewedMovies = userMovies
         .where((movie) =>
@@ -37,6 +61,18 @@ class MoviesState with ChangeNotifier {
         .toList();
 
     notifyListeners();
+  }
+
+  Future<void> setUserMovies(List<Movie> userMovies) async {
+    if (equals(this.userMovies, userMovies)) {
+      var x = 10;
+      return;
+    } else {
+      await storage.write(key: 'movies', value: jsonEncode(userMovies));
+      var x = 11;
+    }
+
+    isMoviesRequested = true;
   }
 
   bool isWatchlist() {
@@ -252,6 +288,18 @@ class MoviesState with ChangeNotifier {
     getViewedMovies().forEach((element) => removeMovieFromList(element, viewedMovies, viewedListKey));
 
     userMovies.clear();
+  }
+
+  bool equals(List<Movie> list1, List<Movie> list2) {
+    if (identical(list1, list2)) return true;
+    if (list1 == null || list2 == null) return false;
+    var length = list1.length;
+    if (length != list2.length) return false;
+    for (var i = 0; i < length; i++) {
+      if (!list2.contains(list1[i])) return false;
+      if (!list1.contains(list2[i])) return false;
+    }
+    return true;
   }
 
   //Animated List area

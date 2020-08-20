@@ -29,7 +29,7 @@ class MyMoviesState extends State<MyMovies> {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    if (moviesState.userMovies.length > 0) {
+    if (moviesState.isMoviesRequested) {
       return;
     }
 

@@ -42,8 +42,8 @@ class MovieListItemState extends State<MovieListItem> {
               child: Material(
                 type: MaterialType.transparency,
                 child: Container(
-                    height: 122.0,
-                    margin: EdgeInsets.fromLTRB(10, 10, 10, 10),
+                    height: 102.0,
+                    margin: EdgeInsets.fromLTRB(10, 10, 10, 5),
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
@@ -71,9 +71,9 @@ class MovieListItemState extends State<MovieListItem> {
                               bottomLeft: Radius.circular(12)),
                           child: CachedNetworkImage(
                             imageUrl: imageBaseUrl + imageUrl,
-                            height: 120,
+                            height: 100,
                             fit: BoxFit.fill,
-                            width: 80,
+                            width: 66,
 //                            placeholder: (context, url) => CircularProgressIndicator(),
                           ),
                         ),

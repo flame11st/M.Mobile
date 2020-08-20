@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:mmobile/Enums/MovieType.dart';
 import 'Person.dart';
 
@@ -31,8 +33,9 @@ class Movie {
     this.inProduction, this.seasonsCount, this.imdbRate, this.imdbVotes});
 
   factory Movie.fromJson(Map<String, dynamic> json) {
-    var actors = json['actors'].cast<String>();
-    var directors = json['directors'].cast<String>();
+    var actors = json['actors'] is Iterable ? json['actors'].cast<String>() : jsonDecode(json['actors']).cast<String>();
+    var directors = json['directors'] is List ? json['directors'].cast<String>() : jsonDecode(json['directors']).cast<String>();
+    var genres = json['genres'] is List ? json['genres'].cast<String>() : jsonDecode(json['genres']).cast<String>();
 
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];
@@ -43,7 +46,7 @@ class Movie {
         tagline: json['tagline'],
         overview: json['overview'],
         posterPath: json['posterPath'],
-        genres: json['genres'].cast<String>(),
+        genres: genres,
         year: json['year'],
         duration: json['duration'],
         rating: getMovieRating(likedVotes, dislikedVotes),
@@ -62,6 +65,30 @@ class Movie {
         imdbVotes: json['imdbVotes']
     );
   }
+
+  Map<String, dynamic> toJson() =>
+          {
+            'id': id,
+            'title': title,
+            'tagline': tagline,
+            'overview': overview,
+            'posterPath': posterPath,
+            'genres': jsonEncode(genres),
+            'year': year,
+            'duration': duration,
+            'likedVotes': likedVotes,
+            'unlikedVotes': dislikedVotes,
+            'movieRate': movieRate,
+            'movieType': movieType.index,
+            'countries': countries,
+            'actors': jsonEncode(actors),
+            'directors': jsonEncode(directors),
+            'seasonsCount': seasonsCount,
+            'averageTimeOfEpisode': averageTimeOfEpisode,
+            'inProduction': inProduction,
+            'imdbRate': imdbRate *  10,
+            'imdbVotes': imdbVotes
+          };
 
   static int getMovieRating(int likedVotes, int dislikedVotes) {
     final result = likedVotes + dislikedVotes != 0
