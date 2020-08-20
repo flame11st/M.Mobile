@@ -133,7 +133,7 @@ class SettingsState extends State<Settings> {
 
     if (removeUserResponse.statusCode == 200) {
       userState.logout();
-      moviesState.clear();
+      moviesState.logout();
       Navigator.of(context).pop();
     } else {
       MSnackBar.showSnackBar('Something went wrong', false, context);
@@ -216,7 +216,7 @@ class SettingsState extends State<Settings> {
               ),
               onPressed: () {
                 userState.logout();
-                moviesState.clear();
+                moviesState.logout();
                 Navigator.of(context).pop();
               },
             )

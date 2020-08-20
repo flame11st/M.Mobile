@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
@@ -40,6 +41,7 @@ class MovieListItemState extends State<MovieListItem> {
           child: Hero(
               tag: 'movie-hero-animation' + movie.id,
               child: Material(
+                color: Theme.of(context).cardColor,
                 type: MaterialType.transparency,
                 child: Container(
                     height: 102.0,
@@ -85,9 +87,19 @@ class MovieListItemState extends State<MovieListItem> {
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
+                                //TODO: move color to variable
                                 Text(movie.title,
-                                    style:
-                                        Theme.of(context).textTheme.headline3),
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            movie.movieRate == MovieRate.liked
+                                                ? Colors.greenAccent
+                                                : movie.movieRate ==
+                                                        MovieRate.notLiked
+                                                    ? Colors.red
+                                                    : Theme.of(context)
+                                                        .accentColor)),
                                 Row(
                                   children: <Widget>[
                                     Text(movie.year.toString(),

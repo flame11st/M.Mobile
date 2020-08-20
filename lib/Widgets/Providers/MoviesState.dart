@@ -10,10 +10,6 @@ import '../MovieListItem.dart';
 import 'package:collection/collection.dart';
 
 class MoviesState with ChangeNotifier {
-  MoviesState() {
-    setInitialData();
-  }
-
   final serviceAgent = new ServiceAgent();
   final storage = new FlutterSecureStorage();
 
@@ -32,6 +28,9 @@ class MoviesState with ChangeNotifier {
 
   Future<void> setInitialData() async {
     var storedMovies = await storage.read(key: 'movies');
+
+    if (storedMovies == null) return;
+
     Iterable iterableMovies = json.decode(storedMovies);
 
     if (iterableMovies.length != 0) {
@@ -39,9 +38,11 @@ class MoviesState with ChangeNotifier {
         return Movie.fromJson(model);
       }).toList();
 
-      setInitialUserMovies(movies);
+      if(userMovies.length == 0)
+        setInitialUserMovies(movies);
     }
-    var x = 10;
+
+    notifyListeners();
   }
 
   void setInitialUserMovies(List<Movie> userMovies) async {
@@ -50,29 +51,31 @@ class MoviesState with ChangeNotifier {
         .where((movie) => movie.movieRate == MovieRate.addedToWatchlist)
         .toList();
 
-//    for (int offset = 0; offset < watchlistMovies.length; offset++) {
-//      watchlistKey.currentState.insertItem(offset);
-//    }
-
     this.viewedMovies = userMovies
         .where((movie) =>
             movie.movieRate == MovieRate.liked ||
             movie.movieRate == MovieRate.notLiked)
         .toList();
 
+    if (watchlistKey.currentState != null) {
+      for (int offset = 0; offset < watchlistMovies.length; offset++) {
+        watchlistKey.currentState.insertItem(offset);
+      }
+    }
+
     notifyListeners();
   }
 
   Future<void> setUserMovies(List<Movie> userMovies) async {
-    if (equals(this.userMovies, userMovies)) {
-      var x = 10;
-      return;
-    } else {
-      await storage.write(key: 'movies', value: jsonEncode(userMovies));
-      var x = 11;
-    }
-
     isMoviesRequested = true;
+
+    if (!equals(this.userMovies, userMovies)) {
+      await storage.write(key: 'movies', value: jsonEncode(userMovies));
+
+      this.userMovies = userMovies;
+
+      refreshMovies();
+    }
   }
 
   bool isWatchlist() {
@@ -145,11 +148,13 @@ class MoviesState with ChangeNotifier {
     var moviesToRemove = new List<Movie>();
 
     actualMoviesList.forEach((movie) {
-      if (!moviesList.contains(movie)) moviesToAdd.add(movie);
+      if (!moviesList.any((m) => m.id == movie.id)) {
+        moviesToAdd.add(movie);
+      }
     });
 
     moviesList.forEach((movie) {
-      if (!actualMoviesList.contains(movie)) moviesToRemove.add(movie);
+      if (!actualMoviesList.any((m) => m.id == movie.id)) moviesToRemove.add(movie);
     });
 
     moviesToAdd.forEach((movie) {
@@ -212,6 +217,8 @@ class MoviesState with ChangeNotifier {
     }
 
     notifyListeners();
+
+    await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
 
   void removeMovieRate(Movie movieToRate) {
@@ -227,6 +234,8 @@ class MoviesState with ChangeNotifier {
 
   void addMovieToWatchlist(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate != 0) {
+      userMovies.remove(movieToAdd);
+      userMovies.add(movieToAdd);
       removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
     }
 
@@ -239,13 +248,16 @@ class MoviesState with ChangeNotifier {
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate == MovieRate.addedToWatchlist) {
       removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
-    } else if (movieToAdd.movieRate == MovieRate.liked ||
-        movieToAdd.movieRate == MovieRate.notLiked) {
-      removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
-    }
+      userMovies.remove(movieToAdd);
+      userMovies.add(movieToAdd);
 
-    addMovieToList(
-        movieToAdd, viewedMovies, viewedListKey, viewedMovies.length);
+      addMovieToList(
+          movieToAdd, viewedMovies, viewedListKey, viewedMovies.length);
+    }
+//    else if (movieToAdd.movieRate == MovieRate.liked ||
+//        movieToAdd.movieRate == MovieRate.notLiked) {
+//      removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
+//    }
 
     movieToAdd.movieRate = movieRate;
   }
@@ -283,6 +295,14 @@ class MoviesState with ChangeNotifier {
     movie.rating = Movie.getMovieRating(movie.likedVotes, movie.dislikedVotes);
   }
 
+  logout() async {
+    await storage.deleteAll();
+    isMoviesRequested = false;
+    clear();
+//
+//    notifyListeners();
+  }
+
   clear() {
     getWatchlistMovies().forEach((element) => removeMovieFromList(element, watchlistMovies, watchlistKey));
     getViewedMovies().forEach((element) => removeMovieFromList(element, viewedMovies, viewedListKey));
@@ -296,8 +316,8 @@ class MoviesState with ChangeNotifier {
     var length = list1.length;
     if (length != list2.length) return false;
     for (var i = 0; i < length; i++) {
-      if (!list2.contains(list1[i])) return false;
-      if (!list1.contains(list2[i])) return false;
+      if (!list2.any((m) => m.id == list1[i].id && m.movieRate == list1[i].movieRate)) return false;
+      if (!list1.any((m) => m.id == list2[i].id && m.movieRate == list2[i].movieRate)) return false;
     }
     return true;
   }

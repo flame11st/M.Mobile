@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fluttericon/elusive_icons.dart';
+import 'package:fluttericon/rpg_awesome_icons.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
@@ -33,6 +35,9 @@ class MyMoviesState extends State<MyMovies> {
       return;
     }
 
+    moviesState.setInitialData();
+    moviesState.isMoviesRequested = true;
+
     serviceAgent.state = userState;
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
@@ -45,9 +50,6 @@ class MyMoviesState extends State<MyMovies> {
 
       moviesState.setUserMovies(movies);
     }
-
-    final loaderState = Provider.of<LoaderState>(context);
-    loaderState.setIsLoaderVisible(false);
   }
 
   setUserInfo() async {
@@ -65,12 +67,15 @@ class MyMoviesState extends State<MyMovies> {
   @override
   Widget build(BuildContext context) {
     final userState = Provider.of<UserState>(context);
+    final moviesState = Provider.of<MoviesState>(context);
+    final loaderState = Provider.of<LoaderState>(context);
 
     if (!userState.showTutorial) {
       setUserMovies();
       setUserInfo();
-    } else {
-      final loaderState = Provider.of<LoaderState>(context);
+    }
+    if (loaderState.isLoaderVisible &&
+        (userState.showTutorial || moviesState.userMovies.length > 0)) {
       loaderState.setIsLoaderVisible(false);
     }
 
@@ -89,7 +94,6 @@ class MyMoviesState extends State<MyMovies> {
                   width: 55.0,
                   child: FittedBox(
                     child: FloatingActionButton(
-
                       onPressed: () {
                         showSearch(
                           context: context,
@@ -103,8 +107,7 @@ class MyMoviesState extends State<MyMovies> {
                       backgroundColor: Theme.of(context).accentColor,
                       foregroundColor: Theme.of(context).primaryColor,
                     ),
-                  )
-              ))
+                  )))
         ],
       ),
     );
