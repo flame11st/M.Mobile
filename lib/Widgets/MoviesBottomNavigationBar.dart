@@ -7,6 +7,7 @@ import 'package:mmobile/Variables/Themes.dart';
 import 'package:provider/provider.dart';
 
 import 'MoviesFilter.dart';
+import 'Premium.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/ThemeState.dart';
 import 'Settings.dart';
@@ -96,9 +97,10 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                           Icons.monetization_on,
                           color: Colors.greenAccent,
                         ),
-                        onPressed: () => {
-                          themeState.selectTheme(themeState.selectedTheme == Themes.classicDark ? Themes.classicLight : Themes.classicDark)
-                        },),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                        MaterialPageRoute(builder: (ctx) => Premium()));
+                              },),
                       Text(
                         'Premium',
                         style: Theme.of(context).textTheme.headline5,
