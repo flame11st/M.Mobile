@@ -32,6 +32,7 @@ class MCard extends StatelessWidget {
           color: Theme.of(context).primaryColor,
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

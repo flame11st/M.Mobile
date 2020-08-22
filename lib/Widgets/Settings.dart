@@ -4,6 +4,9 @@ import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Widgets/ChangeThemes.dart';
+import 'package:mmobile/Widgets/Premium.dart';
+import 'package:mmobile/Widgets/Providers/ThemeState.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
@@ -140,6 +143,18 @@ class SettingsState extends State<Settings> {
     }
   }
 
+  changeTheme() {
+    final userState = Provider.of<UserState>(context);
+
+    if (userState.isPremium) {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (ctx) => ChangeThemes()));
+    } else {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (ctx) => Premium()));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -168,6 +183,7 @@ class SettingsState extends State<Settings> {
 
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
+    final themeState = Provider.of<ThemeState>(context);
 
     userMoviesCount = moviesState.userMovies.length;
 
@@ -265,6 +281,32 @@ class SettingsState extends State<Settings> {
             initialUserName, emailController.text, userState.user, 'Email'),
         active: emailButtonActive,
       ),
+    );
+
+    final changeThemeField = MCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          RichText(
+              text: TextSpan(
+                style: Theme.of(context).textTheme.headline5,
+                children: <TextSpan>[
+                  new TextSpan(
+                      text: 'Selected Theme:   ', style: Theme.of(context).textTheme.headline3),
+                  new TextSpan(text: themeState.selectedTheme.name, style: Theme.of(context).textTheme.headline5)
+                ],
+              )),
+          SizedBox(height: 20,),
+          MButton(
+            onPressedCallback: () => changeTheme(),
+            width: MediaQuery.of(context).size.width,
+            prependIcon: userState.isPremium ? Icons.format_paint : Icons.monetization_on,
+            prependIconColor: userState.isPremium ? Theme.of(context).hintColor : Colors.greenAccent,
+            text: 'Change Theme${userState.isPremium ? '' : ' (Premium only)'}',
+            active: true,
+          )
+        ],
+      )
     );
 
     final userMoviesCountField = MCard(
@@ -432,6 +474,7 @@ class SettingsState extends State<Settings> {
                   children: <Widget>[
                     nameField,
                     if (!userState.isSignedInWithGoogle) emailField,
+                    changeThemeField,
                     userMoviesCountField,
                     if (!userState.isSignedInWithGoogle) changePasswordField,
                     removeUserField

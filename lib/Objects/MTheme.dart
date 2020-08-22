@@ -7,6 +7,7 @@ class MTheme {
     final MColorTheme colorTheme;
     final MTextStyleTheme textStyleTheme;
     final Brightness brightness;
+    final String name;
 
-    MTheme({this.colorTheme, this.textStyleTheme, this.brightness});
+    MTheme({this.name, this.colorTheme, this.textStyleTheme, this.brightness});
 }

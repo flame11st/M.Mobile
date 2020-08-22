@@ -10,9 +10,14 @@ import '../MovieListItem.dart';
 import 'package:collection/collection.dart';
 
 class MoviesState with ChangeNotifier {
+  MoviesState() {
+    setCachedUserMovies();
+  }
+
   final serviceAgent = new ServiceAgent();
   final storage = new FlutterSecureStorage();
 
+  List<Movie> cachedUserMovies = new List<Movie>();
   List<Movie> userMovies = new List<Movie>();
   List<Movie> watchlistMovies = new List<Movie>();
   List<Movie> viewedMovies = new List<Movie>();
@@ -24,9 +29,10 @@ class MoviesState with ChangeNotifier {
   var selectedTypes = {MovieType.movie, MovieType.tv};
 
   bool isMoviesRequested = false;
+  bool isCachedMoviesLoaded = false;
 
 
-  Future<void> setInitialData() async {
+  setCachedUserMovies() async {
     var storedMovies = await storage.read(key: 'movies');
 
     if (storedMovies == null) return;
@@ -39,8 +45,15 @@ class MoviesState with ChangeNotifier {
       }).toList();
 
       if(userMovies.length == 0)
-        setInitialUserMovies(movies);
+        cachedUserMovies = movies;
     }
+  }
+
+  Future<void> setInitialData() async {
+    await new Future.delayed(const Duration(milliseconds: 1));
+
+    if(userMovies.length == 0 && cachedUserMovies.length != 0)
+      setInitialUserMovies(cachedUserMovies);
 
     notifyListeners();
   }

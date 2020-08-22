@@ -29,9 +29,9 @@ class MButton extends StatelessWidget {
     final color = Theme.of(context).hintColor.withOpacity(active ? 1 : 0.3);
 
     return Container(
-        width: width != null ? width : 100,
+        width: width != null ? width : 110,
         alignment: Alignment.center,
-        height: height != null ? height : 30,
+        height: height != null ? height : 35,
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(

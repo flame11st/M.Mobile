@@ -22,6 +22,7 @@ class UserState with ChangeNotifier {
   String refreshToken = '';
   User user;
   bool showTutorial = false;
+  bool isPremium = true;
 
   void setInitialData() async {
     var storedToken = await storage.read(key: 'token');

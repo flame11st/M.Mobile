@@ -65,7 +65,7 @@ class MovieListItemState extends State<MovieListItem> {
                     child: Row(
                       children: <Widget>[
                         SizedBox(
-                          width: 2,
+                          width: 1,
                         ),
                         ClipRRect(
                           borderRadius: BorderRadius.only(

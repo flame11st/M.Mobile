@@ -25,71 +25,76 @@ class MoviesBottomNavigationBar extends StatelessWidget {
             (moviesState.likedOnly || moviesState.notLikedOnly));
 
     return Container(
-            height: 65,
-            width: double.infinity,
+        height: 65,
+        width: double.infinity,
 //            margin: EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30.0),
-                topRight: Radius.circular(30.0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30.0),
+            topRight: Radius.circular(30.0),
 //                bottomLeft: Radius.circular(30.0),
 //                bottomRight: Radius.circular(30.0)
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.3),
-                  offset: Offset(-4.0, -4.0),
-                  blurRadius: 3,
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  offset: Offset(-4.0, -4.0),
-                  blurRadius: 3,
-                ),
-              ],
-              color: Theme.of(context).primaryColor,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white.withOpacity(0.3),
+              offset: Offset(-4.0, -4.0),
+              blurRadius: 3,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                MIconButton(
-                  icon: Icon(
-                    Icons.movie_filter,
-                    color: isAnyFilterSelected
-                            ? Theme.of(context).accentColor
-                            : Theme.of(context).hintColor,
-                  ),
-                  onPressedCallback: () async {
-                    showModalBottomSheet<void>(
-                            backgroundColor: Colors.transparent,
-                            context: context,
-                            builder: (BuildContext context) => MoviesFilter());
-                  },
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              offset: Offset(-4.0, -4.0),
+              blurRadius: 3,
+            ),
+          ],
+          color: Theme.of(context).primaryColor,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            MIconButton(
+              icon: Icon(
+                Icons.movie_filter,
+                color: isAnyFilterSelected
+                    ? Theme.of(context).accentColor
+                    : Theme.of(context).hintColor,
+              ),
+              onPressedCallback: () async {
+                showModalBottomSheet<void>(
+                    backgroundColor: Colors.transparent,
+                    context: context,
+                    builder: (BuildContext context) => MoviesFilter());
+              },
+            ),
+            Hero(
+              tag: 'settings',
+              child: MIconButton(
+                icon: Icon(
+                  Icons.settings,
+                  color: Theme.of(context).hintColor,
                 ),
-                Hero(
-                  tag: 'settings',
-                  child: MIconButton(
-                    icon: Icon(
-                      Icons.settings,
-                      color: Theme.of(context).hintColor,
-                    ),
-                    onPressedCallback: () {
-                      Navigator.of(context).push(
-                              MaterialPageRoute(builder: (ctx) => Settings()));
-                    },
-                  ),
-                ),
-                SizedBox(
-                  width: 80,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(30.0)),
-                    boxShadow: BoxShadowNeomorph.circleShadow,
-                    color: Theme.of(context).primaryColor,
+                onPressedCallback: () {
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (ctx) => Settings()));
+                },
+              ),
+            ),
+            SizedBox(
+              width: 80,
+            ),
+            Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                  boxShadow: BoxShadowNeomorph.circleShadow,
+                  color: Theme.of(context).primaryColor,
 //                    shape: BoxShape.circle,
-                  ),
-                  padding: EdgeInsets.only(right: 10),
+                ),
+                padding: EdgeInsets.only(right: 10),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (ctx) => Premium()));
+                  },
                   child: Row(
                     children: <Widget>[
                       IconButton(
@@ -97,19 +102,16 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                           Icons.monetization_on,
                           color: Colors.greenAccent,
                         ),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (ctx) => Premium()));
-                              },),
+                      ),
                       Text(
                         'Premium',
                         style: Theme.of(context).textTheme.headline5,
                       )
                     ],
                   ),
-                )
-              ],
-            ));
+                ))
+          ],
+        ));
 //
   }
 }
