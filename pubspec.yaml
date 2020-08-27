@@ -30,9 +30,10 @@ dependencies:
   google_sign_in: ^4.5.1
   firebase_auth: ^0.16.1
   flutter_launcher_icons: ^0.7.5
+  device_info: ^0.4.2+7
 
 flutter_icons:
-  image_path: "Assets/mdIcon_V_3.png"
+  image_path: "Assets/mdIcon_VI.png"
   android: true
   ios: true
 

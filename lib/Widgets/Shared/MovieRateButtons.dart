@@ -66,7 +66,7 @@ class MovieRateButtons extends StatelessWidget {
                 MIconRateButton(
                   movieTitle: movieTitle,
                   color: movieRate == MovieRate.liked
-                      ? Colors.greenAccent
+                      ? Colors.green
                       : Theme.of(context).primaryColor,
                   icon: Icon(Icons.favorite_border,
                       color: movieRate == MovieRate.liked

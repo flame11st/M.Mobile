@@ -7,8 +7,9 @@ class MCard extends StatelessWidget {
   final button;
   final double padding;
   final double marginTop;
+  final Color color;
 
-  MCard({this.text, this.child, this.button, this.padding, this.marginTop});
+  MCard({this.text, this.child, this.button, this.padding, this.marginTop, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,7 @@ class MCard extends StatelessWidget {
             ),
           ],
           borderRadius: BorderRadius.circular(12.0),
-          color: Theme.of(context).primaryColor,
+          color: color != null ? color : Theme.of(context).primaryColor,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -15,7 +15,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "4993407912-a9ugatquhaepklcppg6nht3rigbbumu6.apps.googleusercontent.com",
+          "client_id": "4993407912-8uvi80jgb3an1nmisej9iigs9f16pi5r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.flame.moviediary",
+            "certificate_hash": "8e12bcfc92b5d6ca6e8aa8ba6452fb21d43e6778"
+          }
+        },
+        {
+          "client_id": "4993407912-joh3b4tmf0cdoc7ib4u32fnmvflh0ae7.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.flame.moviediary",

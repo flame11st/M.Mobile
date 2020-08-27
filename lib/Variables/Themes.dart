@@ -5,6 +5,7 @@ import 'package:mmobile/Objects/MTheme.dart';
 
 class Themes {
   static final MTheme classicDark = new MTheme(
+      id: 0,
       name: 'Classic Dark',
       brightness: Brightness.dark,
       colorTheme: MColorTheme(
@@ -22,7 +23,10 @@ class Themes {
             fontSize: 15.0,
             color: Color(0xff00adb5),
             fontWeight: FontWeight.bold),
-        bodyText: TextStyle(fontSize: 15.0, color: Color(0xffeeeeee), fontWeight: FontWeight.w500),
+        bodyText: TextStyle(
+            fontSize: 15.0,
+            color: Color(0xffeeeeee),
+            fontWeight: FontWeight.w500),
         expandedTitle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -30,6 +34,7 @@ class Themes {
       ));
 
   static final MTheme classicLight = new MTheme(
+      id: 1,
       name: 'Classic Light',
       brightness: Brightness.light,
       colorTheme: MColorTheme(
@@ -53,4 +58,6 @@ class Themes {
             fontWeight: FontWeight.bold,
             color: Color(0xff0f4c75)),
       ));
+
+  static final allThemes = [classicDark, classicLight];
 }

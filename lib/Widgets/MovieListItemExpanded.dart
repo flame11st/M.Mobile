@@ -37,7 +37,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     else if (movie.rating < 70)
       return Colors.amberAccent;
     else
-      return Colors.greenAccent;
+      return Colors.green;
   }
 
   @override

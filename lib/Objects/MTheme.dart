@@ -8,6 +8,7 @@ class MTheme {
     final MTextStyleTheme textStyleTheme;
     final Brightness brightness;
     final String name;
+    final int id;
 
-    MTheme({this.name, this.colorTheme, this.textStyleTheme, this.brightness});
+    MTheme({this.id, this.name, this.colorTheme, this.textStyleTheme, this.brightness});
 }

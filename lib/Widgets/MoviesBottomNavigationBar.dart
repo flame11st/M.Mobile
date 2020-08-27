@@ -4,12 +4,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Themes.dart';
+import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
 
 import 'MoviesFilter.dart';
 import 'Premium.dart';
 import 'Providers/MoviesState.dart';
-import 'Providers/ThemeState.dart';
 import 'Settings.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MIconButton.dart';
@@ -17,7 +17,7 @@ import 'Shared/MIconButton.dart';
 class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final themeState = Provider.of<ThemeState>(context);
+    final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
     final isAnyFilterSelected = moviesState.moviesOnly ||
         moviesState.tvOnly ||
@@ -82,25 +82,25 @@ class MoviesBottomNavigationBar extends StatelessWidget {
             SizedBox(
               width: 80,
             ),
-            Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
-                  boxShadow: BoxShadowNeomorph.circleShadow,
-                  color: Theme.of(context).primaryColor,
+            GestureDetector(
+                onTap: () {
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (ctx) => Premium()));
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                    boxShadow: BoxShadowNeomorph.circleShadow,
+                    color: Theme.of(context).primaryColor,
 //                    shape: BoxShape.circle,
-                ),
-                padding: EdgeInsets.only(right: 10),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                        MaterialPageRoute(builder: (ctx) => Premium()));
-                  },
+                  ),
+                  padding: EdgeInsets.only(right: 10),
                   child: Row(
                     children: <Widget>[
                       IconButton(
                         icon: Icon(
-                          Icons.monetization_on,
-                          color: Colors.greenAccent,
+                          userState.isPremium ? Icons.check : Icons.monetization_on,
+                          color: Colors.green,
                         ),
                       ),
                       Text(

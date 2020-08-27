@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -105,6 +107,14 @@ class LoginState extends State<Login> {
     }
   }
 
+  getText() {
+    final userState = Provider.of<UserState>(context);
+    var result = userState.androidVersion == 1 || userState.androidVersion > 7
+        ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
+        : userState.androidVersion == 0 ? '' : 'MovieDiary';
+    return result;
+  }
+
   processLoginResponse(String response, bool isSignedInWithGoogle) {
     final userState = Provider.of<UserState>(context);
 
@@ -187,11 +197,9 @@ class LoginState extends State<Login> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-//                    Image(image: AssetImage("Assets/mdIcon_V.png"), width: 100,),
-//                    Image(image: AssetImage("Assets/mdIcon_V_2.png"), width: 100,),
-                    Hero(tag: 'logo', child: Image(image: AssetImage("Assets/mdIcon_V_3.png"), width: 100,)),
+                    Image(image: AssetImage("Assets/mdIcon_V_3.png"), width: 100,),
                     Text(
-                      '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂',
+                      getText(),
                       style: TextStyle(fontSize: 35, color: Theme.of(context).accentColor),
                     ),
                     SizedBox(

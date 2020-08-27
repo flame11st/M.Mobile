@@ -33,7 +33,12 @@ class MoviesState with ChangeNotifier {
 
 
   setCachedUserMovies() async {
-    var storedMovies = await storage.read(key: 'movies');
+    var storedMovies;
+    try{
+      storedMovies = await storage.read(key: 'movies');
+    } catch(on, ex) {
+      await clearStorage();
+    }
 
     if (storedMovies == null) return;
 
@@ -259,7 +264,7 @@ class MoviesState with ChangeNotifier {
   }
 
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
-    if (movieToAdd.movieRate == MovieRate.addedToWatchlist) {
+    if (movieToAdd.movieRate == MovieRate.addedToWatchlist || movieToAdd.movieRate == 0) {
       removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
       userMovies.remove(movieToAdd);
       userMovies.add(movieToAdd);
@@ -309,11 +314,13 @@ class MoviesState with ChangeNotifier {
   }
 
   logout() async {
-    await storage.deleteAll();
+    await clearStorage();
     isMoviesRequested = false;
     clear();
-//
-//    notifyListeners();
+  }
+
+  clearStorage() async {
+    await storage.delete(key: 'movies');
   }
 
   clear() {

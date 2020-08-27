@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Objects/User.dart';
@@ -23,13 +25,30 @@ class UserState with ChangeNotifier {
   User user;
   bool showTutorial = false;
   bool isPremium = true;
+  int androidVersion = 0;
+
 
   void setInitialData() async {
-    var storedToken = await storage.read(key: 'token');
-    var storedRefreshToken = await storage.read(key: 'refreshToken');
-    var storedUserId = await storage.read(key: 'userId');
-    var storedUserName = await storage.read(key: 'userName');
-    var storedSignedInWithGoogle = await storage.read(key: 'isSignedInWithGoogle');
+    var storedToken;
+    var storedRefreshToken;
+    var storedUserId;
+    var storedUserName;
+    var storedSignedInWithGoogle;
+
+    if (Platform.isAndroid) {
+      var androidInfo = await DeviceInfoPlugin().androidInfo;
+      androidVersion = int.parse(androidInfo.version.release.substring(0,1));
+    }
+
+    try{
+      storedToken = await storage.read(key: 'token');
+      storedRefreshToken = await storage.read(key: 'refreshToken');
+      storedUserId = await storage.read(key: 'userId');
+      storedUserName = await storage.read(key: 'userName');
+      storedSignedInWithGoogle = await storage.read(key: 'isSignedInWithGoogle');
+    } catch(on, ex) {
+      await clearStorage();
+    }
 
     this.token = storedToken;
     this.refreshToken = storedRefreshToken;
@@ -70,8 +89,16 @@ class UserState with ChangeNotifier {
     user = null;
     userId = null;
 
-    await storage.deleteAll();
+    await clearStorage();
     notifyListeners();
+  }
+
+  clearStorage() async {
+    await storage.delete(key: 'token');
+    await storage.delete(key: 'refreshToken');
+    await storage.delete(key: 'userId');
+    await storage.delete(key: 'userName');
+    await storage.delete(key: 'isSignedInWithGoogle');
   }
 
   Future<void> setTokens(String accessToken, String refreshToken) async {

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
+import 'package:provider/provider.dart';
+
+import 'Providers/UserState.dart';
 
 class Premium extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final userState = Provider.of<UserState>(context);
+
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
@@ -45,7 +50,7 @@ class Premium extends StatelessWidget {
     final themeFeature = Column(
       children: <Widget>[
         Icon(
-          Icons.format_paint,
+          FontAwesome5.paint_brush,
           color: Theme.of(context).accentColor,
           size: 50,
         ),
@@ -74,7 +79,7 @@ class Premium extends StatelessWidget {
           height: 10,
         ),
         Text(
-          'Support MovieDiary team',
+          'Support MovieDiary Team',
           textAlign: TextAlign.center,
           style: TextStyle(
               color: Theme.of(context).accentColor,
@@ -125,11 +130,15 @@ class Premium extends StatelessWidget {
           child: Container(
             margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
             child: MButton(
-              prependIconColor: Colors.greenAccent,
-              prependIcon: Icons.monetization_on,
-              height: 45,
+              prependIconColor: userState.isPremium
+                  ? Colors.green.withOpacity(0.4)
+                  : Colors.green,
+              prependIcon:
+                  userState.isPremium ? Icons.check : Icons.monetization_on,
+              height: 50,
+              borderRadius: 25,
               text: 'Unlock Premium Features',
-              active: true,
+              active: !userState.isPremium,
             ),
           )),
     );

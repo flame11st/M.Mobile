@@ -7,6 +7,7 @@ class MButton extends StatelessWidget {
   final bool active;
   final double height;
   final double width;
+  final double borderRadius;
   final prependIcon;
   final appendIcon;
   final prependImage;
@@ -22,6 +23,7 @@ class MButton extends StatelessWidget {
     this.prependImage,
     this.appendIcon,
     this.prependIconColor,
+    this.borderRadius,
   });
 
   @override
@@ -45,11 +47,14 @@ class MButton extends StatelessWidget {
               blurRadius: 3,
             ),
           ],
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(borderRadius != null ? borderRadius : 8.0),
           color: Theme.of(context).primaryColor,
         ),
         child: MaterialButton(
           padding: EdgeInsets.all(0),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                  borderRadius != null ? borderRadius : 8.0)),
           minWidth: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           onPressed: () => active ? onPressedCallback() : {},

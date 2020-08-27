@@ -15,6 +15,7 @@ class MSearchDelegate extends SearchDelegate {
   String oldQuery;
   bool isLoading = false;
   StateSetter setStateFunction;
+  int searchTimestamp;
 
   searchMovies(BuildContext context) async {
     isLoading = true;
@@ -28,14 +29,18 @@ class MSearchDelegate extends SearchDelegate {
 
     // Debounce
     final queryToDebounce = query;
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 700));
     if (queryToDebounce != query) return;
+
+    var timestamp = DateTime.now().millisecondsSinceEpoch;
 
     final moviesResponse = await serviceAgent.search(query);
 
-    if (queryToDebounce != oldQuery) return;
+    if (searchTimestamp!= null && timestamp < searchTimestamp) return;
 
     if (moviesResponse.statusCode == 200) {
+      searchTimestamp = timestamp;
+
       Iterable iterableMovies = json.decode(moviesResponse.body);
       final foundMovies = iterableMovies.map((model) {
         return MovieSearchDTO.fromJson(model);

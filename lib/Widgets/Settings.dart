@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Validators.dart';
@@ -131,12 +132,13 @@ class SettingsState extends State<Settings> {
   }
 
   removeUser(
-      String userId, UserState userState, MoviesState moviesState) async {
+      String userId, UserState userState, MoviesState moviesState, ThemeState themeState) async {
     var removeUserResponse = await serviceAgent.deleteUser(userId);
 
     if (removeUserResponse.statusCode == 200) {
       userState.logout();
       moviesState.logout();
+      themeState.logout();
       Navigator.of(context).pop();
     } else {
       MSnackBar.showSnackBar('Something went wrong', false, context);
@@ -233,6 +235,7 @@ class SettingsState extends State<Settings> {
               onPressed: () {
                 userState.logout();
                 moviesState.logout();
+                themeState.logout();
                 Navigator.of(context).pop();
               },
             )
@@ -300,8 +303,8 @@ class SettingsState extends State<Settings> {
           MButton(
             onPressedCallback: () => changeTheme(),
             width: MediaQuery.of(context).size.width,
-            prependIcon: userState.isPremium ? Icons.format_paint : Icons.monetization_on,
-            prependIconColor: userState.isPremium ? Theme.of(context).hintColor : Colors.greenAccent,
+            prependIcon: userState.isPremium ? FontAwesome5.paint_brush : Icons.monetization_on,
+            prependIconColor: userState.isPremium ? Theme.of(context).hintColor : Colors.green,
             text: 'Change Theme${userState.isPremium ? '' : ' (Premium only)'}',
             active: true,
           )
@@ -437,12 +440,12 @@ class SettingsState extends State<Settings> {
                           ),
                           onPressedCallback: () {
                             removeUser(
-                                userState.userId, userState, moviesState);
+                                userState.userId, userState, moviesState, themeState);
                           }),
                       MIconButton(
                         icon: Icon(
                           Icons.close,
-                          color: Colors.greenAccent,
+                          color: Colors.green,
                         ),
                         onPressedCallback: () => setState(() =>
                             showRemoveUserButtons = !showRemoveUserButtons),

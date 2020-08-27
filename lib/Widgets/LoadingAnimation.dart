@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'Providers/UserState.dart';
 
 class LoadingAnimation extends StatelessWidget {
+  getText(BuildContext context) {
+    final userState = Provider.of<UserState>(context);
+    var result = userState.androidVersion == 1 || userState.androidVersion > 7
+        ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
+        : userState.androidVersion == 0 ? '' : 'MovieDiary';
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,7 +26,7 @@ class LoadingAnimation extends StatelessWidget {
               width: 150,
             ),
             Text(
-              '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂',
+              getText(context),
               style:
                   TextStyle(fontSize: 40, color: Theme.of(context).accentColor),
             ),

@@ -73,7 +73,7 @@ class MovieSearchItem extends StatelessWidget {
                         MIconRateButton(
                           movieTitle: movie.title,
                           color: movie.movieRate == MovieRate.liked
-                              ? Colors.greenAccent
+                              ? Colors.green
                               : Theme.of(context).primaryColor,
                           icon: Icon(Icons.favorite_border, color: movie.movieRate == MovieRate.liked
                               ? Theme.of(context).primaryColor

@@ -71,8 +71,8 @@ class MyMoviesState extends State<MyMovies> {
     final loaderState = Provider.of<LoaderState>(context);
 
     if (!userState.showTutorial) {
-      setUserMovies();
       setUserInfo();
+      setUserMovies();
     }
     if (loaderState.isLoaderVisible &&
         (userState.showTutorial || moviesState.userMovies.length > 0)) {

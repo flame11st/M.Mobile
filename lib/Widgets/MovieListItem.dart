@@ -94,7 +94,8 @@ class MovieListItemState extends State<MovieListItem> {
                                         fontWeight: FontWeight.bold,
                                         color:
                                             movie.movieRate == MovieRate.liked
-                                                ? Colors.greenAccent
+                                                ? Theme.of(context)
+                                                .accentColor
                                                 : movie.movieRate ==
                                                         MovieRate.notLiked
                                                     ? Colors.red
