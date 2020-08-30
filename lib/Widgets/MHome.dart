@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Objects/MColorTheme.dart';
 import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
@@ -10,6 +14,7 @@ import 'package:provider/provider.dart';
 import 'LoadingAnimation.dart';
 import 'Login.dart';
 import 'MyMovies.dart';
+import 'Providers/PurchaseState.dart';
 import 'Providers/ThemeState.dart';
 import 'Providers/UserState.dart';
 
@@ -21,6 +26,40 @@ class MHome extends StatefulWidget {
 }
 
 class MHomeState extends State<MHome> {
+  StreamSubscription<List<PurchaseDetails>> _subscription;
+
+  _handlePurchaseUpdates(List<PurchaseDetails> purchases) {
+    final purchaseState = Provider.of<PurchaseState>(context);
+
+    if (purchases.isEmpty ||
+        purchases.first.productID != 'premium_purchase' ||
+        purchases.first.status != PurchaseStatus.purchased) return;
+
+    purchaseState.setIsPremium(true);
+
+    if (Platform.isIOS) {
+      InAppPurchaseConnection.instance.completePurchase(purchases.first);
+    }
+
+    //TODO: Add snackbar with successful text
+  }
+
+  @override
+  void initState() {
+    final Stream purchaseUpdates =
+        InAppPurchaseConnection.instance.purchaseUpdatedStream;
+    _subscription = purchaseUpdates.listen((purchases) {
+      _handlePurchaseUpdates(purchases);
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeState = Provider.of<ThemeState>(context);
@@ -29,7 +68,7 @@ class MHomeState extends State<MHome> {
 
     MTheme theme = themeState.selectedTheme;
     var style = SystemUiOverlayStyle(
-        statusBarColor: theme.colorTheme.additionalColor,
+      statusBarColor: theme.colorTheme.additionalColor,
     );
 //    MTheme theme = new MTheme(
 //            colorTheme: MColorTheme(
@@ -56,7 +95,6 @@ class MHomeState extends State<MHome> {
 
 //      SystemChrome.restoreSystemUIOverlays();
 //      SystemChrome.setSystemUIOverlayStyle(style);
-
 
     Widget widgetToReturn = userState.isAppLoaded
         ? userState.isUserAuthorized ? MyMovies() : Login()

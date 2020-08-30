@@ -12,6 +12,7 @@ import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
+import 'Providers/PurchaseState.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MIconButton.dart';
 import 'Shared/MCard.dart';
@@ -146,9 +147,9 @@ class SettingsState extends State<Settings> {
   }
 
   changeTheme() {
-    final userState = Provider.of<UserState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
 
-    if (userState.isPremium) {
+    if (purchaseState.isPremium) {
       Navigator.of(context)
           .push(MaterialPageRoute(builder: (ctx) => ChangeThemes()));
     } else {
@@ -186,6 +187,7 @@ class SettingsState extends State<Settings> {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
     final themeState = Provider.of<ThemeState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
 
     userMoviesCount = moviesState.userMovies.length;
 
@@ -303,9 +305,9 @@ class SettingsState extends State<Settings> {
           MButton(
             onPressedCallback: () => changeTheme(),
             width: MediaQuery.of(context).size.width,
-            prependIcon: userState.isPremium ? FontAwesome5.paint_brush : Icons.monetization_on,
-            prependIconColor: userState.isPremium ? Theme.of(context).hintColor : Colors.green,
-            text: 'Change Theme${userState.isPremium ? '' : ' (Premium only)'}',
+            prependIcon: purchaseState.isPremium ? FontAwesome5.paint_brush : Icons.monetization_on,
+            prependIconColor: purchaseState.isPremium ? Theme.of(context).hintColor : Colors.green,
+            text: 'Change Theme${purchaseState.isPremium ? '' : ' (Premium only)'}',
             active: true,
           )
         ],

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttericon/elusive_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -31,12 +32,11 @@ class MoviesState with ChangeNotifier {
   bool isMoviesRequested = false;
   bool isCachedMoviesLoaded = false;
 
-
   setCachedUserMovies() async {
     var storedMovies;
-    try{
+    try {
       storedMovies = await storage.read(key: 'movies');
-    } catch(on, ex) {
+    } catch (on, ex) {
       await clearStorage();
     }
 
@@ -49,15 +49,14 @@ class MoviesState with ChangeNotifier {
         return Movie.fromJson(model);
       }).toList();
 
-      if(userMovies.length == 0)
-        cachedUserMovies = movies;
+      if (userMovies.length == 0) cachedUserMovies = movies;
     }
   }
 
   Future<void> setInitialData() async {
     await new Future.delayed(const Duration(milliseconds: 1));
 
-    if(userMovies.length == 0 && cachedUserMovies.length != 0)
+    if (userMovies.length == 0 && cachedUserMovies.length != 0)
       setInitialUserMovies(cachedUserMovies);
 
     notifyListeners();
@@ -86,14 +85,26 @@ class MoviesState with ChangeNotifier {
 
   Future<void> setUserMovies(List<Movie> userMovies) async {
     isMoviesRequested = true;
+    var updatedUserMovies = new List<Movie>();
 
-    if (!equals(this.userMovies, userMovies)) {
-      await storage.write(key: 'movies', value: jsonEncode(userMovies));
+    for (var i = 0; i < userMovies.length; i++) {
+      var movie = userMovies[i];
+      var existedMovies =
+          this.userMovies.where((element) => element.id == movie.id);
 
-      this.userMovies = userMovies;
-
-      refreshMovies();
+      if (existedMovies.isNotEmpty) {
+        existedMovies.first.updateMovie(movie);
+        updatedUserMovies.add(existedMovies.first);
+      } else {
+        updatedUserMovies.add(movie);
+      }
     }
+
+    this.userMovies = updatedUserMovies;
+
+    refreshMovies();
+
+    await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
 
   bool isWatchlist() {
@@ -172,15 +183,16 @@ class MoviesState with ChangeNotifier {
     });
 
     moviesList.forEach((movie) {
-      if (!actualMoviesList.any((m) => m.id == movie.id)) moviesToRemove.add(movie);
+      if (!actualMoviesList.any((m) => m.id == movie.id))
+        moviesToRemove.add(movie);
+    });
+    
+    moviesToRemove.forEach((movie) {
+      removeMovieFromList(movie, moviesList, key);
     });
 
     moviesToAdd.forEach((movie) {
       addMovieToList(movie, moviesList, key, actualMoviesList.indexOf(movie));
-    });
-
-    moviesToRemove.forEach((movie) {
-      removeMovieFromList(movie, moviesList, key);
     });
   }
 
@@ -198,13 +210,14 @@ class MoviesState with ChangeNotifier {
   List<Movie> getViewedMovies() {
     var selectedRates = this.selectedRates;
 
-    if (selectedRates.length == 0) selectedRates = {MovieRate.liked, MovieRate.notLiked};
+    if (selectedRates.length == 0)
+      selectedRates = {MovieRate.liked, MovieRate.notLiked};
 
     var result = userMovies
         .where((movie) =>
             (selectedTypes.length == 0 ||
                 selectedTypes.contains(movie.movieType)) &&
-                selectedRates.contains(movie.movieRate))
+            selectedRates.contains(movie.movieRate))
         .toList();
 
     return result;
@@ -257,20 +270,19 @@ class MoviesState with ChangeNotifier {
       removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
     }
 
-    addMovieToList(
-        movieToAdd, watchlistMovies, watchlistKey, watchlistMovies.length);
+    addMovieToList(movieToAdd, watchlistMovies, watchlistKey, 0);
 
     movieToAdd.movieRate = movieRate;
   }
 
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
-    if (movieToAdd.movieRate == MovieRate.addedToWatchlist || movieToAdd.movieRate == 0) {
+    if (movieToAdd.movieRate == MovieRate.addedToWatchlist ||
+        movieToAdd.movieRate == 0) {
       removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
       userMovies.remove(movieToAdd);
       userMovies.add(movieToAdd);
 
-      addMovieToList(
-          movieToAdd, viewedMovies, viewedListKey, viewedMovies.length);
+      addMovieToList(movieToAdd, viewedMovies, viewedListKey, 0);
     }
 //    else if (movieToAdd.movieRate == MovieRate.liked ||
 //        movieToAdd.movieRate == MovieRate.notLiked) {
@@ -324,8 +336,10 @@ class MoviesState with ChangeNotifier {
   }
 
   clear() {
-    getWatchlistMovies().forEach((element) => removeMovieFromList(element, watchlistMovies, watchlistKey));
-    getViewedMovies().forEach((element) => removeMovieFromList(element, viewedMovies, viewedListKey));
+    getWatchlistMovies().forEach((element) =>
+        removeMovieFromList(element, watchlistMovies, watchlistKey));
+    getViewedMovies().forEach(
+        (element) => removeMovieFromList(element, viewedMovies, viewedListKey));
 
     userMovies.clear();
   }
@@ -336,17 +350,19 @@ class MoviesState with ChangeNotifier {
     var length = list1.length;
     if (length != list2.length) return false;
     for (var i = 0; i < length; i++) {
-      if (!list2.any((m) => m.id == list1[i].id && m.movieRate == list1[i].movieRate)) return false;
-      if (!list1.any((m) => m.id == list2[i].id && m.movieRate == list2[i].movieRate)) return false;
+      if (!list2
+          .any((m) => m.id == list1[i].id && m.movieRate == list1[i].movieRate))
+        return false;
+      if (!list1
+          .any((m) => m.id == list2[i].id && m.movieRate == list2[i].movieRate))
+        return false;
     }
     return true;
   }
 
   //Animated List area
-  GlobalKey<AnimatedListState> watchlistKey =
-      GlobalKey<AnimatedListState>();
-  GlobalKey<AnimatedListState> viewedListKey =
-      GlobalKey<AnimatedListState>();
+  GlobalKey<AnimatedListState> watchlistKey = GlobalKey<AnimatedListState>();
+  GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
 
   Widget buildItem(Movie movie, Animation animation) {
     return SizeTransition(

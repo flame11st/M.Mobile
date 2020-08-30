@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'MoviesFilter.dart';
 import 'Premium.dart';
 import 'Providers/MoviesState.dart';
+import 'Providers/PurchaseState.dart';
 import 'Settings.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MIconButton.dart';
@@ -17,8 +18,8 @@ import 'Shared/MIconButton.dart';
 class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
     final isAnyFilterSelected = moviesState.moviesOnly ||
         moviesState.tvOnly ||
         (!moviesState.isWatchlist() &&
@@ -99,7 +100,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     children: <Widget>[
                       IconButton(
                         icon: Icon(
-                          userState.isPremium ? Icons.check : Icons.monetization_on,
+                          purchaseState.isPremium ? Icons.check : Icons.monetization_on,
                           color: Colors.green,
                         ),
                       ),

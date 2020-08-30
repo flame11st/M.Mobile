@@ -1,14 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
-
-import 'Providers/UserState.dart';
+import 'Providers/PurchaseState.dart';
 
 class Premium extends StatelessWidget {
+  purchaseButtonClick() async {
+    final bool available = await InAppPurchaseConnection.instance.isAvailable();
+
+    if (!available) {
+      //TODO: Add snackbar with error
+      return;
+    }
+
+    const Set<String> _kIds = {'premium_purchase'};
+    final ProductDetailsResponse response = await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
+    if (response.notFoundIDs.isNotEmpty) {
+      //TODO: Add snackbar with error
+      return;
+    }
+
+    ProductDetails product = response.productDetails.first;
+
+    final PurchaseParam purchaseParam =
+    PurchaseParam(productDetails: product);
+
+    InAppPurchaseConnection.instance
+        .buyNonConsumable(purchaseParam: purchaseParam);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final userState = Provider.of<UserState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
 
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -130,15 +154,16 @@ class Premium extends StatelessWidget {
           child: Container(
             margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
             child: MButton(
-              prependIconColor: userState.isPremium
+              onPressedCallback: () => purchaseButtonClick(),
+              prependIconColor: purchaseState.isPremium
                   ? Colors.green.withOpacity(0.4)
                   : Colors.green,
               prependIcon:
-                  userState.isPremium ? Icons.check : Icons.monetization_on,
+              purchaseState.isPremium ? Icons.check : Icons.monetization_on,
               height: 50,
               borderRadius: 25,
               text: 'Unlock Premium Features',
-              active: !userState.isPremium,
+              active: !purchaseState.isPremium,
             ),
           )),
     );

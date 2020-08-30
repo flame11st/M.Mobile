@@ -24,9 +24,7 @@ class UserState with ChangeNotifier {
   String refreshToken = '';
   User user;
   bool showTutorial = false;
-  bool isPremium = true;
   int androidVersion = 0;
-
 
   void setInitialData() async {
     var storedToken;

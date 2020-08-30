@@ -5,27 +5,53 @@ import 'Person.dart';
 
 class Movie {
   final String id;
-  final String title;
-  final String overview;
-  final String tagline;
-  final String posterPath;
-  final int duration;
+  String title;
+  String overview;
+  String tagline;
+  String posterPath;
+  int duration;
   int rating;
   int allVotes;
   int likedVotes;
   int dislikedVotes;
-  final String countries;
-  final List<String> actors;
-  final List<String> directors;
-  final List<String> genres;
+  String countries;
+  List<String> actors;
+  List<String> directors;
+  List<String> genres;
   int movieRate;
-  final MovieType movieType;
-  final int year;
-  final int averageTimeOfEpisode;
-  final bool inProduction;
-  final int seasonsCount;
-  final double imdbRate;
-  final int imdbVotes;
+  MovieType movieType;
+  int year;
+  int averageTimeOfEpisode;
+  bool inProduction;
+  int seasonsCount;
+  double imdbRate;
+  int imdbVotes;
+
+  updateMovie(Movie updatedMovie) {
+    if (updatedMovie.id != this.id) return;
+
+    this.title = updatedMovie.title;
+    this.overview = updatedMovie.overview;
+    this.tagline = updatedMovie.tagline;
+    this.posterPath = updatedMovie.posterPath;
+    this.duration = updatedMovie.duration;
+    this.rating = updatedMovie.rating;
+    this.allVotes = updatedMovie.allVotes;
+    this.likedVotes = updatedMovie.likedVotes;
+    this.dislikedVotes = updatedMovie.dislikedVotes;
+    this.countries = updatedMovie.countries;
+    this.actors = updatedMovie.actors;
+    this.directors = updatedMovie.directors;
+    this.genres = updatedMovie.genres;
+    this.movieRate = updatedMovie.movieRate;
+    this.movieType = updatedMovie.movieType;
+    this.year = updatedMovie.year;
+    this.averageTimeOfEpisode = updatedMovie.averageTimeOfEpisode;
+    this.inProduction = updatedMovie.inProduction;
+    this.seasonsCount = updatedMovie.seasonsCount;
+    this.imdbRate = updatedMovie.imdbRate;
+    this.imdbVotes = updatedMovie.imdbVotes;
+  }
 
   Movie({this.id, this.title, this.overview, this.tagline, this.posterPath,
     this.duration, this.rating, this.allVotes, this.likedVotes, this.dislikedVotes, this.countries, this.actors, this.directors,
