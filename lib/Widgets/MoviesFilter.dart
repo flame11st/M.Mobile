@@ -1,19 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/FilterButton.dart';
 import 'package:fluttericon/font_awesome_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
-import 'package:fluttericon/elusive_icons.dart';
 
 class MoviesFilter extends StatelessWidget {
+  selectDateFrom(BuildContext context, MoviesState state) async {
+    final DateTime picked = await showDatePicker(
+      context: context,
+      initialDate: state.dateFrom,
+      firstDate: state.dateMin,
+      lastDate: state.dateMax,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).accentColorBrightness == Brightness.dark
+              ? ThemeData.dark()
+              : ThemeData.light(), // This will change to light theme.
+          child: child,
+        );
+      },
+    );
+    if (picked != null && picked != state.dateFrom)
+      state.changeDateFromFilter(picked);
+  }
+
+  selectDateTo(BuildContext context, MoviesState state) async {
+    final DateTime picked = await showDatePicker(
+      context: context,
+      initialDate: state.dateTo,
+      firstDate: state.dateMin,
+      lastDate: state.dateMax,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).accentColorBrightness == Brightness.dark
+              ? ThemeData.dark()
+              : ThemeData.light(), // This will change to light theme.
+          child: child,
+        );
+      },
+    );
+    if (picked != null && picked != state.dateTo)
+      state.changeDateToFilter(picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final isWatchlist = moviesState.isWatchlist();
 
     return Container(
-        height: isWatchlist ? 100 : 160,
+        height: isWatchlist ? 100 : 260,
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.only(
@@ -85,6 +123,33 @@ class MoviesFilter extends StatelessWidget {
                       }),
                 ],
               ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Text(
+                  'Date:',
+                  style: Theme.of(context).textTheme.headline5,
+                ),
+                FilterIcon(
+                  icon: Icons.calendar_today,
+                  text: DateFormat('yyyy-MM-dd').format(moviesState.dateFrom),
+                  isActive: moviesState.isDateFromSelected(),
+                  onPressedCallback: () {
+                    selectDateFrom(context, moviesState);
+                  },
+                  textSize: 16,
+                ),
+                FilterIcon(
+                  icon: Icons.calendar_today,
+                  text: DateFormat('yyyy-MM-dd').format(moviesState.dateTo),
+                  isActive: moviesState.isDateToSelected(),
+                  onPressedCallback: () {
+                    selectDateTo(context, moviesState);
+                  },
+                  textSize: 16,
+                ),
+              ],
+            )
           ],
         ));
   }

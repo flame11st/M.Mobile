@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/MTheme.dart';
-import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
-
 import 'Shared/MCard.dart';
-import 'Shared/MIconButton.dart';
 
 class ThemePresentation extends StatelessWidget {
   final MTheme theme;
@@ -105,7 +102,7 @@ class ThemePresentation extends StatelessWidget {
         ),
         Text(
          isCurrent ? '${theme.name} (Current)' : theme.name,
-          style: TextStyle(fontSize: 18),
+          style: TextStyle(fontSize: 18, color: Theme.of(context).hintColor),
         ),
         SizedBox(
           height: 10,

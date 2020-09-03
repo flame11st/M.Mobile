@@ -4,7 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 class PurchaseState with ChangeNotifier {
   final storage = new FlutterSecureStorage();
-  bool isPremium = false;
+  bool isPremium = true;
 
   PurchaseState() {
     initialSetPremium();
@@ -56,6 +56,6 @@ class PurchaseState with ChangeNotifier {
   }
 
   clearStorage() async {
-    await storage.delete(key: 'themeId');
+    await storage.delete(key: 'isPremium');
   }
 }

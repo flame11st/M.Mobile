@@ -6,9 +6,12 @@ import 'package:fluttericon/elusive_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Widgets/Shared/MButton.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
 import 'package:collection/collection.dart';
+
+import '../Premium.dart';
 
 class MoviesState with ChangeNotifier {
   MoviesState() {
@@ -26,8 +29,19 @@ class MoviesState with ChangeNotifier {
   bool tvOnly = false;
   bool likedOnly = false;
   bool notLikedOnly = false;
+  DateTime dateFrom;
+  DateTime dateTo;
+
+  DateTime dateMin;
+  DateTime dateMax;
+
   var selectedRates = {MovieRate.liked, MovieRate.notLiked};
   var selectedTypes = {MovieType.movie, MovieType.tv};
+
+  int viewedLimit = 10;
+  int page = 1;
+  bool showMoreButton = false;
+  Movie currentLatestMovie;
 
   bool isMoviesRequested = false;
   bool isCachedMoviesLoaded = false;
@@ -64,23 +78,8 @@ class MoviesState with ChangeNotifier {
 
   void setInitialUserMovies(List<Movie> userMovies) async {
     this.userMovies = userMovies;
-    this.watchlistMovies = userMovies
-        .where((movie) => movie.movieRate == MovieRate.addedToWatchlist)
-        .toList();
 
-    this.viewedMovies = userMovies
-        .where((movie) =>
-            movie.movieRate == MovieRate.liked ||
-            movie.movieRate == MovieRate.notLiked)
-        .toList();
-
-    if (watchlistKey.currentState != null) {
-      for (int offset = 0; offset < watchlistMovies.length; offset++) {
-        watchlistKey.currentState.insertItem(offset);
-      }
-    }
-
-    notifyListeners();
+    refreshMovies();
   }
 
   Future<void> setUserMovies(List<Movie> userMovies) async {
@@ -161,6 +160,34 @@ class MoviesState with ChangeNotifier {
     refreshMovies();
   }
 
+  changeDateFromFilter(DateTime value) {
+    this.dateFrom = value;
+
+    refreshMovies();
+  }
+
+  changeDateToFilter(DateTime value) {
+    this.dateTo = value;
+
+    refreshMovies();
+  }
+
+  isAnyFilterSelected() {
+    return moviesOnly ||
+        tvOnly ||
+        (!isWatchlist() && (likedOnly || notLikedOnly)) ||
+        isDateToSelected() ||
+        isDateFromSelected();
+  }
+
+  bool isDateToSelected() {
+    return dateTo.difference(dateMax).inDays != 0;
+  }
+
+  bool isDateFromSelected() {
+    return dateFrom.difference(dateMin).inDays != 0;
+  }
+
   refreshMovies() {
     var actualWatchlistMovies = getWatchlistMovies();
     var actualViewedMovies = getViewedMovies();
@@ -186,7 +213,7 @@ class MoviesState with ChangeNotifier {
       if (!actualMoviesList.any((m) => m.id == movie.id))
         moviesToRemove.add(movie);
     });
-    
+
     moviesToRemove.forEach((movie) {
       removeMovieFromList(movie, moviesList, key);
     });
@@ -208,6 +235,34 @@ class MoviesState with ChangeNotifier {
   }
 
   List<Movie> getViewedMovies() {
+    List<Movie> allViewedMovies = getAllViewedMovies();
+
+    dateMin = allViewedMovies.last.updated;
+    dateMax = allViewedMovies.first.updated;
+
+    if (dateFrom == null) dateFrom = dateMin;
+    if (dateTo == null) dateTo = dateMax;
+
+    var filteredMovies = allViewedMovies
+        .where((movie) =>
+            movie.updated.isAfter(dateFrom.subtract(new Duration(days: 1))) &&
+            movie.updated.isBefore(dateTo.add(new Duration(days: 1))))
+        .toList();
+
+    var showedMoviesCount = viewedLimit * page;
+
+    if (filteredMovies.length > showedMoviesCount) {
+      showMoreButton = true;
+      currentLatestMovie = filteredMovies[showedMoviesCount - 1];
+    } else {
+      showMoreButton = false;
+      currentLatestMovie = null;
+    }
+
+    return filteredMovies.take(showedMoviesCount).toList();
+  }
+
+  List<Movie> getAllViewedMovies() {
     var selectedRates = this.selectedRates;
 
     if (selectedRates.length == 0)
@@ -344,30 +399,65 @@ class MoviesState with ChangeNotifier {
     userMovies.clear();
   }
 
-  bool equals(List<Movie> list1, List<Movie> list2) {
-    if (identical(list1, list2)) return true;
-    if (list1 == null || list2 == null) return false;
-    var length = list1.length;
-    if (length != list2.length) return false;
-    for (var i = 0; i < length; i++) {
-      if (!list2
-          .any((m) => m.id == list1[i].id && m.movieRate == list1[i].movieRate))
-        return false;
-      if (!list1
-          .any((m) => m.id == list2[i].id && m.movieRate == list2[i].movieRate))
-        return false;
+//  bool equals(List<Movie> list1, List<Movie> list2) {
+//    if (identical(list1, list2)) return true;
+//    if (list1 == null || list2 == null) return false;
+//    var length = list1.length;
+//    if (length != list2.length) return false;
+//    for (var i = 0; i < length; i++) {
+//      if (!list2
+//          .any((m) => m.id == list1[i].id && m.movieRate == list1[i].movieRate))
+//        return false;
+//      if (!list1
+//          .any((m) => m.id == list2[i].id && m.movieRate == list2[i].movieRate))
+//        return false;
+//    }
+//    return true;
+//  }
+
+  showMoreMovies(BuildContext context, bool isPremium) {
+    if (isPremium) {
+      page += 1;
+      refreshMovies();
+    } else {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (ctx) => Premium()));
     }
-    return true;
   }
 
   //Animated List area
   GlobalKey<AnimatedListState> watchlistKey = GlobalKey<AnimatedListState>();
   GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
 
-  Widget buildItem(Movie movie, Animation animation) {
+  Widget buildItem(Movie movie, Animation animation,
+      {bool isPremium = false, BuildContext context}) {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,
-        child: MovieListItem(movie: movie));
+        child: Column(
+          children: [
+            MovieListItem(movie: movie),
+            if (currentLatestMovie == movie)
+              SizedBox(
+                height: 15,
+              ),
+            if (currentLatestMovie == movie)
+              MButton(
+                prependIcon:
+                    isPremium ? Icons.expand_more : Icons.monetization_on,
+                prependIconColor:
+                    isPremium ? Theme.of(context).hintColor : Colors.green,
+                width: 250,
+                height: 40,
+                active: true,
+                text: 'Show more ${isPremium ? '' : ' (Premium only)'}',
+                onPressedCallback: () => showMoreMovies(context, isPremium),
+              ),
+            if (currentLatestMovie == movie)
+              SizedBox(
+                height: 5,
+              ),
+          ],
+        ));
   }
 }

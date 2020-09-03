@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Widgets/Providers/PurchaseState.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 
@@ -19,6 +20,7 @@ class MovieListState extends State<MovieList> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MoviesState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
 
     final List<Movie> watchlistMovies = provider.watchlistMovies;
     final List<Movie> viewedMovies = provider.viewedMovies;
@@ -32,39 +34,43 @@ class MovieListState extends State<MovieList> {
           backgroundColor: Theme.of(context).primaryColor,
           title: TabBar(
             indicatorColor: Theme.of(context).accentColor,
-          labelColor: Theme.of(context).accentColor,
+            labelColor: Theme.of(context).accentColor,
             unselectedLabelColor: Theme.of(context).hintColor,
             tabs: [
               Tab(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(Icons.queue_play_next),
-                      SizedBox(width: 7,),
-                      Text(
-                        'Watchlist',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      )
-                    ],
-                  )),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(Icons.queue_play_next),
+                  SizedBox(
+                    width: 7,
+                  ),
+                  Text(
+                    'Watchlist',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  )
+                ],
+              )),
               Tab(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(Icons.check),
-                      SizedBox(width: 5,),
-                      Text(
-                        'Viewed',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      )
-                    ],
-                  )),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(Icons.check),
+                  SizedBox(
+                    width: 5,
+                  ),
+                  Text(
+                    'Viewed',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  )
+                ],
+              )),
             ],
           ),
         ),
@@ -73,7 +79,7 @@ class MovieListState extends State<MovieList> {
           child: TabBarView(
             children: [
               AnimatedList(
-                padding: EdgeInsets.only(bottom: 75),
+                padding: EdgeInsets.only(bottom: 90),
                 key: provider.watchlistKey,
                 initialItemCount: watchlistMovies.length,
                 itemBuilder: (context, index, animation) {
@@ -82,16 +88,19 @@ class MovieListState extends State<MovieList> {
                   return provider.buildItem(watchlistMovies[index], animation);
                 },
               ),
-              AnimatedList(
-                padding: EdgeInsets.only(bottom: 75),
-                key: provider.viewedListKey,
-                initialItemCount: viewedMovies.length,
-                itemBuilder: (context, index, animation) {
-                  if (viewedMovies.length <= index) return null;
+              Container(
+                child: AnimatedList(
+                  padding: EdgeInsets.only(bottom: 90),
+                  key: provider.viewedListKey,
+                  initialItemCount: viewedMovies.length,
+                  itemBuilder: (context, index, animation) {
+                    if (viewedMovies.length <= index) return null;
 
-                  return provider.buildItem(viewedMovies[index], animation);
-                },
-              ),
+                    return provider.buildItem(viewedMovies[index], animation,
+                        isPremium: purchaseState.isPremium, context: context);
+                  },
+                ),
+              )
             ],
           ),
         ),

@@ -66,35 +66,33 @@ class MHomeState extends State<MHome> {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
 
+    final primaryColor = Color(0xff206a5d);
+    final secondaryColor = Color(0xff20715d);
+    final additionalColor = Color(0xfff1f1e8);
+    final fontsColor = Color(0xffbfdcae);
     MTheme theme = themeState.selectedTheme;
-    var style = SystemUiOverlayStyle(
-      statusBarColor: theme.colorTheme.additionalColor,
-    );
 //    MTheme theme = new MTheme(
-//            colorTheme: MColorTheme(
-//                primaryColor: Color(0xff93b5e1),
-//                secondaryColor: Color(0xff8dadd6),
-//                additionalColor: Color(0xff0f4c75),
-//                fontsColor: Color(0xff1b262c),
-//            ),
-//            textStyleTheme: MTextStyleTheme(
-//                title: TextStyle(
-//                        fontSize: 15,
-//                        fontWeight: FontWeight.bold,
-//                        color: Color(0xff0f4c75)),
-//                subtitleText: TextStyle(
-//                        fontSize: 15.0,
-//                        color: Color(0xff0f4c75),
-//                        fontWeight: FontWeight.bold),
-//                bodyText: TextStyle(fontSize: 15.0, color: Color(0xff1b262c)),
-//                expandedTitle: TextStyle(
-//                        fontSize: 16,
-//                        fontWeight: FontWeight.bold,
-//                        color: Color(0xff0f4c75)),
-//            ));
-
-//      SystemChrome.restoreSystemUIOverlays();
-//      SystemChrome.setSystemUIOverlayStyle(style);
+//        colorTheme: MColorTheme(
+//          primaryColor: primaryColor,
+//          secondaryColor: secondaryColor,
+//          additionalColor: additionalColor,
+//          fontsColor: fontsColor,
+//        ),
+//        textStyleTheme: MTextStyleTheme(
+//          title: TextStyle(
+//              fontSize: 15,
+//              fontWeight: FontWeight.bold,
+//              color: additionalColor),
+//          subtitleText: TextStyle(
+//              fontSize: 15.0,
+//              color: additionalColor,
+//              fontWeight: FontWeight.bold),
+//          bodyText: TextStyle(fontSize: 15.0, color: fontsColor),
+//          expandedTitle: TextStyle(
+//              fontSize: 16,
+//              fontWeight: FontWeight.bold,
+//              color: additionalColor),
+//        ));
 
     Widget widgetToReturn = userState.isAppLoaded
         ? userState.isUserAuthorized ? MyMovies() : Login()
@@ -115,6 +113,7 @@ class MHomeState extends State<MHome> {
           hintColor: theme.colorTheme.fontsColor,
           cardColor: theme.colorTheme.secondaryColor,
           highlightColor: theme.colorTheme.fontsColor,
+          splashColor: theme.colorTheme.primaryColor,
 
           textTheme: TextTheme(
 //            headline1: themeState.selectedTheme.textStyleTheme.bodyText,

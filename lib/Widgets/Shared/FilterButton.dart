@@ -7,8 +7,9 @@ class FilterIcon extends StatelessWidget {
   final String text;
   final onPressedCallback;
   final bool isActive;
+  final double textSize;
 
-  FilterIcon({this.icon, this.text, this.onPressedCallback, this.isActive});
+  FilterIcon({this.icon, this.text, this.onPressedCallback, this.isActive, this.textSize});
 
   @override
   Widget build(BuildContext context) {
@@ -37,12 +38,12 @@ class FilterIcon extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
-                Icon(
+                if(icon != null) Icon(
                   icon,
                   size: 25,
                     color: color,
                 ),
-                Text(text, style: TextStyle(color: color),)
+                Text(text, style: TextStyle(color: color, fontSize: textSize != null ? textSize : 15),)
               ],
             )));
   }

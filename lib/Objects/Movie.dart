@@ -21,6 +21,7 @@ class Movie {
   int movieRate;
   MovieType movieType;
   int year;
+  DateTime updated;
   int averageTimeOfEpisode;
   bool inProduction;
   int seasonsCount;
@@ -51,17 +52,46 @@ class Movie {
     this.seasonsCount = updatedMovie.seasonsCount;
     this.imdbRate = updatedMovie.imdbRate;
     this.imdbVotes = updatedMovie.imdbVotes;
+    this.updated = updatedMovie.updated;
   }
 
-  Movie({this.id, this.title, this.overview, this.tagline, this.posterPath,
-    this.duration, this.rating, this.allVotes, this.likedVotes, this.dislikedVotes, this.countries, this.actors, this.directors,
-    this.genres, this.movieRate, this.movieType, this.year, this.averageTimeOfEpisode,
-    this.inProduction, this.seasonsCount, this.imdbRate, this.imdbVotes});
+  Movie(
+      {this.id,
+      this.title,
+      this.overview,
+      this.tagline,
+      this.posterPath,
+      this.duration,
+      this.rating,
+      this.allVotes,
+      this.likedVotes,
+      this.dislikedVotes,
+      this.countries,
+      this.actors,
+      this.directors,
+      this.genres,
+      this.movieRate,
+      this.movieType,
+      this.year,
+      this.averageTimeOfEpisode,
+      this.inProduction,
+      this.seasonsCount,
+      this.imdbRate,
+      this.imdbVotes,
+      this.updated});
 
   factory Movie.fromJson(Map<String, dynamic> json) {
-    var actors = json['actors'] is Iterable ? json['actors'].cast<String>() : jsonDecode(json['actors']).cast<String>();
-    var directors = json['directors'] is List ? json['directors'].cast<String>() : jsonDecode(json['directors']).cast<String>();
-    var genres = json['genres'] is List ? json['genres'].cast<String>() : jsonDecode(json['genres']).cast<String>();
+    var actors = json['actors'] is Iterable
+        ? json['actors'].cast<String>()
+        : jsonDecode(json['actors']).cast<String>();
+    var directors = json['directors'] is List
+        ? json['directors'].cast<String>()
+        : jsonDecode(json['directors']).cast<String>();
+    var genres = json['genres'] is List
+        ? json['genres'].cast<String>()
+        : jsonDecode(json['genres']).cast<String>();
+    var updated =
+        json['updated'] == null ? null : DateTime.parse(json['updated']);
 
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];
@@ -88,37 +118,38 @@ class Movie {
         averageTimeOfEpisode: json['averageTimeOfEpisode'],
         inProduction: json['inProduction'],
         imdbRate: json['imdbRate'] / 10,
-        imdbVotes: json['imdbVotes']
-    );
+        imdbVotes: json['imdbVotes'],
+        updated: updated);
   }
 
-  Map<String, dynamic> toJson() =>
-          {
-            'id': id,
-            'title': title,
-            'tagline': tagline,
-            'overview': overview,
-            'posterPath': posterPath,
-            'genres': jsonEncode(genres),
-            'year': year,
-            'duration': duration,
-            'likedVotes': likedVotes,
-            'unlikedVotes': dislikedVotes,
-            'movieRate': movieRate,
-            'movieType': movieType.index,
-            'countries': countries,
-            'actors': jsonEncode(actors),
-            'directors': jsonEncode(directors),
-            'seasonsCount': seasonsCount,
-            'averageTimeOfEpisode': averageTimeOfEpisode,
-            'inProduction': inProduction,
-            'imdbRate': imdbRate *  10,
-            'imdbVotes': imdbVotes
-          };
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'tagline': tagline,
+        'overview': overview,
+        'posterPath': posterPath,
+        'genres': jsonEncode(genres),
+        'year': year,
+        'duration': duration,
+        'likedVotes': likedVotes,
+        'unlikedVotes': dislikedVotes,
+        'movieRate': movieRate,
+        'movieType': movieType.index,
+        'countries': countries,
+        'actors': jsonEncode(actors),
+        'directors': jsonEncode(directors),
+        'seasonsCount': seasonsCount,
+        'averageTimeOfEpisode': averageTimeOfEpisode,
+        'inProduction': inProduction,
+        'imdbRate': imdbRate * 10,
+        'imdbVotes': imdbVotes,
+        'updated': updated.toString()
+      };
 
   static int getMovieRating(int likedVotes, int dislikedVotes) {
     final result = likedVotes + dislikedVotes != 0
-        ? (100 / (likedVotes + dislikedVotes)) * likedVotes : 0;
+        ? (100 / (likedVotes + dislikedVotes)) * likedVotes
+        : 0;
 
     return result.toInt();
   }

@@ -2,15 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Themes.dart';
 import 'package:provider/provider.dart';
 
+import 'Premium.dart';
+import 'Providers/PurchaseState.dart';
 import 'Providers/ThemeState.dart';
 import 'Shared/MButton.dart';
 import 'ThemePresentation.dart';
 
 class ChangeThemes extends StatelessWidget {
+  selectTheme(BuildContext context, int index) {
+    final purchaseState = Provider.of<PurchaseState>(context);
+    final themeState = Provider.of<ThemeState>(context);
+
+    if (purchaseState.isPremium) {
+      themeState.selectTheme(Themes.allThemes[index]);
+    } else {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (ctx) => Premium()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themes = new List<Widget>();
     final themeState = Provider.of<ThemeState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
 
     for (final theme in Themes.allThemes) {
       themes.add(ThemePresentation(
@@ -53,14 +68,12 @@ class ChangeThemes extends StatelessWidget {
                 child: Container(
                   margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
                   child: MButton(
-                    onPressedCallback: () {
-                      var tabIndex = DefaultTabController.of(context1).index;
-
-                      themeState.selectTheme(Themes.allThemes[tabIndex]);
-                    },
+                    prependIcon: purchaseState.isPremium ? Icons.check : Icons.monetization_on,
+                    prependIconColor: purchaseState.isPremium ? Theme.of(context).hintColor : Colors.green,
+                    onPressedCallback: () => selectTheme(context, DefaultTabController.of(context1).index),
                     borderRadius: 25,
                     height: 50,
-                    text: 'Select Theme',
+                    text: 'Select Theme ${purchaseState.isPremium ? '' : ' (Premium only)'}',
                     active: true,
                   ),
                 )),

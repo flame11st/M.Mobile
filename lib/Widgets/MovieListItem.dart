@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -32,6 +33,12 @@ class MovieListItemState extends State<MovieListItem> {
   Widget build(BuildContext context) {
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
+
+    final icon = movie.movieRate == MovieRate.addedToWatchlist
+        ? Icons.add_to_queue
+        : movie.movieRate == MovieRate.liked
+            ? Icons.favorite_border
+            : FontAwesome5.ban;
 
     return GestureDetector(
       onTap: () {
@@ -89,18 +96,8 @@ class MovieListItemState extends State<MovieListItem> {
                               children: <Widget>[
                                 //TODO: move color to variable
                                 Text(movie.title,
-                                    style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color:
-                                            movie.movieRate == MovieRate.liked
-                                                ? Theme.of(context)
-                                                .accentColor
-                                                : movie.movieRate ==
-                                                        MovieRate.notLiked
-                                                    ? Colors.red
-                                                    : Theme.of(context)
-                                                        .accentColor)),
+                                    style:
+                                        Theme.of(context).textTheme.headline3),
                                 Row(
                                   children: <Widget>[
                                     Text(movie.year.toString(),
@@ -126,7 +123,7 @@ class MovieListItemState extends State<MovieListItem> {
                                       Text("Seasons: ${movie.seasonsCount}",
                                           style: Theme.of(context)
                                               .textTheme
-                                              .headline5)
+                                              .headline5),
                                   ],
                                 ),
                                 Text(movie.genres.join(', '),
@@ -146,8 +143,12 @@ class MovieListItemState extends State<MovieListItem> {
                           ),
                           child: IconButton(
                             icon: Icon(
-                              Icons.more_vert,
-                              color: Theme.of(context).hintColor,
+                              icon,
+                                color: movie.movieRate == MovieRate.liked
+                                    ? Colors.green
+                                    : movie.movieRate == MovieRate.notLiked
+                                    ? Colors.red
+                                    : Theme.of(context).hintColor,
                             ),
                             onPressed: () async {
                               showModalBottomSheet<void>(

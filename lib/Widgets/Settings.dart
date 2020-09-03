@@ -147,15 +147,8 @@ class SettingsState extends State<Settings> {
   }
 
   changeTheme() {
-    final purchaseState = Provider.of<PurchaseState>(context);
-
-    if (purchaseState.isPremium) {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (ctx) => ChangeThemes()));
-    } else {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (ctx) => Premium()));
-    }
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (ctx) => ChangeThemes()));
   }
 
   @override
@@ -187,7 +180,6 @@ class SettingsState extends State<Settings> {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
     final themeState = Provider.of<ThemeState>(context);
-    final purchaseState = Provider.of<PurchaseState>(context);
 
     userMoviesCount = moviesState.userMovies.length;
 
@@ -289,25 +281,21 @@ class SettingsState extends State<Settings> {
     );
 
     final changeThemeField = MCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           RichText(
               text: TextSpan(
                 style: Theme.of(context).textTheme.headline5,
                 children: <TextSpan>[
                   new TextSpan(
-                      text: 'Selected Theme:   ', style: Theme.of(context).textTheme.headline3),
+                      text: 'Theme:   ', style: Theme.of(context).textTheme.headline3),
                   new TextSpan(text: themeState.selectedTheme.name, style: Theme.of(context).textTheme.headline5)
                 ],
               )),
-          SizedBox(height: 20,),
           MButton(
             onPressedCallback: () => changeTheme(),
-            width: MediaQuery.of(context).size.width,
-            prependIcon: purchaseState.isPremium ? FontAwesome5.paint_brush : Icons.monetization_on,
-            prependIconColor: purchaseState.isPremium ? Theme.of(context).hintColor : Colors.green,
-            text: 'Change Theme${purchaseState.isPremium ? '' : ' (Premium only)'}',
+            text: 'Change',
             active: true,
           )
         ],

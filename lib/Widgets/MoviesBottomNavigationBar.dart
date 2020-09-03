@@ -20,10 +20,6 @@ class MoviesBottomNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final purchaseState = Provider.of<PurchaseState>(context);
-    final isAnyFilterSelected = moviesState.moviesOnly ||
-        moviesState.tvOnly ||
-        (!moviesState.isWatchlist() &&
-            (moviesState.likedOnly || moviesState.notLikedOnly));
 
     return Container(
         height: 65,
@@ -56,7 +52,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
             MIconButton(
               icon: Icon(
                 Icons.movie_filter,
-                color: isAnyFilterSelected
+                color: moviesState.isAnyFilterSelected()
                     ? Theme.of(context).accentColor
                     : Theme.of(context).hintColor,
               ),

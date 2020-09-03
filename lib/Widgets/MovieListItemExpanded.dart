@@ -72,7 +72,15 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               ),
               if (movie.seasonsCount > 0)
                 Text("Seasons: ${movie.seasonsCount}",
-                    style: Theme.of(context).textTheme.headline5)
+                    style: Theme.of(context).textTheme.headline5),
+              SizedBox(
+                width: 15,
+              ),
+              if (movie.seasonsCount > 0)
+                Text("${movie.inProduction ? 'In production' : 'Finished'}",
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline5)
             ],
           ),
           SizedBox(
