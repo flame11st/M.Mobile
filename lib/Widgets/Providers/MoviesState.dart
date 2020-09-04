@@ -180,12 +180,26 @@ class MoviesState with ChangeNotifier {
         isDateFromSelected();
   }
 
+  clearAllFilters() {
+    dateFrom = dateMin;
+    dateTo = dateMax;
+    moviesOnly = false;
+    tvOnly = false;
+    likedOnly = false;
+    notLikedOnly = false;
+
+    selectedRates = {MovieRate.liked, MovieRate.notLiked};
+    selectedTypes = {MovieType.movie, MovieType.tv};
+
+    refreshMovies();
+  }
+
   bool isDateToSelected() {
-    return dateTo.difference(dateMax).inDays != 0;
+    return dateTo != null && dateTo.difference(dateMax).inDays != 0;
   }
 
   bool isDateFromSelected() {
-    return dateFrom.difference(dateMin).inDays != 0;
+    return dateFrom != null && dateFrom.difference(dateMin).inDays != 0;
   }
 
   refreshMovies() {
@@ -237,15 +251,19 @@ class MoviesState with ChangeNotifier {
   List<Movie> getViewedMovies() {
     List<Movie> allViewedMovies = getAllViewedMovies();
 
-    dateMin = allViewedMovies.last.updated;
-    dateMax = allViewedMovies.first.updated;
+    if (dateMin == null || dateFrom.isAfter(allViewedMovies.last.updated))
+      dateMin = allViewedMovies.last.updated;
+    if (dateMax == null ||
+        dateMax
+            .isBefore(allViewedMovies.first.updated.add(new Duration(days: 1))))
+      dateMax = allViewedMovies.first.updated;
 
     if (dateFrom == null) dateFrom = dateMin;
     if (dateTo == null) dateTo = dateMax;
 
     var filteredMovies = allViewedMovies
         .where((movie) =>
-            movie.updated.isAfter(dateFrom.subtract(new Duration(days: 1))) &&
+            movie.updated.isAfter(dateFrom) &&
             movie.updated.isBefore(dateTo.add(new Duration(days: 1))))
         .toList();
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/FilterButton.dart';
@@ -51,7 +52,7 @@ class MoviesFilter extends StatelessWidget {
     final isWatchlist = moviesState.isWatchlist();
 
     return Container(
-        height: isWatchlist ? 100 : 260,
+        height: isWatchlist ? 100 : 300,
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.only(
@@ -123,6 +124,7 @@ class MoviesFilter extends StatelessWidget {
                       }),
                 ],
               ),
+            if (!isWatchlist)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -149,6 +151,14 @@ class MoviesFilter extends StatelessWidget {
                   textSize: 16,
                 ),
               ],
+            ),
+            if (!isWatchlist)
+            MButton(
+              active: moviesState.isAnyFilterSelected(),
+              text: 'Clear all',
+              width: 150,
+              height: 40,
+              onPressedCallback: () => moviesState.clearAllFilters(),
             )
           ],
         ));
