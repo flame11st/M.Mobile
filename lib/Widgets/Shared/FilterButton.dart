@@ -8,8 +8,9 @@ class FilterIcon extends StatelessWidget {
   final onPressedCallback;
   final bool isActive;
   final double textSize;
+  final Color iconColor;
 
-  FilterIcon({this.icon, this.text, this.onPressedCallback, this.isActive, this.textSize});
+  FilterIcon({this.icon, this.text, this.onPressedCallback, this.isActive, this.textSize, this.iconColor});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +42,7 @@ class FilterIcon extends StatelessWidget {
                 if(icon != null) Icon(
                   icon,
                   size: 25,
-                    color: color,
+                    color: iconColor == null ? color : iconColor,
                 ),
                 Text(text, style: TextStyle(color: color, fontSize: textSize != null ? textSize : 15),)
               ],

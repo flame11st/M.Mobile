@@ -199,7 +199,12 @@ class MoviesState with ChangeNotifier {
   }
 
   bool isDateFromSelected() {
-    return dateFrom != null && dateFrom.difference(dateMin).inDays != 0;
+    return dateFrom != null &&
+        dateFrom
+                .difference(
+                    dateMin.subtract(new Duration(hours: 23, minutes: 59)))
+                .inDays !=
+            0;
   }
 
   refreshMovies() {

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
+import 'Premium.dart';
 import 'Providers/MoviesState.dart';
+import 'Providers/PurchaseState.dart';
 import 'Shared/FilterButton.dart';
 import 'package:fluttericon/font_awesome_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -50,9 +52,10 @@ class MoviesFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final isWatchlist = moviesState.isWatchlist();
+    final purchaseState = Provider.of<PurchaseState>(context);
 
     return Container(
-        height: isWatchlist ? 100 : 300,
+        height: isWatchlist ? 100 : 340,
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.only(
@@ -63,18 +66,6 @@ class MoviesFilter extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-//            Row(
-//              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//              children: <Widget>[
-//                Text(
-//                  'Filters',
-//                  style: Theme.of(context).textTheme.headline2,
-//                ),
-//                IconButton(
-//                  icon: Icon(Icons.close),
-//                )
-//              ],
-//            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
@@ -125,41 +116,75 @@ class MoviesFilter extends StatelessWidget {
                 ],
               ),
             if (!isWatchlist)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Text(
-                  'Date:',
-                  style: Theme.of(context).textTheme.headline5,
-                ),
-                FilterIcon(
-                  icon: Icons.calendar_today,
-                  text: DateFormat('yyyy-MM-dd').format(moviesState.dateFrom),
-                  isActive: moviesState.isDateFromSelected(),
-                  onPressedCallback: () {
-                    selectDateFrom(context, moviesState);
-                  },
-                  textSize: 16,
-                ),
-                FilterIcon(
-                  icon: Icons.calendar_today,
-                  text: DateFormat('yyyy-MM-dd').format(moviesState.dateTo),
-                  isActive: moviesState.isDateToSelected(),
-                  onPressedCallback: () {
-                    selectDateTo(context, moviesState);
-                  },
-                  textSize: 16,
-                ),
-              ],
-            ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Text(
+                    'Date:',
+                    style: Theme.of(context).textTheme.headline5,
+                  ),
+                  FilterIcon(
+                    iconColor: purchaseState.isPremium ? null : Colors.green,
+                    icon: purchaseState.isPremium
+                        ? Icons.calendar_today
+                        : Icons.monetization_on,
+                    text: DateFormat('yyyy-MM-dd').format(moviesState.dateFrom),
+                    isActive: moviesState.isDateFromSelected(),
+                    onPressedCallback: () {
+                      if (purchaseState.isPremium)
+                        selectDateFrom(context, moviesState);
+                      else
+                        Navigator.of(context).push(
+                            MaterialPageRoute(builder: (ctx) => Premium()));
+                    },
+                    textSize: 16,
+                  ),
+                  FilterIcon(
+                    iconColor: purchaseState.isPremium ? null : Colors.green,
+                    icon: purchaseState.isPremium
+                        ? Icons.calendar_today
+                        : Icons.monetization_on,
+                    text: DateFormat('yyyy-MM-dd').format(moviesState.dateTo),
+                    isActive: moviesState.isDateToSelected(),
+                    onPressedCallback: () {
+                      if (purchaseState.isPremium)
+                        selectDateTo(context, moviesState);
+                      else
+                        Navigator.of(context).push(
+                            MaterialPageRoute(builder: (ctx) => Premium()));
+                    },
+                    textSize: 16,
+                  ),
+                ],
+              ),
             if (!isWatchlist)
-            MButton(
-              active: moviesState.isAnyFilterSelected(),
-              text: 'Clear all',
-              width: 150,
-              height: 40,
-              onPressedCallback: () => moviesState.clearAllFilters(),
-            )
+              Divider(
+                color: Theme.of(context).hintColor,
+                height: 10,
+                thickness: 1,
+                indent: 25,
+                endIndent: 25,
+              ),
+            if (!isWatchlist)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  MButton(
+                    active: true,
+                    text: 'Close',
+                    width: 150,
+                    height: 40,
+                    onPressedCallback: () => Navigator.of(context).pop(),
+                  ),
+                  MButton(
+                    active: moviesState.isAnyFilterSelected(),
+                    text: 'Clear all',
+                    width: 150,
+                    height: 40,
+                    onPressedCallback: () => moviesState.clearAllFilters(),
+                  )
+                ],
+              )
           ],
         ));
   }
