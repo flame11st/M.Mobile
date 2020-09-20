@@ -17,6 +17,7 @@ import 'MyMovies.dart';
 import 'Providers/PurchaseState.dart';
 import 'Providers/ThemeState.dart';
 import 'Providers/UserState.dart';
+import 'Shared/MSnackBar.dart';
 
 class MHome extends StatefulWidget {
   @override
@@ -41,7 +42,7 @@ class MHomeState extends State<MHome> {
       InAppPurchaseConnection.instance.completePurchase(purchases.first);
     }
 
-    //TODO: Add snackbar with successful text
+    MSnackBar.showSnackBar("Premium features successfully unlocked", true, context);
   }
 
   @override
@@ -65,12 +66,12 @@ class MHomeState extends State<MHome> {
     final themeState = Provider.of<ThemeState>(context);
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
-
-    final primaryColor = Color(0xff206a5d);
-    final secondaryColor = Color(0xff20715d);
-    final additionalColor = Color(0xfff1f1e8);
-    final fontsColor = Color(0xffbfdcae);
     MTheme theme = themeState.selectedTheme;
+
+    // final primaryColor = Color(0xff206a5d);
+    // final secondaryColor = Color(0xff20715d);
+    // final additionalColor = Color(0xfff1f1e8);
+    // final fontsColor = Color(0xffbfdcae);
 //    MTheme theme = new MTheme(
 //        colorTheme: MColorTheme(
 //          primaryColor: primaryColor,

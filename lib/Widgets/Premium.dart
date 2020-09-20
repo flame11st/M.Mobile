@@ -1,30 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:fluttericon/octicons_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
 import 'Providers/PurchaseState.dart';
+import 'Shared/MSnackBar.dart';
 
 class Premium extends StatelessWidget {
   purchaseButtonClick() async {
     final bool available = await InAppPurchaseConnection.instance.isAvailable();
 
     if (!available) {
-      //TODO: Add snackbar with error
+      MSnackBar.showSnackBar(
+          "Not available now. Please try later", false, MyGlobals.scaffoldPremiumKey.currentContext);
+
       return;
     }
 
     const Set<String> _kIds = {'premium_purchase'};
-    final ProductDetailsResponse response = await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
+    final ProductDetailsResponse response =
+        await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
-      //TODO: Add snackbar with error
+      MSnackBar.showSnackBar(
+          "Not available now. Please try later", false, MyGlobals.scaffoldPremiumKey.currentContext);
+
       return;
     }
 
     ProductDetails product = response.productDetails.first;
 
-    final PurchaseParam purchaseParam =
-    PurchaseParam(productDetails: product);
+    final PurchaseParam purchaseParam = PurchaseParam(productDetails: product);
 
     InAppPurchaseConnection.instance
         .buyNonConsumable(purchaseParam: purchaseParam);
@@ -32,6 +39,9 @@ class Premium extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (MyGlobals.scaffoldPremiumKey == null)
+      MyGlobals.scaffoldPremiumKey = new GlobalKey();
+
     final purchaseState = Provider.of<PurchaseState>(context);
 
     final headingField = Row(
@@ -54,7 +64,7 @@ class Premium extends StatelessWidget {
     );
 
     final subTitleText = Text(
-      'If you like MovieDiary you can support the project by unlocking the Premium features',
+      'If you like MovieDiary you can support the project by unlocking the Premium features:',
       textAlign: TextAlign.center,
       style: TextStyle(
           color: Theme.of(context).hintColor,
@@ -62,27 +72,69 @@ class Premium extends StatelessWidget {
           fontWeight: FontWeight.bold),
     );
 
-    final description = Text(
-      'Unlock Premium features to: ',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-          color: Theme.of(context).hintColor,
-          fontSize: 18,
-          fontWeight: FontWeight.bold),
-    );
+    // final description = Text(
+    //   'Premium features: ',
+    //   textAlign: TextAlign.center,
+    //   style: TextStyle(
+    //       color: Theme.of(context).hintColor,
+    //       fontSize: 18,
+    //       fontWeight: FontWeight.bold),
+    // );
 
     final themeFeature = Column(
       children: <Widget>[
         Icon(
           FontAwesome5.paint_brush,
           color: Theme.of(context).accentColor,
-          size: 50,
+          size: 40,
         ),
         SizedBox(
           height: 10,
         ),
         Text(
-          'Be able to change themes.',
+          'Changing themes',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: Theme.of(context).accentColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold),
+        )
+      ],
+    );
+
+    final allMoviesFeature = Column(
+      children: <Widget>[
+        Icon(
+          Octicons.tasklist,
+          color: Theme.of(context).accentColor,
+          size: 40,
+        ),
+        SizedBox(
+          height: 10,
+        ),
+        Text(
+          'See all viewed movies',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: Theme.of(context).accentColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold),
+        )
+      ],
+    );
+
+    final filtersFeature = Column(
+      children: <Widget>[
+        Icon(
+          FontAwesome5.calendar_check,
+          color: Theme.of(context).accentColor,
+          size: 40,
+        ),
+        SizedBox(
+          height: 10,
+        ),
+        Text(
+          'Filter by viewed date',
           textAlign: TextAlign.center,
           style: TextStyle(
               color: Theme.of(context).accentColor,
@@ -97,7 +149,7 @@ class Premium extends StatelessWidget {
         Icon(
           FontAwesome5.hands_helping,
           color: Theme.of(context).accentColor,
-          size: 50,
+          size: 40,
         ),
         SizedBox(
           height: 10,
@@ -119,7 +171,7 @@ class Premium extends StatelessWidget {
         title: headingField,
       ),
       body: Container(
-//                  key: MyGlobals.scaffoldSettingsKey,
+        key: MyGlobals.scaffoldPremiumKey,
         child: SingleChildScrollView(
           child: Container(
               margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
@@ -130,19 +182,27 @@ class Premium extends StatelessWidget {
                 children: <Widget>[
                   titleText,
                   SizedBox(
-                    height: 30,
+                    height: 20,
                   ),
                   subTitleText,
-                  SizedBox(
-                    height: 30,
-                  ),
-                  description,
+                  // SizedBox(
+                  //   height: 20,
+                  // ),
+                  // description,
                   SizedBox(
                     height: 20,
                   ),
                   themeFeature,
                   SizedBox(
-                    height: 40,
+                    height: 30,
+                  ),
+                  allMoviesFeature,
+                  SizedBox(
+                    height: 30,
+                  ),
+                  filtersFeature,
+                  SizedBox(
+                    height: 30,
                   ),
                   supportFeature
                 ],
@@ -159,7 +219,7 @@ class Premium extends StatelessWidget {
                   ? Colors.green.withOpacity(0.4)
                   : Colors.green,
               prependIcon:
-              purchaseState.isPremium ? Icons.check : Icons.monetization_on,
+                  purchaseState.isPremium ? Icons.check : Icons.monetization_on,
               height: 50,
               borderRadius: 25,
               text: 'Unlock Premium Features',

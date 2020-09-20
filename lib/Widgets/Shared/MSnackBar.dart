@@ -6,6 +6,7 @@ class MSnackBar {
   static showSnackBar(String text, bool isSuccess, BuildContext context) {
     if (context == null) context = MyGlobals.scaffoldKey.currentContext;
 
+    Scaffold.of(context).hideCurrentSnackBar();
     Scaffold.of(context).showSnackBar(SnackBar(
       content: Container(
           margin: EdgeInsets.all(0),
@@ -20,7 +21,7 @@ class MSnackBar {
                         .primaryColor,
                     fontSize: 16),
               ))),
-      duration: Duration(seconds: 1),
+      duration: Duration(seconds: 2),
       backgroundColor: isSuccess ? Theme
           .of(MyGlobals.scaffoldKey.currentContext)
           .accentColor : Colors.redAccent,

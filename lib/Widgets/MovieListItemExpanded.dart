@@ -61,12 +61,13 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               SizedBox(
                 width: 15,
               ),
-              Text(
-                  (movie.movieType == MovieType.movie
-                          ? movie.duration.toString()
-                          : movie.averageTimeOfEpisode.toString()) +
-                      ' min',
-                  style: Theme.of(context).textTheme.headline5),
+              if (movie.duration > 0 || movie.averageTimeOfEpisode > 0)
+                Text(
+                    (movie.movieType == MovieType.movie
+                            ? movie.duration.toString()
+                            : movie.averageTimeOfEpisode.toString()) +
+                        ' min',
+                    style: Theme.of(context).textTheme.headline5),
               SizedBox(
                 width: 15,
               ),
@@ -144,7 +145,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               height: 10,
             ),
             Text(
-              "Imdb: ${movie.imdbRate} (${movie.imdbVotes})",
+              "Imdb: ${movie.imdbVotes > 0 ? '${movie.imdbRate} (${movie.imdbVotes})' : 'Not rated'}",
               style: Theme.of(context).textTheme.headline5,
             )
           ],
@@ -156,7 +157,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        if (movie.tagline != null)
+        if (movie.tagline != null && movie.tagline.isNotEmpty)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         SizedBox(height: 10),
         MTextField(

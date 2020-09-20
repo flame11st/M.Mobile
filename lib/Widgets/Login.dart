@@ -5,6 +5,7 @@ import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
@@ -32,7 +33,6 @@ class LoginState extends State<Login> {
   final serviceAgent = ServiceAgent();
   final storage = new FlutterSecureStorage();
   final GoogleSignIn googleSignIn = GoogleSignIn();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
 
   bool isLoaderHided = false;

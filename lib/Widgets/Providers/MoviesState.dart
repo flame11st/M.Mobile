@@ -25,12 +25,14 @@ class MoviesState with ChangeNotifier {
   List<Movie> userMovies = new List<Movie>();
   List<Movie> watchlistMovies = new List<Movie>();
   List<Movie> viewedMovies = new List<Movie>();
+  List<DropdownMenuItem<String>> genres = new List<DropdownMenuItem<String>>();
   bool moviesOnly = false;
   bool tvOnly = false;
   bool likedOnly = false;
   bool notLikedOnly = false;
   DateTime dateFrom;
   DateTime dateTo;
+  String selectedGenre;
 
   DateTime dateMin;
   DateTime dateMax;
@@ -73,6 +75,8 @@ class MoviesState with ChangeNotifier {
     if (userMovies.length == 0 && cachedUserMovies.length != 0)
       setInitialUserMovies(cachedUserMovies);
 
+    setGenres();
+
     notifyListeners();
   }
 
@@ -101,9 +105,32 @@ class MoviesState with ChangeNotifier {
 
     this.userMovies = updatedUserMovies;
 
+    setGenres();
+
     refreshMovies();
 
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
+  }
+
+  setGenres() {
+    genres.clear();
+
+    var genresList = new List<String>();
+
+    userMovies.forEach((element) {
+      genresList.addAll(element.genres);
+    });
+
+    genresList.sort();
+
+    genresList.forEach((element) {
+      if (!genres.any((genre) => genre.value == element)) {
+        genres.add(DropdownMenuItem(
+          value: element,
+          child: Text(element),
+        ));
+      }
+    });
   }
 
   bool isWatchlist() {
@@ -172,12 +199,19 @@ class MoviesState with ChangeNotifier {
     refreshMovies();
   }
 
+  changeGenreFilter(String genre) {
+    selectedGenre = genre;
+
+    refreshMovies();
+  }
+
   isAnyFilterSelected() {
     return moviesOnly ||
         tvOnly ||
         (!isWatchlist() && (likedOnly || notLikedOnly)) ||
         isDateToSelected() ||
-        isDateFromSelected();
+        isDateFromSelected() ||
+        selectedGenre != null;
   }
 
   clearAllFilters() {
@@ -187,6 +221,7 @@ class MoviesState with ChangeNotifier {
     tvOnly = false;
     likedOnly = false;
     notLikedOnly = false;
+    selectedGenre = null;
 
     selectedRates = {MovieRate.liked, MovieRate.notLiked};
     selectedTypes = {MovieType.movie, MovieType.tv};
@@ -247,7 +282,8 @@ class MoviesState with ChangeNotifier {
         .where((movie) =>
             movie.movieRate == MovieRate.addedToWatchlist &&
             (selectedTypes.length == 0 ||
-                selectedTypes.contains(movie.movieType)))
+                selectedTypes.contains(movie.movieType)) &&
+            (selectedGenre == null || movie.genres.contains(selectedGenre)))
         .toList();
 
     return result;
@@ -256,15 +292,9 @@ class MoviesState with ChangeNotifier {
   List<Movie> getViewedMovies() {
     List<Movie> allViewedMovies = getAllViewedMovies();
 
-    if (dateMin == null || dateFrom.isAfter(allViewedMovies.last.updated))
-      dateMin = allViewedMovies.last.updated;
-    if (dateMax == null ||
-        dateMax
-            .isBefore(allViewedMovies.first.updated.add(new Duration(days: 1))))
-      dateMax = allViewedMovies.first.updated;
+    var shouldChangeDateTo = dateMax == dateTo;
 
-    if (dateFrom == null) dateFrom = dateMin;
-    if (dateTo == null) dateTo = dateMax;
+    refreshDates(allViewedMovies, shouldChangeDateTo);
 
     var filteredMovies = allViewedMovies
         .where((movie) =>
@@ -285,6 +315,25 @@ class MoviesState with ChangeNotifier {
     return filteredMovies.take(showedMoviesCount).toList();
   }
 
+  void refreshDates(List<Movie> allViewedMovies, bool shouldChangeDateTo) {
+    if (dateMin == null ||
+        (allViewedMovies.isNotEmpty &&
+            dateFrom.isAfter(allViewedMovies.last.updated)))
+      dateMin = allViewedMovies.last.updated;
+
+    if (dateMax == null ||
+        (allViewedMovies.isNotEmpty &&
+            dateMax.isBefore(
+                allViewedMovies.first.updated.add(new Duration(days: 1))))) {
+      dateMax = allViewedMovies.first.updated;
+
+      if (shouldChangeDateTo) dateTo = dateMax;
+    }
+
+    if (dateFrom == null) dateFrom = dateMin;
+    if (dateTo == null) dateTo = dateMax;
+  }
+
   List<Movie> getAllViewedMovies() {
     var selectedRates = this.selectedRates;
 
@@ -295,7 +344,8 @@ class MoviesState with ChangeNotifier {
         .where((movie) =>
             (selectedTypes.length == 0 ||
                 selectedTypes.contains(movie.movieType)) &&
-            selectedRates.contains(movie.movieRate))
+            selectedRates.contains(movie.movieRate) &&
+            (selectedGenre == null || movie.genres.contains(selectedGenre)))
         .toList();
 
     return result;
@@ -310,7 +360,8 @@ class MoviesState with ChangeNotifier {
     if (foundMovies.length == 0) {
       final moviesResponse = await serviceAgent.getMovie(movieId);
       movieToRate = Movie.fromJson(json.decode(moviesResponse.body));
-      userMovies.add(movieToRate);
+      movieToRate.updated = DateTime.now();
+      userMovies.insert(0, movieToRate);
     } else {
       movieToRate = foundMovies.first;
     }
@@ -344,30 +395,34 @@ class MoviesState with ChangeNotifier {
   void addMovieToWatchlist(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate != 0) {
       userMovies.remove(movieToAdd);
-      userMovies.add(movieToAdd);
-      removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
+      userMovies.insert(0, movieToAdd);
+      // removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
+
+      if (movieToAdd == currentLatestMovie) {
+        currentLatestMovie = viewedMovies.last;
+      }
     }
 
-    addMovieToList(movieToAdd, watchlistMovies, watchlistKey, 0);
+    // addMovieToList(movieToAdd, watchlistMovies, watchlistKey, 0);
 
     movieToAdd.movieRate = movieRate;
+
+    refreshMovies();
   }
 
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate == MovieRate.addedToWatchlist ||
         movieToAdd.movieRate == 0) {
-      removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
+      // removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
       userMovies.remove(movieToAdd);
-      userMovies.add(movieToAdd);
+      userMovies.insert(0, movieToAdd);
 
-      addMovieToList(movieToAdd, viewedMovies, viewedListKey, 0);
+      // addMovieToList(movieToAdd, viewedMovies, viewedListKey, 0);
     }
-//    else if (movieToAdd.movieRate == MovieRate.liked ||
-//        movieToAdd.movieRate == MovieRate.notLiked) {
-//      removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
-//    }
 
     movieToAdd.movieRate = movieRate;
+
+    refreshMovies();
   }
 
   void addMovieToList(Movie movieToAdd, List<Movie> moviesList,

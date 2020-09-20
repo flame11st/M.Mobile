@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/MovieSearchDTO.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MovieSearchItem.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
@@ -89,6 +88,13 @@ class MSearchDelegate extends SearchDelegate {
     return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
       this.setStateFunction = setState;
+
+      if (query == '') {
+        oldQuery = '';
+        isLoading = false;
+        setState(() => foundMovies.clear());
+      }
+      
       return Container(
           color: Theme.of(context).primaryColor,
           child: ListView(

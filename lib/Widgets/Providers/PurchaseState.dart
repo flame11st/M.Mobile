@@ -4,7 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 class PurchaseState with ChangeNotifier {
   final storage = new FlutterSecureStorage();
-  bool isPremium = true;
+  bool isPremium = false;
 
   PurchaseState() {
     initialSetPremium();
@@ -24,7 +24,7 @@ class PurchaseState with ChangeNotifier {
       setIsPremium(value);
     }
 
-    await checkPurchase();
+    if (!isPremium) await checkPurchase();
   }
 
   checkPurchase() async {

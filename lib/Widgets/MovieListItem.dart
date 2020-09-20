@@ -51,7 +51,7 @@ class MovieListItemState extends State<MovieListItem> {
                 color: Theme.of(context).cardColor,
                 type: MaterialType.transparency,
                 child: Container(
-                    height: 102.0,
+                    height: 92.0,
                     margin: EdgeInsets.fromLTRB(10, 10, 10, 5),
                     decoration: BoxDecoration(
                       boxShadow: [
@@ -80,9 +80,9 @@ class MovieListItemState extends State<MovieListItem> {
                               bottomLeft: Radius.circular(12)),
                           child: CachedNetworkImage(
                             imageUrl: imageBaseUrl + imageUrl,
-                            height: 100,
+                            height: 90,
                             fit: BoxFit.fill,
-                            width: 66,
+                            width: 60,
 //                            placeholder: (context, url) => CircularProgressIndicator(),
                           ),
                         ),
@@ -94,7 +94,6 @@ class MovieListItemState extends State<MovieListItem> {
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                //TODO: move color to variable
                                 Text(movie.title,
                                     style:
                                         Theme.of(context).textTheme.headline3),
@@ -107,7 +106,8 @@ class MovieListItemState extends State<MovieListItem> {
                                     SizedBox(
                                       width: 30,
                                     ),
-                                    Text(
+                                    if (movie.duration > 0 || movie.averageTimeOfEpisode > 0)
+                                      Text(
                                         (movie.movieType == MovieType.movie
                                                 ? movie.duration.toString()
                                                 : movie.averageTimeOfEpisode

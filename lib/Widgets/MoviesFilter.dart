@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
+import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import 'Premium.dart';
 import 'Providers/MoviesState.dart';
@@ -55,7 +56,7 @@ class MoviesFilter extends StatelessWidget {
     final purchaseState = Provider.of<PurchaseState>(context);
 
     return Container(
-        height: isWatchlist ? 100 : 340,
+        height: isWatchlist ? 250 : 450,
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.only(
@@ -157,34 +158,80 @@ class MoviesFilter extends StatelessWidget {
                   ),
                 ],
               ),
-            if (!isWatchlist)
-              Divider(
-                color: Theme.of(context).hintColor,
-                height: 10,
-                thickness: 1,
-                indent: 25,
-                endIndent: 25,
-              ),
-            if (!isWatchlist)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  MButton(
-                    active: true,
-                    text: 'Close',
-                    width: 150,
-                    height: 40,
-                    onPressedCallback: () => Navigator.of(context).pop(),
-                  ),
-                  MButton(
-                    active: moviesState.isAnyFilterSelected(),
-                    text: 'Clear all',
-                    width: 150,
-                    height: 40,
-                    onPressedCallback: () => moviesState.clearAllFilters(),
-                  )
-                ],
-              )
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Text(
+                  'Genre:',
+                  style: Theme.of(context).textTheme.headline5,
+                ),
+                SizedBox(
+                  width: 20,
+                ),
+                MCard(
+                    shadowColor: moviesState.selectedGenre != null
+                        ? Theme.of(context).accentColor
+                        : Theme.of(context).hintColor,
+                    marginTop: 0,
+                    padding: 0,
+                    child: Container(
+                        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                        child: Row(
+                          children: [
+                            DropdownButton(
+                              value: moviesState.selectedGenre,
+                              hint: Text('Select Genre'),
+                              onChanged: ((String value) {
+                                moviesState.changeGenreFilter(value);
+                              }),
+                              items: moviesState.genres,
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                              ),
+                              onPressed: moviesState.selectedGenre == null
+                                  ? null
+                                  : () => moviesState.changeGenreFilter(null),
+                            )
+                          ],
+                        )))
+              ],
+            ),
+            Column(
+              children: [
+                Divider(
+                  color: Theme.of(context).hintColor.withOpacity(0.2),
+                  height: 5,
+                  thickness: 1,
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    SizedBox(
+                      width: 25,
+                    ),
+                    MButton(
+                      active: true,
+                      text: 'Close',
+                      width: 130,
+                      height: 40,
+                      onPressedCallback: () => Navigator.of(context).pop(),
+                    ),
+                    MButton(
+                      active: moviesState.isAnyFilterSelected(),
+                      text: 'Clear all',
+                      width: 130,
+                      height: 40,
+                      onPressedCallback: () => moviesState.clearAllFilters(),
+                    )
+                  ],
+                ),
+              ],
+            )
           ],
         ));
   }

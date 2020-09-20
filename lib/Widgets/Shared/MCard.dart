@@ -8,8 +8,9 @@ class MCard extends StatelessWidget {
   final double padding;
   final double marginTop;
   final Color color;
+  final Color shadowColor;
 
-  MCard({this.text, this.child, this.button, this.padding, this.marginTop, this.color});
+  MCard({this.text, this.child, this.button, this.padding, this.marginTop, this.color, this.shadowColor});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +20,7 @@ class MCard extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withOpacity(0.2),
+              color: shadowColor == null ? Colors.white.withOpacity(0.2) : shadowColor.withOpacity(0.3),
               offset: Offset(-4.0, -4.0),
               blurRadius: 3,
             ),

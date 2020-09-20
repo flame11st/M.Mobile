@@ -86,10 +86,10 @@ class SettingsState extends State<Settings> {
     }
   }
 
-  changeUserInfo(
-      String userId, String name, String email, User user, String field) async {
+  changeUserInfo(String userId, String name, String email, User user,
+      String field) async {
     var changeUserInfoResponse =
-        await serviceAgent.changeUserInfo(userId, name, email);
+    await serviceAgent.changeUserInfo(userId, name, email);
 
     if (changeUserInfoResponse.statusCode == 200) {
       MSnackBar.showSnackBar('$field successfully changed', true,
@@ -108,7 +108,7 @@ class SettingsState extends State<Settings> {
 
   changePassword(String userId, String oldPassword, String newPassword) async {
     var changePasswordResponse =
-        await serviceAgent.changeUserPassword(userId, oldPassword, newPassword);
+    await serviceAgent.changeUserPassword(userId, oldPassword, newPassword);
 
     if (changePasswordResponse.statusCode == 200) {
       MSnackBar.showSnackBar('Password successfully changed', true,
@@ -132,14 +132,15 @@ class SettingsState extends State<Settings> {
     }
   }
 
-  removeUser(
-      String userId, UserState userState, MoviesState moviesState, ThemeState themeState) async {
+  removeUser(String userId, UserState userState, MoviesState moviesState,
+      ThemeState themeState, PurchaseState purchaseState) async {
     var removeUserResponse = await serviceAgent.deleteUser(userId);
 
     if (removeUserResponse.statusCode == 200) {
       userState.logout();
       moviesState.logout();
       themeState.logout();
+      purchaseState.logout();
       Navigator.of(context).pop();
     } else {
       MSnackBar.showSnackBar('Something went wrong', false, context);
@@ -180,6 +181,7 @@ class SettingsState extends State<Settings> {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
     final themeState = Provider.of<ThemeState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
 
     userMoviesCount = moviesState.userMovies.length;
 
@@ -197,15 +199,18 @@ class SettingsState extends State<Settings> {
         Row(
           children: <Widget>[
             Icon(
-                  Icons.settings,
-                  size: 25,
-                ),
+              Icons.settings,
+              size: 25,
+            ),
             SizedBox(
               width: 10,
             ),
             Text(
               'Settings',
-              style: Theme.of(context).textTheme.headline5,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline5,
             )
           ],
         ),
@@ -216,13 +221,18 @@ class SettingsState extends State<Settings> {
                 children: <Widget>[
                   Text(
                     'Sign out',
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .headline5,
                   ),
                   SizedBox(width: 10,),
                   new Icon(
                     Entypo.logout,
                     size: 25,
-                    color: Theme.of(context).hintColor,
+                    color: Theme
+                        .of(context)
+                        .hintColor,
                   )
                 ],
               ),
@@ -230,6 +240,7 @@ class SettingsState extends State<Settings> {
                 userState.logout();
                 moviesState.logout();
                 themeState.logout();
+                purchaseState.logout();
                 Navigator.of(context).pop();
               },
             )
@@ -243,8 +254,11 @@ class SettingsState extends State<Settings> {
       child: Form(
         key: _formNameKey,
         child: TextFormField(
-          style: Theme.of(context).textTheme.headline5,
-          decoration: InputDecoration(fillColor: Colors.redAccent, ),
+          style: Theme
+              .of(context)
+              .textTheme
+              .headline5,
+          decoration: InputDecoration(fillColor: Colors.redAccent,),
           validator: (value) {
             return nameController.text.isEmpty ? 'Name can\'t be empty' : null;
           },
@@ -253,8 +267,9 @@ class SettingsState extends State<Settings> {
       ),
       button: MButton(
         text: 'Change name',
-        onPressedCallback: () => changeUserInfo(userState.userId,
-            nameController.text, initialUserEmail, userState.user, 'Name'),
+        onPressedCallback: () =>
+            changeUserInfo(userState.userId,
+                nameController.text, initialUserEmail, userState.user, 'Name'),
         active: nameButtonActive,
       ),
     );
@@ -264,7 +279,10 @@ class SettingsState extends State<Settings> {
       child: Form(
           key: _formEmailKey,
           child: TextFormField(
-            style: Theme.of(context).textTheme.headline5,
+            style: Theme
+                .of(context)
+                .textTheme
+                .headline5,
             validator: (value) {
               return emailController.text.isEmpty
                   ? 'Email can\'t be empty'
@@ -274,65 +292,83 @@ class SettingsState extends State<Settings> {
           )),
       button: MButton(
         text: 'Change Email',
-        onPressedCallback: () => changeUserInfo(userState.userId,
-            initialUserName, emailController.text, userState.user, 'Email'),
+        onPressedCallback: () =>
+            changeUserInfo(userState.userId,
+                initialUserName, emailController.text, userState.user, 'Email'),
         active: emailButtonActive,
       ),
     );
 
     final changeThemeField = MCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          RichText(
-              text: TextSpan(
-                style: Theme.of(context).textTheme.headline5,
-                children: <TextSpan>[
-                  new TextSpan(
-                      text: 'Theme:   ', style: Theme.of(context).textTheme.headline3),
-                  new TextSpan(text: themeState.selectedTheme.name, style: Theme.of(context).textTheme.headline5)
-                ],
-              )),
-          MButton(
-            onPressedCallback: () => changeTheme(),
-            text: 'Change',
-            active: true,
-          )
-        ],
-      )
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            RichText(
+                text: TextSpan(
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headline5,
+                  children: <TextSpan>[
+                    new TextSpan(
+                        text: 'Theme:   ', style: Theme
+                        .of(context)
+                        .textTheme
+                        .headline3),
+                    new TextSpan(
+                        text: themeState.selectedTheme.name, style: Theme
+                        .of(context)
+                        .textTheme
+                        .headline5)
+                  ],
+                )),
+            MButton(
+              onPressedCallback: () => changeTheme(),
+              text: 'Change',
+              active: true,
+            )
+          ],
+        )
     );
 
     final userMoviesCountField = MCard(
         child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        RichText(
-            text: TextSpan(
-          style: Theme.of(context).textTheme.headline5,
-          children: <TextSpan>[
-            new TextSpan(
-                text: 'User movies count:   ', style: Theme.of(context).textTheme.headline3),
-            new TextSpan(text: userMoviesCount.toString())
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            RichText(
+                text: TextSpan(
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headline5,
+                  children: <TextSpan>[
+                    new TextSpan(
+                        text: 'User movies count:   ', style: Theme
+                        .of(context)
+                        .textTheme
+                        .headline3),
+                    new TextSpan(text: userMoviesCount.toString())
+                  ],
+                )),
+            MButton(
+              text: 'Clear all',
+              onPressedCallback: () {
+                clearUserMovies(userState.userId);
+                moviesState.clear();
+              },
+              active: true,
+            )
           ],
-        )),
-        MButton(
-          text: 'Clear all',
-          onPressedCallback: () {
-            clearUserMovies(userState.userId);
-            moviesState.clear();
-          },
-          active: true,
-        )
-      ],
-    ));
+        ));
 
     final changePasswordField = MCard(
         text: 'Change Password',
         button: MButton(
           text: 'Change',
-          onPressedCallback: () => changePassword(userState.userId,
-              oldPasswordController.text, newPasswordController.text),
+          onPressedCallback: () =>
+              changePassword(userState.userId,
+                  oldPasswordController.text, newPasswordController.text),
           active: changePasswordButtonActive,
         ),
         child: Form(
@@ -343,10 +379,17 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 10,
               ),
-              Text('Old Password', style: Theme.of(context).textTheme.headline5,),
+              Text('Old Password', style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline5,),
               TextFormField(
-                style: Theme.of(context).textTheme.headline5,
-                validator: (value) => oldPasswordController.text.isNotEmpty
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .headline5,
+                validator: (value) =>
+                oldPasswordController.text.isNotEmpty
                     ? Validators.passwordValidator(oldPasswordController.text)
                     : null,
                 controller: oldPasswordController,
@@ -355,14 +398,20 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 5,
               ),
-              Text('New Password', style: Theme.of(context).textTheme.headline5,),
+              Text('New Password', style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline5,),
               TextFormField(
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .headline5,
                 validator: (value) {
                   if (newPasswordController.text.isEmpty) return null;
 
                   var result =
-                      Validators.passwordValidator(newPasswordController.text);
+                  Validators.passwordValidator(newPasswordController.text);
                   if (result == null)
                     result = Validators.passwordsMatchValidator(
                         newPasswordController.text,
@@ -375,9 +424,15 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 5,
               ),
-              Text('Confirm Password', style: Theme.of(context).textTheme.headline5,),
+              Text('Confirm Password', style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline5,),
               TextFormField(
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .headline5,
                 validator: (value) {
                   if (confirmPasswordController.text.isEmpty) return null;
 
@@ -403,7 +458,8 @@ class SettingsState extends State<Settings> {
           MButton(
             text: 'Remove user',
             active: true,
-            onPressedCallback: () => {
+            onPressedCallback: () =>
+            {
               setState(() => showRemoveUserButtons = !showRemoveUserButtons)
             },
             height: 40,
@@ -415,7 +471,10 @@ class SettingsState extends State<Settings> {
                 children: <Widget>[
                   Text(
                     'Are you want to remove user?',
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .headline5,
                   ),
                   SizedBox(
                     height: 10,
@@ -430,14 +489,16 @@ class SettingsState extends State<Settings> {
                           ),
                           onPressedCallback: () {
                             removeUser(
-                                userState.userId, userState, moviesState, themeState);
+                                userState.userId, userState, moviesState,
+                                themeState, purchaseState);
                           }),
                       MIconButton(
                         icon: Icon(
                           Icons.close,
                           color: Colors.green,
                         ),
-                        onPressedCallback: () => setState(() =>
+                        onPressedCallback: () =>
+                            setState(() =>
                             showRemoveUserButtons = !showRemoveUserButtons),
                       ),
                     ],
@@ -451,7 +512,9 @@ class SettingsState extends State<Settings> {
     );
 
     return Scaffold(
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme
+            .of(context)
+            .primaryColor,
         appBar: AppBar(
           title: headingField,
         ),
@@ -461,7 +524,9 @@ class SettingsState extends State<Settings> {
             child: Container(
 //                margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
                 padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                color: Theme.of(context).primaryColor,
+                color: Theme
+                    .of(context)
+                    .primaryColor,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
