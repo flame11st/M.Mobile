@@ -38,11 +38,9 @@ class MHomeState extends State<MHome> {
 
     purchaseState.setIsPremium(true);
 
-    if (Platform.isIOS) {
-      InAppPurchaseConnection.instance.completePurchase(purchases.first);
-    }
+    InAppPurchaseConnection.instance.completePurchase(purchases.first);
 
-    MSnackBar.showSnackBar("Premium features successfully unlocked", true, context);
+    MSnackBar.showSnackBar("Premium features successfully unlocked", true, null);
   }
 
   @override

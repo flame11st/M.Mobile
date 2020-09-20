@@ -28,6 +28,8 @@ class PurchaseState with ChangeNotifier {
   }
 
   checkPurchase() async {
+    if (isPremium) return;
+
     final QueryPurchaseDetailsResponse response = await InAppPurchaseConnection.instance.queryPastPurchases();
     if (response.error != null) {
       return;

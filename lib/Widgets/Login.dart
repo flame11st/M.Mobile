@@ -9,6 +9,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
+import 'package:mmobile/Widgets/Providers/PurchaseState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:mmobile/Widgets/SignUp.dart';
@@ -117,6 +118,9 @@ class LoginState extends State<Login> {
 
   processLoginResponse(String response, bool isSignedInWithGoogle) {
     final userState = Provider.of<UserState>(context);
+    final purchaseState = Provider.of<PurchaseState>(context);
+
+    purchaseState.checkPurchase();
 
     userState.processLoginResponse(response, isSignedInWithGoogle);
   }

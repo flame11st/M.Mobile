@@ -94,7 +94,7 @@ class MSearchDelegate extends SearchDelegate {
         isLoading = false;
         setState(() => foundMovies.clear());
       }
-      
+
       return Container(
           color: Theme.of(context).primaryColor,
           child: ListView(
