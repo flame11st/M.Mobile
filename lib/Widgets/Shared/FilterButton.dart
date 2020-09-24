@@ -19,7 +19,7 @@ class FilterIcon extends StatelessWidget {
         onTap: () => onPressedCallback(),
         child: Container(
             height: 50,
-            width: 130,
+            width: 160,
             decoration: new BoxDecoration(
                 color: Theme.of(context).primaryColor,
                 borderRadius: BorderRadius.circular(10.0),

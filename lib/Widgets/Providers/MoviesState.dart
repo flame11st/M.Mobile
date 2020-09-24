@@ -40,7 +40,7 @@ class MoviesState with ChangeNotifier {
   var selectedRates = {MovieRate.liked, MovieRate.notLiked};
   var selectedTypes = {MovieType.movie, MovieType.tv};
 
-  int viewedLimit = 10;
+  int viewedLimit = 25;
   int page = 1;
   bool showMoreButton = false;
   Movie currentLatestMovie;

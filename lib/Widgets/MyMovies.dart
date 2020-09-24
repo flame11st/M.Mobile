@@ -30,6 +30,7 @@ class MyMoviesState extends State<MyMovies> {
   setUserMovies() async {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
+    final loaderState = Provider.of<LoaderState>(context);
 
     if (moviesState.isMoviesRequested) {
       return;
@@ -49,6 +50,8 @@ class MyMoviesState extends State<MyMovies> {
       }).toList();
 
       moviesState.setUserMovies(movies);
+    } else if (loaderState.isLoaderVisible) {
+      loaderState.setIsLoaderVisible(false);
     }
   }
 

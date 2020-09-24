@@ -70,10 +70,6 @@ class MoviesFilter extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                Text(
-                  'Type:',
-                  style: Theme.of(context).textTheme.headline5,
-                ),
                 FilterIcon(
                   icon: FontAwesome.video,
                   text: 'Movies',
@@ -96,10 +92,6 @@ class MoviesFilter extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  Text(
-                    'Rate:',
-                    style: Theme.of(context).textTheme.headline5,
-                  ),
                   FilterIcon(
                       icon: Icons.favorite_border,
                       text: 'Liked',
@@ -120,16 +112,12 @@ class MoviesFilter extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Text(
-                    'Date:',
-                    style: Theme.of(context).textTheme.headline5,
-                  ),
                   FilterIcon(
                     iconColor: purchaseState.isPremium ? null : Colors.green,
                     icon: purchaseState.isPremium
                         ? Icons.calendar_today
                         : Icons.monetization_on,
-                    text: DateFormat('yyyy-MM-dd').format(moviesState.dateFrom),
+                    text: "From: ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom)}",
                     isActive: moviesState.isDateFromSelected(),
                     onPressedCallback: () {
                       if (purchaseState.isPremium)
@@ -145,7 +133,7 @@ class MoviesFilter extends StatelessWidget {
                     icon: purchaseState.isPremium
                         ? Icons.calendar_today
                         : Icons.monetization_on,
-                    text: DateFormat('yyyy-MM-dd').format(moviesState.dateTo),
+                    text: "To:   ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo)}",
                     isActive: moviesState.isDateToSelected(),
                     onPressedCallback: () {
                       if (purchaseState.isPremium)
@@ -159,15 +147,8 @@ class MoviesFilter extends StatelessWidget {
                 ],
               ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Genre:',
-                  style: Theme.of(context).textTheme.headline5,
-                ),
-                SizedBox(
-                  width: 20,
-                ),
                 MCard(
                     shadowColor: moviesState.selectedGenre != null
                         ? Theme.of(context).accentColor
@@ -175,8 +156,10 @@ class MoviesFilter extends StatelessWidget {
                     marginTop: 0,
                     padding: 0,
                     child: Container(
+                      width: 350,
                         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             DropdownButton(
                               value: moviesState.selectedGenre,
@@ -211,9 +194,6 @@ class MoviesFilter extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    SizedBox(
-                      width: 25,
-                    ),
                     MButton(
                       active: true,
                       text: 'Close',

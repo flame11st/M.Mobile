@@ -4,7 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 class PurchaseState with ChangeNotifier {
   final storage = new FlutterSecureStorage();
-  bool isPremium = false;
+  bool isPremium = true;
 
   PurchaseState() {
     initialSetPremium();
@@ -36,8 +36,8 @@ class PurchaseState with ChangeNotifier {
     }
 
     if (response.pastPurchases.isEmpty ||
-        response.pastPurchases.first.productID != 'premium_purchase' ||
-        response.pastPurchases.first.status != PurchaseStatus.purchased) return;
+        response.pastPurchases.first.productID != 'test_purchase' ||
+    response.pastPurchases.first.status != PurchaseStatus.purchased) return;
 
     if (isPremium != true) setIsPremium(true);
   }

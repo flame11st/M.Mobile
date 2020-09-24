@@ -33,14 +33,18 @@ class MHomeState extends State<MHome> {
     final purchaseState = Provider.of<PurchaseState>(context);
 
     if (purchases.isEmpty ||
-        purchases.first.productID != 'premium_purchase' ||
-        purchases.first.status != PurchaseStatus.purchased) return;
+        purchases.first.productID != 'test_purchase' ||
+        purchases.first.status != PurchaseStatus.purchased) {
+      MSnackBar.showSnackBar(
+          "Not available now. Please try later", false, MyGlobals.scaffoldPremiumKey.currentContext);
+      return;
+    }
 
-    purchaseState.setIsPremium(true);
+      InAppPurchaseConnection.instance.completePurchase(purchases.first);
 
-    InAppPurchaseConnection.instance.completePurchase(purchases.first);
+      purchaseState.setIsPremium(true);
 
-    MSnackBar.showSnackBar("Premium features successfully unlocked", true, null);
+      MSnackBar.showSnackBar("Premium features successfully unlocked", true, MyGlobals.scaffoldPremiumKey.currentContext);
   }
 
   @override
@@ -65,33 +69,34 @@ class MHomeState extends State<MHome> {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
     MTheme theme = themeState.selectedTheme;
-
-    // final primaryColor = Color(0xff206a5d);
-    // final secondaryColor = Color(0xff20715d);
-    // final additionalColor = Color(0xfff1f1e8);
-    // final fontsColor = Color(0xffbfdcae);
-//    MTheme theme = new MTheme(
-//        colorTheme: MColorTheme(
-//          primaryColor: primaryColor,
-//          secondaryColor: secondaryColor,
-//          additionalColor: additionalColor,
-//          fontsColor: fontsColor,
-//        ),
-//        textStyleTheme: MTextStyleTheme(
-//          title: TextStyle(
-//              fontSize: 15,
-//              fontWeight: FontWeight.bold,
-//              color: additionalColor),
-//          subtitleText: TextStyle(
-//              fontSize: 15.0,
-//              color: additionalColor,
-//              fontWeight: FontWeight.bold),
-//          bodyText: TextStyle(fontSize: 15.0, color: fontsColor),
-//          expandedTitle: TextStyle(
-//              fontSize: 16,
-//              fontWeight: FontWeight.bold,
-//              color: additionalColor),
-//        ));
+   //
+   //  final primaryColor = Color(0xfffc8d8d);
+   //  final secondaryColor = Color(0xfffc8d8d);
+   //  final additionalColor = Color(0xff407088);
+   //  final fontsColor = Color(0xff132743);
+   // MTheme theme = new MTheme(
+   //   brightness: Brightness.dark,
+   //     colorTheme: MColorTheme(
+   //       primaryColor: primaryColor,
+   //       secondaryColor: secondaryColor,
+   //       additionalColor: additionalColor,
+   //       fontsColor: fontsColor,
+   //     ),
+   //     textStyleTheme: MTextStyleTheme(
+   //       title: TextStyle(
+   //           fontSize: 15,
+   //           fontWeight: FontWeight.bold,
+   //           color: additionalColor),
+   //       subtitleText: TextStyle(
+   //           fontSize: 15.0,
+   //           color: additionalColor,
+   //           fontWeight: FontWeight.bold),
+   //       bodyText: TextStyle(fontSize: 15.0, color: fontsColor),
+   //       expandedTitle: TextStyle(
+   //           fontSize: 16,
+   //           fontWeight: FontWeight.bold,
+   //           color: additionalColor),
+   //     ));
 
     Widget widgetToReturn = userState.isAppLoaded
         ? userState.isUserAuthorized ? MyMovies() : Login()
