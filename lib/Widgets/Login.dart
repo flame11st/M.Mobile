@@ -1,15 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
-import 'package:mmobile/Widgets/Providers/PurchaseState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:mmobile/Widgets/SignUp.dart';
@@ -118,9 +112,6 @@ class LoginState extends State<Login> {
 
   processLoginResponse(String response, bool isSignedInWithGoogle) {
     final userState = Provider.of<UserState>(context);
-    final purchaseState = Provider.of<PurchaseState>(context);
-
-    purchaseState.checkPurchase();
 
     userState.processLoginResponse(response, isSignedInWithGoogle);
   }

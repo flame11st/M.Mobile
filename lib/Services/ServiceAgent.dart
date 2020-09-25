@@ -72,6 +72,11 @@ class ServiceAgent {
     return get('User/DeleteUser?userId=$userId');
   }
 
+
+  setUserPremiumPurchased(String userId, bool value) {
+    return get('User/SetUserPremiumPurchased?userId=$userId&value=$value');
+  }
+
   getMovie(String movieId) {
     return get('movies/GetMovie?id=$movieId');
   }

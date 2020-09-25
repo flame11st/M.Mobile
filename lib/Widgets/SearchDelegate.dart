@@ -4,6 +4,7 @@ import 'package:mmobile/Objects/MovieSearchDTO.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieSearchItem.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
+import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 
@@ -15,6 +16,46 @@ class MSearchDelegate extends SearchDelegate {
   bool isLoading = false;
   StateSetter setStateFunction;
   int searchTimestamp;
+  bool notFound = false;
+
+  getResultsWidget(String query) {
+    return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+      this.setStateFunction = setState;
+
+      if (query == '') {
+        oldQuery = '';
+        isLoading = false;
+        setState(() => notFound = false);
+        setState(() => foundMovies.clear());
+      } else if (query != oldQuery) {
+        oldQuery = query;
+        searchMovies(context);
+      }
+
+      return Container(
+          color: Theme.of(context).primaryColor,
+          child: ListView(
+            children: <Widget>[
+              SizedBox(
+                  height: 5,
+                  child: isLoading ? LinearProgressIndicator() : Text('')),
+              if (foundMovies.isEmpty && !notFound)
+                MCard(
+                    marginTop: 15,
+                    marginLR: 10,
+                    child: Container(
+                      child: Text(
+                        "You can search in English, French, Spanish, German and Russian languages."
+                            "\n\nPlease start typing the title of the movie or TV show from the beginning",
+                        style: Theme.of(context).textTheme.headline5,
+                      ),
+                    )),
+              for (final movie in foundMovies) MovieSearchItem(movie: movie)
+            ],
+          ));
+    });
+  }
 
   searchMovies(BuildContext context) async {
     isLoading = true;
@@ -35,7 +76,7 @@ class MSearchDelegate extends SearchDelegate {
 
     final moviesResponse = await serviceAgent.search(query);
 
-    if (searchTimestamp!= null && timestamp < searchTimestamp) return;
+    if (searchTimestamp != null && timestamp < searchTimestamp) return;
 
     if (moviesResponse.statusCode == 200) {
       searchTimestamp = timestamp;
@@ -56,6 +97,8 @@ class MSearchDelegate extends SearchDelegate {
 
       isLoading = false;
       setStateFunction(() => this.foundMovies = foundMovies);
+
+      notFound = foundMovies.isEmpty;
     } else {
       isLoading = false;
     }
@@ -85,55 +128,16 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-      this.setStateFunction = setState;
+    final resultsWidget = getResultsWidget(query);
 
-      if (query == '') {
-        oldQuery = '';
-        isLoading = false;
-        setState(() => foundMovies.clear());
-      }
-
-      return Container(
-          color: Theme.of(context).primaryColor,
-          child: ListView(
-            children: <Widget>[
-              SizedBox(
-                  height: 5,
-                  child: isLoading ? LinearProgressIndicator() : Text('')),
-              for (final movie in foundMovies) MovieSearchItem(movie: movie)
-            ],
-          ));
-    });
+    return resultsWidget;
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-      this.setStateFunction = setState;
+    final resultsWidget = getResultsWidget(query);
 
-      if (query == '') {
-        oldQuery = '';
-        isLoading = false;
-        setState(() => foundMovies.clear());
-      } else if (query != oldQuery) {
-        oldQuery = query;
-        searchMovies(context);
-      }
-
-      return Container(
-          color: Theme.of(context).primaryColor,
-          child: ListView(
-            children: <Widget>[
-              SizedBox(
-                  height: 5,
-                  child: isLoading ? LinearProgressIndicator() : Text('')),
-              for (final movie in foundMovies) MovieSearchItem(movie: movie)
-            ],
-          ));
-    });
+    return resultsWidget;
   }
 
   @override

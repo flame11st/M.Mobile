@@ -5,7 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
-import 'Providers/PurchaseState.dart';
+import 'Providers/UserState.dart';
 import 'Shared/MSnackBar.dart';
 
 class Premium extends StatelessWidget {
@@ -13,18 +13,19 @@ class Premium extends StatelessWidget {
     final bool available = await InAppPurchaseConnection.instance.isAvailable();
 
     if (!available) {
-      MSnackBar.showSnackBar(
-          "Not available now. Please try later", false, MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Not available now. Please try later", false,
+          MyGlobals.scaffoldPremiumKey.currentContext);
 
       return;
     }
 
-    const Set<String> _kIds = {'test_purchase'};
+    const Set<String> _kIds = {'test_purchase2'};
+    // const Set<String> _kIds = {'premium_purchase'};
     final ProductDetailsResponse response =
         await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
-      MSnackBar.showSnackBar(
-          "Not available now. Please try later", false, MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Not available now. Please try later", false,
+          MyGlobals.scaffoldPremiumKey.currentContext);
 
       return;
     }
@@ -42,7 +43,7 @@ class Premium extends StatelessWidget {
     if (MyGlobals.scaffoldPremiumKey == null)
       MyGlobals.scaffoldPremiumKey = new GlobalKey();
 
-    final purchaseState = Provider.of<PurchaseState>(context);
+    final userState = Provider.of<UserState>(context);
 
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -215,15 +216,15 @@ class Premium extends StatelessWidget {
             margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
             child: MButton(
               onPressedCallback: () => purchaseButtonClick(),
-              prependIconColor: purchaseState.isPremium
+              prependIconColor: userState.isPremium
                   ? Colors.green.withOpacity(0.4)
                   : Colors.green,
               prependIcon:
-                  purchaseState.isPremium ? Icons.check : Icons.monetization_on,
+                  userState.isPremium ? Icons.check : Icons.monetization_on,
               height: 50,
               borderRadius: 25,
               text: 'Unlock Premium Features',
-              active: !purchaseState.isPremium,
+              active: !userState.isPremium,
             ),
           )),
     );

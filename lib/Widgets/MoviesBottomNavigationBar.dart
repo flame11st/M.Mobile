@@ -1,16 +1,10 @@
-// Copyright 2019 The Flutter team. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'package:flutter/material.dart';
-import 'package:mmobile/Variables/Themes.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
 
 import 'MoviesFilter.dart';
 import 'Premium.dart';
 import 'Providers/MoviesState.dart';
-import 'Providers/PurchaseState.dart';
 import 'Settings.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MIconButton.dart';
@@ -19,7 +13,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-    final purchaseState = Provider.of<PurchaseState>(context);
+    final userState = Provider.of<UserState>(context);
 
     return Container(
         height: 65,
@@ -96,7 +90,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     children: <Widget>[
                       IconButton(
                         icon: Icon(
-                          purchaseState.isPremium ? Icons.check : Icons.monetization_on,
+                          userState.isPremium ? Icons.check : Icons.monetization_on,
                           color: Colors.green,
                         ),
                       ),

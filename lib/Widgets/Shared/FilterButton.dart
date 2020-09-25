@@ -37,7 +37,7 @@ class FilterIcon extends StatelessWidget {
                 ]
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 if(icon != null) Icon(
                   icon,

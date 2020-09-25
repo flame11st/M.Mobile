@@ -1,18 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/ChangeThemes.dart';
-import 'package:mmobile/Widgets/Premium.dart';
 import 'package:mmobile/Widgets/Providers/ThemeState.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
-import 'Providers/PurchaseState.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MIconButton.dart';
 import 'Shared/MCard.dart';
@@ -133,14 +130,13 @@ class SettingsState extends State<Settings> {
   }
 
   removeUser(String userId, UserState userState, MoviesState moviesState,
-      ThemeState themeState, PurchaseState purchaseState) async {
+      ThemeState themeState) async {
     var removeUserResponse = await serviceAgent.deleteUser(userId);
 
     if (removeUserResponse.statusCode == 200) {
       userState.logout();
       moviesState.logout();
       themeState.logout();
-      purchaseState.logout();
       Navigator.of(context).pop();
     } else {
       MSnackBar.showSnackBar('Something went wrong', false, context);
@@ -181,7 +177,6 @@ class SettingsState extends State<Settings> {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
     final themeState = Provider.of<ThemeState>(context);
-    final purchaseState = Provider.of<PurchaseState>(context);
 
     userMoviesCount = moviesState.userMovies.length;
 
@@ -240,7 +235,6 @@ class SettingsState extends State<Settings> {
                 userState.logout();
                 moviesState.logout();
                 themeState.logout();
-                purchaseState.logout();
                 Navigator.of(context).pop();
               },
             )
@@ -490,7 +484,7 @@ class SettingsState extends State<Settings> {
                           onPressedCallback: () {
                             removeUser(
                                 userState.userId, userState, moviesState,
-                                themeState, purchaseState);
+                                themeState);
                           }),
                       MIconButton(
                         icon: Icon(

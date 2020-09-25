@@ -1,12 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:fluttericon/elusive_icons.dart';
-import 'package:fluttericon/rpg_awesome_icons.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:provider/provider.dart';
 import 'MoviesBottomNavigationBar.dart';
 import 'MovieList.dart';
@@ -14,7 +11,6 @@ import 'Providers/LoaderState.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'SearchDelegate.dart';
-import 'WelcomeTutorial.dart';
 
 class MyMovies extends StatefulWidget {
   @override
@@ -25,7 +21,6 @@ class MyMovies extends StatefulWidget {
 
 class MyMoviesState extends State<MyMovies> {
   final serviceAgent = new ServiceAgent();
-  bool showTutorial = true;
 
   setUserMovies() async {
     final moviesState = Provider.of<MoviesState>(context);
@@ -50,7 +45,9 @@ class MyMoviesState extends State<MyMovies> {
       }).toList();
 
       moviesState.setUserMovies(movies);
-    } else if (loaderState.isLoaderVisible) {
+    }
+
+    if (loaderState.isLoaderVisible) {
       loaderState.setIsLoaderVisible(false);
     }
   }
@@ -58,13 +55,14 @@ class MyMoviesState extends State<MyMovies> {
   setUserInfo() async {
     final userState = Provider.of<UserState>(context);
 
-    if (userState.user != null) return;
+    if (userState.userRequested) return;
+    userState.userRequested = true;
 
     serviceAgent.state = userState;
     final userInfoResponse = await serviceAgent.getUserInfo(userState.userId);
     final user = User.fromJson(json.decode(userInfoResponse.body));
 
-    userState.user = user;
+    userState.setUser(user);
   }
 
   @override
@@ -73,12 +71,10 @@ class MyMoviesState extends State<MyMovies> {
     final moviesState = Provider.of<MoviesState>(context);
     final loaderState = Provider.of<LoaderState>(context);
 
-    if (!userState.showTutorial) {
-      setUserInfo();
-      setUserMovies();
-    }
-    if (loaderState.isLoaderVisible &&
-        (userState.showTutorial || moviesState.userMovies.length > 0)) {
+    setUserInfo();
+    setUserMovies();
+
+    if (loaderState.isLoaderVisible && moviesState.userMovies.length > 0) {
       loaderState.setIsLoaderVisible(false);
     }
 
@@ -115,6 +111,6 @@ class MyMoviesState extends State<MyMovies> {
       ),
     );
 
-    return userState.showTutorial ? WelcomeTutorial() : myMoviesWidget;
+    return myMoviesWidget;
   }
 }

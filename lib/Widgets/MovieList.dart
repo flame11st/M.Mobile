@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/Providers/PurchaseState.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
+import 'Providers/UserState.dart';
 
 class MovieList extends StatefulWidget {
   @override
@@ -20,7 +20,7 @@ class MovieListState extends State<MovieList> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MoviesState>(context);
-    final purchaseState = Provider.of<PurchaseState>(context);
+    final userState = Provider.of<UserState>(context);
 
     final List<Movie> watchlistMovies = provider.watchlistMovies;
     final List<Movie> viewedMovies = provider.viewedMovies;
@@ -97,7 +97,7 @@ class MovieListState extends State<MovieList> {
                     if (viewedMovies.length <= index) return null;
 
                     return provider.buildItem(viewedMovies[index], animation,
-                        isPremium: purchaseState.isPremium, context: context);
+                        isPremium: userState.isPremium, context: context);
                   },
                 ),
               )

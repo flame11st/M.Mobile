@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Themes.dart';
 import 'package:provider/provider.dart';
-
 import 'Premium.dart';
-import 'Providers/PurchaseState.dart';
 import 'Providers/ThemeState.dart';
+import 'Providers/UserState.dart';
 import 'Shared/MButton.dart';
 import 'ThemePresentation.dart';
 
@@ -18,10 +17,10 @@ class ChangeThemes extends StatefulWidget {
 class ChangeThemesState extends State<ChangeThemes>
     with SingleTickerProviderStateMixin {
   selectTheme(BuildContext context, int index) {
-    final purchaseState = Provider.of<PurchaseState>(context);
+    final userState = Provider.of<UserState>(context);
     final themeState = Provider.of<ThemeState>(context);
 
-    if (purchaseState.isPremium || currentTabIndex < 2) {
+    if (userState.isPremium || currentTabIndex < 2) {
       themeState.selectTheme(Themes.allThemes[index]);
     } else {
       Navigator.of(context)
@@ -58,7 +57,7 @@ class ChangeThemesState extends State<ChangeThemes>
   Widget build(BuildContext context) {
     final themes = new List<Widget>();
     final themeState = Provider.of<ThemeState>(context);
-    final purchaseState = Provider.of<PurchaseState>(context);
+    final userState = Provider.of<UserState>(context);
 
     for (final theme in Themes.allThemes) {
       themes.add(ThemePresentation(
@@ -104,10 +103,10 @@ class ChangeThemesState extends State<ChangeThemes>
             child: Container(
               margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
               child: MButton(
-                prependIcon: purchaseState.isPremium || currentTabIndex < 2
+                prependIcon: userState.isPremium || currentTabIndex < 2
                     ? null
                     : Icons.monetization_on,
-                prependIconColor: purchaseState.isPremium || currentTabIndex < 2
+                prependIconColor: userState.isPremium || currentTabIndex < 2
                     ? Theme.of(context).hintColor
                     : Colors.green,
                 onPressedCallback: () =>
@@ -115,7 +114,7 @@ class ChangeThemesState extends State<ChangeThemes>
                 borderRadius: 25,
                 height: 50,
                 text:
-                    'Select Theme ${purchaseState.isPremium || currentTabIndex < 2 ? '' : ' (Premium only)'}',
+                    'Select Theme ${userState.isPremium || currentTabIndex < 2 ? '' : ' (Premium only)'}',
                 active: true,
               ),
             )),

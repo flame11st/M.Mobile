@@ -23,8 +23,8 @@ class UserState with ChangeNotifier {
   String token = '';
   String refreshToken = '';
   User user;
-  bool showTutorial = false;
   int androidVersion = 0;
+  bool userRequested = false;
 
   void setInitialData() async {
     var storedToken;
@@ -32,6 +32,7 @@ class UserState with ChangeNotifier {
     var storedUserId;
     var storedUserName;
     var storedSignedInWithGoogle;
+    var storedUser;
 
     if (Platform.isAndroid) {
       var androidInfo = await DeviceInfoPlugin().androidInfo;
@@ -44,6 +45,7 @@ class UserState with ChangeNotifier {
       storedUserId = await storage.read(key: 'userId');
       storedUserName = await storage.read(key: 'userName');
       storedSignedInWithGoogle = await storage.read(key: 'isSignedInWithGoogle');
+      storedUser = await storage.read(key: 'user');
     } catch(on, ex) {
       await clearStorage();
     }
@@ -54,6 +56,11 @@ class UserState with ChangeNotifier {
     this.userName = storedUserName;
     this.isSignedInWithGoogle = storedSignedInWithGoogle == "true";
 
+    if (storedUser != null) {
+      final userJson = jsonDecode(storedUser);
+      this.user = User.fromJson(userJson);
+    }
+
     serviceAgent.state = this;
     var authorizationResponse = await serviceAgent.checkAuthorization();
     if (authorizationResponse.statusCode == 200) {
@@ -62,6 +69,26 @@ class UserState with ChangeNotifier {
 
     isAppLoaded = true;
 
+    notifyListeners();
+  }
+
+  get isPremium {
+    var result = user != null && user.premiumPurchased;
+
+    return result;
+  }
+
+  Future<void> setUser(User user) async {
+    this.user = user;
+
+    await storage.write(key: "user", value: jsonEncode(user));
+    notifyListeners();
+  }
+
+  Future<void> setPremium(bool value) async {
+    user.premiumPurchased = value;
+
+    await storage.write(key: "user", value: jsonEncode(user));
     notifyListeners();
   }
 
@@ -77,13 +104,13 @@ class UserState with ChangeNotifier {
     var refreshToken = responseJson['refresh_token'];
     var userId = responseJson['userId'];
     var userName = responseJson['username'];
-    var showTutorial = responseJson['showTutorial'];
 
-    setInitialUserData(accessToken, refreshToken, userId, userName, isSignedInWithGoogle, showTutorial);
+    setInitialUserData(accessToken, refreshToken, userId, userName, isSignedInWithGoogle);
   }
 
   logout() async {
     isUserAuthorized = false;
+    userRequested = false;
     user = null;
     userId = null;
 
@@ -97,6 +124,7 @@ class UserState with ChangeNotifier {
     await storage.delete(key: 'userId');
     await storage.delete(key: 'userName');
     await storage.delete(key: 'isSignedInWithGoogle');
+    await storage.delete(key: 'user');
   }
 
   Future<void> setTokens(String accessToken, String refreshToken) async {
@@ -108,14 +136,13 @@ class UserState with ChangeNotifier {
   }
 
   Future<void> setInitialUserData(String token, String refreshToken,
-      String userId, String userName, bool isSignedInWithGoogle, bool showTutorial) async {
+      String userId, String userName, bool isSignedInWithGoogle) async {
     this.token = token;
     this.refreshToken = refreshToken;
     this.userId = userId;
     this.userName = userName;
     this.isUserAuthorized = true;
     this.isSignedInWithGoogle = isSignedInWithGoogle;
-    this.showTutorial = showTutorial;
 
     notifyListeners();
 
@@ -124,11 +151,5 @@ class UserState with ChangeNotifier {
     await storage.write(key: 'userName', value: userName);
     await storage.write(key: 'refreshToken', value: refreshToken);
     await storage.write(key: 'isSignedInWithGoogle', value: isSignedInWithGoogle.toString());
-  }
-
-  changeShowTutorialField(bool value) {
-    showTutorial = value;
-
-    notifyListeners();
   }
 }

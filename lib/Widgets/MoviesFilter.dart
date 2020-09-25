@@ -5,7 +5,7 @@ import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import 'Premium.dart';
 import 'Providers/MoviesState.dart';
-import 'Providers/PurchaseState.dart';
+import 'Providers/UserState.dart';
 import 'Shared/FilterButton.dart';
 import 'package:fluttericon/font_awesome_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -53,7 +53,7 @@ class MoviesFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final isWatchlist = moviesState.isWatchlist();
-    final purchaseState = Provider.of<PurchaseState>(context);
+    final userState = Provider.of<UserState>(context);
 
     return Container(
         height: isWatchlist ? 250 : 450,
@@ -67,6 +67,41 @@ class MoviesFilter extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                MCard(
+                    shadowColor: moviesState.selectedGenre != null
+                        ? Theme.of(context).accentColor
+                        : Theme.of(context).hintColor,
+                    marginTop: 0,
+                    padding: 0,
+                    child: Container(
+                        width: 320,
+                        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            DropdownButton(
+                              value: moviesState.selectedGenre,
+                              hint: Text('Select Genre'),
+                              onChanged: ((String value) {
+                                moviesState.changeGenreFilter(value);
+                              }),
+                              items: moviesState.genres,
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                              ),
+                              onPressed: moviesState.selectedGenre == null
+                                  ? null
+                                  : () => moviesState.changeGenreFilter(null),
+                            )
+                          ],
+                        )))
+              ],
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
@@ -113,14 +148,14 @@ class MoviesFilter extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   FilterIcon(
-                    iconColor: purchaseState.isPremium ? null : Colors.green,
-                    icon: purchaseState.isPremium
+                    iconColor: userState.isPremium ? null : Colors.green,
+                    icon: userState.isPremium
                         ? Icons.calendar_today
                         : Icons.monetization_on,
-                    text: "From: ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom)}",
+                    text: "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom)}",
                     isActive: moviesState.isDateFromSelected(),
                     onPressedCallback: () {
-                      if (purchaseState.isPremium)
+                      if (userState.isPremium)
                         selectDateFrom(context, moviesState);
                       else
                         Navigator.of(context).push(
@@ -129,14 +164,14 @@ class MoviesFilter extends StatelessWidget {
                     textSize: 16,
                   ),
                   FilterIcon(
-                    iconColor: purchaseState.isPremium ? null : Colors.green,
-                    icon: purchaseState.isPremium
+                    iconColor: userState.isPremium ? null : Colors.green,
+                    icon: userState.isPremium
                         ? Icons.calendar_today
                         : Icons.monetization_on,
-                    text: "To:   ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo)}",
+                    text: "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo)}",
                     isActive: moviesState.isDateToSelected(),
                     onPressedCallback: () {
-                      if (purchaseState.isPremium)
+                      if (userState.isPremium)
                         selectDateTo(context, moviesState);
                       else
                         Navigator.of(context).push(
@@ -146,41 +181,7 @@ class MoviesFilter extends StatelessWidget {
                   ),
                 ],
               ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                MCard(
-                    shadowColor: moviesState.selectedGenre != null
-                        ? Theme.of(context).accentColor
-                        : Theme.of(context).hintColor,
-                    marginTop: 0,
-                    padding: 0,
-                    child: Container(
-                      width: 350,
-                        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            DropdownButton(
-                              value: moviesState.selectedGenre,
-                              hint: Text('Select Genre'),
-                              onChanged: ((String value) {
-                                moviesState.changeGenreFilter(value);
-                              }),
-                              items: moviesState.genres,
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.clear,
-                              ),
-                              onPressed: moviesState.selectedGenre == null
-                                  ? null
-                                  : () => moviesState.changeGenreFilter(null),
-                            )
-                          ],
-                        )))
-              ],
-            ),
+
             Column(
               children: [
                 Divider(
@@ -197,14 +198,14 @@ class MoviesFilter extends StatelessWidget {
                     MButton(
                       active: true,
                       text: 'Close',
-                      width: 130,
+                      width: 160,
                       height: 40,
                       onPressedCallback: () => Navigator.of(context).pop(),
                     ),
                     MButton(
                       active: moviesState.isAnyFilterSelected(),
                       text: 'Clear all',
-                      width: 130,
+                      width: 160,
                       height: 40,
                       onPressedCallback: () => moviesState.clearAllFilters(),
                     )

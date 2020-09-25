@@ -1,20 +1,15 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:mmobile/Objects/MColorTheme.dart';
-import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
+import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
-import 'package:mmobile/Widgets/WelcomeTutorial.dart';
 import 'package:provider/provider.dart';
 import 'LoadingAnimation.dart';
 import 'Login.dart';
 import 'MyMovies.dart';
-import 'Providers/PurchaseState.dart';
 import 'Providers/ThemeState.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MSnackBar.dart';
@@ -28,23 +23,32 @@ class MHome extends StatefulWidget {
 
 class MHomeState extends State<MHome> {
   StreamSubscription<List<PurchaseDetails>> _subscription;
+  final serviceAgent = ServiceAgent();
 
   _handlePurchaseUpdates(List<PurchaseDetails> purchases) {
-    final purchaseState = Provider.of<PurchaseState>(context);
+    final userState = Provider.of<UserState>(context);
 
-    if (purchases.isEmpty ||
-        purchases.first.productID != 'test_purchase' ||
-        purchases.first.status != PurchaseStatus.purchased) {
-      MSnackBar.showSnackBar(
-          "Not available now. Please try later", false, MyGlobals.scaffoldPremiumKey.currentContext);
-      return;
-    }
+    if (purchases.isEmpty) return;
 
+    if (purchases.first.status == PurchaseStatus.purchased) {
       InAppPurchaseConnection.instance.completePurchase(purchases.first);
 
-      purchaseState.setIsPremium(true);
+      userState.setPremium(true);
+      serviceAgent.state = userState;
+      serviceAgent.setUserPremiumPurchased(userState.userId, true);
 
-      MSnackBar.showSnackBar("Premium features successfully unlocked", true, MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Premium features successfully unlocked", true,
+          MyGlobals.scaffoldPremiumKey.currentContext);
+    } else if(purchases.first.status == PurchaseStatus.error && purchases.first.error.details != "") {
+      MSnackBar.showSnackBar(purchases.first.error.details , false,
+          MyGlobals.scaffoldPremiumKey.currentContext);
+    } else if (purchases.first.status == PurchaseStatus.pending) {
+      MSnackBar.showSnackBar("Your request is being processed. It can take a while", true,
+          MyGlobals.scaffoldPremiumKey.currentContext);
+    } else {
+      MSnackBar.showSnackBar("Not available now. Please try later", false,
+          MyGlobals.scaffoldPremiumKey.currentContext);
+    }
   }
 
   @override
@@ -69,34 +73,34 @@ class MHomeState extends State<MHome> {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
     MTheme theme = themeState.selectedTheme;
-   //
-   //  final primaryColor = Color(0xfffc8d8d);
-   //  final secondaryColor = Color(0xfffc8d8d);
-   //  final additionalColor = Color(0xff407088);
-   //  final fontsColor = Color(0xff132743);
-   // MTheme theme = new MTheme(
-   //   brightness: Brightness.dark,
-   //     colorTheme: MColorTheme(
-   //       primaryColor: primaryColor,
-   //       secondaryColor: secondaryColor,
-   //       additionalColor: additionalColor,
-   //       fontsColor: fontsColor,
-   //     ),
-   //     textStyleTheme: MTextStyleTheme(
-   //       title: TextStyle(
-   //           fontSize: 15,
-   //           fontWeight: FontWeight.bold,
-   //           color: additionalColor),
-   //       subtitleText: TextStyle(
-   //           fontSize: 15.0,
-   //           color: additionalColor,
-   //           fontWeight: FontWeight.bold),
-   //       bodyText: TextStyle(fontSize: 15.0, color: fontsColor),
-   //       expandedTitle: TextStyle(
-   //           fontSize: 16,
-   //           fontWeight: FontWeight.bold,
-   //           color: additionalColor),
-   //     ));
+    //
+    //  final primaryColor = Color(0xfffc8d8d);
+    //  final secondaryColor = Color(0xfffc8d8d);
+    //  final additionalColor = Color(0xff407088);
+    //  final fontsColor = Color(0xff132743);
+    // MTheme theme = new MTheme(
+    //   brightness: Brightness.dark,
+    //     colorTheme: MColorTheme(
+    //       primaryColor: primaryColor,
+    //       secondaryColor: secondaryColor,
+    //       additionalColor: additionalColor,
+    //       fontsColor: fontsColor,
+    //     ),
+    //     textStyleTheme: MTextStyleTheme(
+    //       title: TextStyle(
+    //           fontSize: 15,
+    //           fontWeight: FontWeight.bold,
+    //           color: additionalColor),
+    //       subtitleText: TextStyle(
+    //           fontSize: 15.0,
+    //           color: additionalColor,
+    //           fontWeight: FontWeight.bold),
+    //       bodyText: TextStyle(fontSize: 15.0, color: fontsColor),
+    //       expandedTitle: TextStyle(
+    //           fontSize: 16,
+    //           fontWeight: FontWeight.bold,
+    //           color: additionalColor),
+    //     ));
 
     Widget widgetToReturn = userState.isAppLoaded
         ? userState.isUserAuthorized ? MyMovies() : Login()
