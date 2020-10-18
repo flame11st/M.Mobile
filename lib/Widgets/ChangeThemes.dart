@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Themes.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +31,7 @@ class ChangeThemesState extends State<ChangeThemes>
 
   int currentTabIndex = 0;
   TabController _tabController;
+  bool scrolledToCurrent = false;
 
   @override
   void initState() {
@@ -58,6 +60,13 @@ class ChangeThemesState extends State<ChangeThemes>
     final themes = new List<Widget>();
     final themeState = Provider.of<ThemeState>(context);
     final userState = Provider.of<UserState>(context);
+
+    if (!scrolledToCurrent) {
+      _tabController.animateTo(Themes.allThemes.indexOf(themeState.selectedTheme));
+
+      scrolledToCurrent = true;
+    }
+
 
     for (final theme in Themes.allThemes) {
       themes.add(ThemePresentation(

@@ -19,8 +19,8 @@ class Premium extends StatelessWidget {
       return;
     }
 
-    const Set<String> _kIds = {'test_purchase2'};
-    // const Set<String> _kIds = {'premium_purchase'};
+    // const Set<String> _kIds = {'test_purchase2'};
+    const Set<String> _kIds = {'premium_purchase'};
     final ProductDetailsResponse response =
         await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {

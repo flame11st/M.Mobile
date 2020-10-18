@@ -33,14 +33,15 @@ class MoviesState with ChangeNotifier {
   DateTime dateFrom;
   DateTime dateTo;
   String selectedGenre;
+  int currentTabIndex = 0;
 
   DateTime dateMin;
   DateTime dateMax;
 
-  var selectedRates = {MovieRate.liked, MovieRate.notLiked};
-  var selectedTypes = {MovieType.movie, MovieType.tv};
+  var selectedRates = { MovieRate.liked, MovieRate.notLiked };
+  var selectedTypes = { MovieType.movie, MovieType.tv };
 
-  int viewedLimit = 25;
+  int viewedLimit = 35;
   int page = 1;
   bool showMoreButton = false;
   Movie currentLatestMovie;
@@ -133,8 +134,14 @@ class MoviesState with ChangeNotifier {
     });
   }
 
+  setCurrentTabIndex(int value) {
+    currentTabIndex = value;
+
+    notifyListeners();
+  }
+
   bool isWatchlist() {
-    var result = watchlistKey.currentState != null;
+    var result = currentTabIndex == 0;
 
     return result;
   }
@@ -291,6 +298,8 @@ class MoviesState with ChangeNotifier {
 
   List<Movie> getViewedMovies() {
     List<Movie> allViewedMovies = getAllViewedMovies();
+
+    if (allViewedMovies.isEmpty) return new List<Movie>();
 
     var shouldChangeDateTo = dateMax == dateTo;
 
@@ -459,9 +468,15 @@ class MoviesState with ChangeNotifier {
   }
 
   logout() async {
+    clear();
+    clearAllFilters();
     await clearStorage();
     isMoviesRequested = false;
-    clear();
+    currentTabIndex = 0;
+    dateTo = null;
+    dateMax = null;
+    dateFrom = null;
+    dateMin = null;
   }
 
   clearStorage() async {

@@ -42,6 +42,7 @@ class SettingsState extends State<Settings> {
   bool emailButtonActive = false;
   bool changePasswordButtonActive = false;
   bool showRemoveUserButtons = false;
+  bool showClearMoviesButtons = false;
 
   int userMoviesCount = 0;
 
@@ -83,10 +84,10 @@ class SettingsState extends State<Settings> {
     }
   }
 
-  changeUserInfo(String userId, String name, String email, User user,
-      String field) async {
+  changeUserInfo(
+      String userId, String name, String email, User user, String field) async {
     var changeUserInfoResponse =
-    await serviceAgent.changeUserInfo(userId, name, email);
+        await serviceAgent.changeUserInfo(userId, name, email);
 
     if (changeUserInfoResponse.statusCode == 200) {
       MSnackBar.showSnackBar('$field successfully changed', true,
@@ -105,7 +106,7 @@ class SettingsState extends State<Settings> {
 
   changePassword(String userId, String oldPassword, String newPassword) async {
     var changePasswordResponse =
-    await serviceAgent.changeUserPassword(userId, oldPassword, newPassword);
+        await serviceAgent.changeUserPassword(userId, oldPassword, newPassword);
 
     if (changePasswordResponse.statusCode == 200) {
       MSnackBar.showSnackBar('Password successfully changed', true,
@@ -182,10 +183,10 @@ class SettingsState extends State<Settings> {
 
     if (serviceAgent.state == null) serviceAgent.state = userState;
 
-    if (initialUserName == null)
+    if (initialUserName == null && userState.user != null)
       nameController.text = initialUserName = userState.user.name;
 
-    if (initialUserEmail == null)
+    if (initialUserEmail == null && userState.user != null)
       emailController.text = initialUserEmail = userState.user.email;
 
     final headingField = Row(
@@ -202,10 +203,7 @@ class SettingsState extends State<Settings> {
             ),
             Text(
               'Settings',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5,
+              style: Theme.of(context).textTheme.headline5,
             )
           ],
         ),
@@ -216,18 +214,15 @@ class SettingsState extends State<Settings> {
                 children: <Widget>[
                   Text(
                     'Sign out',
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline5,
+                    style: Theme.of(context).textTheme.headline5,
                   ),
-                  SizedBox(width: 10,),
+                  SizedBox(
+                    width: 10,
+                  ),
                   new Icon(
                     Entypo.logout,
                     size: 25,
-                    color: Theme
-                        .of(context)
-                        .hintColor,
+                    color: Theme.of(context).hintColor,
                   )
                 ],
               ),
@@ -248,11 +243,10 @@ class SettingsState extends State<Settings> {
       child: Form(
         key: _formNameKey,
         child: TextFormField(
-          style: Theme
-              .of(context)
-              .textTheme
-              .headline5,
-          decoration: InputDecoration(fillColor: Colors.redAccent,),
+          style: Theme.of(context).textTheme.headline5,
+          decoration: InputDecoration(
+            fillColor: Colors.redAccent,
+          ),
           validator: (value) {
             return nameController.text.isEmpty ? 'Name can\'t be empty' : null;
           },
@@ -261,9 +255,8 @@ class SettingsState extends State<Settings> {
       ),
       button: MButton(
         text: 'Change name',
-        onPressedCallback: () =>
-            changeUserInfo(userState.userId,
-                nameController.text, initialUserEmail, userState.user, 'Name'),
+        onPressedCallback: () => changeUserInfo(userState.userId,
+            nameController.text, initialUserEmail, userState.user, 'Name'),
         active: nameButtonActive,
       ),
     );
@@ -273,10 +266,7 @@ class SettingsState extends State<Settings> {
       child: Form(
           key: _formEmailKey,
           child: TextFormField(
-            style: Theme
-                .of(context)
-                .textTheme
-                .headline5,
+            style: Theme.of(context).textTheme.headline5,
             validator: (value) {
               return emailController.text.isEmpty
                   ? 'Email can\'t be empty'
@@ -286,83 +276,94 @@ class SettingsState extends State<Settings> {
           )),
       button: MButton(
         text: 'Change Email',
-        onPressedCallback: () =>
-            changeUserInfo(userState.userId,
-                initialUserName, emailController.text, userState.user, 'Email'),
+        onPressedCallback: () => changeUserInfo(userState.userId,
+            initialUserName, emailController.text, userState.user, 'Email'),
         active: emailButtonActive,
       ),
     );
 
     final changeThemeField = MCard(
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            RichText(
-                text: TextSpan(
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline5,
-                  children: <TextSpan>[
-                    new TextSpan(
-                        text: 'Theme:   ', style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline3),
-                    new TextSpan(
-                        text: themeState.selectedTheme.name, style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline5)
-                  ],
-                )),
-            MButton(
-              onPressedCallback: () => changeTheme(),
-              text: 'Change',
-              active: true,
-            )
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        RichText(
+            text: TextSpan(
+          style: Theme.of(context).textTheme.headline5,
+          children: <TextSpan>[
+            new TextSpan(
+                text: 'Theme:  ',
+                style: Theme.of(context).textTheme.headline3),
+            new TextSpan(
+                text: themeState.selectedTheme.name,
+                style: Theme.of(context).textTheme.headline5)
           ],
+        )),
+        MButton(
+          onPressedCallback: () => changeTheme(),
+          text: 'Change',
+          active: true,
         )
-    );
+      ],
+    ));
 
     final userMoviesCountField = MCard(
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            RichText(
-                text: TextSpan(
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline5,
-                  children: <TextSpan>[
-                    new TextSpan(
-                        text: 'User movies count:   ', style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline3),
-                    new TextSpan(text: userMoviesCount.toString())
-                  ],
-                )),
-            MButton(
-              text: 'Clear all',
-              onPressedCallback: () {
-                clearUserMovies(userState.userId);
-                moviesState.clear();
-              },
-              active: true,
-            )
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        RichText(
+            text: TextSpan(
+          style: Theme.of(context).textTheme.headline5,
+          children: <TextSpan>[
+            new TextSpan(
+                text: 'User movies count:   ',
+                style: Theme.of(context).textTheme.headline3),
+            new TextSpan(text: userMoviesCount.toString())
           ],
-        ));
+        )),
+        MButton(
+          text: 'Clear all',
+          onPressedCallback: () {
+            showDialog<String>(
+                context: context,
+                builder: (BuildContext context1) => AlertDialog(
+                  backgroundColor: Theme.of(context).primaryColor,
+                      contentTextStyle: Theme.of(context).textTheme.headline5,
+                      content:
+                          Text('Are You really want to clear your movies?'),
+                      actions: [
+                        MButton(
+                          active: true,
+                          text: 'Yes, clear all',
+                          parentContext: context,
+                          onPressedCallback: () {
+                            clearUserMovies(userState.userId);
+                            moviesState.clear();
+
+                            Navigator.of(context1).pop();
+                          },
+                        ),
+                        SizedBox(width: 10,),
+                        MButton(
+                          active: true,
+                          text: 'Cancel',
+                          parentContext: context,
+                          onPressedCallback: () => Navigator.of(context1).pop(),
+                        )
+                      ],
+                    ));
+          },
+          active: true,
+        )
+      ],
+    ));
 
     final changePasswordField = MCard(
         text: 'Change Password',
         button: MButton(
           text: 'Change',
-          onPressedCallback: () =>
-              changePassword(userState.userId,
-                  oldPasswordController.text, newPasswordController.text),
+          onPressedCallback: () => changePassword(userState.userId,
+              oldPasswordController.text, newPasswordController.text),
           active: changePasswordButtonActive,
         ),
         child: Form(
@@ -373,17 +374,13 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 10,
               ),
-              Text('Old Password', style: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5,),
+              Text(
+                'Old Password',
+                style: Theme.of(context).textTheme.headline5,
+              ),
               TextFormField(
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headline5,
-                validator: (value) =>
-                oldPasswordController.text.isNotEmpty
+                style: Theme.of(context).textTheme.headline5,
+                validator: (value) => oldPasswordController.text.isNotEmpty
                     ? Validators.passwordValidator(oldPasswordController.text)
                     : null,
                 controller: oldPasswordController,
@@ -392,20 +389,17 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 5,
               ),
-              Text('New Password', style: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5,),
+              Text(
+                'New Password',
+                style: Theme.of(context).textTheme.headline5,
+              ),
               TextFormField(
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headline5,
+                style: Theme.of(context).textTheme.headline5,
                 validator: (value) {
                   if (newPasswordController.text.isEmpty) return null;
 
                   var result =
-                  Validators.passwordValidator(newPasswordController.text);
+                      Validators.passwordValidator(newPasswordController.text);
                   if (result == null)
                     result = Validators.passwordsMatchValidator(
                         newPasswordController.text,
@@ -418,15 +412,12 @@ class SettingsState extends State<Settings> {
               SizedBox(
                 height: 5,
               ),
-              Text('Confirm Password', style: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5,),
+              Text(
+                'Confirm Password',
+                style: Theme.of(context).textTheme.headline5,
+              ),
               TextFormField(
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headline5,
+                style: Theme.of(context).textTheme.headline5,
                 validator: (value) {
                   if (confirmPasswordController.text.isEmpty) return null;
 
@@ -452,63 +443,51 @@ class SettingsState extends State<Settings> {
           MButton(
             text: 'Remove user',
             active: true,
-            onPressedCallback: () =>
-            {
-              setState(() => showRemoveUserButtons = !showRemoveUserButtons)
+            onPressedCallback: () {
+              showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context1) =>
+                      AlertDialog(
+                        backgroundColor: Theme
+                            .of(context)
+                            .primaryColor,
+                        contentTextStyle: Theme
+                            .of(context)
+                            .textTheme
+                            .headline5,
+                        content:
+                        Text('Are You really want to remove your user?'),
+                        actions: [
+                          MButton(
+                            active: true,
+                            text: 'Yes, remove',
+                            parentContext: context,
+                            onPressedCallback: () {
+                              removeUser(userState.userId, userState, moviesState,
+                                  themeState);
+
+                              Navigator.of(context1).pop();
+                            },
+                          ),
+                          SizedBox(width: 10,),
+                          MButton(
+                            active: true,
+                            text: 'Cancel',
+                            parentContext: context,
+                            onPressedCallback: () =>
+                                Navigator.of(context1).pop(),
+                          )
+                        ],
+                      ));
             },
             height: 40,
-          ),
-          Expanded(
-            child: Opacity(
-              opacity: showRemoveUserButtons ? 1 : 0,
-              child: Column(
-                children: <Widget>[
-                  Text(
-                    'Are you want to remove user?',
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline5,
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      MIconButton(
-                          icon: Icon(
-                            Icons.check,
-                            color: Colors.redAccent,
-                          ),
-                          onPressedCallback: () {
-                            removeUser(
-                                userState.userId, userState, moviesState,
-                                themeState);
-                          }),
-                      MIconButton(
-                        icon: Icon(
-                          Icons.close,
-                          color: Colors.green,
-                        ),
-                        onPressedCallback: () =>
-                            setState(() =>
-                            showRemoveUserButtons = !showRemoveUserButtons),
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            ),
           ),
         ],
       ),
     );
 
     return Scaffold(
-        backgroundColor: Theme
-            .of(context)
-            .primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         appBar: AppBar(
           title: headingField,
         ),
@@ -518,9 +497,7 @@ class SettingsState extends State<Settings> {
             child: Container(
 //                margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
                 padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                color: Theme
-                    .of(context)
-                    .primaryColor,
+                color: Theme.of(context).primaryColor,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[

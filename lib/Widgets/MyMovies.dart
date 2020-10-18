@@ -44,7 +44,8 @@ class MyMoviesState extends State<MyMovies> {
         return Movie.fromJson(model);
       }).toList();
 
-      moviesState.setUserMovies(movies);
+      if (userState.user != null)
+        moviesState.setUserMovies(movies);
     }
 
     if (loaderState.isLoaderVisible) {
@@ -67,7 +68,6 @@ class MyMoviesState extends State<MyMovies> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
     final loaderState = Provider.of<LoaderState>(context);
 

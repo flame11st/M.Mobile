@@ -7,11 +7,21 @@ class MCard extends StatelessWidget {
   final button;
   final double padding;
   final double marginTop;
+  final double marginBottom;
   final double marginLR;
   final Color color;
   final Color shadowColor;
 
-  MCard({this.text, this.child, this.button, this.padding, this.marginTop, this.color, this.shadowColor, this.marginLR});
+  MCard(
+      {this.text,
+      this.child,
+      this.button,
+      this.padding,
+      this.marginTop,
+      this.color,
+      this.shadowColor,
+      this.marginLR,
+      this.marginBottom});
 
   @override
   Widget build(BuildContext context) {
@@ -19,11 +29,17 @@ class MCard extends StatelessWidget {
 
     return Container(
         padding: EdgeInsets.all(padding != null ? padding : 20),
-        margin: EdgeInsets.only(top: marginTop == null ? 20 : marginTop, left: marginLRValue, right:  marginLRValue),
+        margin: EdgeInsets.only(
+            top: marginTop == null ? 20 : marginTop,
+            left: marginLRValue,
+            right: marginLRValue,
+            bottom: marginBottom != null ? marginBottom : 0),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: shadowColor == null ? Colors.white.withOpacity(0.2) : shadowColor.withOpacity(0.3),
+              color: shadowColor == null
+                  ? Colors.white.withOpacity(0.2)
+                  : shadowColor.withOpacity(0.3),
               offset: Offset(-4.0, -4.0),
               blurRadius: 3,
             ),
@@ -42,14 +58,15 @@ class MCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                if (text != null) Text(
-                  text,
-                  style: Theme.of(context).textTheme.headline3,
-                ),
+                if (text != null)
+                  Text(
+                    text,
+                    style: Theme.of(context).textTheme.headline3,
+                  ),
                 if (button != null) button
               ],
             ),
-            if(child != null) child
+            if (child != null) child
           ],
         ));
   }

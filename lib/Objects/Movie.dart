@@ -20,7 +20,7 @@ class Movie {
   List<String> genres;
   int movieRate;
   MovieType movieType;
-  int year;
+  DateTime releaseDate;
   DateTime updated;
   int averageTimeOfEpisode;
   bool inProduction;
@@ -46,7 +46,7 @@ class Movie {
     this.genres = updatedMovie.genres;
     this.movieRate = updatedMovie.movieRate;
     this.movieType = updatedMovie.movieType;
-    this.year = updatedMovie.year;
+    this.releaseDate = updatedMovie.releaseDate;
     this.averageTimeOfEpisode = updatedMovie.averageTimeOfEpisode;
     this.inProduction = updatedMovie.inProduction;
     this.seasonsCount = updatedMovie.seasonsCount;
@@ -72,7 +72,7 @@ class Movie {
       this.genres,
       this.movieRate,
       this.movieType,
-      this.year,
+      this.releaseDate,
       this.averageTimeOfEpisode,
       this.inProduction,
       this.seasonsCount,
@@ -95,6 +95,11 @@ class Movie {
 
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];
+    //
+    // if (json['title'] == 'The Grand Budapest Hotel') {
+    //   likedVotes = 103000;
+    //   dislikedVotes = 9358;
+    // }
 
     return Movie(
         id: json['id'],
@@ -103,7 +108,7 @@ class Movie {
         overview: json['overview'],
         posterPath: json['posterPath'],
         genres: genres,
-        year: json['year'],
+        releaseDate: DateTime.parse(json['releaseDate']),
         duration: json['duration'],
         rating: getMovieRating(likedVotes, dislikedVotes),
         allVotes: likedVotes + dislikedVotes,
@@ -129,7 +134,7 @@ class Movie {
         'overview': overview,
         'posterPath': posterPath,
         'genres': jsonEncode(genres),
-        'year': year,
+        'releaseDate': releaseDate.toString(),
         'duration': duration,
         'likedVotes': likedVotes,
         'unlikedVotes': dislikedVotes,

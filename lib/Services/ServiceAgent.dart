@@ -81,8 +81,16 @@ class ServiceAgent {
     return get('movies/GetMovie?id=$movieId');
   }
 
+  reloadMoviePoster(String movieId) {
+    return get('movies/ReloadMoviePoster?id=$movieId');
+  }
+
   search(String query) {
-    return get('movies/Search?query=$query');
+    return get('movies/SearchByIndexedColumn?query=$query');
+  }
+
+  advancedSearch(String query) {
+    return get('movies/AdvancedSearch?query=$query');
   }
 
   rateMovie(String movieId, String userId, int movieRate) {

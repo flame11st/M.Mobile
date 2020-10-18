@@ -8,27 +8,31 @@ import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MTextField.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
-import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'MoviesBottomNavigationBarExpanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
+  final bool fromSearch;
 
-  const MovieListItemExpanded({Key key, this.movie}) : super(key: key);
+  const MovieListItemExpanded({Key key, this.movie, this.fromSearch = false}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemExpandedState(movie);
+    return MovieListItemExpandedState(movie, fromSearch);
   }
 }
 
 class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   Movie movie;
+  bool fromSearch;
+
   String imageBaseUrl =
       'https://moviediarystorage.blob.core.windows.net/movies';
 
-  MovieListItemExpandedState(Movie movie) {
+  MovieListItemExpandedState(Movie movie, bool fromSearch) {
     this.movie = movie;
+    this.fromSearch = fromSearch;
   }
 
   getProgressColor() {
@@ -42,21 +46,23 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
 
   @override
   Widget build(BuildContext context) {
+    final formatter = new NumberFormat("#,###");
+
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     final topCard = MCard(
-      padding: 15,
+      padding: 10,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
           Text(movie.title, style: Theme.of(context).textTheme.headline2),
           SizedBox(
-            height: 10,
+            height: 5,
           ),
           Row(
             children: <Widget>[
-              Text(movie.year.toString(),
+              Text(DateFormat(movie.seasonsCount > 0 ? 'yyyy' : 'yyyy-MM-dd').format(movie.releaseDate),
                   style: Theme.of(context).textTheme.headline5),
               SizedBox(
                 width: 15,
@@ -79,15 +85,13 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               ),
               if (movie.seasonsCount > 0)
                 Text("${movie.inProduction ? 'In production' : 'Finished'}",
-                    style: Theme.of(context)
-                        .textTheme
-                        .headline5)
+                    style: Theme.of(context).textTheme.headline5)
             ],
           ),
-          SizedBox(
-            height: 10,
+          if (movie.genres.isNotEmpty) SizedBox(
+            height: 5,
           ),
-          Text(movie.genres.join(', '),
+          if (movie.genres.isNotEmpty) Text(movie.genres.join(', '),
               style: Theme.of(context).textTheme.headline5)
         ],
       ),
@@ -113,14 +117,14 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         Column(
           children: <Widget>[
             Container(
-              height: 116,
-              width: 116,
+              height: 146,
+              width: 146,
               decoration: new BoxDecoration(
                   color: Theme.of(context).primaryColor,
                   shape: BoxShape.circle,
                   boxShadow: BoxShadowNeomorph.circleShadow),
               child: CircularPercentIndicator(
-                radius: 110.0,
+                radius: 140.0,
                 lineWidth: 6.0,
                 percent: movie.allVotes > 0 && movie.rating == 0
                     ? 1
@@ -132,7 +136,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                           Text("${movie.rating}%",
                               style: Theme.of(context).textTheme.headline5),
                           SizedBox(height: 5),
-                          Text("Votes: ${movie.allVotes}",
+                          Text("Votes: ${formatter.format(movie.allVotes)}",
                               style: Theme.of(context).textTheme.headline5)
                         ],
                       )
@@ -145,7 +149,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               height: 10,
             ),
             Text(
-              "Imdb: ${movie.imdbVotes > 0 ? '${movie.imdbRate} (${movie.imdbVotes})' : 'Not rated'}",
+              "Imdb: ${movie.imdbVotes > 0 ? '${movie.imdbRate} (${formatter.format(movie.imdbVotes)})' : 'Not rated'}",
               style: Theme.of(context).textTheme.headline5,
             )
           ],
@@ -159,22 +163,22 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       children: <Widget>[
         if (movie.tagline != null && movie.tagline.isNotEmpty)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
-        SizedBox(height: 10),
-        MTextField(
+        if (movie.directors.isNotEmpty) SizedBox(height: 10),
+        if (movie.directors.isNotEmpty) MTextField(
             subtitleText: 'Directed by',
             bodyText: movie.directors.map((director) => director).join(', ')),
-        SizedBox(height: 10),
-        MTextField(
+        if (movie.actors.isNotEmpty) SizedBox(height: 10),
+        if (movie.actors.isNotEmpty) MTextField(
             subtitleText: 'Starring',
             bodyText: movie.actors.map((actor) => actor).join(', ')),
-        SizedBox(height: 10),
-        MTextField(
+        if (movie.countries.isNotEmpty) SizedBox(height: 10),
+        if (movie.countries.isNotEmpty) MTextField(
             subtitleText: 'Countries',
             bodyText: movie.countries.replaceAll(',', ', ')),
-        SizedBox(
-          height: 15,
+        if (movie.overview.isNotEmpty) SizedBox(
+          height: 10,
         ),
-        MTextField(subtitleText: 'Overview', bodyText: movie.overview),
+        if (movie.overview.isNotEmpty) MTextField(subtitleText: 'Overview', bodyText: movie.overview),
       ],
     );
 
@@ -208,6 +212,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               movieId: movie.id,
               movieRate: movie.movieRate,
               movieTitle: movie.title,
+              fromSearch: fromSearch,
             )));
   }
 }

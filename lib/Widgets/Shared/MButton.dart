@@ -12,6 +12,7 @@ class MButton extends StatelessWidget {
   final appendIcon;
   final prependImage;
   final Color prependIconColor;
+  final BuildContext parentContext;
 
   MButton({
     this.text,
@@ -23,12 +24,13 @@ class MButton extends StatelessWidget {
     this.prependImage,
     this.appendIcon,
     this.prependIconColor,
-    this.borderRadius,
+    this.borderRadius, this.parentContext,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).hintColor.withOpacity(active ? 1 : 0.3);
+    final contextValue = parentContext != null ? parentContext : context;
+    final color = Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
 
     return Container(
         width: width != null ? width : 110,
@@ -48,15 +50,15 @@ class MButton extends StatelessWidget {
             ),
           ],
           borderRadius: BorderRadius.circular(borderRadius != null ? borderRadius : 8.0),
-          color: Theme.of(context).primaryColor,
+          color: Theme.of(contextValue).primaryColor,
         ),
         child: MaterialButton(
           padding: EdgeInsets.all(0),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                   borderRadius != null ? borderRadius : 8.0)),
-          minWidth: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
+          minWidth: MediaQuery.of(contextValue).size.width,
+          height: MediaQuery.of(contextValue).size.height,
           onPressed: () => active ? onPressedCallback() : {},
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

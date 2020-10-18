@@ -11,6 +11,7 @@ class MovieRateButtons extends StatelessWidget {
   final width;
   final bool showTitle;
   final bool addMargin;
+  final bool fromSearch;
 
   const MovieRateButtons(
       {Key key,
@@ -19,7 +20,7 @@ class MovieRateButtons extends StatelessWidget {
       this.width,
       this.movieTitle,
       this.showTitle,
-      this.addMargin})
+      this.addMargin, this.fromSearch = false})
       : super(key: key);
 
   @override
@@ -77,6 +78,7 @@ class MovieRateButtons extends StatelessWidget {
                       ? MovieRate.notRated
                       : MovieRate.liked,
                   width: width,
+                  fromSearch: fromSearch,
                 ),
                 MIconRateButton(
                   movieTitle: movieTitle,
@@ -92,6 +94,7 @@ class MovieRateButtons extends StatelessWidget {
                       ? MovieRate.notRated
                       : MovieRate.notLiked,
                   width: width,
+                  fromSearch: fromSearch,
                 ),
                 MIconRateButton(
                   movieTitle: movieTitle,
@@ -107,6 +110,7 @@ class MovieRateButtons extends StatelessWidget {
                       ? MovieRate.notRated
                       : MovieRate.addedToWatchlist,
                   width: width,
+                  fromSearch: fromSearch,
                 )
               ],
             )

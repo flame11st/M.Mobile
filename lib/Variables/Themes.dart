@@ -36,7 +36,7 @@ class Themes {
   static final family = new MTheme(
       id: 1,
       name: 'Family',
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       colorTheme: MColorTheme(
         primaryColor: Color(0xffdee3e2),
         secondaryColor: Color(0xffdfe3ea),
@@ -86,7 +86,7 @@ class Themes {
       ));
 
   static final MTheme comedy = new MTheme(
-      id: 3,
+      id: 6,
       name: 'Comedy',
       brightness: Brightness.light,
       colorTheme: MColorTheme(
@@ -125,7 +125,7 @@ class Themes {
         title: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: Color(0xffeeeeee)),
+            color: Color(0xff67749c)),
         subtitleText: TextStyle(
             fontSize: 15.0,
             color: Color(0xff67749c),
@@ -142,60 +142,60 @@ class Themes {
       name: 'Romance',
       brightness: Brightness.light,
       colorTheme: MColorTheme(
-        primaryColor: Color(0xfffc8d8d),
-        secondaryColor: Color(0xfffc8d8d),
-        additionalColor: Color(0xff407088),
+        primaryColor: Color(0xfff6bed6),
+        secondaryColor: Color(0xfff6bed6),
+        additionalColor: Color(0xff0d7377),
         fontsColor: Color(0xff132743),
       ),
       textStyleTheme: MTextStyleTheme(
         title: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: Color(0xff407088)),
+            color: Color(0xff0d7377)),
         subtitleText: TextStyle(
             fontSize: 15.0,
-            color: Color(0xff407088),
+            color: Color(0xff0d7377),
             fontWeight: FontWeight.bold),
         bodyText: TextStyle(fontSize: 15.0, color: Color(0xff132743)),
         expandedTitle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xff407088)),
+            color: Color(0xff0d7377)),
       ));
 
   static final crime = new MTheme(
-      id: 6,
+      id: 3,
       name: 'Crime',
       brightness: Brightness.dark,
       colorTheme: MColorTheme(
         primaryColor: Color(0xff1a1a2e),
         secondaryColor: Color(0xff161a2e),
-        additionalColor: Color(0xff40a8c4),
+        additionalColor: Color(0xffde4463),
         fontsColor: Color(0xffe8ded2),
       ),
       textStyleTheme: MTextStyleTheme(
         title: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: Color(0xff40a8c4)),
+            color: Color(0xffde4463)),
         subtitleText: TextStyle(
             fontSize: 15.0,
-            color: Color(0xff40a8c4),
+            color: Color(0xffde4463),
             fontWeight: FontWeight.bold),
         bodyText: TextStyle(fontSize: 15.0, color: Color(0xffe8ded2)),
         expandedTitle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xff40a8c4)),
+            color: Color(0xffde4463)),
       ));
 
   static final allThemes = [
     classicDark,
     family,
     adventure,
-    comedy,
+    crime,
     noir,
     romance,
-    crime,
+    comedy,
   ];
 }

@@ -73,7 +73,7 @@ class UserState with ChangeNotifier {
   }
 
   get isPremium {
-    var result = user != null && user.premiumPurchased;
+    var result = user != null && user.premiumPurchased != null && user.premiumPurchased;
 
     return result;
   }
@@ -110,12 +110,14 @@ class UserState with ChangeNotifier {
 
   logout() async {
     isUserAuthorized = false;
+
+    notifyListeners();
+
     userRequested = false;
     user = null;
     userId = null;
 
     await clearStorage();
-    notifyListeners();
   }
 
   clearStorage() async {

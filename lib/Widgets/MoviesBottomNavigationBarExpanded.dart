@@ -11,9 +11,10 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   final String movieId;
   final int movieRate;
   final String movieTitle;
+  final bool fromSearch;
 
   const MoviesBottomNavigationBarExpanded(
-      {Key key, this.movieId, this.movieRate, this.movieTitle})
+      {Key key, this.movieId, this.movieRate, this.movieTitle, this.fromSearch = false})
       : super(key: key);
 
   @override
@@ -24,6 +25,7 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
           movieId: movieId,
           movieRate: movieRate,
           movieTitle: movieTitle,
+          fromSearch: fromSearch,
         ));
   }
 }

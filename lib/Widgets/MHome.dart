@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:mmobile/Objects/MColorTheme.dart';
+import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
@@ -74,12 +76,12 @@ class MHomeState extends State<MHome> {
     final loaderState = Provider.of<LoaderState>(context);
     MTheme theme = themeState.selectedTheme;
     //
-    //  final primaryColor = Color(0xfffc8d8d);
-    //  final secondaryColor = Color(0xfffc8d8d);
-    //  final additionalColor = Color(0xff407088);
-    //  final fontsColor = Color(0xff132743);
+    //  final primaryColor = Color(0xff111111);
+    //  final secondaryColor = Color(0xff161a2e);
+    //  final additionalColor = Color(0xffde4463);
+    //  final fontsColor = Color(0xffe8ded2);
     // MTheme theme = new MTheme(
-    //   brightness: Brightness.dark,
+    //   brightness: Brightness.light,
     //     colorTheme: MColorTheme(
     //       primaryColor: primaryColor,
     //       secondaryColor: secondaryColor,

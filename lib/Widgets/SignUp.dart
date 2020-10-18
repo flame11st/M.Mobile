@@ -37,12 +37,13 @@ class SignUpState extends State<SignUp> {
 
     if (response.statusCode == 200) {
       userState.processLoginResponse(response.body, false);
+
+      Navigator.of(context).pop();
     } else {
       MSnackBar.showSnackBar(
           response.body, false, MyGlobals.scaffoldSignUpKey.currentContext);
+      loaderState.setIsLoaderVisible(false);
     }
-
-    Navigator.of(context).pop();
   }
 
   setSignUpButtonActive() {

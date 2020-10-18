@@ -56,7 +56,7 @@ class MoviesFilter extends StatelessWidget {
     final userState = Provider.of<UserState>(context);
 
     return Container(
-        height: isWatchlist ? 250 : 450,
+        height: isWatchlist ? 280 : 450,
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.only(
@@ -67,6 +67,7 @@ class MoviesFilter extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
+            Text('User Movies Filter', style: Theme.of(context).textTheme.headline2,),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -77,18 +78,24 @@ class MoviesFilter extends StatelessWidget {
                     marginTop: 0,
                     padding: 0,
                     child: Container(
-                        width: 320,
+                        width: 330,
                         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            DropdownButton(
-                              value: moviesState.selectedGenre,
-                              hint: Text('Select Genre'),
-                              onChanged: ((String value) {
-                                moviesState.changeGenreFilter(value);
-                              }),
-                              items: moviesState.genres,
+                            SizedBox(
+                              width: 250,
+                              child: DropdownButton(
+                                dropdownColor: Theme.of(context).primaryColor,
+                                style: Theme.of(context).textTheme.headline5,
+                                isExpanded: true,
+                                value: moviesState.selectedGenre,
+                                hint: Text('Select Genre'),
+                                onChanged: ((String value) {
+                                  moviesState.changeGenreFilter(value);
+                                }),
+                                items: moviesState.genres,
+                              ),
                             ),
                             IconButton(
                               icon: Icon(
@@ -147,12 +154,14 @@ class MoviesFilter extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  if (moviesState.dateFrom != null)
                   FilterIcon(
                     iconColor: userState.isPremium ? null : Colors.green,
                     icon: userState.isPremium
                         ? Icons.calendar_today
                         : Icons.monetization_on,
-                    text: "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom)}",
+                    text:
+                        "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom)}",
                     isActive: moviesState.isDateFromSelected(),
                     onPressedCallback: () {
                       if (userState.isPremium)
@@ -163,12 +172,14 @@ class MoviesFilter extends StatelessWidget {
                     },
                     textSize: 16,
                   ),
+                  if (moviesState.dateTo != null)
                   FilterIcon(
                     iconColor: userState.isPremium ? null : Colors.green,
                     icon: userState.isPremium
                         ? Icons.calendar_today
                         : Icons.monetization_on,
-                    text: "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo)}",
+                    text:
+                        "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo)}",
                     isActive: moviesState.isDateToSelected(),
                     onPressedCallback: () {
                       if (userState.isPremium)
@@ -181,7 +192,6 @@ class MoviesFilter extends StatelessWidget {
                   ),
                 ],
               ),
-
             Column(
               children: [
                 Divider(

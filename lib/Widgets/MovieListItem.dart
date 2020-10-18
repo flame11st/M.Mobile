@@ -1,13 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:intl/intl.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
-import 'package:provider/provider.dart';
 import 'Shared/BoxShadowNeomorph.dart';
 import 'Shared/MovieRateButtons.dart';
+import 'package:http/http.dart' as http;
 
 class MovieListItem extends StatefulWidget {
   final Movie movie;
@@ -30,9 +32,21 @@ class MovieListItemState extends State<MovieListItem> {
     this.movie = movie;
   }
 
+  checkImage(String imageUrl) async {
+    final response = await http.head(imageBaseUrl + imageUrl);
+
+    if (response.statusCode == 404) {
+      final serviceAgent = new ServiceAgent();
+
+      await serviceAgent.reloadMoviePoster(movie.id);
+    }
+  }
+
   Widget build(BuildContext context) {
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
+
+    checkImage(imageUrl);
 
     final icon = movie.movieRate == MovieRate.addedToWatchlist
         ? Icons.add_to_queue
@@ -83,13 +97,11 @@ class MovieListItemState extends State<MovieListItem> {
                             height: 90,
                             fit: BoxFit.fill,
                             width: 60,
-//                            placeholder: (context, url) => CircularProgressIndicator(),
                           ),
                         ),
                         Expanded(
                           child: Container(
                             padding: EdgeInsets.only(left: 5),
-//                                            constraints: BoxConstraints.expand(height: 120, width: 300),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +111,7 @@ class MovieListItemState extends State<MovieListItem> {
                                         Theme.of(context).textTheme.headline3),
                                 Row(
                                   children: <Widget>[
-                                    Text(movie.year.toString(),
+                                    Text(DateFormat('yyyy').format(movie.releaseDate),
                                         style: Theme.of(context)
                                             .textTheme
                                             .headline5),

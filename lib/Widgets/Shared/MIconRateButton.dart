@@ -15,8 +15,9 @@ class MIconRateButton extends StatelessWidget {
   final serviceAgent = new ServiceAgent();
   final width;
   final color;
+  final bool fromSearch;
 
-  MIconRateButton({this.icon, this.movieRate, this.movieId, this.width, this.color, this.movieTitle});
+  MIconRateButton({this.icon, this.movieRate, this.movieId, this.width, this.color, this.movieTitle, this.fromSearch = false});
 
   rateMovie(String movieId, int movieRate, MoviesState moviesState,
       UserState userState) async {
@@ -61,6 +62,10 @@ class MIconRateButton extends StatelessWidget {
       color: color,
       onPressedCallback: () async {
         Navigator.of(context).pop();
+
+        if (fromSearch) {
+          Navigator.of(context).pop();
+        }
 
         await new Future.delayed(const Duration(milliseconds: 300));
 
