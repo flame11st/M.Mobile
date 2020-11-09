@@ -5,7 +5,7 @@ import 'package:mmobile/Variables/Themes.dart';
 
 class ThemeState with ChangeNotifier {
     final storage = new FlutterSecureStorage();
-    MTheme selectedTheme = Themes.classicDark;
+    MTheme selectedTheme = Themes.family;
 
     ThemeState() {
       initialSelectTheme();
@@ -37,7 +37,7 @@ class ThemeState with ChangeNotifier {
 
     logout() async {
       await clearStorage();
-      selectedTheme = Themes.classicDark;
+      selectedTheme = Themes.family;
     }
 
     clearStorage() async {

@@ -11,7 +11,7 @@ description: M.Mobile application.
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 0.8.0+9
+version: 0.8.3+12
 
 environment:
   sdk: ">=2.6.0 <3.0.0"
@@ -29,7 +29,7 @@ dependencies:
   fluttericon: ^1.0.7
   google_sign_in: ^4.5.1
   firebase_auth: ^0.16.1
-  flutter_launcher_icons: ^0.7.5
+  flutter_launcher_icons: ^0.8.1
   device_info: ^0.4.2+7
   in_app_purchase: ^0.3.4+5
   intl: ^0.16.1

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
-import 'package:mmobile/Widgets/Shared/BoxShadowNeomorph.dart';
+import 'package:mmobile/Widgets/Shared/MBoxShadow.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MTextField.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -15,7 +15,8 @@ class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
   final bool fromSearch;
 
-  const MovieListItemExpanded({Key key, this.movie, this.fromSearch = false}) : super(key: key);
+  const MovieListItemExpanded({Key key, this.movie, this.fromSearch = false})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -62,7 +63,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           ),
           Row(
             children: <Widget>[
-              Text(DateFormat(movie.seasonsCount > 0 ? 'yyyy' : 'yyyy-MM-dd').format(movie.releaseDate),
+              Text(
+                  DateFormat(movie.seasonsCount > 0 ? 'yyyy' : 'yyyy-MM-dd')
+                      .format(movie.releaseDate),
                   style: Theme.of(context).textTheme.headline5),
               SizedBox(
                 width: 15,
@@ -88,11 +91,13 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     style: Theme.of(context).textTheme.headline5)
             ],
           ),
-          if (movie.genres.isNotEmpty) SizedBox(
-            height: 5,
-          ),
-          if (movie.genres.isNotEmpty) Text(movie.genres.join(', '),
-              style: Theme.of(context).textTheme.headline5)
+          if (movie.genres.isNotEmpty)
+            SizedBox(
+              height: 5,
+            ),
+          if (movie.genres.isNotEmpty)
+            Text(movie.genres.join(', '),
+                style: Theme.of(context).textTheme.headline5)
         ],
       ),
     );
@@ -101,10 +106,10 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: <Widget>[
         MCard(
-          padding: 2,
+          padding: 1,
           marginTop: 0,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: BorderRadius.circular(4.0),
             child: CachedNetworkImage(
               imageUrl: imageBaseUrl + imageUrl,
               height: 180,
@@ -120,9 +125,16 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               height: 146,
               width: 146,
               decoration: new BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  shape: BoxShape.circle,
-                  boxShadow: BoxShadowNeomorph.circleShadow),
+                color: Theme.of(context).primaryColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.9),
+                    offset: Offset(0.0, 1.0),
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
               child: CircularPercentIndicator(
                 radius: 140.0,
                 lineWidth: 6.0,
@@ -164,21 +176,26 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         if (movie.tagline != null && movie.tagline.isNotEmpty)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         if (movie.directors.isNotEmpty) SizedBox(height: 10),
-        if (movie.directors.isNotEmpty) MTextField(
-            subtitleText: 'Directed by',
-            bodyText: movie.directors.map((director) => director).join(', ')),
+        if (movie.directors.isNotEmpty)
+          MTextField(
+              subtitleText: 'Directed by',
+              bodyText: movie.directors.map((director) => director).join(', ')),
         if (movie.actors.isNotEmpty) SizedBox(height: 10),
-        if (movie.actors.isNotEmpty) MTextField(
-            subtitleText: 'Starring',
-            bodyText: movie.actors.map((actor) => actor).join(', ')),
+        if (movie.actors.isNotEmpty)
+          MTextField(
+              subtitleText: 'Starring',
+              bodyText: movie.actors.map((actor) => actor).join(', ')),
         if (movie.countries.isNotEmpty) SizedBox(height: 10),
-        if (movie.countries.isNotEmpty) MTextField(
-            subtitleText: 'Countries',
-            bodyText: movie.countries.replaceAll(',', ', ')),
-        if (movie.overview.isNotEmpty) SizedBox(
-          height: 10,
-        ),
-        if (movie.overview.isNotEmpty) MTextField(subtitleText: 'Overview', bodyText: movie.overview),
+        if (movie.countries.isNotEmpty)
+          MTextField(
+              subtitleText: 'Countries',
+              bodyText: movie.countries.replaceAll(',', ', ')),
+        if (movie.overview.isNotEmpty)
+          SizedBox(
+            height: 10,
+          ),
+        if (movie.overview.isNotEmpty)
+          MTextField(subtitleText: 'Overview', bodyText: movie.overview),
       ],
     );
 
@@ -190,7 +207,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               tag: 'movie-hero-animation' + movie.id,
               child: SingleChildScrollView(
                 child: Container(
-                    margin: EdgeInsets.fromLTRB(12, 20, 12, 20),
+                    margin: EdgeInsets.fromLTRB(10, 20, 10, 20),
                     child: Material(
                       type: MaterialType.transparency,
                       child: Container(

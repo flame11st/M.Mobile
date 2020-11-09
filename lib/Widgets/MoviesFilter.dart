@@ -60,14 +60,17 @@ class MoviesFilter extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30.0),
-            topRight: Radius.circular(30.0),
+            topLeft: Radius.circular(15.0),
+            topRight: Radius.circular(15.0),
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-            Text('User Movies Filter', style: Theme.of(context).textTheme.headline2,),
+            Text(
+              'User Movies Filter',
+              style: Theme.of(context).textTheme.headline2,
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -80,14 +83,24 @@ class MoviesFilter extends StatelessWidget {
                     child: Container(
                         width: 330,
                         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                        color: moviesState.selectedGenre == null
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).accentColor,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             SizedBox(
                               width: 250,
                               child: DropdownButton(
-                                dropdownColor: Theme.of(context).primaryColor,
-                                style: Theme.of(context).textTheme.headline5,
+                                dropdownColor: moviesState.selectedGenre == null
+                                    ? Theme.of(context).primaryColor
+                                    : Theme.of(context).accentColor,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: moviesState.selectedGenre == null
+                                      ? Theme.of(context).hintColor
+                                      : Theme.of(context).primaryColor
+                                ),
                                 isExpanded: true,
                                 value: moviesState.selectedGenre,
                                 hint: Text('Select Genre'),
@@ -100,6 +113,9 @@ class MoviesFilter extends StatelessWidget {
                             IconButton(
                               icon: Icon(
                                 Icons.clear,
+                                color: moviesState.selectedGenre == null
+                                    ? Theme.of(context).hintColor.withOpacity(0.6)
+                                    : Theme.of(context).primaryColor,
                               ),
                               onPressed: moviesState.selectedGenre == null
                                   ? null
@@ -155,41 +171,41 @@ class MoviesFilter extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   if (moviesState.dateFrom != null)
-                  FilterIcon(
-                    iconColor: userState.isPremium ? null : Colors.green,
-                    icon: userState.isPremium
-                        ? Icons.calendar_today
-                        : Icons.monetization_on,
-                    text:
-                        "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom)}",
-                    isActive: moviesState.isDateFromSelected(),
-                    onPressedCallback: () {
-                      if (userState.isPremium)
-                        selectDateFrom(context, moviesState);
-                      else
-                        Navigator.of(context).push(
-                            MaterialPageRoute(builder: (ctx) => Premium()));
-                    },
-                    textSize: 16,
-                  ),
+                    FilterIcon(
+                      iconColor: userState.isPremium ? null : Colors.green,
+                      icon: userState.isPremium
+                          ? Icons.calendar_today
+                          : Icons.monetization_on,
+                      text:
+                          "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom)}",
+                      isActive: moviesState.isDateFromSelected(),
+                      onPressedCallback: () {
+                        if (userState.isPremium)
+                          selectDateFrom(context, moviesState);
+                        else
+                          Navigator.of(context).push(
+                              MaterialPageRoute(builder: (ctx) => Premium()));
+                      },
+                      textSize: 16,
+                    ),
                   if (moviesState.dateTo != null)
-                  FilterIcon(
-                    iconColor: userState.isPremium ? null : Colors.green,
-                    icon: userState.isPremium
-                        ? Icons.calendar_today
-                        : Icons.monetization_on,
-                    text:
-                        "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo)}",
-                    isActive: moviesState.isDateToSelected(),
-                    onPressedCallback: () {
-                      if (userState.isPremium)
-                        selectDateTo(context, moviesState);
-                      else
-                        Navigator.of(context).push(
-                            MaterialPageRoute(builder: (ctx) => Premium()));
-                    },
-                    textSize: 16,
-                  ),
+                    FilterIcon(
+                      iconColor: userState.isPremium ? null : Colors.green,
+                      icon: userState.isPremium
+                          ? Icons.calendar_today
+                          : Icons.monetization_on,
+                      text:
+                          "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo)}",
+                      isActive: moviesState.isDateToSelected(),
+                      onPressedCallback: () {
+                        if (userState.isPremium)
+                          selectDateTo(context, moviesState);
+                        else
+                          Navigator.of(context).push(
+                              MaterialPageRoute(builder: (ctx) => Premium()));
+                      },
+                      textSize: 16,
+                    ),
                 ],
               ),
             Column(

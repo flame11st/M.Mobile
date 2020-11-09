@@ -17,7 +17,9 @@ class ChangeThemes extends StatefulWidget {
 
 class ChangeThemesState extends State<ChangeThemes>
     with SingleTickerProviderStateMixin {
-  selectTheme(BuildContext context, int index) {
+  selectTheme(BuildContext context, TabController controller) {
+    var index = controller.animation.value.round();
+
     final userState = Provider.of<UserState>(context);
     final themeState = Provider.of<ThemeState>(context);
 
@@ -119,7 +121,7 @@ class ChangeThemesState extends State<ChangeThemes>
                     ? Theme.of(context).hintColor
                     : Colors.green,
                 onPressedCallback: () =>
-                    selectTheme(context, _tabController.index),
+                    selectTheme(context, _tabController),
                 borderRadius: 25,
                 height: 50,
                 text:

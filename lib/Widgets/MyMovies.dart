@@ -11,6 +11,7 @@ import 'Providers/LoaderState.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'SearchDelegate.dart';
+import 'WelcomeTutorial.dart';
 
 class MyMovies extends StatefulWidget {
   @override
@@ -70,6 +71,7 @@ class MyMoviesState extends State<MyMovies> {
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final loaderState = Provider.of<LoaderState>(context);
+    final userState = Provider.of<UserState>(context);
 
     setUserInfo();
     setUserMovies();
@@ -87,7 +89,7 @@ class MyMoviesState extends State<MyMovies> {
               alignment: Alignment.bottomCenter,
               child: MoviesBottomNavigationBar()),
           Align(
-              alignment: Alignment(0.0, 0.985),
+              alignment: Alignment(0.0, 0.996),
               child: Container(
                   height: 55.0,
                   width: 55.0,
@@ -111,6 +113,6 @@ class MyMoviesState extends State<MyMovies> {
       ),
     );
 
-    return myMoviesWidget;
+    return userState.showTutorial ? WelcomeTutorial() : myMoviesWidget;
   }
 }

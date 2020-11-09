@@ -307,7 +307,7 @@ class MoviesState with ChangeNotifier {
 
     var filteredMovies = allViewedMovies
         .where((movie) =>
-            movie.updated.isAfter(dateFrom) &&
+            movie.updated.isAfter(dateFrom.subtract(new Duration(seconds: 1))) &&
             movie.updated.isBefore(dateTo.add(new Duration(days: 1))))
         .toList();
 
@@ -489,6 +489,8 @@ class MoviesState with ChangeNotifier {
     getViewedMovies().forEach(
         (element) => removeMovieFromList(element, viewedMovies, viewedListKey));
 
+    watchlistMovies.clear();
+    viewedMovies.clear();
     userMovies.clear();
   }
 

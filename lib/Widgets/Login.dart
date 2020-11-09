@@ -102,13 +102,13 @@ class LoginState extends State<Login> {
     }
   }
 
-  // getText() {
-  //   final userState = Provider.of<UserState>(context);
-  //   var result = userState.androidVersion == 1 || userState.androidVersion > 7
-  //       ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
-  //       : userState.androidVersion == 0 ? '' : 'MovieDiary';
-  //   return result;
-  // }
+  getText() {
+    final userState = Provider.of<UserState>(context);
+    var result = userState.androidVersion == 1 || userState.androidVersion > 7
+        ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
+        : userState.androidVersion == 0 ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂' : 'MovieDiary';
+    return result;
+  }
 
   processLoginResponse(String response, bool isSignedInWithGoogle) {
     final userState = Provider.of<UserState>(context);
@@ -192,7 +192,11 @@ class LoginState extends State<Login> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Image(image: AssetImage("Assets/mdIcon_V_withText_black.png"), width: 170,),
+                    Image(image: AssetImage("Assets/mdIcon_V_with_effect.png"), width: 130,),
+                    Text(
+                      getText(),
+                      style: TextStyle(fontSize: 40, color: Theme.of(context).accentColor),
+                    ),
                     SizedBox(
                       height: 10,
                     ),

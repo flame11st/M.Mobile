@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'BoxShadowNeomorph.dart';
+import 'MBoxShadow.dart';
 
 class FilterIcon extends StatelessWidget {
   final IconData icon;
@@ -10,41 +10,51 @@ class FilterIcon extends StatelessWidget {
   final double textSize;
   final Color iconColor;
 
-  FilterIcon({this.icon, this.text, this.onPressedCallback, this.isActive, this.textSize, this.iconColor});
+  FilterIcon(
+      {this.icon,
+      this.text,
+      this.onPressedCallback,
+      this.isActive,
+      this.textSize,
+      this.iconColor});
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? Theme.of(context).accentColor : Theme.of(context).hintColor;
+    final color = isActive
+        ? Theme.of(context).accentColor
+        : Theme.of(context).primaryColor;
+    final fontColor =
+        isActive ? Theme.of(context).primaryColor : Theme.of(context).hintColor;
     return GestureDetector(
         onTap: () => onPressedCallback(),
         child: Container(
             height: 50,
             width: 160,
             decoration: new BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                borderRadius: BorderRadius.circular(10.0),
-                boxShadow: [
-                    BoxShadow(
-                        color: color.withOpacity(0.2),
-                        offset: Offset(-2.0, -2.0),
-                        blurRadius: 4,
-                    ),
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.6),
-                        offset: Offset(4.0, 4.0),
-                        blurRadius: 6,
-                    ),
-                ]
+              color: color,
+              borderRadius: BorderRadius.circular(5.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.9),
+                  offset: Offset(0.0, 1.0),
+                  blurRadius: 2,
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                if(icon != null) Icon(
-                  icon,
-                  size: 25,
-                    color: iconColor == null ? color : iconColor,
-                ),
-                Text(text, style: TextStyle(color: color, fontSize: textSize != null ? textSize : 15),)
+                if (icon != null)
+                  Icon(
+                    icon,
+                    size: 25,
+                    color: iconColor == null ? fontColor : iconColor,
+                  ),
+                Text(
+                  text,
+                  style: TextStyle(
+                      color: fontColor, fontSize: textSize != null ? textSize : 15),
+                )
               ],
             )));
   }

@@ -25,6 +25,7 @@ class UserState with ChangeNotifier {
   User user;
   int androidVersion = 0;
   bool userRequested = false;
+  bool showTutorial = false;
 
   void setInitialData() async {
     var storedToken;
@@ -104,8 +105,9 @@ class UserState with ChangeNotifier {
     var refreshToken = responseJson['refresh_token'];
     var userId = responseJson['userId'];
     var userName = responseJson['username'];
+    var showTutorial = responseJson['showTutorial'];
 
-    setInitialUserData(accessToken, refreshToken, userId, userName, isSignedInWithGoogle);
+    setInitialUserData(accessToken, refreshToken, userId, userName, isSignedInWithGoogle, showTutorial);
   }
 
   logout() async {
@@ -138,13 +140,14 @@ class UserState with ChangeNotifier {
   }
 
   Future<void> setInitialUserData(String token, String refreshToken,
-      String userId, String userName, bool isSignedInWithGoogle) async {
+      String userId, String userName, bool isSignedInWithGoogle, bool showTutorial) async {
     this.token = token;
     this.refreshToken = refreshToken;
     this.userId = userId;
     this.userName = userName;
     this.isUserAuthorized = true;
     this.isSignedInWithGoogle = isSignedInWithGoogle;
+    this.showTutorial = showTutorial;
 
     notifyListeners();
 
@@ -153,5 +156,11 @@ class UserState with ChangeNotifier {
     await storage.write(key: 'userName', value: userName);
     await storage.write(key: 'refreshToken', value: refreshToken);
     await storage.write(key: 'isSignedInWithGoogle', value: isSignedInWithGoogle.toString());
+  }
+
+  changeShowTutorialField(bool value) {
+    showTutorial = value;
+
+    notifyListeners();
   }
 }

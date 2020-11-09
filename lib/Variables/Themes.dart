@@ -4,13 +4,39 @@ import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 
 class Themes {
-  static final MTheme classicDark = new MTheme(
+  static final family = new MTheme(
       id: 0,
+      name: 'Family',
+      brightness: Brightness.light,
+      colorTheme: MColorTheme(
+        primaryColor: Color(0xfffdfdfd),
+        secondaryColor: Color(0xfffafaff),
+        additionalColor: Color(0xff112d4e),
+        fontsColor: Color(0xff222831),
+      ),
+      textStyleTheme: MTextStyleTheme(
+        title: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Color(0xff112d4e)),
+        subtitleText: TextStyle(
+            fontSize: 15.0,
+            color: Color(0xff112d4e),
+            fontWeight: FontWeight.bold),
+        bodyText: TextStyle(fontSize: 15.0, color: Color(0xff222831)),
+        expandedTitle: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xff112d4e)),
+      ));
+
+  static final MTheme scienceFiction = new MTheme(
+      id: 1,
       name: 'Science Fiction',
       brightness: Brightness.dark,
       colorTheme: MColorTheme(
         primaryColor: Color(0xff232931),
-        secondaryColor: Color(0xff252D37),
+        secondaryColor: Color(0xff252d3d),
         additionalColor: Color(0xff00adb5),
         fontsColor: Color(0xffeeeeee),
       ),
@@ -31,32 +57,6 @@ class Themes {
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Color(0xff00adb5)),
-      ));
-
-  static final family = new MTheme(
-      id: 1,
-      name: 'Family',
-      brightness: Brightness.light,
-      colorTheme: MColorTheme(
-        primaryColor: Color(0xffdee3e2),
-        secondaryColor: Color(0xffdfe3ea),
-        additionalColor: Color(0xff3e206d),
-        fontsColor: Color(0xff000000),
-      ),
-      textStyleTheme: MTextStyleTheme(
-        title: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: Color(0xff3e206d)),
-        subtitleText: TextStyle(
-            fontSize: 15.0,
-            color: Color(0xff3e206d),
-            fontWeight: FontWeight.bold),
-        bodyText: TextStyle(fontSize: 15.0, color: Color(0xff000000)),
-        expandedTitle: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xff3e206d)),
       ));
 
   static final adventure = new MTheme(
@@ -190,8 +190,8 @@ class Themes {
       ));
 
   static final allThemes = [
-    classicDark,
     family,
+    scienceFiction,
     adventure,
     crime,
     noir,

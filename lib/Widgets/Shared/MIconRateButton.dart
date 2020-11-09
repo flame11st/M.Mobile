@@ -16,8 +16,17 @@ class MIconRateButton extends StatelessWidget {
   final width;
   final color;
   final bool fromSearch;
+  final String hint;
 
-  MIconRateButton({this.icon, this.movieRate, this.movieId, this.width, this.color, this.movieTitle, this.fromSearch = false});
+  MIconRateButton(
+      {this.icon,
+      this.movieRate,
+      this.movieId,
+      this.width,
+      this.color,
+      this.movieTitle,
+      this.fromSearch = false,
+      this.hint});
 
   rateMovie(String movieId, int movieRate, MoviesState moviesState,
       UserState userState) async {
@@ -34,13 +43,14 @@ class MIconRateButton extends StatelessWidget {
     var action = 'added';
     var isViewedMovie = false;
 
-    final movies = moviesState.userMovies.where((element) => element.id == movieId);
+    final movies =
+        moviesState.userMovies.where((element) => element.id == movieId);
 
     if (movies.length > 0) {
       action = 'moved';
 
-      if (movies.first.movieRate == MovieRate.liked || movies.first.movieRate == MovieRate.notLiked)
-        isViewedMovie = true;
+      if (movies.first.movieRate == MovieRate.liked ||
+          movies.first.movieRate == MovieRate.notLiked) isViewedMovie = true;
     }
 
     var text = '"$movieTitle" $action to your Watchlist!';
@@ -60,6 +70,7 @@ class MIconRateButton extends StatelessWidget {
       width: width,
       icon: icon,
       color: color,
+      hint: hint,
       onPressedCallback: () async {
         Navigator.of(context).pop();
 

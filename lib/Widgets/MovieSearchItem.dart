@@ -5,6 +5,7 @@ import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'MovieListItemExpanded.dart';
+import 'Shared/MCard.dart';
 import 'Shared/MIconRateButton.dart';
 import 'package:http/http.dart' as http;
 
@@ -18,7 +19,10 @@ class MovieSearchItem extends StatelessWidget {
 
   showFullMovie(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute(
-        builder: (ctx) => MovieListItemExpanded(movie: movie,fromSearch: true,)));
+        builder: (ctx) => MovieListItemExpanded(
+              movie: movie,
+              fromSearch: true,
+            )));
   }
 
   checkImage(String imageUrl) async {
@@ -42,32 +46,17 @@ class MovieSearchItem extends StatelessWidget {
         onTap: () {
           showFullMovie(context);
         },
-        child: Container(
-            height: 92.0,
-            margin: EdgeInsets.fromLTRB(10, 10, 10, 5),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.3),
-                  offset: Offset(-3.0, -3.0),
-                  blurRadius: 3,
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  offset: Offset(4.0, 4.0),
-                  blurRadius: 3,
-                ),
-              ],
-              borderRadius: BorderRadius.circular(12.0),
-              color: Theme.of(context).cardColor,
-            ),
+        child: MCard(
+            marginBottom: 5,
+            marginLR: 10,
+            marginTop: 15,
+            padding: 0,
             child: Row(
               children: <Widget>[
-                SizedBox(
-                  width: 1,
-                ),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12.0),
+                  borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(4),
+                      bottomLeft: Radius.circular(4)),
                   child: Image.network(
                     imageBaseUrl + imageUrl,
                     height: 90,
@@ -78,6 +67,7 @@ class MovieSearchItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Container(
+                    height: 90,
                     padding: EdgeInsets.only(left: 5),
 //                                            constraints: BoxConstraints.expand(height: 120, width: 300),
                     child: Column(
@@ -91,7 +81,9 @@ class MovieSearchItem extends StatelessWidget {
                             new TextSpan(
                                 text: movie.title,
                                 style: Theme.of(context).textTheme.headline3),
-                            new TextSpan(text: ' (${DateFormat('yyyy').format(movie.releaseDate)})'),
+                            new TextSpan(
+                                text:
+                                    ' (${DateFormat('yyyy').format(movie.releaseDate)})'),
                           ],
                         )),
 

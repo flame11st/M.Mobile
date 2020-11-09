@@ -6,7 +6,7 @@ import 'MoviesFilter.dart';
 import 'Premium.dart';
 import 'Providers/MoviesState.dart';
 import 'Settings.dart';
-import 'Shared/BoxShadowNeomorph.dart';
+import 'Shared/MBoxShadow.dart';
 import 'Shared/MIconButton.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
@@ -16,25 +16,13 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final userState = Provider.of<UserState>(context);
 
     return Container(
-        height: 65,
+        height: 58,
         width: double.infinity,
 //            margin: EdgeInsets.all(5),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30.0),
-            topRight: Radius.circular(30.0),
-//                bottomLeft: Radius.circular(30.0),
-//                bottomRight: Radius.circular(30.0)
-          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withOpacity(0.3),
-              offset: Offset(-4.0, -4.0),
-              blurRadius: 3,
-            ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              offset: Offset(-4.0, -4.0),
+              color: Colors.black.withOpacity(0.9),
               blurRadius: 3,
             ),
           ],
@@ -47,9 +35,12 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               icon: Icon(
                 Icons.movie_filter,
                 color: moviesState.isAnyFilterSelected()
-                    ? Theme.of(context).accentColor
+                    ? Theme.of(context).primaryColor
                     : Theme.of(context).hintColor,
               ),
+              color: moviesState.isAnyFilterSelected()
+                  ? Theme.of(context).accentColor
+                  : Theme.of(context).primaryColor,
               onPressedCallback: () async {
                 showModalBottomSheet<void>(
                     backgroundColor: Colors.transparent,
@@ -80,8 +71,14 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(30.0)),
-                    boxShadow: BoxShadowNeomorph.circleShadow,
+                    borderRadius: BorderRadius.all(Radius.circular(15.0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.9),
+                        offset: Offset(0.0, 1.0),
+                        blurRadius: 2,
+                      ),
+                    ],
                     color: Theme.of(context).primaryColor,
 //                    shape: BoxShape.circle,
                   ),
@@ -90,7 +87,9 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     children: <Widget>[
                       IconButton(
                         icon: Icon(
-                          userState.isPremium ? Icons.check : Icons.monetization_on,
+                          userState.isPremium
+                              ? Icons.check
+                              : Icons.monetization_on,
                           color: Colors.green,
                         ),
                       ),

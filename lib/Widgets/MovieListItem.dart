@@ -7,7 +7,8 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
-import 'Shared/BoxShadowNeomorph.dart';
+import 'Shared/MBoxShadow.dart';
+import 'Shared/MCard.dart';
 import 'Shared/MovieRateButtons.dart';
 import 'package:http/http.dart' as http;
 
@@ -49,7 +50,7 @@ class MovieListItemState extends State<MovieListItem> {
     checkImage(imageUrl);
 
     final icon = movie.movieRate == MovieRate.addedToWatchlist
-        ? Icons.add_to_queue
+        ? Icons.check
         : movie.movieRate == MovieRate.liked
             ? Icons.favorite_border
             : FontAwesome5.ban;
@@ -64,34 +65,17 @@ class MovieListItemState extends State<MovieListItem> {
               child: Material(
                 color: Theme.of(context).cardColor,
                 type: MaterialType.transparency,
-                child: Container(
-                    height: 92.0,
-                    margin: EdgeInsets.fromLTRB(10, 10, 10, 5),
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.3),
-                          offset: Offset(-3.0, -3.0),
-                          blurRadius: 3,
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
-                          offset: Offset(4.0, 4.0),
-                          blurRadius: 3,
-                        ),
-                      ],
-                      borderRadius: BorderRadius.circular(12.0),
-                      color: Theme.of(context).cardColor,
-                    ),
+                child: MCard(
+                    marginBottom: 5,
+                    marginLR: 10,
+                    marginTop: 15,
+                    padding: 0,
                     child: Row(
                       children: <Widget>[
-                        SizedBox(
-                          width: 1,
-                        ),
                         ClipRRect(
                           borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(12),
-                              bottomLeft: Radius.circular(12)),
+                              topLeft: Radius.circular(4),
+                              bottomLeft: Radius.circular(4)),
                           child: CachedNetworkImage(
                             imageUrl: imageBaseUrl + imageUrl,
                             height: 90,
@@ -101,9 +85,10 @@ class MovieListItemState extends State<MovieListItem> {
                         ),
                         Expanded(
                           child: Container(
+                            height: 90,
                             padding: EdgeInsets.only(left: 5),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
                                 Text(movie.title,
@@ -149,7 +134,7 @@ class MovieListItemState extends State<MovieListItem> {
                           width: 40,
                           margin: EdgeInsets.only(right: 10),
                           decoration: BoxDecoration(
-                            boxShadow: BoxShadowNeomorph.circleShadow,
+                            boxShadow: MBoxShadow.circleShadow,
                             color: Theme.of(context).cardColor,
                             shape: BoxShape.circle,
                           ),
