@@ -105,7 +105,7 @@ class UserState with ChangeNotifier {
     var refreshToken = responseJson['refresh_token'];
     var userId = responseJson['userId'];
     var userName = responseJson['username'];
-    var showTutorial = responseJson['showTutorial'];
+    var showTutorial = false;//responseJson['showTutorial'];
 
     setInitialUserData(accessToken, refreshToken, userId, userName, isSignedInWithGoogle, showTutorial);
   }

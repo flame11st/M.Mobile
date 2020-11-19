@@ -84,7 +84,7 @@ class MoviesFilter extends StatelessWidget {
                         width: 330,
                         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
                         color: moviesState.selectedGenre == null
-                            ? Theme.of(context).primaryColor
+                            ? Theme.of(context).cardColor
                             : Theme.of(context).accentColor,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -93,13 +93,13 @@ class MoviesFilter extends StatelessWidget {
                               width: 250,
                               child: DropdownButton(
                                 dropdownColor: moviesState.selectedGenre == null
-                                    ? Theme.of(context).primaryColor
+                                    ? Theme.of(context).cardColor
                                     : Theme.of(context).accentColor,
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: moviesState.selectedGenre == null
                                       ? Theme.of(context).hintColor
-                                      : Theme.of(context).primaryColor
+                                      : Theme.of(context).cardColor
                                 ),
                                 isExpanded: true,
                                 value: moviesState.selectedGenre,

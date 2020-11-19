@@ -22,7 +22,7 @@ class FilterIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = isActive
         ? Theme.of(context).accentColor
-        : Theme.of(context).primaryColor;
+        : Theme.of(context).cardColor;
     final fontColor =
         isActive ? Theme.of(context).primaryColor : Theme.of(context).hintColor;
     return GestureDetector(
@@ -35,9 +35,9 @@ class FilterIcon extends StatelessWidget {
               borderRadius: BorderRadius.circular(5.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.9),
-                  offset: Offset(0.0, 1.0),
-                  blurRadius: 2,
+                  color: Colors.black.withOpacity(0.8),
+                  offset: Offset(0.0, 0.1),
+                  blurRadius: 0.25
                 ),
               ],
             ),

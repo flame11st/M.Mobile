@@ -37,9 +37,8 @@ class MCard extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.9),
-              offset: Offset(0.0, 1.0),
-              blurRadius: 2,
+              color: Colors.black.withOpacity(0.8),
+              offset: Offset(0.0, 0.05),
             ),
           ],
           borderRadius: BorderRadius.circular(4.0),

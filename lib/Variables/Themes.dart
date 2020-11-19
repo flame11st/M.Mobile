@@ -9,8 +9,8 @@ class Themes {
       name: 'Family',
       brightness: Brightness.light,
       colorTheme: MColorTheme(
-        primaryColor: Color(0xfffdfdfd),
-        secondaryColor: Color(0xfffafaff),
+        primaryColor: Color(0xfff8f8f8),
+        secondaryColor: Color(0xffffffff),
         additionalColor: Color(0xff112d4e),
         fontsColor: Color(0xff222831),
       ),
@@ -142,7 +142,7 @@ class Themes {
       name: 'Romance',
       brightness: Brightness.light,
       colorTheme: MColorTheme(
-        primaryColor: Color(0xfff6bed6),
+        primaryColor: Color(0xffe6aec6),
         secondaryColor: Color(0xfff6bed6),
         additionalColor: Color(0xff0d7377),
         fontsColor: Color(0xff132743),
@@ -168,8 +168,8 @@ class Themes {
       name: 'Crime',
       brightness: Brightness.dark,
       colorTheme: MColorTheme(
-        primaryColor: Color(0xff1a1a2e),
-        secondaryColor: Color(0xff161a2e),
+        primaryColor: Color(0xff161a2e),
+        secondaryColor: Color(0xff212a3e),
         additionalColor: Color(0xffde4463),
         fontsColor: Color(0xffe8ded2),
       ),

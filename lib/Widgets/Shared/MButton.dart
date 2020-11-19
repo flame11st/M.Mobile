@@ -39,13 +39,13 @@ class MButton extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.6),
-              offset: Offset(0.0, 2.0),
-              blurRadius: 3,
+              color: Colors.black.withOpacity(0.8),
+              offset: Offset(0.0, 0.5),
+              blurRadius: 1
             ),
           ],
           borderRadius: BorderRadius.circular(borderRadius != null ? borderRadius : 4.0),
-          color: Theme.of(contextValue).primaryColor,
+          color: Theme.of(contextValue).cardColor.withOpacity(0.95),
         ),
         child: MaterialButton(
           padding: EdgeInsets.all(0),

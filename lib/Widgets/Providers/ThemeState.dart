@@ -38,6 +38,8 @@ class ThemeState with ChangeNotifier {
     logout() async {
       await clearStorage();
       selectedTheme = Themes.family;
+
+      notifyListeners();
     }
 
     clearStorage() async {

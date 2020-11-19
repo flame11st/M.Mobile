@@ -7,6 +7,8 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
+import 'package:provider/provider.dart';
+import 'Providers/MoviesState.dart';
 import 'Shared/MBoxShadow.dart';
 import 'Shared/MCard.dart';
 import 'Shared/MovieRateButtons.dart';
@@ -15,7 +17,8 @@ import 'package:http/http.dart' as http;
 class MovieListItem extends StatefulWidget {
   final Movie movie;
 
-  const MovieListItem({Key key, this.movie}) : super(key: key);
+  const MovieListItem({Key key, this.movie})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -44,16 +47,35 @@ class MovieListItemState extends State<MovieListItem> {
   }
 
   Widget build(BuildContext context) {
+    final moviesState = Provider.of<MoviesState>(context);
+
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
+    IconData icon;
 
     checkImage(imageUrl);
-
-    final icon = movie.movieRate == MovieRate.addedToWatchlist
-        ? Icons.check
-        : movie.movieRate == MovieRate.liked
-            ? Icons.favorite_border
-            : FontAwesome5.ban;
+    switch (movie.movieRate) {
+      case MovieRate.addedToWatchlist:
+        {
+          icon = Icons.check;
+          break;
+        }
+      case MovieRate.liked:
+        {
+          icon = Icons.favorite_border;
+          break;
+        }
+      case MovieRate.notLiked:
+        {
+          icon = FontAwesome5.ban;
+          break;
+        }
+      case MovieRate.notRated:
+        {
+          icon = Icons.add;
+          break;
+        }
+    }
 
     return GestureDetector(
       onTap: () {
@@ -96,23 +118,26 @@ class MovieListItemState extends State<MovieListItem> {
                                         Theme.of(context).textTheme.headline3),
                                 Row(
                                   children: <Widget>[
-                                    Text(DateFormat('yyyy').format(movie.releaseDate),
+                                    Text(
+                                        DateFormat('yyyy')
+                                            .format(movie.releaseDate),
                                         style: Theme.of(context)
                                             .textTheme
                                             .headline5),
                                     SizedBox(
                                       width: 30,
                                     ),
-                                    if (movie.duration > 0 || movie.averageTimeOfEpisode > 0)
+                                    if (movie.duration > 0 ||
+                                        movie.averageTimeOfEpisode > 0)
                                       Text(
-                                        (movie.movieType == MovieType.movie
-                                                ? movie.duration.toString()
-                                                : movie.averageTimeOfEpisode
-                                                    .toString()) +
-                                            ' min',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headline5),
+                                          (movie.movieType == MovieType.movie
+                                                  ? movie.duration.toString()
+                                                  : movie.averageTimeOfEpisode
+                                                      .toString()) +
+                                              ' min',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5),
                                     SizedBox(
                                       width: 30,
                                     ),
@@ -135,17 +160,18 @@ class MovieListItemState extends State<MovieListItem> {
                           margin: EdgeInsets.only(right: 10),
                           decoration: BoxDecoration(
                             boxShadow: MBoxShadow.circleShadow,
-                            color: Theme.of(context).cardColor,
+                            color:
+                                Theme.of(context).cardColor.withOpacity(0.95),
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
                             icon: Icon(
                               icon,
-                                color: movie.movieRate == MovieRate.liked
-                                    ? Colors.green
-                                    : movie.movieRate == MovieRate.notLiked
-                                    ? Colors.red
-                                    : Theme.of(context).hintColor,
+                              color: movie.movieRate == MovieRate.liked
+                                  ? Colors.green
+                                  : movie.movieRate == MovieRate.notLiked
+                                      ? Colors.red
+                                      : Theme.of(context).hintColor,
                             ),
                             onPressed: () async {
                               showModalBottomSheet<void>(
@@ -153,11 +179,12 @@ class MovieListItemState extends State<MovieListItem> {
                                   context: context,
                                   builder: (BuildContext context) =>
                                       MovieRateButtons(
-                                          movieRate: movie.movieRate,
-                                          movieId: movie.id,
-                                          movieTitle: movie.title,
-                                          showTitle: true,
-                                          addMargin: false));
+                                        movieRate: movie.movieRate,
+                                        movieId: movie.id,
+                                        movieTitle: movie.title,
+                                        showTitle: true,
+                                        addMargin: false,
+                                      ));
                             },
                           ),
                         )
@@ -169,6 +196,8 @@ class MovieListItemState extends State<MovieListItem> {
 
   showFullMovie(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute(
-        builder: (ctx) => MovieListItemExpanded(movie: movie)));
+        builder: (ctx) => MovieListItemExpanded(
+              movie: movie,
+            )));
   }
 }

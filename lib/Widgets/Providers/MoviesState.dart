@@ -6,6 +6,8 @@ import 'package:fluttericon/elusive_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
+import 'package:mmobile/Widgets/MovieList.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
@@ -16,6 +18,7 @@ import '../Premium.dart';
 class MoviesState with ChangeNotifier {
   MoviesState() {
     setCachedUserMovies();
+    setCachedMoviesLists();
   }
 
   final serviceAgent = new ServiceAgent();
@@ -25,6 +28,7 @@ class MoviesState with ChangeNotifier {
   List<Movie> userMovies = new List<Movie>();
   List<Movie> watchlistMovies = new List<Movie>();
   List<Movie> viewedMovies = new List<Movie>();
+  List<MoviesList> moviesLists = new List<MoviesList>();
   List<DropdownMenuItem<String>> genres = new List<DropdownMenuItem<String>>();
   bool moviesOnly = false;
   bool tvOnly = false;
@@ -47,6 +51,7 @@ class MoviesState with ChangeNotifier {
   Movie currentLatestMovie;
 
   bool isMoviesRequested = false;
+  bool isMoviesListsRequested = false;
   bool isCachedMoviesLoaded = false;
 
   setCachedUserMovies() async {
@@ -111,6 +116,55 @@ class MoviesState with ChangeNotifier {
     refreshMovies();
 
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
+  }
+
+  setCachedMoviesLists() async {
+    var storedMoviesLists;
+    try {
+      storedMoviesLists = await storage.read(key: 'moviesLists');
+    } catch (on, ex) {
+      await clearStorage();
+    }
+
+    if (storedMoviesLists == null) return;
+
+    Iterable iterableMoviesLists = json.decode(storedMoviesLists);
+
+    if (iterableMoviesLists.length != 0) {
+      List<MoviesList> moviesLists = iterableMoviesLists.map((model) {
+        return MoviesList.fromJson(model);
+      }).toList();
+
+      setMoviesLists(moviesLists);
+    }
+  }
+
+  setInitialMoviesLists(List<MoviesList> moviesLists) async {
+    await storage.write(key: 'moviesLists', value: jsonEncode(moviesLists));
+
+    setMoviesLists(moviesLists);
+  }
+
+  setMoviesLists(List<MoviesList> moviesLists) {
+    this.moviesLists = moviesLists.map((ml) {
+      final movies = ml.listMovies.map((movie) {
+        final userMovie = userMovies.where((um) => um.id == movie.id);
+
+        if (userMovie.length > 0) {
+          movie.movieRate = userMovie.first.movieRate;
+        } else {
+          movie.movieRate = MovieRate.notRated;
+        }
+
+        return movie;
+      }).toList();
+
+      ml.listMovies = movies;
+
+      return ml;
+    }).toList();
+
+    notifyListeners();
   }
 
   setGenres() {
@@ -385,9 +439,20 @@ class MoviesState with ChangeNotifier {
       removeMovieRate(movieToRate);
     }
 
+    setRateToMovieInLists(movieId, movieRate);
+
     notifyListeners();
 
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
+  }
+
+  void setRateToMovieInLists(String movieId, int rate) {
+    moviesLists.forEach((element) {
+      var movies = element.listMovies.where((element) => element.id == movieId);
+
+      if (movies.length > 0)
+        movies.first.movieRate = rate;
+    });
   }
 
   void removeMovieRate(Movie movieToRate) {
@@ -477,6 +542,8 @@ class MoviesState with ChangeNotifier {
     dateMax = null;
     dateFrom = null;
     dateMin = null;
+    moviesLists.clear();
+    isMoviesListsRequested = false;
   }
 
   clearStorage() async {

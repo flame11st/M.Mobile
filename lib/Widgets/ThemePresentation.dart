@@ -12,14 +12,14 @@ class ThemePresentation extends StatelessWidget {
     return Padding(
         padding: EdgeInsets.fromLTRB(12, 0, 12, 0),
         child: MCard(
-          color: theme.colorTheme.primaryColor,
+          color: theme.colorTheme.secondaryColor,
           padding: 0,
           child: Row(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(4),
-                    bottomLeft: Radius.circular(4)),
+                    topLeft: Radius.circular(3),
+                    bottomLeft: Radius.circular(3)),
                 child: Container(
                   height: 70,
                   width: 50,
@@ -62,37 +62,24 @@ class ThemePresentation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPanel = Container(
-        height: 50,
+        height: 40,
         width: double.infinity,
 //            margin: EdgeInsets.all(5),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30.0),
-            topRight: Radius.circular(30.0),
-//                bottomLeft: Radius.circular(30.0),
-//                bottomRight: Radius.circular(30.0)
-          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withOpacity(0.3),
-              offset: Offset(-4.0, -4.0),
-              blurRadius: 3,
-            ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              offset: Offset(-4.0, -4.0),
-              blurRadius: 3,
+              color: Colors.black.withOpacity(0.9),
+              blurRadius: 1,
             ),
           ],
           color: theme.colorTheme.primaryColor,
         ),
         child: Container(
-          margin: EdgeInsets.all(3),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: theme.colorTheme.additionalColor,
           ),
-          child: Icon(Icons.add, color: theme.colorTheme.primaryColor, size: 30,),
+          child: Icon(Icons.search, color: theme.colorTheme.primaryColor, size: 25,),
         ));
 
     return Column(

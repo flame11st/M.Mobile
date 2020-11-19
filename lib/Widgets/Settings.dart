@@ -242,16 +242,21 @@ class SettingsState extends State<Settings> {
       text: "Name",
       child: Form(
         key: _formNameKey,
-        child: TextFormField(
-          style: Theme.of(context).textTheme.headline5,
-          decoration: InputDecoration(
-            fillColor: Colors.redAccent,
-          ),
-          validator: (value) {
-            return nameController.text.isEmpty ? 'Name can\'t be empty' : null;
-          },
-          controller: nameController,
-        ),
+        child: Theme(
+            data: Theme.of(context)
+                .copyWith(primaryColor: Theme.of(context).accentColor),
+            child: TextFormField(
+              style: Theme.of(context).textTheme.headline5,
+              decoration: InputDecoration(
+                fillColor: Colors.redAccent,
+              ),
+              validator: (value) {
+                return nameController.text.isEmpty
+                    ? 'Name can\'t be empty'
+                    : null;
+              },
+              controller: nameController,
+            )),
       ),
       button: MButton(
         text: 'Change name',
@@ -265,15 +270,18 @@ class SettingsState extends State<Settings> {
       text: "Email",
       child: Form(
           key: _formEmailKey,
-          child: TextFormField(
-            style: Theme.of(context).textTheme.headline5,
-            validator: (value) {
-              return emailController.text.isEmpty
-                  ? 'Email can\'t be empty'
-                  : Validators.emailValidator(emailController.text);
-            },
-            controller: emailController,
-          )),
+          child: Theme(
+              data: Theme.of(context)
+                  .copyWith(primaryColor: Theme.of(context).accentColor),
+              child: TextFormField(
+                style: Theme.of(context).textTheme.headline5,
+                validator: (value) {
+                  return emailController.text.isEmpty
+                      ? 'Email can\'t be empty'
+                      : Validators.emailValidator(emailController.text);
+                },
+                controller: emailController,
+              ))),
       button: MButton(
         text: 'Change Email',
         onPressedCallback: () => changeUserInfo(userState.userId,
@@ -291,8 +299,7 @@ class SettingsState extends State<Settings> {
           style: Theme.of(context).textTheme.headline5,
           children: <TextSpan>[
             new TextSpan(
-                text: 'Theme:  ',
-                style: Theme.of(context).textTheme.headline3),
+                text: 'Theme:  ', style: Theme.of(context).textTheme.headline3),
             new TextSpan(
                 text: themeState.selectedTheme.name,
                 style: Theme.of(context).textTheme.headline5)
@@ -327,7 +334,7 @@ class SettingsState extends State<Settings> {
             showDialog<String>(
                 context: context,
                 builder: (BuildContext context1) => AlertDialog(
-                  backgroundColor: Theme.of(context).primaryColor,
+                      backgroundColor: Theme.of(context).primaryColor,
                       contentTextStyle: Theme.of(context).textTheme.headline5,
                       content:
                           Text('Are You really want to clear your movies?'),
@@ -343,7 +350,9 @@ class SettingsState extends State<Settings> {
                             Navigator.of(context1).pop();
                           },
                         ),
-                        SizedBox(width: 10,),
+                        SizedBox(
+                          width: 10,
+                        ),
                         MButton(
                           active: true,
                           text: 'Cancel',
@@ -378,14 +387,18 @@ class SettingsState extends State<Settings> {
                 'Old Password',
                 style: Theme.of(context).textTheme.headline5,
               ),
-              TextFormField(
-                style: Theme.of(context).textTheme.headline5,
-                validator: (value) => oldPasswordController.text.isNotEmpty
-                    ? Validators.passwordValidator(oldPasswordController.text)
-                    : null,
-                controller: oldPasswordController,
-                obscureText: true,
-              ),
+              Theme(
+                  data: Theme.of(context)
+                      .copyWith(primaryColor: Theme.of(context).accentColor),
+                  child: TextFormField(
+                    style: Theme.of(context).textTheme.headline5,
+                    validator: (value) => oldPasswordController.text.isNotEmpty
+                        ? Validators.passwordValidator(
+                            oldPasswordController.text)
+                        : null,
+                    controller: oldPasswordController,
+                    obscureText: true,
+                  )),
               SizedBox(
                 height: 5,
               ),
@@ -393,22 +406,25 @@ class SettingsState extends State<Settings> {
                 'New Password',
                 style: Theme.of(context).textTheme.headline5,
               ),
-              TextFormField(
-                style: Theme.of(context).textTheme.headline5,
-                validator: (value) {
-                  if (newPasswordController.text.isEmpty) return null;
+              Theme(
+                  data: Theme.of(context)
+                      .copyWith(primaryColor: Theme.of(context).accentColor),
+                  child: TextFormField(
+                    style: Theme.of(context).textTheme.headline5,
+                    validator: (value) {
+                      if (newPasswordController.text.isEmpty) return null;
 
-                  var result =
-                      Validators.passwordValidator(newPasswordController.text);
-                  if (result == null)
-                    result = Validators.passwordsMatchValidator(
-                        newPasswordController.text,
-                        confirmPasswordController.text);
-                  return result;
-                },
-                controller: newPasswordController,
-                obscureText: true,
-              ),
+                      var result = Validators.passwordValidator(
+                          newPasswordController.text);
+                      if (result == null)
+                        result = Validators.passwordsMatchValidator(
+                            newPasswordController.text,
+                            confirmPasswordController.text);
+                      return result;
+                    },
+                    controller: newPasswordController,
+                    obscureText: true,
+                  )),
               SizedBox(
                 height: 5,
               ),
@@ -416,22 +432,25 @@ class SettingsState extends State<Settings> {
                 'Confirm Password',
                 style: Theme.of(context).textTheme.headline5,
               ),
-              TextFormField(
-                style: Theme.of(context).textTheme.headline5,
-                validator: (value) {
-                  if (confirmPasswordController.text.isEmpty) return null;
+              Theme(
+                  data: Theme.of(context)
+                      .copyWith(primaryColor: Theme.of(context).accentColor),
+                  child: TextFormField(
+                    style: Theme.of(context).textTheme.headline5,
+                    validator: (value) {
+                      if (confirmPasswordController.text.isEmpty) return null;
 
-                  var result = Validators.passwordValidator(
-                      confirmPasswordController.text);
-                  if (result == null)
-                    result = Validators.passwordsMatchValidator(
-                        newPasswordController.text,
-                        confirmPasswordController.text);
-                  return result;
-                },
-                controller: confirmPasswordController,
-                obscureText: true,
-              )
+                      var result = Validators.passwordValidator(
+                          confirmPasswordController.text);
+                      if (result == null)
+                        result = Validators.passwordsMatchValidator(
+                            newPasswordController.text,
+                            confirmPasswordController.text);
+                      return result;
+                    },
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                  ))
             ],
           ),
         ));
@@ -446,30 +465,26 @@ class SettingsState extends State<Settings> {
             onPressedCallback: () {
               showDialog<String>(
                   context: context,
-                  builder: (BuildContext context1) =>
-                      AlertDialog(
-                        backgroundColor: Theme
-                            .of(context)
-                            .primaryColor,
-                        contentTextStyle: Theme
-                            .of(context)
-                            .textTheme
-                            .headline5,
+                  builder: (BuildContext context1) => AlertDialog(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        contentTextStyle: Theme.of(context).textTheme.headline5,
                         content:
-                        Text('Are You really want to remove your user?'),
+                            Text('Are You really want to remove your user?'),
                         actions: [
                           MButton(
                             active: true,
                             text: 'Yes, remove',
                             parentContext: context,
                             onPressedCallback: () {
-                              removeUser(userState.userId, userState, moviesState,
-                                  themeState);
+                              removeUser(userState.userId, userState,
+                                  moviesState, themeState);
 
                               Navigator.of(context1).pop();
                             },
                           ),
-                          SizedBox(width: 10,),
+                          SizedBox(
+                            width: 10,
+                          ),
                           MButton(
                             active: true,
                             text: 'Cancel',

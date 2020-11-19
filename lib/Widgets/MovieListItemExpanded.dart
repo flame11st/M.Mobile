@@ -15,7 +15,8 @@ class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
   final bool fromSearch;
 
-  const MovieListItemExpanded({Key key, this.movie, this.fromSearch = false})
+  const MovieListItemExpanded(
+      {Key key, this.movie, this.fromSearch = false})
       : super(key: key);
 
   @override
@@ -31,7 +32,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   String imageBaseUrl =
       'https://moviediarystorage.blob.core.windows.net/movies';
 
-  MovieListItemExpandedState(Movie movie, bool fromSearch) {
+  MovieListItemExpandedState(
+      Movie movie, bool fromSearch) {
     this.movie = movie;
     this.fromSearch = fromSearch;
   }
@@ -125,14 +127,13 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               height: 146,
               width: 146,
               decoration: new BoxDecoration(
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).cardColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.9),
-                    offset: Offset(0.0, 1.0),
-                    blurRadius: 2,
-                  ),
+                      color: Colors.black.withOpacity(0.8),
+                      offset: Offset(0.0, 0.1),
+                      blurRadius: 0.5),
                 ],
               ),
               child: CircularPercentIndicator(

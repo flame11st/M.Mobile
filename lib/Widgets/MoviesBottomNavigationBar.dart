@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mmobile/Widgets/MoviesListsPage.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
 
@@ -10,20 +12,38 @@ import 'Shared/MBoxShadow.dart';
 import 'Shared/MIconButton.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
+  Route _createRoute(Function page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        var begin = Offset(0.0, 1.0);
+        var end = Offset.zero;
+        var curve = Curves.ease;
+
+        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
     return Container(
-        height: 58,
+        height: 50,
         width: double.infinity,
 //            margin: EdgeInsets.all(5),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.9),
-              blurRadius: 3,
+              blurRadius: 1,
             ),
           ],
           color: Theme.of(context).primaryColor,
@@ -32,10 +52,12 @@ class MoviesBottomNavigationBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
             MIconButton(
+              withBorder: false,
+              hint: 'Filters',
               icon: Icon(
                 Icons.movie_filter,
                 color: moviesState.isAnyFilterSelected()
-                    ? Theme.of(context).primaryColor
+                    ? Theme.of(context).accentColor
                     : Theme.of(context).hintColor,
               ),
               color: moviesState.isAnyFilterSelected()
@@ -48,58 +70,46 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     builder: (BuildContext context) => MoviesFilter());
               },
             ),
-            Hero(
-              tag: 'settings',
-              child: MIconButton(
-                icon: Icon(
-                  Icons.settings,
-                  color: Theme.of(context).hintColor,
-                ),
-                onPressedCallback: () {
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(builder: (ctx) => Settings()));
-                },
+            MIconButton(
+              withBorder: false,
+              hint: 'Settings',
+              icon: Icon(
+                Icons.settings,
+                color: Theme.of(context).hintColor,
               ),
+              onPressedCallback: () {
+                Navigator.of(context)
+                    .push(_createRoute(() => Settings()));
+              },
             ),
-            SizedBox(
-              width: 80,
+            SizedBox(width: 40,),
+            MIconButton(
+              withBorder: false,
+              hint: 'Lists',
+              icon: Icon(
+                Icons.list,
+                color: Theme.of(context).hintColor,
+              ),
+              onPressedCallback: () {
+                Navigator.of(context)
+                    .push(_createRoute(() => MoviesListsPage()));
+              },
             ),
-            GestureDetector(
-                onTap: () {
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(builder: (ctx) => Premium()));
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(15.0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.9),
-                        offset: Offset(0.0, 1.0),
-                        blurRadius: 2,
-                      ),
-                    ],
-                    color: Theme.of(context).primaryColor,
-//                    shape: BoxShape.circle,
-                  ),
-                  padding: EdgeInsets.only(right: 10),
-                  child: Row(
-                    children: <Widget>[
-                      IconButton(
-                        icon: Icon(
-                          userState.isPremium
-                              ? Icons.check
-                              : Icons.monetization_on,
-                          color: Colors.green,
-                        ),
-                      ),
-                      Text(
-                        'Premium',
-                        style: Theme.of(context).textTheme.headline5,
-                      )
-                    ],
-                  ),
-                ))
+            MIconButton(
+              withBorder: false,
+              hint: 'Premium',
+              width: 65.0,
+              icon: Icon(
+                userState.isPremium
+                    ? Icons.check
+                    : Icons.monetization_on,
+                color: Colors.green,
+              ),
+              onPressedCallback: () {
+                Navigator.of(context)
+                    .push(_createRoute(() => Premium()));
+              },
+            ),
           ],
         ));
 //

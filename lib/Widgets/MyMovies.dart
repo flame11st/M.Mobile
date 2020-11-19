@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:provider/provider.dart';
@@ -54,6 +55,26 @@ class MyMoviesState extends State<MyMovies> {
     }
   }
 
+  setMoviesLists() async {
+    final moviesState = Provider.of<MoviesState>(context);
+
+    if (moviesState.isMoviesListsRequested) return;
+    moviesState.isMoviesListsRequested = true;
+
+    moviesState.setCachedMoviesLists();
+
+    final moviesListsResponse = await serviceAgent.getMoviesLists();
+    Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
+
+    if (iterableMoviesLists.length != 0) {
+      List<MoviesList> moviesLists = iterableMoviesLists.map((model) {
+        return MoviesList.fromJson(model);
+      }).toList();
+
+      moviesState.setInitialMoviesLists(moviesLists);
+    }
+  }
+
   setUserInfo() async {
     final userState = Provider.of<UserState>(context);
 
@@ -75,6 +96,7 @@ class MyMoviesState extends State<MyMovies> {
 
     setUserInfo();
     setUserMovies();
+    setMoviesLists();
 
     if (loaderState.isLoaderVisible && moviesState.userMovies.length > 0) {
       loaderState.setIsLoaderVisible(false);
@@ -89,10 +111,10 @@ class MyMoviesState extends State<MyMovies> {
               alignment: Alignment.bottomCenter,
               child: MoviesBottomNavigationBar()),
           Align(
-              alignment: Alignment(0.0, 0.996),
+              alignment: Alignment(0.0, 0.982),
               child: Container(
-                  height: 55.0,
-                  width: 55.0,
+                  height: 50.0,
+                  width: 50.0,
                   child: FittedBox(
                     child: FloatingActionButton(
                       onPressed: () {
@@ -102,8 +124,8 @@ class MyMoviesState extends State<MyMovies> {
                         );
                       },
                       child: const Icon(
-                        Icons.add,
-                        size: 40,
+                        Icons.search,
+                        size: 35,
                       ),
                       backgroundColor: Theme.of(context).accentColor,
                       foregroundColor: Theme.of(context).primaryColor,

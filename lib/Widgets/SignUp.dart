@@ -86,61 +86,73 @@ class SignUpState extends State<SignUp> {
     if (MyGlobals.scaffoldSignUpKey == null)
       MyGlobals.scaffoldSignUpKey = new GlobalKey();
 
-    final nameField = TextField(
-      controller: nameController,
-      decoration: InputDecoration(
-          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-          hintText: "Name",
-          hintStyle: Theme.of(context).textTheme.headline5),
-    );
+    final nameField = Theme(
+        data: Theme.of(context)
+            .copyWith(primaryColor: Theme.of(context).accentColor),
+        child: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              hintText: "Name",
+              hintStyle: Theme.of(context).textTheme.headline5),
+        ));
 
-    final emailField = TextFormField(
-      validator: (value) => emailController.text.isNotEmpty
-          ? Validators.emailValidator(emailController.text)
-          : null,
-      controller: emailController,
-      decoration: InputDecoration(
-          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-          hintText: "Email",
-          hintStyle: Theme.of(context).textTheme.headline5),
-    );
+    final emailField = Theme(
+        data: Theme.of(context)
+            .copyWith(primaryColor: Theme.of(context).accentColor),
+        child: TextFormField(
+          validator: (value) => emailController.text.isNotEmpty
+              ? Validators.emailValidator(emailController.text)
+              : null,
+          controller: emailController,
+          decoration: InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              hintText: "Email",
+              hintStyle: Theme.of(context).textTheme.headline5),
+        ));
 
-    final passwordField = TextFormField(
-      validator: (value) {
-        if (passwordController.text.isEmpty) return null;
+    final passwordField = Theme(
+        data: Theme.of(context)
+            .copyWith(primaryColor: Theme.of(context).accentColor),
+        child: TextFormField(
+          validator: (value) {
+            if (passwordController.text.isEmpty) return null;
 
-        var result = Validators.passwordValidator(passwordController.text);
-        if (result == null)
-          result = Validators.passwordsMatchValidator(
-              passwordController.text, confirmPasswordController.text);
-        return result;
-      },
-      controller: passwordController,
-      obscureText: true,
-      decoration: InputDecoration(
-          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-          hintText: "Password",
-          hintStyle: Theme.of(context).textTheme.headline5),
-    );
+            var result = Validators.passwordValidator(passwordController.text);
+            if (result == null)
+              result = Validators.passwordsMatchValidator(
+                  passwordController.text, confirmPasswordController.text);
+            return result;
+          },
+          controller: passwordController,
+          obscureText: true,
+          decoration: InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              hintText: "Password",
+              hintStyle: Theme.of(context).textTheme.headline5),
+        ));
 
-    final confirmPasswordField = TextFormField(
-      validator: (value) {
-        if (confirmPasswordController.text.isEmpty) return null;
+    final confirmPasswordField = Theme(
+        data: Theme.of(context)
+            .copyWith(primaryColor: Theme.of(context).accentColor),
+        child: TextFormField(
+          validator: (value) {
+            if (confirmPasswordController.text.isEmpty) return null;
 
-        var result =
-            Validators.passwordValidator(confirmPasswordController.text);
-        if (result == null)
-          result = Validators.passwordsMatchValidator(
-              passwordController.text, confirmPasswordController.text);
-        return result;
-      },
-      controller: confirmPasswordController,
-      obscureText: true,
-      decoration: InputDecoration(
-          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-          hintText: "Confirm Password",
-          hintStyle: Theme.of(context).textTheme.headline5),
-    );
+            var result =
+                Validators.passwordValidator(confirmPasswordController.text);
+            if (result == null)
+              result = Validators.passwordsMatchValidator(
+                  passwordController.text, confirmPasswordController.text);
+            return result;
+          },
+          controller: confirmPasswordController,
+          obscureText: true,
+          decoration: InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              hintText: "Confirm Password",
+              hintStyle: Theme.of(context).textTheme.headline5),
+        ));
 
     final signUpButton = MButton(
       text: 'Sign up',

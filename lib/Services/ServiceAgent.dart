@@ -85,6 +85,10 @@ class ServiceAgent {
     return get('movies/ReloadMoviePoster?id=$movieId');
   }
 
+  getMoviesLists() {
+    return get('movies/GetMoviesLists');
+  }
+
   search(String query) {
     return get('movies/SearchByIndexedColumn?query=$query');
   }

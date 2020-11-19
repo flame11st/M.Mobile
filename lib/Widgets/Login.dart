@@ -127,28 +127,34 @@ class LoginState extends State<Login> {
     if (MyGlobals.scaffoldLoginKey == null)
       MyGlobals.scaffoldLoginKey = new GlobalKey();
 
-    final emailField = TextFormField(
-      validator: (value) => emailController.text.isNotEmpty
-          ? Validators.emailValidator(emailController.text)
-          : null,
-      controller: emailController,
-      decoration: InputDecoration(
-          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-          hintText: "Email",
-          hintStyle: Theme.of(context).textTheme.headline5),
-    );
+    final emailField = Theme(
+        data: Theme.of(context)
+            .copyWith(primaryColor: Theme.of(context).accentColor),
+        child: TextFormField(
+          validator: (value) => emailController.text.isNotEmpty
+              ? Validators.emailValidator(emailController.text)
+              : null,
+          controller: emailController,
+          decoration: InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              hintText: "Email",
+              hintStyle: Theme.of(context).textTheme.headline5),
+        ));
 
-    final passwordField = TextFormField(
-      validator: (value) => passwordController.text.isNotEmpty
-          ? Validators.passwordValidator(passwordController.text)
-          : null,
-      controller: passwordController,
-      obscureText: true,
-      decoration: InputDecoration(
-          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-          hintText: "Password",
-          hintStyle: Theme.of(context).textTheme.headline5),
-    );
+    final passwordField = Theme(
+        data: Theme.of(context)
+            .copyWith(primaryColor: Theme.of(context).accentColor),
+        child: TextFormField(
+          validator: (value) => passwordController.text.isNotEmpty
+              ? Validators.passwordValidator(passwordController.text)
+              : null,
+          controller: passwordController,
+          obscureText: true,
+          decoration: InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              hintText: "Password",
+              hintStyle: Theme.of(context).textTheme.headline5),
+        ));
 
     final loginButton = MButton(
       text: 'Sign in',
@@ -192,10 +198,14 @@ class LoginState extends State<Login> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Image(image: AssetImage("Assets/mdIcon_V_with_effect.png"), width: 130,),
+                    Image(
+                      image: AssetImage("Assets/mdIcon_V_with_effect.png"),
+                      width: 130,
+                    ),
                     Text(
                       getText(),
-                      style: TextStyle(fontSize: 40, color: Theme.of(context).accentColor),
+                      style: TextStyle(
+                          fontSize: 40, color: Theme.of(context).accentColor),
                     ),
                     SizedBox(
                       height: 10,
