@@ -227,9 +227,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               ),
             ),
             bottomNavigationBar: MoviesBottomNavigationBarExpanded(
-              movieId: movie.id,
-              movieRate: movie.movieRate,
-              movieTitle: movie.title,
+              movie: movie,
               fromSearch: fromSearch,
             )));
   }

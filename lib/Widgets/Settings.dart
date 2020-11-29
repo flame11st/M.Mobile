@@ -30,6 +30,7 @@ class SettingsState extends State<Settings> {
   final confirmPasswordController = TextEditingController();
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  final removeController = TextEditingController();
 
   final _formNameKey = GlobalKey<FormState>();
   final _formEmailKey = GlobalKey<FormState>();
@@ -132,7 +133,8 @@ class SettingsState extends State<Settings> {
 
   removeUser(String userId, UserState userState, MoviesState moviesState,
       ThemeState themeState) async {
-    var removeUserResponse = await serviceAgent.deleteUser(userId);
+    var text = removeController.text;
+    var removeUserResponse = await serviceAgent.deleteUser(userId, text);
 
     if (removeUserResponse.statusCode == 200) {
       userState.logout();
@@ -140,7 +142,7 @@ class SettingsState extends State<Settings> {
       themeState.logout();
       Navigator.of(context).pop();
     } else {
-      MSnackBar.showSnackBar('Something went wrong', false, context);
+      MSnackBar.showSnackBar('Something went wrong', false, MyGlobals.scaffoldSettingsKey.currentContext);
     }
   }
 
@@ -468,12 +470,28 @@ class SettingsState extends State<Settings> {
                   builder: (BuildContext context1) => AlertDialog(
                         backgroundColor: Theme.of(context).primaryColor,
                         contentTextStyle: Theme.of(context).textTheme.headline5,
-                        content:
-                            Text('Are You really want to remove your user?'),
+                        content: Container(
+                          height: 143,
+                          child: Column(
+                            children: [
+                              Text(
+                                  'Are you sure you want to remove your user?'),
+                              SizedBox(height: 10,),
+                              TextField(
+                                controller: removeController,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  hintText: 'Please tell us why are you going to remove your user.\n',
+                                  border: const OutlineInputBorder()
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         actions: [
                           MButton(
                             active: true,
-                            text: 'Yes, remove',
+                            text: 'Remove',
                             parentContext: context,
                             onPressedCallback: () {
                               removeUser(userState.userId, userState,

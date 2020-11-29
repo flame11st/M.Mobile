@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:provider/provider.dart';
-
 import 'MovieListItem.dart';
-import 'Providers/MoviesState.dart';
 
 class MoviesListPage extends StatefulWidget {
   final MoviesList moviesList;

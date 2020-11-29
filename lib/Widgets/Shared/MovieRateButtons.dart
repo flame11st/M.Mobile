@@ -1,33 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
+import 'package:mmobile/Objects/Movie.dart';
 
 import 'MIconRateButton.dart';
 
 class MovieRateButtons extends StatelessWidget {
-  final String movieId;
-  final String movieTitle;
-  final int movieRate;
+  // final String movieId;
+  // final String movieTitle;
+  // final int movieRate;
   final bool showTitle;
   final bool addMargin;
   final bool fromSearch;
+  final Movie movie;
 
   const MovieRateButtons(
       {Key key,
-      this.movieId,
-      this.movieRate,
-      this.movieTitle,
       this.showTitle,
       this.addMargin,
-      this.fromSearch = false})
+      this.fromSearch = false,
+      this.movie})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final width = (MediaQuery.of(context).size.width - 50) / 3;
-    final text = movieRate == MovieRate.addedToWatchlist
+    final text = movie.movieRate == MovieRate.addedToWatchlist
         ? "Did you like "
-        : movieRate == MovieRate.notRated
+        : movie.movieRate == MovieRate.notRated
             ? "Add to your movies "
             : "Change score of ";
 
@@ -40,9 +40,10 @@ class MovieRateButtons extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.8),
-                offset: Offset(0.0, 0.5),
-                blurRadius: 1),
+              color: Colors.black.withOpacity(0.8),
+              offset: Offset(0.0, 0.05),
+              blurRadius: 0.5
+            ),
           ],
           color: showTitle != null && showTitle
               ? Theme.of(context).primaryColor
@@ -66,7 +67,7 @@ class MovieRateButtons extends StatelessWidget {
                   new TextSpan(text: text),
                   new TextSpan(
                       text:
-                          '"$movieTitle"${movieRate == MovieRate.addedToWatchlist || movieRate == MovieRate.notRated ? '?' : ''}',
+                          '"${movie.title}"${movie.movieRate == MovieRate.addedToWatchlist || movie.movieRate == MovieRate.notRated ? '?' : ''}',
                       style: Theme.of(context).textTheme.headline4),
                 ],
               )),
@@ -74,70 +75,66 @@ class MovieRateButtons extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 if ((showTitle == null || !showTitle) ||
-                    movieRate != MovieRate.liked)
+                    movie.movieRate != MovieRate.liked)
                   MIconRateButton(
                     hint: showTitle == null || !showTitle ? "" : "Like",
-                    movieTitle: movieTitle,
-                    color: movieRate == MovieRate.liked
+                    color: movie.movieRate == MovieRate.liked
                         ? Colors.green
                         : Theme.of(context).cardColor.withOpacity(0.95),
                     icon: Icon(Icons.favorite_border,
-                        color: movieRate == MovieRate.liked
+                        color: movie.movieRate == MovieRate.liked
                             ? Theme.of(context).cardColor
                             : Theme.of(context).hintColor),
-                    movieId: movieId,
-                    movieRate: movieRate == MovieRate.liked
+                    movie: movie,
+                    movieRate: movie.movieRate == MovieRate.liked
                         ? MovieRate.notRated
                         : MovieRate.liked,
                     width: width,
                     fromSearch: fromSearch,
                   ),
                 if ((showTitle == null || !showTitle) ||
-                    movieRate != MovieRate.notLiked)
+                    movie.movieRate != MovieRate.notLiked)
                   MIconRateButton(
                     hint: showTitle == null || !showTitle ? "" : "Dislike",
-                    movieTitle: movieTitle,
-                    color: movieRate == MovieRate.notLiked
+                    color: movie.movieRate == MovieRate.notLiked
                         ? Colors.redAccent
                         : Theme.of(context).cardColor.withOpacity(0.95),
                     icon: Icon(FontAwesome5.ban,
-                        color: movieRate == MovieRate.notLiked
+                        color: movie.movieRate == MovieRate.notLiked
                             ? Theme.of(context).cardColor
                             : Theme.of(context).hintColor),
-                    movieId: movieId,
-                    movieRate: movieRate == MovieRate.notLiked
+                    movie: movie,
+                    movieRate: movie.movieRate == MovieRate.notLiked
                         ? MovieRate.notRated
                         : MovieRate.notLiked,
                     width: width,
                     fromSearch: fromSearch,
                   ),
                 if ((showTitle == null || !showTitle) ||
-                    movieRate != MovieRate.addedToWatchlist)
+                    movie.movieRate != MovieRate.addedToWatchlist)
                   MIconRateButton(
                     hint: showTitle == null || !showTitle ? "" : "To watchlist",
-                    movieTitle: movieTitle,
-                    color: movieRate == MovieRate.addedToWatchlist
+                    color: movie.movieRate == MovieRate.addedToWatchlist
                         ? Theme.of(context).accentColor
                         : Theme.of(context).cardColor.withOpacity(0.95),
                     icon: Icon(Icons.add_to_queue,
-                        color: movieRate == MovieRate.addedToWatchlist
+                        color: movie.movieRate == MovieRate.addedToWatchlist
                             ? Theme.of(context).cardColor
                             : Theme.of(context).hintColor),
-                    movieId: movieId,
-                    movieRate: movieRate == MovieRate.addedToWatchlist
+                    movie: movie,
+                    movieRate: movie.movieRate == MovieRate.addedToWatchlist
                         ? MovieRate.notRated
                         : MovieRate.addedToWatchlist,
                     width: width,
                     fromSearch: fromSearch,
                   ),
-                if (movieRate != MovieRate.notRated && showTitle != null)
+                if (movie.movieRate != MovieRate.notRated && showTitle != null)
                   MIconRateButton(
                     hint: "Remove Item",
-                    movieTitle: movieTitle,
                     color: Theme.of(context).cardColor.withOpacity(0.95),
                     icon: Icon(Icons.delete_outline,
                         color: Theme.of(context).hintColor),
-                    movieId: movieId,
+                    movie: movie,
                     movieRate: MovieRate.notRated,
                     width: width,
                     fromSearch: fromSearch,

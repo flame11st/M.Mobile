@@ -65,7 +65,7 @@ class Themes {
       brightness: Brightness.light,
       colorTheme: MColorTheme(
         primaryColor: Color(0xff206a5d),
-        secondaryColor: Color(0xff20715d),
+        secondaryColor: Color(0xff307a6d),
         additionalColor: Color(0xfff1f1e8),
         fontsColor: Color(0xffbfdcae),
       ),
@@ -117,7 +117,7 @@ class Themes {
       brightness: Brightness.dark,
       colorTheme: MColorTheme(
         primaryColor: Color(0xff111111),
-        secondaryColor: Color(0xff111111),
+        secondaryColor: Color(0xff212121),
         additionalColor: Color(0xff67749c),
         fontsColor: Color(0xffe8ded2),
       ),

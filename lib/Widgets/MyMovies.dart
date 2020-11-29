@@ -48,6 +48,8 @@ class MyMoviesState extends State<MyMovies> {
 
       if (userState.user != null)
         moviesState.setUserMovies(movies);
+    } else {
+      moviesState.setUserMovies(new List<Movie>());
     }
 
     if (loaderState.isLoaderVisible) {

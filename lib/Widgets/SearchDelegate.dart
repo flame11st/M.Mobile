@@ -62,42 +62,42 @@ class MSearchDelegate extends SearchDelegate {
                       ),
                     )),
               for (final movie in foundMovies) MovieSearchItem(movie: movie),
-              if (!isAdvanced &&
-                  (foundMovies.isNotEmpty || notFound) &&
-                  !isLoading)
-                MCard(
-                    marginTop: 15,
-                    marginLR: 10,
-                    marginBottom: 10,
-                    child: Container(
-                        width: MediaQuery.of(context).size.width,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Didn't find what you were looking for?",
-                              style: Theme.of(context).textTheme.headline2,
-                            ),
-                            SizedBox(
-                              height: 15,
-                            ),
-                            MButton(
-                              prependIcon: Icons.search,
-                              active: true,
-                              text: "Advanced Search",
-                              width: 200,
-                              onPressedCallback: () {
-                                setStateSwitcherFunction(
-                                    () {
-                                      notFound = false;
-                                      isAdvanced = true;
-                                    });
-                                foundMovies.clear();
-                                searchMovies(context);
-                              },
-                            ),
-                          ],
-                        ))),
+              // if (!isAdvanced &&
+              //     (foundMovies.isNotEmpty || notFound) &&
+              //     !isLoading)
+              //   MCard(
+              //       marginTop: 15,
+              //       marginLR: 10,
+              //       marginBottom: 10,
+              //       child: Container(
+              //           width: MediaQuery.of(context).size.width,
+              //           child: Column(
+              //             mainAxisAlignment: MainAxisAlignment.center,
+              //             children: [
+              //               Text(
+              //                 "Didn't find what you were looking for?",
+              //                 style: Theme.of(context).textTheme.headline2,
+              //               ),
+              //               SizedBox(
+              //                 height: 15,
+              //               ),
+              //               MButton(
+              //                 prependIcon: Icons.search,
+              //                 active: true,
+              //                 text: "Advanced Search",
+              //                 width: 200,
+              //                 onPressedCallback: () {
+              //                   setStateSwitcherFunction(
+              //                       () {
+              //                         notFound = false;
+              //                         isAdvanced = true;
+              //                       });
+              //                   foundMovies.clear();
+              //                   searchMovies(context);
+              //                 },
+              //               ),
+              //             ],
+              //           ))),
             ],
           ));
     });
@@ -165,28 +165,28 @@ class MSearchDelegate extends SearchDelegate {
           query = '';
         },
       ),
-      Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Advanced',
-            style: Theme.of(context).textTheme.headline3,
-          ),
-          SizedBox(
-              height: 24,
-              child: StatefulBuilder(
-                builder: (BuildContext context, StateSetter setState) {
-                  setStateSwitcherFunction = setState;
-                  return Switch(
-                      value: this.isAdvanced,
-                      onChanged: (bool value) {
-                        setState(() => isAdvanced = !isAdvanced);
-                        searchMovies(context);
-                      });
-                },
-              ))
-        ],
-      ),
+      // Column(
+      //   mainAxisAlignment: MainAxisAlignment.center,
+      //   children: [
+      //     Text(
+      //       'Advanced',
+      //       style: Theme.of(context).textTheme.headline3,
+      //     ),
+      //     SizedBox(
+      //         height: 24,
+      //         child: StatefulBuilder(
+      //           builder: (BuildContext context, StateSetter setState) {
+      //             setStateSwitcherFunction = setState;
+      //             return Switch(
+      //                 value: this.isAdvanced,
+      //                 onChanged: (bool value) {
+      //                   setState(() => isAdvanced = !isAdvanced);
+      //                   searchMovies(context);
+      //                 });
+      //           },
+      //         ))
+      //   ],
+      // ),
       SizedBox(
         width: 10,
       )

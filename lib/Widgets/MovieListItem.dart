@@ -179,9 +179,7 @@ class MovieListItemState extends State<MovieListItem> {
                                   context: context,
                                   builder: (BuildContext context) =>
                                       MovieRateButtons(
-                                        movieRate: movie.movieRate,
-                                        movieId: movie.id,
-                                        movieTitle: movie.title,
+                                        movie: movie,
                                         showTitle: true,
                                         addMargin: false,
                                       ));

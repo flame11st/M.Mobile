@@ -6,8 +6,7 @@ import 'package:mmobile/Widgets/Providers/UserState.dart';
 class ServiceAgent {
   UserState state;
   final baseUrl = "https://mwebapi1.azurewebsites.net/api/";
-
-//    final baseUrl = "https://localhost:44321/";
+   // final baseUrl = "https://localhost:44321/";
 
   checkAuthorization() {
     return get('Identity/CheckAuthorization');
@@ -54,6 +53,15 @@ class ServiceAgent {
         }));
   }
 
+  deleteUser(String userId, String feedback) {
+    return post(
+        'User/DeleteUserWithFeedback',
+        jsonEncode(<String, String>{
+          'Id': userId,
+          'Feedback': feedback,
+        }));
+  }
+
   changeUserPassword(String userId, String oldPassword, String newPassword) {
     return post(
         'User/ChangeUserPassword',
@@ -67,11 +75,6 @@ class ServiceAgent {
   clearUserMovies(String userId) {
     return get('User/ClearUserMovies?userId=$userId');
   }
-
-  deleteUser(String userId) {
-    return get('User/DeleteUser?userId=$userId');
-  }
-
 
   setUserPremiumPurchased(String userId, bool value) {
     return get('User/SetUserPremiumPurchased?userId=$userId&value=$value');

@@ -42,8 +42,8 @@ class MoviesState with ChangeNotifier {
   DateTime dateMin;
   DateTime dateMax;
 
-  var selectedRates = { MovieRate.liked, MovieRate.notLiked };
-  var selectedTypes = { MovieType.movie, MovieType.tv };
+  var selectedRates = {MovieRate.liked, MovieRate.notLiked};
+  var selectedTypes = {MovieType.movie, MovieType.tv};
 
   int viewedLimit = 35;
   int page = 1;
@@ -353,17 +353,22 @@ class MoviesState with ChangeNotifier {
   List<Movie> getViewedMovies() {
     List<Movie> allViewedMovies = getAllViewedMovies();
 
+    refreshDates(allViewedMovies);
+
     if (allViewedMovies.isEmpty) return new List<Movie>();
 
-    var shouldChangeDateTo = dateMax == dateTo;
+    var filteredMovies;
 
-    refreshDates(allViewedMovies, shouldChangeDateTo);
-
-    var filteredMovies = allViewedMovies
-        .where((movie) =>
-            movie.updated.isAfter(dateFrom.subtract(new Duration(seconds: 1))) &&
-            movie.updated.isBefore(dateTo.add(new Duration(days: 1))))
-        .toList();
+    if (isDateFromSelected() || isDateToSelected()) {
+      filteredMovies = allViewedMovies
+          .where((movie) =>
+      movie.updated
+          .isAfter(dateFrom.subtract(new Duration(minutes: 1))) &&
+          movie.updated.isBefore(dateTo.add(new Duration(days: 1))))
+          .toList();
+    } else {
+      filteredMovies = allViewedMovies;
+    }
 
     var showedMoviesCount = viewedLimit * page;
 
@@ -378,23 +383,24 @@ class MoviesState with ChangeNotifier {
     return filteredMovies.take(showedMoviesCount).toList();
   }
 
-  void refreshDates(List<Movie> allViewedMovies, bool shouldChangeDateTo) {
-    if (dateMin == null ||
-        (allViewedMovies.isNotEmpty &&
-            dateFrom.isAfter(allViewedMovies.last.updated)))
+  void refreshDates(List<Movie> allViewedMovies) {
+    if (allViewedMovies.isNotEmpty) {
+      if (dateMin == dateFrom ||
+          dateFrom == null ||
+          dateFrom.isBefore(allViewedMovies.last.updated))
+        dateFrom = allViewedMovies.last.updated;
+
       dateMin = allViewedMovies.last.updated;
 
-    if (dateMax == null ||
-        (allViewedMovies.isNotEmpty &&
-            dateMax.isBefore(
-                allViewedMovies.first.updated.add(new Duration(days: 1))))) {
+      if (dateMax == dateTo ||
+          dateTo == null ||
+          dateTo.isAfter(allViewedMovies.first.updated))
+        dateTo = allViewedMovies.first.updated;
+
       dateMax = allViewedMovies.first.updated;
-
-      if (shouldChangeDateTo) dateTo = dateMax;
+    } else {
+      dateFrom = dateMin = dateMax = dateTo = null;
     }
-
-    if (dateFrom == null) dateFrom = dateMin;
-    if (dateTo == null) dateTo = dateMax;
   }
 
   List<Movie> getAllViewedMovies() {
@@ -423,7 +429,8 @@ class MoviesState with ChangeNotifier {
     if (foundMovies.length == 0) {
       final moviesResponse = await serviceAgent.getMovie(movieId);
       movieToRate = Movie.fromJson(json.decode(moviesResponse.body));
-      movieToRate.updated = DateTime.now();
+      movieToRate.updated =
+          DateTime.now().toUtc();
       userMovies.insert(0, movieToRate);
     } else {
       movieToRate = foundMovies.first;
@@ -441,7 +448,7 @@ class MoviesState with ChangeNotifier {
 
     setRateToMovieInLists(movieId, movieRate);
 
-    notifyListeners();
+    refreshMovies();
 
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
@@ -450,8 +457,7 @@ class MoviesState with ChangeNotifier {
     moviesLists.forEach((element) {
       var movies = element.listMovies.where((element) => element.id == movieId);
 
-      if (movies.length > 0)
-        movies.first.movieRate = rate;
+      if (movies.length > 0) movies.first.movieRate = rate;
     });
   }
 
@@ -480,8 +486,6 @@ class MoviesState with ChangeNotifier {
     // addMovieToList(movieToAdd, watchlistMovies, watchlistKey, 0);
 
     movieToAdd.movieRate = movieRate;
-
-    refreshMovies();
   }
 
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
@@ -495,8 +499,6 @@ class MoviesState with ChangeNotifier {
     }
 
     movieToAdd.movieRate = movieRate;
-
-    refreshMovies();
   }
 
   void addMovieToList(Movie movieToAdd, List<Movie> moviesList,
@@ -535,14 +537,12 @@ class MoviesState with ChangeNotifier {
   logout() async {
     clear();
     clearAllFilters();
-    await clearStorage();
     isMoviesRequested = false;
     currentTabIndex = 0;
     dateTo = null;
     dateMax = null;
     dateFrom = null;
     dateMin = null;
-    moviesLists.clear();
     isMoviesListsRequested = false;
   }
 
@@ -550,7 +550,7 @@ class MoviesState with ChangeNotifier {
     await storage.delete(key: 'movies');
   }
 
-  clear() {
+  clear() async {
     getWatchlistMovies().forEach((element) =>
         removeMovieFromList(element, watchlistMovies, watchlistKey));
     getViewedMovies().forEach(
@@ -559,6 +559,10 @@ class MoviesState with ChangeNotifier {
     watchlistMovies.clear();
     viewedMovies.clear();
     userMovies.clear();
+    cachedUserMovies.clear();
+    setMoviesLists(moviesLists);
+
+    await clearStorage();
   }
 
 //  bool equals(List<Movie> list1, List<Movie> list2) {

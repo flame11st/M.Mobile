@@ -92,7 +92,6 @@ class MovieSearchItem extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: <Widget>[
                             MIconRateButton(
-                              movieTitle: movie.title,
                               color: movie.movieRate == MovieRate.liked
                                   ? Colors.green
                                   : Theme.of(context).primaryColor,
@@ -100,14 +99,13 @@ class MovieSearchItem extends StatelessWidget {
                                   color: movie.movieRate == MovieRate.liked
                                       ? Theme.of(context).primaryColor
                                       : Theme.of(context).hintColor),
-                              movieId: movie.id,
+                              movie: movie,
                               movieRate: movie.movieRate == MovieRate.liked
                                   ? MovieRate.notRated
                                   : MovieRate.liked,
                               width: width,
                             ),
                             MIconRateButton(
-                              movieTitle: movie.title,
                               color: movie.movieRate == MovieRate.notLiked
                                   ? Colors.redAccent
                                   : Theme.of(context).primaryColor,
@@ -115,14 +113,13 @@ class MovieSearchItem extends StatelessWidget {
                                   color: movie.movieRate == MovieRate.notLiked
                                       ? Theme.of(context).primaryColor
                                       : Theme.of(context).hintColor),
-                              movieId: movie.id,
+                              movie: movie,
                               movieRate: movie.movieRate == MovieRate.notLiked
                                   ? MovieRate.notRated
                                   : MovieRate.notLiked,
                               width: width,
                             ),
                             MIconRateButton(
-                              movieTitle: movie.title,
                               color:
                                   movie.movieRate == MovieRate.addedToWatchlist
                                       ? Theme.of(context).accentColor
@@ -132,7 +129,7 @@ class MovieSearchItem extends StatelessWidget {
                                           MovieRate.addedToWatchlist
                                       ? Theme.of(context).primaryColor
                                       : Theme.of(context).hintColor),
-                              movieId: movie.id,
+                              movie: movie,
                               movieRate:
                                   movie.movieRate == MovieRate.addedToWatchlist
                                       ? MovieRate.notRated

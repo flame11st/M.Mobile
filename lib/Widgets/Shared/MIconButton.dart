@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/Shared/MBoxShadow.dart';
 
 class MIconButton extends StatelessWidget {
   final onPressedCallback;
@@ -9,6 +7,7 @@ class MIconButton extends StatelessWidget {
   final color;
   final String hint;
   final bool withBorder;
+  final fontColor;
 
   MIconButton(
       {this.icon,
@@ -16,10 +15,13 @@ class MIconButton extends StatelessWidget {
       this.width,
       this.color,
       this.hint,
-      this.withBorder = true});
+      this.withBorder = true,
+      this.fontColor});
 
   @override
   Widget build(BuildContext context) {
+    var itemsColor = fontColor != null ? fontColor : Theme.of(context).hintColor;
+
     return Material(
         shadowColor: Colors.transparent,
         color: Colors.transparent,
@@ -32,6 +34,7 @@ class MIconButton extends StatelessWidget {
                   Container(
                       width: width != null ? width : 50,
                       decoration: BoxDecoration(
+                        color: color,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.8),
@@ -39,9 +42,6 @@ class MIconButton extends StatelessWidget {
                             blurRadius: 1,
                           ),
                         ],
-                        color: color == null
-                            ? Theme.of(context).primaryColor
-                            : color,
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -57,7 +57,7 @@ class MIconButton extends StatelessWidget {
                   if (hint != null && hint.isNotEmpty)
                     Text(
                       hint,
-                      style: Theme.of(context).textTheme.headline5,
+                      style: TextStyle(fontSize: 15, color: itemsColor),
                     )
                 ],
               ),
@@ -65,8 +65,11 @@ class MIconButton extends StatelessWidget {
               GestureDetector(
                   onTap: () => onPressedCallback(),
                   child: Container(
-                    width: width != null ? width : 58,
-                    color: Colors.transparent,
+                    width: width != null ? width : 55,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                    ),
                     child: Column(
                       children: [
                         icon,
@@ -77,7 +80,7 @@ class MIconButton extends StatelessWidget {
                         if (hint != null && hint.isNotEmpty)
                           Text(
                             hint,
-                            style: Theme.of(context).textTheme.headline5,
+                            style: TextStyle(fontSize: 15, color: itemsColor),
                           )
                       ],
                     ),

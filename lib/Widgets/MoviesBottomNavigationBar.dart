@@ -57,12 +57,15 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               icon: Icon(
                 Icons.movie_filter,
                 color: moviesState.isAnyFilterSelected()
-                    ? Theme.of(context).accentColor
+                    ? Theme.of(context).primaryColor
                     : Theme.of(context).hintColor,
               ),
               color: moviesState.isAnyFilterSelected()
-                  ? Theme.of(context).accentColor
+                  ? Theme.of(context).accentColor.withOpacity(0.9)
                   : Theme.of(context).primaryColor,
+              fontColor: moviesState.isAnyFilterSelected()
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).hintColor,
               onPressedCallback: () async {
                 showModalBottomSheet<void>(
                     backgroundColor: Colors.transparent,
@@ -82,7 +85,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     .push(_createRoute(() => Settings()));
               },
             ),
-            SizedBox(width: 40,),
+            SizedBox(width: 58,),
             MIconButton(
               withBorder: false,
               hint: 'Lists',

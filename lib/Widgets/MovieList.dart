@@ -62,6 +62,55 @@ class MovieListState extends State<MovieList>
     super.dispose();
   }
 
+  getEmptyMoviesCardWidget(String tabName) {
+    return Column(children: [
+      MCard(
+        marginLR: 20,
+        child: Column(
+          children: [
+            Text(
+              "Welcome to MovieDiary!",
+              style: TextStyle(
+                  color: Theme.of(context).accentColor, fontSize: 20,
+              fontWeight: FontWeight.bold),
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            Text(
+              "You didn't add any Movie or TV Series yet. \n\n"
+                  "Please use Search to add items to your $tabName. \n\n"
+                  "Also you can check Lists with popular Movies or TV Series, top rated, etc.\n\n",
+              style: TextStyle(
+                  color: Theme.of(context).hintColor, fontSize: 16),
+            ),
+            MButton(
+              active: true,
+              text: 'Find Movie or TV Show',
+              prependIcon: Icons.search,
+              width: MediaQuery.of(context).size.width - 50,
+              onPressedCallback: () => showSearch(
+                context: context,
+                delegate: MSearchDelegate(),
+              ),
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            MButton(
+              active: true,
+              text: 'Open Lists',
+              prependIcon: Icons.list,
+              width: MediaQuery.of(context).size.width - 50,
+              onPressedCallback: () => Navigator.of(context)
+                  .push(_createRoute(() => MoviesListsPage())),
+            )
+          ],
+        ),
+      )
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (tabController.animation.value != 1 &&
@@ -142,95 +191,23 @@ class MovieListState extends State<MovieList>
                 },
               ),
             if (provider.userMovies.length == 0)
-              Column(children: [
-                MCard(
-                  marginLR: 20,
-                  child: Column(
-                    children: [
-                      Text("You didn't add any Movie or TV Series yet. \n\n"
-                          "Please use Search to add items to watch or already watched. \n\n"
-                          "Also you can check Lists with popular Movies or TV Series, top rated, etc.\n\n",
-                      style: TextStyle(
-                        color: Theme.of(context).hintColor,
-                        fontSize: 16
-                      ),),
-                      MButton(
-                        active: true,
-                        text: 'Find Movie or TV Show',
-                        prependIcon: Icons.search,
-                        width: MediaQuery.of(context).size.width - 50,
-                        onPressedCallback: () => showSearch(
-                          context: context,
-                          delegate: MSearchDelegate(),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      MButton(
-                        active: true,
-                        text: 'Open Lists',
-                        prependIcon: Icons.list,
-                        width: MediaQuery.of(context).size.width - 50,
-                        onPressedCallback: () => Navigator.of(context)
-                            .push(_createRoute(() => MoviesListsPage())),
-                      )
-                    ],
-                  ),
-                )
-              ]),
+              getEmptyMoviesCardWidget("Watchlist"),
             if (provider.userMovies.length == 0)
-              Column(children: [
-                MCard(
-                  marginLR: 20,
-                  child: Column(
-                    children: [
-                      Text("You didn't add any Movie or TV Series yet. \n\n"
-                          "Please use Search to add items to watch or already watched. \n\n"
-                          "Also you can check Lists with popular Movies or TV Series, top rated, etc.\n\n",
-                        style: TextStyle(
-                            color: Theme.of(context).hintColor,
-                            fontSize: 16
-                        ),),
-                      MButton(
-                        active: true,
-                        text: 'Find Movie or TV Show',
-                        prependIcon: Icons.search,
-                        width: MediaQuery.of(context).size.width - 50,
-                        onPressedCallback: () => showSearch(
-                          context: context,
-                          delegate: MSearchDelegate(),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      MButton(
-                        active: true,
-                        text: 'Open Lists',
-                        prependIcon: Icons.list,
-                        width: MediaQuery.of(context).size.width - 50,
-                        onPressedCallback: () => Navigator.of(context)
-                            .push(_createRoute(() => MoviesListsPage())),
-                      )
-                    ],
-                  ),
-                )
-              ]),
+              getEmptyMoviesCardWidget("Viewed list"),
             if (provider.userMovies.length > 0)
-            Container(
-              child: AnimatedList(
-                padding: EdgeInsets.only(bottom: 90),
-                key: provider.viewedListKey,
-                initialItemCount: viewedMovies.length,
-                itemBuilder: (context, index, animation) {
-                  if (viewedMovies.length <= index) return null;
+              Container(
+                child: AnimatedList(
+                  padding: EdgeInsets.only(bottom: 90),
+                  key: provider.viewedListKey,
+                  initialItemCount: viewedMovies.length,
+                  itemBuilder: (context, index, animation) {
+                    if (viewedMovies.length <= index) return null;
 
-                  return provider.buildItem(viewedMovies[index], animation,
-                      isPremium: userState.isPremium, context: context);
-                },
-              ),
-            )
+                    return provider.buildItem(viewedMovies[index], animation,
+                        isPremium: userState.isPremium, context: context);
+                  },
+                ),
+              )
           ],
         ),
       ),

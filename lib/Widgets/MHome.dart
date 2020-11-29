@@ -76,10 +76,10 @@ class MHomeState extends State<MHome> {
     final loaderState = Provider.of<LoaderState>(context);
     MTheme theme = themeState.selectedTheme;
 
-    //  final primaryColor = Color(0xff111111);
-    //  final secondaryColor = Color(0xff212121);
-    //  final additionalColor = Color(0xff67749c);
-    //  final fontsColor = Color(0xffe8ded2);
+    //  final primaryColor = Color(0xff206a5d);
+    //  final secondaryColor = Color(0xff307a6d);
+    //  final additionalColor = Color(0xfff1f1e8);
+    //  final fontsColor = Color(0xffbfdcae);
     // MTheme theme = new MTheme(
     //   brightness: Brightness.light,
     //     colorTheme: MColorTheme(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
+import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/Providers/MoviesState.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
@@ -9,24 +10,22 @@ import 'MSnackBar.dart';
 
 class MIconRateButton extends StatelessWidget {
   final icon;
-  final int movieRate;
-  final String movieId;
-  final String movieTitle;
   final serviceAgent = new ServiceAgent();
   final width;
   final color;
   final bool fromSearch;
   final String hint;
+  final Movie movie;
+  final int movieRate;
 
   MIconRateButton(
       {this.icon,
-      this.movieRate,
-      this.movieId,
       this.width,
       this.color,
-      this.movieTitle,
       this.fromSearch = false,
-      this.hint});
+      this.hint,
+      this.movie,
+      this.movieRate});
 
   rateMovie(String movieId, int movieRate, MoviesState moviesState,
       UserState userState) async {
@@ -44,7 +43,7 @@ class MIconRateButton extends StatelessWidget {
     var isViewedMovie = false;
 
     final movies =
-        moviesState.userMovies.where((element) => element.id == movieId);
+        moviesState.userMovies.where((element) => element.id == movie.id);
 
     if (movies.length > 0) {
       action = 'moved';
@@ -53,16 +52,17 @@ class MIconRateButton extends StatelessWidget {
           movies.first.movieRate == MovieRate.notLiked) isViewedMovie = true;
     }
 
-    var text = '"$movieTitle" $action to your Watchlist!';
+    var text = '"${movie.title}" $action to your Watchlist!';
 
     if (movieRate == MovieRate.notRated)
-      text = '"$movieTitle" removed from your movies!';
+      text = '"${movie.title}" removed from your movies!';
 
-    if (movieRate == MovieRate.liked || movieRate == MovieRate.notLiked) {
+    if (movieRate == MovieRate.liked ||
+        movieRate == MovieRate.notLiked) {
       if (isViewedMovie) {
-        text = '"$movieTitle" rate changed!';
+        text = '"${movie.title}" rate changed!';
       } else {
-        text = '"$movieTitle" $action to your viewed movies!';
+        text = '"${movie.title}" $action to your viewed movies!';
       }
     }
 
@@ -84,7 +84,7 @@ class MIconRateButton extends StatelessWidget {
 
         await new Future.delayed(const Duration(milliseconds: 300));
 
-        rateMovie(movieId, movieRate, moviesState, userState);
+        rateMovie(movie.id, movieRate, moviesState, userState);
       },
     );
   }
