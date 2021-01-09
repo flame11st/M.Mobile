@@ -115,7 +115,7 @@ class MovieListState extends State<MovieList>
   Widget build(BuildContext context) {
     if (tabController.animation.value != 1 &&
         tabController.animation.value != 0) {
-      final targetIndex = tabController.previousIndex == 0 ? 1 : 0;
+      final targetIndex = tabController.animation.value.round();
 
       tabController.animateTo(targetIndex);
     }

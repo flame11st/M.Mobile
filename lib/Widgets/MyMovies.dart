@@ -36,6 +36,14 @@ class MyMoviesState extends State<MyMovies> {
     moviesState.setInitialData();
     moviesState.isMoviesRequested = true;
 
+    if (userState.isIncognitoMode) {
+      if (loaderState.isLoaderVisible) {
+        loaderState.setIsLoaderVisible(false);
+      }
+
+      return;
+    }
+
     serviceAgent.state = userState;
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
@@ -79,15 +87,34 @@ class MyMoviesState extends State<MyMovies> {
 
   setUserInfo() async {
     final userState = Provider.of<UserState>(context);
+    final moviesState = Provider.of<MoviesState>(context);
 
     if (userState.userRequested) return;
+
     userState.userRequested = true;
 
-    serviceAgent.state = userState;
-    final userInfoResponse = await serviceAgent.getUserInfo(userState.userId);
-    final user = User.fromJson(json.decode(userInfoResponse.body));
+    if (userState.userId != null && userState.userId.isNotEmpty) {
+      serviceAgent.state = userState;
 
-    userState.setUser(user);
+      if (userState.isIncognitoMode) {
+        userState.isIncognitoMode = false;
+
+        var movies = moviesState.userMovies;
+
+        movies.forEach((movie) async {
+          await serviceAgent.rateMovie(movie.id, userState.userId, movie.movieRate);
+        });
+
+        if (userState.premiumPurchasedIncognito) {
+          await serviceAgent.setUserPremiumPurchased(userState.userId, true);
+        }
+      }
+
+      final userInfoResponse = await serviceAgent.getUserInfo(userState.userId);
+      final user = User.fromJson(json.decode(userInfoResponse.body));
+
+      userState.setUser(user);
+    }
   }
 
   @override

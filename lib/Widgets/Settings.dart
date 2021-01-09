@@ -211,33 +211,82 @@ class SettingsState extends State<Settings> {
         ),
         Row(
           children: <Widget>[
-            MaterialButton(
-              child: Row(
-                children: <Widget>[
-                  Text(
-                    'Sign out',
-                    style: Theme.of(context).textTheme.headline5,
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  new Icon(
-                    Entypo.logout,
-                    size: 25,
-                    color: Theme.of(context).hintColor,
-                  )
-                ],
+            if(!userState.isIncognitoMode)
+              MaterialButton(
+                child: Row(
+                  children: <Widget>[
+                    Text(
+                      'Sign out',
+                      style: Theme.of(context).textTheme.headline5,
+                    ),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    new Icon(
+                      Entypo.logout,
+                      size: 25,
+                      color: Theme.of(context).hintColor,
+                    )
+                  ],
+                ),
+                onPressed: () {
+                  userState.logout();
+                  moviesState.logout();
+                  themeState.logout();
+                  Navigator.of(context).pop();
+                },
               ),
-              onPressed: () {
-                userState.logout();
-                moviesState.logout();
-                themeState.logout();
-                Navigator.of(context).pop();
-              },
-            )
+            // if(userState.isIncognitoMode)
+            //   MaterialButton(
+            //     child: Row(
+            //       children: <Widget>[
+            //         Text(
+            //           'Sign in',
+            //           style: Theme.of(context).textTheme.headline5,
+            //         ),
+            //         SizedBox(
+            //           width: 10,
+            //         ),
+            //         new Icon(
+            //           Entypo.login,
+            //           size: 25,
+            //           color: Theme.of(context).hintColor,
+            //         )
+            //       ],
+            //     ),
+            //     onPressed: () {
+            //       userState.logout();
+            //
+            //       Navigator.of(context).pop();
+            //     },
+            //   ),
           ],
         ),
       ],
+    );
+
+    final incognitoModeCard = MCard(
+      child: Column(
+        children: [
+          Text(
+            "You are not signed in. Your scores don't affect the rating of movies",
+            style: Theme.of(context).textTheme.headline3,
+          ),
+          SizedBox(height: 20,),
+          MButton(
+            width: MediaQuery.of(context).size.width,
+            prependIcon: Entypo.login,
+            active: true,
+            text: 'Sign in',
+            onPressedCallback: () {
+              userState.logout();
+              moviesState.isMoviesRequested = false;
+
+              Navigator.of(context).pop();
+            },
+          )
+        ],
+      )
     );
 
     final nameField = MCard(
@@ -346,7 +395,9 @@ class SettingsState extends State<Settings> {
                           text: 'Yes, clear all',
                           parentContext: context,
                           onPressedCallback: () {
-                            clearUserMovies(userState.userId);
+                            if (!userState.isIncognitoMode) {
+                              clearUserMovies(userState.userId);
+                            }
                             moviesState.clear();
 
                             Navigator.of(context1).pop();
@@ -534,12 +585,13 @@ class SettingsState extends State<Settings> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    nameField,
-                    if (!userState.isSignedInWithGoogle) emailField,
+                    if (!userState.isIncognitoMode) nameField,
+                    if (!userState.isSignedInWithGoogle && !userState.isIncognitoMode) emailField,
                     changeThemeField,
                     userMoviesCountField,
-                    if (!userState.isSignedInWithGoogle) changePasswordField,
-                    removeUserField
+                    if (!userState.isSignedInWithGoogle && !userState.isIncognitoMode) changePasswordField,
+                    if (!userState.isIncognitoMode) removeUserField,
+                    if (userState.isIncognitoMode) incognitoModeCard,
                   ],
                 )),
           ),

@@ -49,6 +49,12 @@ class LoginState extends State<Login> {
     super.dispose();
   }
 
+  proceedIncognitoMode() {
+    final userState = Provider.of<UserState>(context);
+
+    userState.proceedIncognitoMode();
+  }
+
   signInWithGoogle() async {
     final loaderState = Provider.of<LoaderState>(context);
     loaderState.setIsLoaderVisible(true);
@@ -174,6 +180,15 @@ class LoginState extends State<Login> {
       prependImage: AssetImage("Assets/google_logo.png"),
     );
 
+    final incognitoButton = MButton(
+      text: 'Skip Authorization',
+      onPressedCallback: () => proceedIncognitoMode(),
+      active: true,
+      width: MediaQuery.of(context).size.width,
+      height: 50,
+      prependIcon: FontAwesome5.user_secret,
+    );
+
     final signUpButton = MButton(
       text: 'Sign up',
       onPressedCallback: () {
@@ -207,9 +222,6 @@ class LoginState extends State<Login> {
                       style: TextStyle(
                           fontSize: 40, color: Theme.of(context).accentColor),
                     ),
-                    SizedBox(
-                      height: 10,
-                    ),
                     MCard(
                       child: Container(
                           child: Form(
@@ -226,13 +238,17 @@ class LoginState extends State<Login> {
                       )),
                     ),
                     SizedBox(
-                      height: 40,
-                    ),
-                    googleLoginButton,
-                    SizedBox(
                       height: 30,
                     ),
                     signUpButton,
+                    SizedBox(
+                      height: 20,
+                    ),
+                    googleLoginButton,
+                    SizedBox(
+                      height: 20,
+                    ),
+                    incognitoButton,
                   ],
                 )),
           ),

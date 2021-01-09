@@ -36,8 +36,11 @@ class MHomeState extends State<MHome> {
       InAppPurchaseConnection.instance.completePurchase(purchases.first);
 
       userState.setPremium(true);
-      serviceAgent.state = userState;
-      serviceAgent.setUserPremiumPurchased(userState.userId, true);
+
+      if (!userState.isIncognitoMode) {
+        serviceAgent.state = userState;
+        serviceAgent.setUserPremiumPurchased(userState.userId, true);
+      }
 
       MSnackBar.showSnackBar("Premium features successfully unlocked", true,
           MyGlobals.scaffoldPremiumKey.currentContext);
@@ -105,7 +108,7 @@ class MHomeState extends State<MHome> {
     //     ));
 
     Widget widgetToReturn = userState.isAppLoaded
-        ? userState.isUserAuthorized ? MyMovies() : Login()
+        ? userState.isUserAuthorizedOrInIncognitoMode ? MyMovies() : Login()
         : Text('');
 
     return MaterialApp(

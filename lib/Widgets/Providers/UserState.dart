@@ -15,7 +15,7 @@ class UserState with ChangeNotifier {
   final storage = new FlutterSecureStorage();
   final serviceAgent = new ServiceAgent();
 
-  bool isUserAuthorized = false;
+  bool isUserAuthorizedOrInIncognitoMode = false;
   bool isAppLoaded = false;
   bool isSignedInWithGoogle = false;
   String userName = '';
@@ -26,6 +26,8 @@ class UserState with ChangeNotifier {
   int androidVersion = 0;
   bool userRequested = false;
   bool showTutorial = false;
+  bool isIncognitoMode = false;
+  bool premiumPurchasedIncognito = false;
 
   void setInitialData() async {
     var storedToken;
@@ -34,21 +36,37 @@ class UserState with ChangeNotifier {
     var storedUserName;
     var storedSignedInWithGoogle;
     var storedUser;
+    var storedIsIncognitoMode;
+    var storedPremiumPurchasedIncognito;
 
     if (Platform.isAndroid) {
       var androidInfo = await DeviceInfoPlugin().androidInfo;
-      androidVersion = int.parse(androidInfo.version.release.substring(0,1));
+      androidVersion = int.parse(androidInfo.version.release.substring(0, 1));
     }
 
-    try{
+    try {
       storedToken = await storage.read(key: 'token');
       storedRefreshToken = await storage.read(key: 'refreshToken');
       storedUserId = await storage.read(key: 'userId');
       storedUserName = await storage.read(key: 'userName');
-      storedSignedInWithGoogle = await storage.read(key: 'isSignedInWithGoogle');
+      storedSignedInWithGoogle =
+          await storage.read(key: 'isSignedInWithGoogle');
+      storedIsIncognitoMode = await storage.read(key: 'isIncognitoMode');
+      storedPremiumPurchasedIncognito = await storage.read(key: 'premiumPurchasedIncognito');
       storedUser = await storage.read(key: 'user');
-    } catch(on, ex) {
+    } catch (on, ex) {
       await clearStorage();
+    }
+
+    if (storedIsIncognitoMode == "true") {
+      this.isIncognitoMode = true;
+      this.isUserAuthorizedOrInIncognitoMode = true;
+      this.isAppLoaded = true;
+      this.premiumPurchasedIncognito = storedPremiumPurchasedIncognito == "true";
+
+      notifyListeners();
+
+      return;
     }
 
     this.token = storedToken;
@@ -65,7 +83,7 @@ class UserState with ChangeNotifier {
     serviceAgent.state = this;
     var authorizationResponse = await serviceAgent.checkAuthorization();
     if (authorizationResponse.statusCode == 200) {
-      isUserAuthorized = true;
+      isUserAuthorizedOrInIncognitoMode = true;
     }
 
     isAppLoaded = true;
@@ -74,7 +92,9 @@ class UserState with ChangeNotifier {
   }
 
   get isPremium {
-    var result = user != null && user.premiumPurchased != null && user.premiumPurchased;
+    var result = user != null
+        ? user.premiumPurchased != null && user.premiumPurchased
+        : premiumPurchasedIncognito;
 
     return result;
   }
@@ -87,9 +107,16 @@ class UserState with ChangeNotifier {
   }
 
   Future<void> setPremium(bool value) async {
-    user.premiumPurchased = value;
+    if (isIncognitoMode) {
+      premiumPurchasedIncognito = true;
 
-    await storage.write(key: "user", value: jsonEncode(user));
+      await storage.write(key: "premiumPurchasedIncognito", value: premiumPurchasedIncognito.toString());
+    } else {
+      user.premiumPurchased = value;
+
+      await storage.write(key: "user", value: jsonEncode(user));
+    }
+
     notifyListeners();
   }
 
@@ -99,19 +126,30 @@ class UserState with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> proceedIncognitoMode() async {
+    isIncognitoMode = true;
+    isUserAuthorizedOrInIncognitoMode = true;
+
+    notifyListeners();
+
+    await storage.write(
+        key: 'isIncognitoMode', value: isIncognitoMode.toString());
+  }
+
   processLoginResponse(String response, bool isSignedInWithGoogle) {
     var responseJson = json.decode(response);
     var accessToken = responseJson['access_token'];
     var refreshToken = responseJson['refresh_token'];
     var userId = responseJson['userId'];
     var userName = responseJson['username'];
-    var showTutorial = false;//responseJson['showTutorial'];
+    var showTutorial = false; //responseJson['showTutorial'];
 
-    setInitialUserData(accessToken, refreshToken, userId, userName, isSignedInWithGoogle, showTutorial);
+    setInitialUserData(accessToken, refreshToken, userId, userName,
+        isSignedInWithGoogle, showTutorial);
   }
 
   logout() async {
-    isUserAuthorized = false;
+    isUserAuthorizedOrInIncognitoMode = false;
 
     notifyListeners();
 
@@ -129,6 +167,7 @@ class UserState with ChangeNotifier {
     await storage.delete(key: 'userName');
     await storage.delete(key: 'isSignedInWithGoogle');
     await storage.delete(key: 'user');
+    await storage.delete(key: 'isIncognitoMode');
   }
 
   Future<void> setTokens(String accessToken, String refreshToken) async {
@@ -139,13 +178,18 @@ class UserState with ChangeNotifier {
     await storage.write(key: 'refreshToken', value: refreshToken);
   }
 
-  Future<void> setInitialUserData(String token, String refreshToken,
-      String userId, String userName, bool isSignedInWithGoogle, bool showTutorial) async {
+  Future<void> setInitialUserData(
+      String token,
+      String refreshToken,
+      String userId,
+      String userName,
+      bool isSignedInWithGoogle,
+      bool showTutorial) async {
     this.token = token;
     this.refreshToken = refreshToken;
     this.userId = userId;
     this.userName = userName;
-    this.isUserAuthorized = true;
+    this.isUserAuthorizedOrInIncognitoMode = true;
     this.isSignedInWithGoogle = isSignedInWithGoogle;
     this.showTutorial = showTutorial;
 
@@ -155,7 +199,8 @@ class UserState with ChangeNotifier {
     await storage.write(key: 'userId', value: userId);
     await storage.write(key: 'userName', value: userName);
     await storage.write(key: 'refreshToken', value: refreshToken);
-    await storage.write(key: 'isSignedInWithGoogle', value: isSignedInWithGoogle.toString());
+    await storage.write(
+        key: 'isSignedInWithGoogle', value: isSignedInWithGoogle.toString());
   }
 
   changeShowTutorialField(bool value) {
