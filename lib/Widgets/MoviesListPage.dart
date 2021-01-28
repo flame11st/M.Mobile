@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:provider/provider.dart';
 import 'MovieListItem.dart';
+import 'Providers/MoviesState.dart';
 
 class MoviesListPage extends StatefulWidget {
   final MoviesList moviesList;
@@ -29,14 +31,30 @@ class MovieListPageState extends State<MoviesListPage> {
         child: Column(
           children: [
             MovieListItem(
-                movie: movie
+              movie: movie,
             )
           ],
         ));
   }
 
+  // Widget buildItem(Movie movie, Animation animation, String imageUrl) {
+  //   return SizeTransition(
+  //       key: ObjectKey(movie),
+  //       sizeFactor: animation,
+  //       child: Column(
+  //         children: [
+  //           MovieListItem(
+  //             movie: movie,
+  //             // imageUrl: imageUrl,
+  //           )
+  //         ],
+  //       ));
+  // }
+
   @override
   Widget build(BuildContext context) {
+    final moviesState = Provider.of<MoviesState>(context);
+
     MyGlobals.scaffoldMoviesListsKey = new GlobalKey();
     GlobalKey<AnimatedListState> key = GlobalKey<AnimatedListState>();
 
@@ -78,6 +96,8 @@ class MovieListPageState extends State<MoviesListPage> {
               if (moviesList.listMovies.length <= index) return null;
 
               return buildItem(moviesList.listMovies[index], animation);
+              // return buildItem(moviesList.listMovies[index], animation,
+              //     moviesState.imageBaseUrl);
             },
           ),
         ));

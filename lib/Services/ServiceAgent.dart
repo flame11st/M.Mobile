@@ -5,8 +5,25 @@ import 'package:mmobile/Widgets/Providers/UserState.dart';
 
 class ServiceAgent {
   UserState state;
-  final baseUrl = "https://mwebapi1.azurewebsites.net/api/";
+  String baseUrl = "";
+  final functionUri = "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
    // final baseUrl = "https://localhost:44321/";
+
+  ServiceAgent() {
+    setBaseUrl();
+  }
+
+  setBaseUrl() async {
+    var url = await getBaseUrl();
+
+    this.baseUrl = url;
+  }
+
+  getBaseUrl() async {
+    var response = await http.get(functionUri);
+
+    return response.body + "/api/";
+  }
 
   checkAuthorization() {
     return get('Identity/CheckAuthorization');
@@ -89,7 +106,7 @@ class ServiceAgent {
   }
 
   getMoviesLists() {
-    return get('movies/GetMoviesLists');
+    return get('movies/GetMoviesListsStringValue');
   }
 
   search(String query) {
@@ -111,12 +128,18 @@ class ServiceAgent {
   }
 
   get(String uri) async {
+    var baseUri = baseUrl;
+
+    if (baseUri == "") {
+      baseUri = await getBaseUrl();
+    }
+
     Map<String, String> headers = {};
     if (state != null)
       headers.putIfAbsent(
           HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
-    var response = await http.get(baseUrl + uri, headers: headers);
+    var response = await http.get(baseUri + uri, headers: headers);
 
     if (response.statusCode == 401) {
       headers.clear();
@@ -126,7 +149,7 @@ class ServiceAgent {
           headers.putIfAbsent(
               HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
-        response = await http.get(baseUrl + uri, headers: headers);
+        response = await http.get(baseUri + uri, headers: headers);
       }
     }
 
@@ -134,19 +157,25 @@ class ServiceAgent {
   }
 
   post(String uri, postData) async {
+    var baseUri = baseUrl;
+
+    if (baseUri == "") {
+      baseUri = await getBaseUrl();
+    }
+
     var headers = {'Content-Type': 'application/json; charset=UTF-8'};
     if (state != null)
       headers.putIfAbsent(
           HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
     var response =
-        await http.post(baseUrl + uri, body: postData, headers: headers);
+        await http.post(baseUri + uri, body: postData, headers: headers);
 
     if (response.statusCode == 401) {
       bool isTokenRefreshed = await refreshAccessToken();
       if (isTokenRefreshed) {
         response = await http
-            .post(baseUrl + uri, body: postData, headers: <String, String>{
+            .post(baseUri + uri, body: postData, headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
           HttpHeaders.authorizationHeader: "Bearer ${state.token}"
         });
@@ -157,8 +186,14 @@ class ServiceAgent {
   }
 
   Future<bool> refreshAccessToken() async {
+    var baseUri = baseUrl;
+
+    if (baseUri == "") {
+      baseUri = await getBaseUrl();
+    }
+
     var response = await http.get(
-        baseUrl + 'Identity/RefreshTokenMobile?token=${state.refreshToken}');
+        baseUri + 'Identity/RefreshTokenMobile?token=${state.refreshToken}');
 
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);

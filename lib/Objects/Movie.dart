@@ -93,6 +93,8 @@ class Movie {
     var updated =
         json['updated'] == null ? null : DateTime.parse(json['updated']);
 
+    var imdbRate = json['imdbRate'] > 10 ? json['imdbRate'] / 10 : json['imdbRate'] / 1;
+
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];
     //
@@ -122,7 +124,7 @@ class Movie {
         seasonsCount: json['seasonsCount'],
         averageTimeOfEpisode: json['averageTimeOfEpisode'],
         inProduction: json['inProduction'],
-        imdbRate: json['imdbRate'] / 10,
+        imdbRate: imdbRate,
         imdbVotes: json['imdbVotes'],
         updated: updated);
   }
@@ -146,7 +148,7 @@ class Movie {
         'seasonsCount': seasonsCount,
         'averageTimeOfEpisode': averageTimeOfEpisode,
         'inProduction': inProduction,
-        'imdbRate': imdbRate * 10,
+        'imdbRate': imdbRate,
         'imdbVotes': imdbVotes,
         'updated': updated.toString()
       };

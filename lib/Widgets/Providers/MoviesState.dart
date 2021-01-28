@@ -12,6 +12,7 @@ import 'package:mmobile/Widgets/Shared/MButton.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
 import 'package:collection/collection.dart';
+import 'package:http/http.dart' as http;
 
 import '../Premium.dart';
 
@@ -19,6 +20,7 @@ class MoviesState with ChangeNotifier {
   MoviesState() {
     setCachedUserMovies();
     setCachedMoviesLists();
+    // setBaseUrl();
   }
 
   final serviceAgent = new ServiceAgent();
@@ -38,6 +40,7 @@ class MoviesState with ChangeNotifier {
   DateTime dateTo;
   String selectedGenre;
   int currentTabIndex = 0;
+  String imageBaseUrl = "";
 
   DateTime dateMin;
   DateTime dateMax;
@@ -53,6 +56,17 @@ class MoviesState with ChangeNotifier {
   bool isMoviesRequested = false;
   bool isMoviesListsRequested = false;
   bool isCachedMoviesLoaded = false;
+
+  final functionUri = "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
+
+  setBaseUrl() async {
+    if (imageBaseUrl != "") return;
+
+    var response = await http.get(functionUri);
+    imageBaseUrl = response.body + "/images";
+
+    notifyListeners();
+  }
 
   setCachedUserMovies() async {
     var storedMovies;
@@ -610,6 +624,7 @@ class MoviesState with ChangeNotifier {
         child: Column(
           children: [
             MovieListItem(movie: movie),
+            // MovieListItem(movie: movie, imageUrl: imageBaseUrl,),
             if (currentLatestMovie == movie)
               SizedBox(
                 height: 15,

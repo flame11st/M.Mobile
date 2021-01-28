@@ -14,14 +14,15 @@ import 'MoviesBottomNavigationBarExpanded.dart';
 class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
   final bool fromSearch;
+  final String imageUrl;
 
   const MovieListItemExpanded(
-      {Key key, this.movie, this.fromSearch = false})
+      {Key key, this.movie, this.fromSearch = false, this.imageUrl})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemExpandedState(movie, fromSearch);
+    return MovieListItemExpandedState(movie, fromSearch, imageUrl);
   }
 }
 
@@ -33,9 +34,10 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       'https://moviediarystorage.blob.core.windows.net/movies';
 
   MovieListItemExpandedState(
-      Movie movie, bool fromSearch) {
+      Movie movie, bool fromSearch, String url) {
     this.movie = movie;
     this.fromSearch = fromSearch;
+    // this.imageBaseUrl = url;
   }
 
   getProgressColor() {

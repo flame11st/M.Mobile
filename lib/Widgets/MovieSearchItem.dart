@@ -13,6 +13,7 @@ class MovieSearchItem extends StatelessWidget {
   final Movie movie;
   final imageBaseUrl = 'https://moviediarystorage.blob.core.windows.net/movies';
 
+  // const MovieSearchItem({Key key, this.movie, this.imageBaseUrl}) : super(key: key);
   const MovieSearchItem({Key key, this.movie}) : super(key: key);
   final iconSize = 20.0;
   final width = 45.0;
@@ -22,6 +23,7 @@ class MovieSearchItem extends StatelessWidget {
         builder: (ctx) => MovieListItemExpanded(
               movie: movie,
               fromSearch: true,
+              // imageUrl: imageBaseUrl,
             )));
   }
 

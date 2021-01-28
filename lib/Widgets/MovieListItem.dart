@@ -7,8 +7,6 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
-import 'package:provider/provider.dart';
-import 'Providers/MoviesState.dart';
 import 'Shared/MBoxShadow.dart';
 import 'Shared/MCard.dart';
 import 'Shared/MovieRateButtons.dart';
@@ -16,24 +14,27 @@ import 'package:http/http.dart' as http;
 
 class MovieListItem extends StatefulWidget {
   final Movie movie;
+  final String imageUrl;
 
-  const MovieListItem({Key key, this.movie})
+  const MovieListItem({Key key, this.movie, this.imageUrl})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemState(movie);
+    return MovieListItemState(movie, imageUrl);
   }
 }
 
 class MovieListItemState extends State<MovieListItem> {
   bool expanded = false;
-  Movie movie;
-  String imageBaseUrl =
-      'https://moviediarystorage.blob.core.windows.net/movies';
+  String imageBaseUrl = "https://moviediarystorage.blob.core.windows.net/movies";
+  bool imageChecked = false;
 
-  MovieListItemState(Movie movie) {
+  Movie movie;
+
+  MovieListItemState(Movie movie, String url) {
     this.movie = movie;
+    // this.imageBaseUrl = url;
   }
 
   checkImage(String imageUrl) async {
@@ -44,16 +45,19 @@ class MovieListItemState extends State<MovieListItem> {
 
       await serviceAgent.reloadMoviePoster(movie.id);
     }
+
+    imageChecked = true;
   }
 
   Widget build(BuildContext context) {
-    final moviesState = Provider.of<MoviesState>(context);
-
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     IconData icon;
 
-    checkImage(imageUrl);
+    if (imageChecked == false) {
+      checkImage(imageUrl);
+    }
+
     switch (movie.movieRate) {
       case MovieRate.addedToWatchlist:
         {
@@ -98,12 +102,12 @@ class MovieListItemState extends State<MovieListItem> {
                           borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(4),
                               bottomLeft: Radius.circular(4)),
-                          child: CachedNetworkImage(
+                          child: imageBaseUrl != "" ? CachedNetworkImage(
                             imageUrl: imageBaseUrl + imageUrl,
                             height: 90,
                             fit: BoxFit.fill,
                             width: 60,
-                          ),
+                          ) : SizedBox(height: 90, width: 60,),
                         ),
                         Expanded(
                           child: Container(
@@ -195,7 +199,7 @@ class MovieListItemState extends State<MovieListItem> {
   showFullMovie(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute(
         builder: (ctx) => MovieListItemExpanded(
-              movie: movie,
+              movie: movie, imageUrl: imageBaseUrl,
             )));
   }
 }

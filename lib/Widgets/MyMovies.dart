@@ -78,7 +78,8 @@ class MyMoviesState extends State<MyMovies> {
 
     if (iterableMoviesLists.length != 0) {
       List<MoviesList> moviesLists = iterableMoviesLists.map((model) {
-        return MoviesList.fromJson(model);
+        var list = json.decode(model);
+        return MoviesList.fromJson(list);
       }).toList();
 
       moviesState.setInitialMoviesLists(moviesLists);
@@ -120,6 +121,11 @@ class MyMoviesState extends State<MyMovies> {
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
+
+    // if (moviesState.imageBaseUrl == "") {
+    //   return SizedBox();
+    // }
+
     final loaderState = Provider.of<LoaderState>(context);
     final userState = Provider.of<UserState>(context);
 

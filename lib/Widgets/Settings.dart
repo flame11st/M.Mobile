@@ -1,3 +1,4 @@
+import 'package:app_review/app_review.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/User.dart';
@@ -44,8 +45,18 @@ class SettingsState extends State<Settings> {
   bool changePasswordButtonActive = false;
   bool showRemoveUserButtons = false;
   bool showClearMoviesButtons = false;
+  String output;
 
   int userMoviesCount = 0;
+
+  // testReview() {
+  //   AppReview.storeListing.then((String onValue) {
+  //     setState(() {
+  //       output = onValue;
+  //     });
+  //     print(onValue);
+  //   });
+  // }
 
   setNameButtonActive() {
     var nameButtonActive = _formNameKey.currentState != null &&

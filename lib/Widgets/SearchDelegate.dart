@@ -32,6 +32,7 @@ class MSearchDelegate extends SearchDelegate {
     return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
       this.setStateFunction = setState;
+      final moviesState = Provider.of<MoviesState>(context);
 
       if (query == '') {
         oldQuery = '';
@@ -56,11 +57,12 @@ class MSearchDelegate extends SearchDelegate {
                     marginLR: 10,
                     child: Container(
                       child: Text(
-                        "You can search in English, French, Spanish, German and Russian languages."
+                        "You can search in English, German and Russian languages."
                         "${isAdvanced ? "\n\nAdvanced search may take longer, but will find anything you want" : ""}",
                         style: Theme.of(context).textTheme.headline5,
                       ),
                     )),
+              // for (final movie in foundMovies) MovieSearchItem(movie: movie, imageBaseUrl: moviesState.imageBaseUrl),
               for (final movie in foundMovies) MovieSearchItem(movie: movie),
               // if (!isAdvanced &&
               //     (foundMovies.isNotEmpty || notFound) &&
