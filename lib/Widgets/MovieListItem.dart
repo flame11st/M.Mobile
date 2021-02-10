@@ -7,6 +7,8 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
+import 'package:provider/provider.dart';
+import 'Providers/MoviesState.dart';
 import 'Shared/MBoxShadow.dart';
 import 'Shared/MCard.dart';
 import 'Shared/MovieRateButtons.dart';
@@ -50,6 +52,9 @@ class MovieListItemState extends State<MovieListItem> {
   }
 
   Widget build(BuildContext context) {
+    //Don't remove this not used state declaration. It is needed for lists update.
+    final moviesState = Provider.of<MoviesState>(context);
+
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     IconData icon;

@@ -53,8 +53,6 @@ class MovieListPageState extends State<MoviesListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final moviesState = Provider.of<MoviesState>(context);
-
     MyGlobals.scaffoldMoviesListsKey = new GlobalKey();
     GlobalKey<AnimatedListState> key = GlobalKey<AnimatedListState>();
 

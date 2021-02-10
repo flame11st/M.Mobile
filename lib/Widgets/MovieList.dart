@@ -1,3 +1,5 @@
+import 'package:app_review/app_review.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
@@ -62,6 +64,72 @@ class MovieListState extends State<MovieList>
     super.dispose();
   }
 
+  requestReview() async {
+    final userState = Provider.of<UserState>(context);
+    userState.shouldRequestReview = false;
+
+    await userState.setAppReviewRequested(true);
+    await new Future.delayed(const Duration(milliseconds: 2000));
+
+    showDialog<String>(
+        context: context,
+        builder: (BuildContext context1) => AlertDialog(
+              backgroundColor: Theme.of(context).primaryColor,
+              contentTextStyle: Theme.of(context).textTheme.headline5,
+              content: Container(
+                height: 400,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          'Enjoying MovieDiary?',
+                          style: TextStyle(
+                              fontSize: 23, color: Theme.of(context).accentColor),
+                        ),
+                        SizedBox(height: 10,),
+                        Text(
+                          'Your reviews keep our small team motivated to make MovieDiary better.\n\n'
+                              '5 star rating makes us really happy',
+                          style: TextStyle(fontSize: 17),textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                    Image(
+                      image: AssetImage("Assets/5-star-image.png"),
+                      width: MediaQuery.of(context).size.width,
+                      height: 200,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        MButton(
+                          width: (MediaQuery.of(context).size.width - 150) / 2,
+                          active: true,
+                          text: 'Rate MovieDiary',
+                          parentContext: context,
+                          onPressedCallback: () {
+                            Navigator.of(context1).pop();
+
+                            AppReview.requestReview.then((onValue) {});
+                          },
+                        ),
+                        MButton(
+                          width: (MediaQuery.of(context).size.width - 150) / 2,
+                          active: true,
+                          text: 'Maybe later',
+                          parentContext: context,
+                          onPressedCallback: () => Navigator.of(context1).pop(),
+                        )
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ));
+  }
+
   getEmptyMoviesCardWidget(String tabName) {
     return Column(children: [
       MCard(
@@ -71,18 +139,19 @@ class MovieListState extends State<MovieList>
             Text(
               "Welcome to MovieDiary!",
               style: TextStyle(
-                  color: Theme.of(context).accentColor, fontSize: 20,
-              fontWeight: FontWeight.bold),
+                  color: Theme.of(context).accentColor,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
             SizedBox(
               height: 20,
             ),
             Text(
               "You didn't add any Movie or TV Series yet. \n\n"
-                  "Please use Search to add items to your $tabName. \n\n"
-                  "Also you can check Lists with popular Movies or TV Series, top rated, etc.\n\n",
-              style: TextStyle(
-                  color: Theme.of(context).hintColor, fontSize: 16),
+              "Please use Search to add items to your $tabName. \n\n"
+              "Also you can check Lists with popular Movies or TV Series, top rated, etc.\n\n",
+              style:
+                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
             ),
             MButton(
               active: true,
@@ -104,6 +173,16 @@ class MovieListState extends State<MovieList>
               width: MediaQuery.of(context).size.width - 50,
               onPressedCallback: () => Navigator.of(context)
                   .push(_createRoute(() => MoviesListsPage())),
+            ),
+            SizedBox(
+              height: 30,
+            ),
+            Text(
+              "P.S. With this app you can't watch tv shows or movies!",
+              style: TextStyle(
+                  color: Theme.of(context).accentColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold),
             )
           ],
         ),
@@ -120,11 +199,17 @@ class MovieListState extends State<MovieList>
       tabController.animateTo(targetIndex);
     }
 
-    final provider = Provider.of<MoviesState>(context);
+    final movieState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    final List<Movie> watchlistMovies = provider.watchlistMovies;
-    final List<Movie> viewedMovies = provider.viewedMovies;
+    if (userState.shouldRequestReview &&
+        !userState.appReviewRequested &&
+        movieState.userMovies.length > 10) {
+      requestReview();
+    }
+
+    final List<Movie> watchlistMovies = movieState.watchlistMovies;
+    final List<Movie> viewedMovies = movieState.viewedMovies;
     MyGlobals.scaffoldKey = new GlobalKey();
 
     return Scaffold(
@@ -179,31 +264,32 @@ class MovieListState extends State<MovieList>
         child: TabBarView(
           controller: tabController,
           children: [
-            if (provider.userMovies.length > 0)
+            if (movieState.userMovies.length > 0)
               AnimatedList(
                 padding: EdgeInsets.only(bottom: 90),
-                key: provider.watchlistKey,
+                key: movieState.watchlistKey,
                 initialItemCount: watchlistMovies.length,
                 itemBuilder: (context, index, animation) {
                   if (watchlistMovies.length <= index) return null;
 
-                  return provider.buildItem(watchlistMovies[index], animation);
+                  return movieState.buildItem(
+                      watchlistMovies[index], animation);
                 },
               ),
-            if (provider.userMovies.length == 0)
+            if (movieState.userMovies.length == 0)
               getEmptyMoviesCardWidget("Watchlist"),
-            if (provider.userMovies.length == 0)
+            if (movieState.userMovies.length == 0)
               getEmptyMoviesCardWidget("Viewed list"),
-            if (provider.userMovies.length > 0)
+            if (movieState.userMovies.length > 0)
               Container(
                 child: AnimatedList(
                   padding: EdgeInsets.only(bottom: 90),
-                  key: provider.viewedListKey,
+                  key: movieState.viewedListKey,
                   initialItemCount: viewedMovies.length,
                   itemBuilder: (context, index, animation) {
                     if (viewedMovies.length <= index) return null;
 
-                    return provider.buildItem(viewedMovies[index], animation,
+                    return movieState.buildItem(viewedMovies[index], animation,
                         isPremium: userState.isPremium, context: context);
                   },
                 ),

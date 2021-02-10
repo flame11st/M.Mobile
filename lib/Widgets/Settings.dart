@@ -1,4 +1,3 @@
-import 'package:app_review/app_review.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/User.dart';
@@ -12,7 +11,6 @@ import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
-import 'Shared/MIconButton.dart';
 import 'Shared/MCard.dart';
 import 'package:fluttericon/entypo_icons.dart';
 
@@ -45,18 +43,8 @@ class SettingsState extends State<Settings> {
   bool changePasswordButtonActive = false;
   bool showRemoveUserButtons = false;
   bool showClearMoviesButtons = false;
-  String output;
 
   int userMoviesCount = 0;
-
-  // testReview() {
-  //   AppReview.storeListing.then((String onValue) {
-  //     setState(() {
-  //       output = onValue;
-  //     });
-  //     print(onValue);
-  //   });
-  // }
 
   setNameButtonActive() {
     var nameButtonActive = _formNameKey.currentState != null &&
@@ -581,31 +569,39 @@ class SettingsState extends State<Settings> {
       ),
     );
 
-    return Scaffold(
-        backgroundColor: Theme.of(context).primaryColor,
-        appBar: AppBar(
-          title: headingField,
-        ),
-        body: Container(
-          key: MyGlobals.scaffoldSettingsKey,
-          child: SingleChildScrollView(
-            child: Container(
-//                margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                color: Theme.of(context).primaryColor,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    if (!userState.isIncognitoMode) nameField,
-                    if (!userState.isSignedInWithGoogle && !userState.isIncognitoMode) emailField,
-                    changeThemeField,
-                    userMoviesCountField,
-                    if (!userState.isSignedInWithGoogle && !userState.isIncognitoMode) changePasswordField,
-                    if (!userState.isIncognitoMode) removeUserField,
-                    if (userState.isIncognitoMode) incognitoModeCard,
-                  ],
-                )),
+    return WillPopScope(
+      onWillPop: () {
+        Navigator.of(context).pop();
+
+        userState.shouldRequestReview = true;
+        return;
+      },
+      child: Scaffold(
+          backgroundColor: Theme.of(context).primaryColor,
+          appBar: AppBar(
+              title: headingField,
           ),
-        ));
+          body: Container(
+            key: MyGlobals.scaffoldSettingsKey,
+            child: SingleChildScrollView(
+              child: Container(
+//                margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  color: Theme.of(context).primaryColor,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      if (!userState.isIncognitoMode) nameField,
+                      if (!userState.isSignedInWithGoogle && !userState.isIncognitoMode) emailField,
+                      changeThemeField,
+                      userMoviesCountField,
+                      if (!userState.isSignedInWithGoogle && !userState.isIncognitoMode) changePasswordField,
+                      if (!userState.isIncognitoMode) removeUserField,
+                      if (userState.isIncognitoMode) incognitoModeCard,
+                    ],
+                  )),
+            ),
+          )),
+    );
   }
 }

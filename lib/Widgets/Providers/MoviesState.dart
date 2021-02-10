@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttericon/elusive_icons.dart';
+import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -40,7 +41,7 @@ class MoviesState with ChangeNotifier {
   DateTime dateTo;
   String selectedGenre;
   int currentTabIndex = 0;
-  String imageBaseUrl = "";
+  // String imageBaseUrl = "";
 
   DateTime dateMin;
   DateTime dateMax;
@@ -57,16 +58,17 @@ class MoviesState with ChangeNotifier {
   bool isMoviesListsRequested = false;
   bool isCachedMoviesLoaded = false;
 
-  final functionUri = "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
+  // final functionUri =
+  //     "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
 
-  setBaseUrl() async {
-    if (imageBaseUrl != "") return;
-
-    var response = await http.get(functionUri);
-    imageBaseUrl = response.body + "/images";
-
-    notifyListeners();
-  }
+  // setBaseUrl() async {
+  //   if (imageBaseUrl != "") return;
+  //
+  //   var response = await http.get(functionUri);
+  //   imageBaseUrl = response.body + "/images";
+  //
+  //   notifyListeners();
+  // }
 
   setCachedUserMovies() async {
     var storedMovies;
@@ -398,9 +400,11 @@ class MoviesState with ChangeNotifier {
   }
 
   void refreshDates() {
-    List<Movie> allViewedMovies = userMovies.where((movie) =>
-        movie.movieRate == MovieRate.liked ||
-        movie.movieRate == MovieRate.notLiked).toList();
+    List<Movie> allViewedMovies = userMovies
+        .where((movie) =>
+            movie.movieRate == MovieRate.liked ||
+            movie.movieRate == MovieRate.notLiked)
+        .toList();
 
     if (allViewedMovies.isNotEmpty) {
       if (dateMin == dateFrom ||
@@ -581,6 +585,9 @@ class MoviesState with ChangeNotifier {
     viewedMovies.clear();
     userMovies.clear();
     cachedUserMovies.clear();
+    // moviesLists = moviesLists
+    //     .where((element) => element.movieListType == MovieListType.external)
+    //     .toList();
     setMoviesLists(moviesLists);
 
     await clearStorage();

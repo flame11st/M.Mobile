@@ -1,3 +1,4 @@
+import 'package:app_review/app_review.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -6,6 +7,7 @@ import 'package:mmobile/Widgets/Providers/MoviesState.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MIconButton.dart';
 import 'package:provider/provider.dart';
+import 'MButton.dart';
 import 'MSnackBar.dart';
 
 class MIconRateButton extends StatelessWidget {
@@ -17,12 +19,14 @@ class MIconRateButton extends StatelessWidget {
   final String hint;
   final Movie movie;
   final int movieRate;
+  final bool shouldRequestReview;
 
   MIconRateButton(
       {this.icon,
       this.width,
       this.color,
       this.fromSearch = false,
+      this.shouldRequestReview = false,
       this.hint,
       this.movie,
       this.movieRate});
@@ -59,8 +63,7 @@ class MIconRateButton extends StatelessWidget {
     if (movieRate == MovieRate.notRated)
       text = '"${movie.title}" removed from your movies!';
 
-    if (movieRate == MovieRate.liked ||
-        movieRate == MovieRate.notLiked) {
+    if (movieRate == MovieRate.liked || movieRate == MovieRate.notLiked) {
       if (isViewedMovie) {
         text = '"${movie.title}" rate changed!';
       } else {
@@ -78,6 +81,10 @@ class MIconRateButton extends StatelessWidget {
 
         if (fromSearch) {
           Navigator.of(context).pop();
+        }
+
+        if (shouldRequestReview || fromSearch) {
+          userState.shouldRequestReview = true;
         }
 
         await new Future.delayed(const Duration(milliseconds: 300));

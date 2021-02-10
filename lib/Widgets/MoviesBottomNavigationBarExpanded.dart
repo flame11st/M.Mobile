@@ -5,10 +5,11 @@ import 'Shared/MovieRateButtons.dart';
 class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   final Movie movie;
   final bool fromSearch;
+  final bool shouldRequestReview;
 
   const MoviesBottomNavigationBarExpanded(
       {Key key,
-      this.fromSearch = false, this.movie})
+      this.fromSearch = false, this.movie, this.shouldRequestReview = false})
       : super(key: key);
 
   @override
@@ -18,6 +19,7 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
         child: MovieRateButtons(
           movie: movie,
           fromSearch: fromSearch,
+            shouldRequestReview: shouldRequestReview
         ));
   }
 }

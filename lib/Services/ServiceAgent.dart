@@ -6,8 +6,10 @@ import 'package:mmobile/Widgets/Providers/UserState.dart';
 class ServiceAgent {
   UserState state;
   String baseUrl = "";
-  final functionUri = "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
-   // final baseUrl = "https://localhost:44321/";
+  final functionUriAzure = "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
+  final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/Function1";
+
+  var baseUrlLocal = "http://192.168.31.60/";
 
   ServiceAgent() {
     setBaseUrl();
@@ -20,9 +22,16 @@ class ServiceAgent {
   }
 
   getBaseUrl() async {
-    var response = await http.get(functionUri);
+    var responseAzure = await http.get(functionUriAzure);
+    var uri = responseAzure.body;
 
-    return response.body + "/api/";
+    if (uri == "") {
+      var responseAWS = await http.get(functionUriAWS);
+
+      uri = responseAWS.body;
+    }
+    return uri + "/api/";
+    // return baseUrlLocal + "api/";
   }
 
   checkAuthorization() {
@@ -124,6 +133,16 @@ class ServiceAgent {
           'MovieId': movieId,
           'UserId': userId,
           'MovieRate': movieRate,
+        }));
+  }
+
+  createUserMoviesList(String userId, String listName, int order) {
+    return post(
+        'Movies/CreateUserMoviesList',
+        jsonEncode({
+          'UserId': userId,
+          'Order': order,
+          'ListName': listName,
         }));
   }
 

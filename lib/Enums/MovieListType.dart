@@ -1,0 +1,4 @@
+enum MovieListType {
+    external,
+    personal
+}

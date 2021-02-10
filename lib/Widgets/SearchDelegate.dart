@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
-import 'package:mmobile/Objects/MovieSearchDTO.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieSearchItem.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
-import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
@@ -118,7 +116,7 @@ class MSearchDelegate extends SearchDelegate {
 
     // Debounce
     final queryToDebounce = query;
-    await Future.delayed(Duration(milliseconds: 700));
+    await Future.delayed(Duration(milliseconds: 1500));
     if (queryToDebounce != query) return;
 
     var timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -200,6 +198,10 @@ class MSearchDelegate extends SearchDelegate {
     return IconButton(
       icon: Icon(Icons.arrow_back),
       onPressed: () {
+        if (userState != null) {
+          userState.shouldRequestReview = true;
+        }
+
         close(context, null);
       },
     );

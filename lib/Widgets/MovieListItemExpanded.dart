@@ -231,6 +231,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             bottomNavigationBar: MoviesBottomNavigationBarExpanded(
               movie: movie,
               fromSearch: fromSearch,
+              shouldRequestReview: true
             )));
   }
 }

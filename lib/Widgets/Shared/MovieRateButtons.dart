@@ -13,13 +13,15 @@ class MovieRateButtons extends StatelessWidget {
   final bool addMargin;
   final bool fromSearch;
   final Movie movie;
+  final bool shouldRequestReview;
 
   const MovieRateButtons(
       {Key key,
       this.showTitle,
       this.addMargin,
       this.fromSearch = false,
-      this.movie})
+      this.movie,
+      this.shouldRequestReview = false})
       : super(key: key);
 
   @override
@@ -40,10 +42,9 @@ class MovieRateButtons extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              offset: Offset(0.0, 0.05),
-              blurRadius: 0.5
-            ),
+                color: Colors.black.withOpacity(0.8),
+                offset: Offset(0.0, 0.05),
+                blurRadius: 0.5),
           ],
           color: showTitle != null && showTitle
               ? Theme.of(context).primaryColor
@@ -77,6 +78,7 @@ class MovieRateButtons extends StatelessWidget {
                 if ((showTitle == null || !showTitle) ||
                     movie.movieRate != MovieRate.liked)
                   MIconRateButton(
+                    shouldRequestReview: shouldRequestReview,
                     hint: showTitle == null || !showTitle ? "" : "Like",
                     color: movie.movieRate == MovieRate.liked
                         ? Colors.green
@@ -95,6 +97,7 @@ class MovieRateButtons extends StatelessWidget {
                 if ((showTitle == null || !showTitle) ||
                     movie.movieRate != MovieRate.notLiked)
                   MIconRateButton(
+                    shouldRequestReview: shouldRequestReview,
                     hint: showTitle == null || !showTitle ? "" : "Dislike",
                     color: movie.movieRate == MovieRate.notLiked
                         ? Colors.redAccent
@@ -113,6 +116,7 @@ class MovieRateButtons extends StatelessWidget {
                 if ((showTitle == null || !showTitle) ||
                     movie.movieRate != MovieRate.addedToWatchlist)
                   MIconRateButton(
+                    shouldRequestReview: shouldRequestReview,
                     hint: showTitle == null || !showTitle ? "" : "To watchlist",
                     color: movie.movieRate == MovieRate.addedToWatchlist
                         ? Theme.of(context).accentColor
@@ -130,6 +134,7 @@ class MovieRateButtons extends StatelessWidget {
                   ),
                 if (movie.movieRate != MovieRate.notRated && showTitle != null)
                   MIconRateButton(
+                    shouldRequestReview: shouldRequestReview,
                     hint: "Remove Item",
                     color: Theme.of(context).cardColor.withOpacity(0.95),
                     icon: Icon(Icons.delete_outline,

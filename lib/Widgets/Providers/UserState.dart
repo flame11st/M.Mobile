@@ -28,6 +28,8 @@ class UserState with ChangeNotifier {
   bool showTutorial = false;
   bool isIncognitoMode = false;
   bool premiumPurchasedIncognito = false;
+  bool appReviewRequested = false;
+  bool shouldRequestReview = false;
 
   void setInitialData() async {
     var storedToken;
@@ -38,6 +40,7 @@ class UserState with ChangeNotifier {
     var storedUser;
     var storedIsIncognitoMode;
     var storedPremiumPurchasedIncognito;
+    var storedAppReviewRequested;
 
     if (Platform.isAndroid) {
       var androidInfo = await DeviceInfoPlugin().androidInfo;
@@ -53,10 +56,13 @@ class UserState with ChangeNotifier {
           await storage.read(key: 'isSignedInWithGoogle');
       storedIsIncognitoMode = await storage.read(key: 'isIncognitoMode');
       storedPremiumPurchasedIncognito = await storage.read(key: 'premiumPurchasedIncognito');
+      storedAppReviewRequested = await storage.read(key: "appReviewRequested");
       storedUser = await storage.read(key: 'user');
     } catch (on, ex) {
       await clearStorage();
     }
+
+    this.appReviewRequested = storedAppReviewRequested == "true";
 
     if (storedIsIncognitoMode == "true") {
       this.isIncognitoMode = true;
@@ -118,6 +124,12 @@ class UserState with ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<void> setAppReviewRequested(bool value) async {
+    appReviewRequested = value;
+
+    await storage.write(key: "appReviewRequested", value: appReviewRequested.toString());
   }
 
   void setAppIsLoaded(bool value) {
