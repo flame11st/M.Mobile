@@ -6,7 +6,6 @@ import 'package:mmobile/Widgets/Providers/UserState.dart';
 class ServiceAgent {
   UserState state;
   String baseUrl = "";
-  final functionUriAzure = "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
   final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/Function1";
 
   var baseUrlLocal = "http://192.168.31.60/";
@@ -22,14 +21,10 @@ class ServiceAgent {
   }
 
   getBaseUrl() async {
-    var responseAzure = await http.get(functionUriAzure);
-    var uri = responseAzure.body;
+    var responseAWS = await http.get(functionUriAWS);
 
-    if (uri == "") {
-      var responseAWS = await http.get(functionUriAWS);
+    var uri = responseAWS.body;
 
-      uri = responseAWS.body;
-    }
     return uri + "/api/";
     // return baseUrlLocal + "api/";
   }
