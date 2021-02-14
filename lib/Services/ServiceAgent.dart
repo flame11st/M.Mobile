@@ -25,8 +25,8 @@ class ServiceAgent {
 
     var uri = responseAWS.body;
 
-    return uri + "/api/";
-    // return baseUrlLocal + "api/";
+    // return uri + "/api/";
+    return baseUrlLocal + "api/";
   }
 
   checkAuthorization() {
@@ -109,8 +109,8 @@ class ServiceAgent {
     return get('movies/ReloadMoviePoster?id=$movieId');
   }
 
-  getMoviesLists() {
-    return get('movies/GetMoviesListsStringValue');
+  getMoviesLists(String userId) {
+    return get('movies/GetMoviesListsStringValue?userId=$userId');
   }
 
   search(String query) {
@@ -137,6 +137,25 @@ class ServiceAgent {
         jsonEncode({
           'UserId': userId,
           'Order': order,
+          'ListName': listName,
+        }));
+  }
+
+  removeUserMoviesList(String userId, String listName) {
+    return post(
+        'Movies/RemoveUserMoviesList',
+        jsonEncode({
+          'UserId': userId,
+          'ListName': listName,
+        }));
+  }
+
+  addMovieToList(String userId, String movieId, String listName) {
+    return post(
+        'Movies/AddMovieToList',
+        jsonEncode({
+          'UserId': userId,
+          'MovieId': movieId,
           'ListName': listName,
         }));
   }

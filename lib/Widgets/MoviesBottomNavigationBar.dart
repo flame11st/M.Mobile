@@ -38,7 +38,6 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     return Container(
         height: 50,
         width: double.infinity,
-//            margin: EdgeInsets.all(5),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
@@ -115,6 +114,5 @@ class MoviesBottomNavigationBar extends StatelessWidget {
             ),
           ],
         ));
-//
   }
 }

@@ -3,12 +3,10 @@ import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/Movie.dart';
 
+import 'MIconAddToListButton.dart';
 import 'MIconRateButton.dart';
 
 class MovieRateButtons extends StatelessWidget {
-  // final String movieId;
-  // final String movieTitle;
-  // final int movieRate;
   final bool showTitle;
   final bool addMargin;
   final bool fromSearch;
@@ -26,7 +24,7 @@ class MovieRateButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = (MediaQuery.of(context).size.width - 50) / 3;
+    final width = (MediaQuery.of(context).size.width - 50) / 4;
     final text = movie.movieRate == MovieRate.addedToWatchlist
         ? "Did you like "
         : movie.movieRate == MovieRate.notRated
@@ -143,7 +141,18 @@ class MovieRateButtons extends StatelessWidget {
                     movieRate: MovieRate.notRated,
                     width: width,
                     fromSearch: fromSearch,
-                  )
+                  ),
+                MIconAddToListButton(
+                  shouldRequestReview: false,
+                  hint: showTitle == null || !showTitle ? "" : "Add to list",
+                  color: Theme.of(context).cardColor.withOpacity(0.95),
+                  icon: Icon(Icons.list,
+                      color: Theme.of(context).hintColor),
+                  movie: movie,
+                  movieRate: MovieRate.notRated,
+                  width: width,
+                  fromSearch: fromSearch,
+                )
               ],
             )
           ],

@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MovieSearchItem.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
+import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
 
 class MSearchDelegate extends SearchDelegate {
@@ -30,7 +32,6 @@ class MSearchDelegate extends SearchDelegate {
     return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
       this.setStateFunction = setState;
-      final moviesState = Provider.of<MoviesState>(context);
 
       if (query == '') {
         oldQuery = '';
@@ -42,7 +43,14 @@ class MSearchDelegate extends SearchDelegate {
         searchMovies(context);
       }
 
+      GlobalKey globalKey = new GlobalKey();
+
+      if (ModalRoute.of(context).isCurrent) {
+        MyGlobals.activeKey = globalKey;
+      }
+
       return Container(
+          key: globalKey,
           color: Theme.of(context).primaryColor,
           child: ListView(
             children: <Widget>[
@@ -55,49 +63,11 @@ class MSearchDelegate extends SearchDelegate {
                     marginLR: 10,
                     child: Container(
                       child: Text(
-                        "You can search in English, German and Russian languages."
-                        "${isAdvanced ? "\n\nAdvanced search may take longer, but will find anything you want" : ""}",
+                        "You can search in English, German and Russian languages.",
                         style: Theme.of(context).textTheme.headline5,
                       ),
                     )),
-              // for (final movie in foundMovies) MovieSearchItem(movie: movie, imageBaseUrl: moviesState.imageBaseUrl),
-              for (final movie in foundMovies) MovieSearchItem(movie: movie),
-              // if (!isAdvanced &&
-              //     (foundMovies.isNotEmpty || notFound) &&
-              //     !isLoading)
-              //   MCard(
-              //       marginTop: 15,
-              //       marginLR: 10,
-              //       marginBottom: 10,
-              //       child: Container(
-              //           width: MediaQuery.of(context).size.width,
-              //           child: Column(
-              //             mainAxisAlignment: MainAxisAlignment.center,
-              //             children: [
-              //               Text(
-              //                 "Didn't find what you were looking for?",
-              //                 style: Theme.of(context).textTheme.headline2,
-              //               ),
-              //               SizedBox(
-              //                 height: 15,
-              //               ),
-              //               MButton(
-              //                 prependIcon: Icons.search,
-              //                 active: true,
-              //                 text: "Advanced Search",
-              //                 width: 200,
-              //                 onPressedCallback: () {
-              //                   setStateSwitcherFunction(
-              //                       () {
-              //                         notFound = false;
-              //                         isAdvanced = true;
-              //                       });
-              //                   foundMovies.clear();
-              //                   searchMovies(context);
-              //                 },
-              //               ),
-              //             ],
-              //           ))),
+              for (final movie in foundMovies) MovieListItem(movie: movie),
             ],
           ));
     });
@@ -111,8 +81,6 @@ class MSearchDelegate extends SearchDelegate {
       userState = Provider.of<UserState>(context);
       serviceAgent.state = userState;
     }
-
-    final moviesState = Provider.of<MoviesState>(context);
 
     // Debounce
     final queryToDebounce = query;
@@ -137,16 +105,9 @@ class MSearchDelegate extends SearchDelegate {
       Iterable iterableMovies = json.decode(moviesResponse.body);
       final foundMovies = iterableMovies.map((model) {
         return Movie.fromJson(model);
-      }).map((movie) {
-        final userMoviesList =
-            moviesState.userMovies.where((um) => um.id == movie.id);
-
-        if (userMoviesList.length > 0) {
-          movie.movieRate = userMoviesList.first.movieRate;
-        }
-
-        return movie;
       }).toList();
+
+      refreshMoviesRating(foundMovies, context);
 
       setStateFunction(() => this.foundMovies = foundMovies);
 
@@ -154,6 +115,21 @@ class MSearchDelegate extends SearchDelegate {
     }
 
     isLoading = currentQuery != queryToDebounce;
+  }
+
+  refreshMoviesRating(List<Movie> movies, BuildContext context) {
+    final moviesState = Provider.of<MoviesState>(context);
+
+    movies.forEach((movie) {
+      final userMoviesList =
+      moviesState.userMovies.where((um) => um.id == movie.id);
+
+      if (userMoviesList.length > 0) {
+        movie.movieRate = userMoviesList.first.movieRate;
+      } else {
+        movie.movieRate = 0;
+      }
+    });
   }
 
   @override
@@ -165,28 +141,6 @@ class MSearchDelegate extends SearchDelegate {
           query = '';
         },
       ),
-      // Column(
-      //   mainAxisAlignment: MainAxisAlignment.center,
-      //   children: [
-      //     Text(
-      //       'Advanced',
-      //       style: Theme.of(context).textTheme.headline3,
-      //     ),
-      //     SizedBox(
-      //         height: 24,
-      //         child: StatefulBuilder(
-      //           builder: (BuildContext context, StateSetter setState) {
-      //             setStateSwitcherFunction = setState;
-      //             return Switch(
-      //                 value: this.isAdvanced,
-      //                 onChanged: (bool value) {
-      //                   setState(() => isAdvanced = !isAdvanced);
-      //                   searchMovies(context);
-      //                 });
-      //           },
-      //         ))
-      //   ],
-      // ),
       SizedBox(
         width: 10,
       )
@@ -216,6 +170,8 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    refreshMoviesRating(foundMovies, context);
+
     final resultsWidget = getResultsWidget(query);
 
     return resultsWidget;

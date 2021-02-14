@@ -7,6 +7,7 @@ import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Widgets/MoviesListPage.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
 import 'package:provider/provider.dart';
 import 'LoadingAnimation.dart';
@@ -42,17 +43,13 @@ class MHomeState extends State<MHome> {
         serviceAgent.setUserPremiumPurchased(userState.userId, true);
       }
 
-      MSnackBar.showSnackBar("Premium features successfully unlocked", true,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Premium features successfully unlocked", true);
     } else if(purchases.first.status == PurchaseStatus.error && purchases.first.error.details != "") {
-      MSnackBar.showSnackBar(purchases.first.error.details , false,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar(purchases.first.error.details , false);
     } else if (purchases.first.status == PurchaseStatus.pending) {
-      MSnackBar.showSnackBar("Your request is being processed. It can take a while", true,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Your request is being processed. It can take a while", true);
     } else {
-      MSnackBar.showSnackBar("Not available now. Please try later", false,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Not available now. Please try later", false);
     }
   }
 
@@ -118,6 +115,10 @@ class MHomeState extends State<MHome> {
             if (loaderState.isLoaderVisible) LoadingAnimation(),
           ],
         ),
+        routes: {
+          // When navigating to the "/second" route, build the SecondScreen widget.
+          'moviesList': (context) => MoviesListPage(),
+        },
         theme: ThemeData(
           // Define the default brightness and colors.
           brightness: theme.brightness,

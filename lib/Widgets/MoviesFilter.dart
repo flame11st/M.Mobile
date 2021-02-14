@@ -21,7 +21,7 @@ class MoviesFilter extends StatelessWidget {
         return Theme(
           data: Theme.of(context).accentColorBrightness == Brightness.dark
               ? ThemeData.dark()
-              : ThemeData.light(), // This will change to light theme.
+              : ThemeData.light(),
           child: child,
         );
       },
@@ -40,7 +40,7 @@ class MoviesFilter extends StatelessWidget {
         return Theme(
           data: Theme.of(context).accentColorBrightness == Brightness.dark
               ? ThemeData.dark()
-              : ThemeData.light(), // This will change to light theme.
+              : ThemeData.light(),
           child: child,
         );
       },

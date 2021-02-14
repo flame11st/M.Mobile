@@ -37,7 +37,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       Movie movie, bool fromSearch, String url) {
     this.movie = movie;
     this.fromSearch = fromSearch;
-    // this.imageBaseUrl = url;
   }
 
   getProgressColor() {
@@ -119,7 +118,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               height: 180,
               fit: BoxFit.fill,
               width: 120,
-//              placeholder: (context, url) => CircularProgressIndicator(),
             ),
           ),
         ),

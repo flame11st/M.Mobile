@@ -95,7 +95,6 @@ class ChangeThemesState extends State<ChangeThemes>
         ),
         body: Container(
             padding: EdgeInsets.fromLTRB(50, 0, 50, 20),
-//                  key: MyGlobals.scaffoldSettingsKey,
             child: Column(
               children: [
                 TabPageSelector(

@@ -40,11 +40,11 @@ class MButton extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.8),
-              offset: Offset(0.0, 0.5),
-              blurRadius: 1
+              offset: Offset(0.0, 0.2),
+              blurRadius: 0.4
             ),
           ],
-          borderRadius: BorderRadius.circular(borderRadius != null ? borderRadius : 4.0),
+          borderRadius: BorderRadius.circular(borderRadius != null ? borderRadius : 2.0),
           color: Theme.of(contextValue).cardColor.withOpacity(0.95),
         ),
         child: MaterialButton(

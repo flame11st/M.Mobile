@@ -22,8 +22,6 @@ class MovieListState extends State<MovieList>
     with SingleTickerProviderStateMixin {
   TabController tabController;
 
-  // List<Movie> watchlistMovies;
-  // List<Movie> viewedMovies;
   Route _createRoute(Function page) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => page(),
@@ -199,6 +197,12 @@ class MovieListState extends State<MovieList>
       tabController.animateTo(targetIndex);
     }
 
+    GlobalKey globalKey = new GlobalKey();
+
+    if (ModalRoute.of(context).isCurrent) {
+      MyGlobals.activeKey = globalKey;
+    }
+
     final movieState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
@@ -210,7 +214,6 @@ class MovieListState extends State<MovieList>
 
     final List<Movie> watchlistMovies = movieState.watchlistMovies;
     final List<Movie> viewedMovies = movieState.viewedMovies;
-    MyGlobals.scaffoldKey = new GlobalKey();
 
     return Scaffold(
       resizeToAvoidBottomPadding: false,
@@ -297,7 +300,7 @@ class MovieListState extends State<MovieList>
           ],
         ),
       ),
-      key: MyGlobals.scaffoldKey,
+      key: globalKey,
     );
   }
 }

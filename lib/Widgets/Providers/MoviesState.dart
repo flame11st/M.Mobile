@@ -2,18 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:fluttericon/elusive_icons.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
-import 'package:mmobile/Widgets/MovieList.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
-import 'package:collection/collection.dart';
-import 'package:http/http.dart' as http;
 
 import '../Premium.dart';
 
@@ -21,7 +17,6 @@ class MoviesState with ChangeNotifier {
   MoviesState() {
     setCachedUserMovies();
     setCachedMoviesLists();
-    // setBaseUrl();
   }
 
   final serviceAgent = new ServiceAgent();
@@ -41,7 +36,6 @@ class MoviesState with ChangeNotifier {
   DateTime dateTo;
   String selectedGenre;
   int currentTabIndex = 0;
-  // String imageBaseUrl = "";
 
   DateTime dateMin;
   DateTime dateMax;
@@ -57,18 +51,6 @@ class MoviesState with ChangeNotifier {
   bool isMoviesRequested = false;
   bool isMoviesListsRequested = false;
   bool isCachedMoviesLoaded = false;
-
-  // final functionUri =
-  //     "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
-
-  // setBaseUrl() async {
-  //   if (imageBaseUrl != "") return;
-  //
-  //   var response = await http.get(functionUri);
-  //   imageBaseUrl = response.body + "/images";
-  //
-  //   notifyListeners();
-  // }
 
   setCachedUserMovies() async {
     var storedMovies;
@@ -183,6 +165,35 @@ class MoviesState with ChangeNotifier {
     }).toList();
 
     notifyListeners();
+  }
+
+  addMoviesList(String listName, int order) async {
+    this.moviesLists.add(new MoviesList(
+        name: listName,
+        movieListType: MovieListType.personal,
+        order: order,
+        listMovies: []));
+
+    storage.write(
+        key: 'moviesLists', value: jsonEncode(this.moviesLists));
+  }
+
+  removeMoviesList(String listName) {
+    this.moviesLists =
+        this.moviesLists.where((element) => element.name != listName).toList();
+
+    storage.write(
+        key: 'moviesLists', value: jsonEncode(this.moviesLists));
+  }
+
+  addMovieToPersonalList(String listName, Movie movie) {
+    final list = moviesLists.singleWhere((element) => element.name == listName);
+
+    list.listMovies.add(movie);
+
+    final listsStringValue = jsonEncode(this.moviesLists);
+
+    storage.write(key: 'moviesLists', value: listsStringValue);
   }
 
   setGenres() {
@@ -500,14 +511,10 @@ class MoviesState with ChangeNotifier {
       userMovies.insert(0, movieToAdd);
       movieToAdd.updated = DateTime.now().toUtc();
 
-      // removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
-
       if (movieToAdd == currentLatestMovie) {
         currentLatestMovie = viewedMovies.last;
       }
     }
-
-    // addMovieToList(movieToAdd, watchlistMovies, watchlistKey, 0);
 
     movieToAdd.movieRate = movieRate;
   }
@@ -515,12 +522,9 @@ class MoviesState with ChangeNotifier {
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate == MovieRate.addedToWatchlist ||
         movieToAdd.movieRate == 0) {
-      // removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
       userMovies.remove(movieToAdd);
       userMovies.insert(0, movieToAdd);
       movieToAdd.updated = DateTime.now().toUtc();
-
-      // addMovieToList(movieToAdd, viewedMovies, viewedListKey, 0);
     }
 
     movieToAdd.movieRate = movieRate;
@@ -573,6 +577,7 @@ class MoviesState with ChangeNotifier {
 
   clearStorage() async {
     await storage.delete(key: 'movies');
+    await storage.delete(key: 'moviesLists');
   }
 
   clear() async {
@@ -585,29 +590,14 @@ class MoviesState with ChangeNotifier {
     viewedMovies.clear();
     userMovies.clear();
     cachedUserMovies.clear();
+
     // moviesLists = moviesLists
     //     .where((element) => element.movieListType == MovieListType.external)
     //     .toList();
-    setMoviesLists(moviesLists);
+    // setMoviesLists(moviesLists);
 
     await clearStorage();
   }
-
-//  bool equals(List<Movie> list1, List<Movie> list2) {
-//    if (identical(list1, list2)) return true;
-//    if (list1 == null || list2 == null) return false;
-//    var length = list1.length;
-//    if (length != list2.length) return false;
-//    for (var i = 0; i < length; i++) {
-//      if (!list2
-//          .any((m) => m.id == list1[i].id && m.movieRate == list1[i].movieRate))
-//        return false;
-//      if (!list1
-//          .any((m) => m.id == list2[i].id && m.movieRate == list2[i].movieRate))
-//        return false;
-//    }
-//    return true;
-//  }
 
   showMoreMovies(BuildContext context, bool isPremium) {
     if (isPremium) {

@@ -67,13 +67,15 @@ class MyMoviesState extends State<MyMovies> {
 
   setMoviesLists() async {
     final moviesState = Provider.of<MoviesState>(context);
+    final userState = Provider.of<UserState>(context);
 
     if (moviesState.isMoviesListsRequested) return;
     moviesState.isMoviesListsRequested = true;
 
     moviesState.setCachedMoviesLists();
 
-    final moviesListsResponse = await serviceAgent.getMoviesLists();
+    final moviesListsResponse = await serviceAgent.getMoviesLists(userState.userId);
+
     Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
 
     if (iterableMoviesLists.length != 0) {
@@ -121,11 +123,6 @@ class MyMoviesState extends State<MyMovies> {
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-
-    // if (moviesState.imageBaseUrl == "") {
-    //   return SizedBox();
-    // }
-
     final loaderState = Provider.of<LoaderState>(context);
     final userState = Provider.of<UserState>(context);
 

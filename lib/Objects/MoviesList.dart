@@ -1,18 +1,16 @@
 import 'dart:convert';
 
-// import 'package:mmobile/Enums/MovieListType.dart';
+import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 
 class MoviesList {
   final String name;
   final int order;
 
-  // final MovieListType movieListType;
+  final MovieListType movieListType;
   List<Movie> listMovies;
 
-  MoviesList({this.name, this.order, this.listMovies
-    // , this.movieListType
-  });
+  MoviesList({this.name, this.order, this.listMovies, this.movieListType});
 
   factory MoviesList.fromJson(Map<String, dynamic> json) {
     Iterable iterableMovies = json['listMovies'] is Iterable
@@ -26,7 +24,7 @@ class MoviesList {
     return MoviesList(
         name: json['name'],
         order: json['order'],
-        // movieListType: MovieListType.values[json['movieListType']],
+        movieListType: MovieListType.values[json['movieListType']],
         listMovies: movies);
   }
 
@@ -34,6 +32,6 @@ class MoviesList {
         'name': name,
         'order': order,
         'listMovies': json.encode(listMovies),
-        // 'movieListType': movieListType.index
+        'movieListType': movieListType.index
       };
 }

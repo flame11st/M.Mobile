@@ -89,7 +89,7 @@ class MIconRateButton extends StatelessWidget {
 
         await new Future.delayed(const Duration(milliseconds: 300));
 
-        MSnackBar.showSnackBar(text, true, null);
+        MSnackBar.showSnackBar(text, true);
 
         await new Future.delayed(const Duration(milliseconds: 300));
 

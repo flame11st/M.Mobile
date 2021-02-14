@@ -18,8 +18,7 @@ class MovieListItem extends StatefulWidget {
   final Movie movie;
   final String imageUrl;
 
-  const MovieListItem({Key key, this.movie, this.imageUrl})
-      : super(key: key);
+  const MovieListItem({Key key, this.movie, this.imageUrl}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -29,14 +28,14 @@ class MovieListItem extends StatefulWidget {
 
 class MovieListItemState extends State<MovieListItem> {
   bool expanded = false;
-  String imageBaseUrl = "https://moviediarystorage.blob.core.windows.net/movies";
+  String imageBaseUrl =
+      "https://moviediarystorage.blob.core.windows.net/movies";
   bool imageChecked = false;
 
   Movie movie;
 
   MovieListItemState(Movie movie, String url) {
     this.movie = movie;
-    // this.imageBaseUrl = url;
   }
 
   checkImage(String imageUrl) async {
@@ -54,6 +53,8 @@ class MovieListItemState extends State<MovieListItem> {
   Widget build(BuildContext context) {
     //Don't remove this not used state declaration. It is needed for lists update.
     final moviesState = Provider.of<MoviesState>(context);
+
+    final formatter = new NumberFormat("#,###");
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
@@ -107,12 +108,17 @@ class MovieListItemState extends State<MovieListItem> {
                           borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(4),
                               bottomLeft: Radius.circular(4)),
-                          child: imageBaseUrl != "" ? CachedNetworkImage(
-                            imageUrl: imageBaseUrl + imageUrl,
-                            height: 90,
-                            fit: BoxFit.fill,
-                            width: 60,
-                          ) : SizedBox(height: 90, width: 60,),
+                          child: imageBaseUrl != ""
+                              ? CachedNetworkImage(
+                                  imageUrl: imageBaseUrl + imageUrl,
+                                  height: 90,
+                                  fit: BoxFit.fill,
+                                  width: 60,
+                                )
+                              : SizedBox(
+                                  height: 90,
+                                  width: 60,
+                                ),
                         ),
                         Expanded(
                           child: Container(
@@ -157,9 +163,16 @@ class MovieListItemState extends State<MovieListItem> {
                                               .headline5),
                                   ],
                                 ),
-                                Text(movie.genres.join(', '),
-                                    style:
-                                        Theme.of(context).textTheme.headline5),
+                                if (movie.genres.isNotEmpty)
+                                  Text(movie.genres.join(', '),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headline5),
+                                if (movie.genres.isEmpty)
+                                  Text(
+                                      'Imdb: ${movie.imdbRate} (${formatter.format(movie.imdbVotes)})',
+                                      style:
+                                          Theme.of(context).textTheme.headline5)
                               ],
                             ),
                           ),
@@ -204,7 +217,8 @@ class MovieListItemState extends State<MovieListItem> {
   showFullMovie(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute(
         builder: (ctx) => MovieListItemExpanded(
-              movie: movie, imageUrl: imageBaseUrl,
+              movie: movie,
+              imageUrl: imageBaseUrl,
             )));
   }
 }

@@ -3,14 +3,11 @@ import 'package:flutter/painting.dart';
 import 'package:mmobile/Variables/Variables.dart';
 
 class MSnackBar {
-  static showSnackBar(String text, bool isSuccess, BuildContext context) {
-    if (context == null)
-      context = MyGlobals.scaffoldMoviesListsKey == null ||
-              MyGlobals.scaffoldMoviesListsKey.currentContext == null
-          ? MyGlobals.scaffoldKey.currentContext
-          : MyGlobals.scaffoldMoviesListsKey.currentContext;
+  static showSnackBar(String text, bool isSuccess) {
+    var context = MyGlobals.activeKey.currentContext;
 
-    show(context, text, isSuccess);
+    if (context != null)
+      show(context, text, isSuccess);
   }
 
   static void show(BuildContext context, String text, bool isSuccess) {
@@ -28,7 +25,7 @@ class MSnackBar {
               ))),
       duration: Duration(seconds: 2),
       backgroundColor: isSuccess
-          ? Theme.of(MyGlobals.scaffoldKey.currentContext).accentColor
+          ? Theme.of(MyGlobals.activeKey.currentContext).accentColor
           : Colors.redAccent,
     ));
   }

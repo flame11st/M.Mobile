@@ -13,19 +13,16 @@ class Premium extends StatelessWidget {
     final bool available = await InAppPurchaseConnection.instance.isAvailable();
 
     if (!available) {
-      MSnackBar.showSnackBar("Not available now. Please try later", false,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Not available now. Please try later", false);
 
       return;
     }
 
-    // const Set<String> _kIds = {'test_purchase2'};
     const Set<String> _kIds = {'premium_purchase'};
     final ProductDetailsResponse response =
         await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
-      MSnackBar.showSnackBar("Not available now. Please try later", false,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Not available now. Please try later", false);
 
       return;
     }
@@ -40,8 +37,11 @@ class Premium extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (MyGlobals.scaffoldPremiumKey == null)
-      MyGlobals.scaffoldPremiumKey = new GlobalKey();
+    GlobalKey globalKey = new GlobalKey();
+
+    if (ModalRoute.of(context).isCurrent) {
+      MyGlobals.activeKey = globalKey;
+    }
 
     final userState = Provider.of<UserState>(context);
 
@@ -72,15 +72,6 @@ class Premium extends StatelessWidget {
           fontSize: 18,
           fontWeight: FontWeight.bold),
     );
-
-    // final description = Text(
-    //   'Premium features: ',
-    //   textAlign: TextAlign.center,
-    //   style: TextStyle(
-    //       color: Theme.of(context).hintColor,
-    //       fontSize: 18,
-    //       fontWeight: FontWeight.bold),
-    // );
 
     final themeFeature = Column(
       children: <Widget>[
@@ -172,7 +163,7 @@ class Premium extends StatelessWidget {
         title: headingField,
       ),
       body: Container(
-        key: MyGlobals.scaffoldPremiumKey,
+        key: globalKey,
         child: SingleChildScrollView(
           child: Container(
               margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
@@ -186,10 +177,6 @@ class Premium extends StatelessWidget {
                     height: 20,
                   ),
                   subTitleText,
-                  // SizedBox(
-                  //   height: 20,
-                  // ),
-                  // description,
                   SizedBox(
                     height: 20,
                   ),

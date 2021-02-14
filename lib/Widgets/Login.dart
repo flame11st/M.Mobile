@@ -71,8 +71,7 @@ class LoginState extends State<Login> {
       processLoginResponse(response.body, true);
     } else {
       loaderState.setIsLoaderVisible(false);
-      MSnackBar.showSnackBar('Sign in with Google failed', false,
-          MyGlobals.scaffoldLoginKey.currentContext);
+      MSnackBar.showSnackBar('Sign in with Google failed', false);
     }
   }
 
@@ -103,8 +102,7 @@ class LoginState extends State<Login> {
     } else {
       loaderState.setIsLoaderVisible(false);
 
-      MSnackBar.showSnackBar('Incorrect Email or Password', false,
-          MyGlobals.scaffoldLoginKey.currentContext);
+      MSnackBar.showSnackBar('Incorrect Email or Password', false);
     }
   }
 
@@ -130,8 +128,11 @@ class LoginState extends State<Login> {
       isLoaderHided = true;
     }
 
-    if (MyGlobals.scaffoldLoginKey == null)
-      MyGlobals.scaffoldLoginKey = new GlobalKey();
+    GlobalKey globalKey = new GlobalKey();
+
+    if (ModalRoute.of(context).isCurrent) {
+      MyGlobals.activeKey = globalKey;
+    }
 
     final emailField = Theme(
         data: Theme.of(context)
@@ -205,7 +206,7 @@ class LoginState extends State<Login> {
         backgroundColor: Theme.of(context).primaryColor,
         body: Container(
           margin: EdgeInsets.only(top: 40),
-          key: MyGlobals.scaffoldLoginKey,
+          key: globalKey,
           child: SingleChildScrollView(
             child: Container(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, 20),

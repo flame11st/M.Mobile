@@ -40,8 +40,7 @@ class SignUpState extends State<SignUp> {
 
       Navigator.of(context).pop();
     } else {
-      MSnackBar.showSnackBar(
-          response.body, false, MyGlobals.scaffoldSignUpKey.currentContext);
+      MSnackBar.showSnackBar(response.body, false);
       loaderState.setIsLoaderVisible(false);
     }
   }
@@ -83,8 +82,11 @@ class SignUpState extends State<SignUp> {
 
   @override
   Widget build(BuildContext context) {
-    if (MyGlobals.scaffoldSignUpKey == null)
-      MyGlobals.scaffoldSignUpKey = new GlobalKey();
+    GlobalKey globalKey = new GlobalKey();
+
+    if (ModalRoute.of(context).isCurrent) {
+      MyGlobals.activeKey = globalKey;
+    }
 
     final nameField = Theme(
         data: Theme.of(context)
@@ -169,7 +171,7 @@ class SignUpState extends State<SignUp> {
           title: Text('Create User'),
         ),
         body: Container(
-          key: MyGlobals.scaffoldSignUpKey,
+          key: globalKey,
           child: SingleChildScrollView(
             child: Container(
 //                margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
