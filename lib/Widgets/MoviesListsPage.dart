@@ -353,8 +353,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
                       Align(
                           alignment: Alignment(0.83, 0.92),
                           child: Container(
-                              height: 60.0,
-                              width: 60.0,
+                              height: 55.0,
+                              width: 55.0,
                               child: FittedBox(
                                 child: FloatingActionButton(
                                   onPressed: () {

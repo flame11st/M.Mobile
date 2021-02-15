@@ -91,7 +91,7 @@ class MAddToListButton extends StatelessWidget {
               backgroundColor: Theme.of(context).primaryColor,
               contentTextStyle: Theme.of(context).textTheme.headline5,
               content: Container(
-                // height: userLists.isEmpty ? 300 : MediaQuery.of(context).size.height,
+                height: userLists.isEmpty ? 100 : MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
                 child: Column(
                   children: [
@@ -108,26 +108,13 @@ class MAddToListButton extends StatelessWidget {
                       children: [
                         if (userLists.isEmpty)
                           Text(
-                            "You haven't created any personal list.\n\n"
-                            "You can go to 'Personal Lists' page and create a new one.",
-                            style: Theme.of(context).textTheme.headline2,
+                            "You haven't created any personal list yet.\n\n"
+                            "You can go to the 'Personal Lists' page and create a new one.",
+                            style: TextStyle(fontSize: 16),
                           ),
                         if (userLists.isEmpty)
                           SizedBox(
                             height: 10,
-                          ),
-                        if (userLists.isEmpty)
-                          MButton(
-                            active: true,
-                            text: 'Personal Lists',
-                            onPressedCallback: () {
-                              Navigator.of(context1).pop();
-
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (ctx) => MoviesListsPage(
-                                        initialPageIndex: 1,
-                                      )));
-                            },
                           ),
                         for (int i = 0; i < userLists.length; i++)
                           getMovieListWidget(userLists[i], context, context1),
@@ -138,6 +125,21 @@ class MAddToListButton extends StatelessWidget {
               ),
               actions: [
                 MButton(
+                  width: (MediaQuery.of(context).size.width / 2) - 55,
+                  active: true,
+                  text: 'Personal Lists',
+                  onPressedCallback: () {
+                    Navigator.of(context1).pop();
+
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (ctx) => MoviesListsPage(
+                          initialPageIndex: 1,
+                        )));
+                  },
+                ),
+                SizedBox(width: 10,),
+                MButton(
+                  width: (MediaQuery.of(context).size.width / 2) - 55,
                   active: true,
                   text: "Close",
                   parentContext: context,
