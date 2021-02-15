@@ -1,6 +1,7 @@
 import 'package:app_review/app_review.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/web_symbols_icons.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MoviesListsPage.dart';
@@ -229,7 +230,7 @@ class MovieListState extends State<MovieList>
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(Icons.queue_play_next),
+                Icon(Icons.playlist_play, size: 30,),
                 SizedBox(
                   width: 7,
                 ),
@@ -246,12 +247,12 @@ class MovieListState extends State<MovieList>
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(Icons.check),
+                Icon(WebSymbols.ok, size: 17,),
                 SizedBox(
                   width: 5,
                 ),
                 Text(
-                  'Viewed',
+                  '  Viewed',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,

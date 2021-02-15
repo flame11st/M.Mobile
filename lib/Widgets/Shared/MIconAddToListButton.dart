@@ -15,26 +15,12 @@ import 'MCard.dart';
 import 'MDialog.dart';
 import 'MSnackBar.dart';
 
-class MIconAddToListButton extends StatelessWidget {
-  final icon;
+class MAddToListButton extends StatelessWidget {
   final serviceAgent = new ServiceAgent();
-  final width;
-  final color;
-  final bool fromSearch;
-  final String hint;
   final Movie movie;
-  final int movieRate;
-  final bool shouldRequestReview;
+  final MoviesList moviesList;
 
-  MIconAddToListButton(
-      {this.icon,
-      this.width,
-      this.color,
-      this.fromSearch = false,
-      this.shouldRequestReview = false,
-      this.hint,
-      this.movie,
-      this.movieRate});
+  MAddToListButton({this.movie, this.moviesList});
 
   Widget getMovieListWidget(
       MoviesList list, BuildContext context, BuildContext dialogContext) {
@@ -74,40 +60,28 @@ class MIconAddToListButton extends StatelessWidget {
             marginLR: 2,
             marginBottom: 15,
             marginTop: 2,
-            child: Column(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (movieInList)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Already added to list',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      Icon(Icons.check)
-                    ],
-                  ),
                 if (movieInList)
                   SizedBox(
                     height: 10,
                   ),
-                Text(
+                Expanded(
+                    child: Text(
                   list.name,
                   style: Theme.of(context).textTheme.headline5,
-                ),
+                )),
+                if (movieInList) Icon(Icons.check)
               ],
             )));
   }
 
   void showListsDialog(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
 
-    var userLists = moviesState.moviesLists
-        .where((element) => element.movieListType == MovieListType.personal)
-        .toList();
+    var userLists = moviesState.personalMoviesLists;
+
     userLists.sort((a, b) => a.order > b.order ? 1 : 0);
 
     showDialog<String>(
@@ -175,15 +149,41 @@ class MIconAddToListButton extends StatelessWidget {
             ));
   }
 
+  removeMovieFromList(BuildContext context) async {
+    final moviesState = Provider.of<MoviesState>(context);
+    final userState = Provider.of<UserState>(context);
+
+    if (!userState.isIncognitoMode) {
+      await serviceAgent.removeMovieFromList(userState.userId, movie.id, moviesList.name);
+    }
+
+    Navigator.of(context).pop();
+
+    await new Future.delayed(const Duration(milliseconds: 300));
+
+    MSnackBar.showSnackBar(
+        '"${movie.title}" removed from your list "${moviesList.name}"', true);
+
+    moviesState.removeMovieFromPersonalList(moviesList.name, movie);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MIconButton(
-      width: width,
-      icon: icon,
-      color: color,
-      hint: hint,
+    final userState = Provider.of<UserState>(context);
+
+    bool isRemove = moviesList != null;
+    var text = isRemove ? 'Remove from this List': 'Add to Personal List';
+
+    if (serviceAgent.state == null) serviceAgent.state = userState;
+
+    return MButton(
+      prependIcon: isRemove ? Icons.clear : Icons.add,
+      height: 40,
+      active: true,
+      width: MediaQuery.of(context).size.width - 100,
+      text: text,
       onPressedCallback: () async {
-        showListsDialog(context);
+        isRemove ? removeMovieFromList(context) : showListsDialog(context);
       },
     );
   }

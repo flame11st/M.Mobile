@@ -37,6 +37,7 @@ class MIconRateButton extends StatelessWidget {
 
     if (!userState.isIncognitoMode) {
       serviceAgent.state = userState;
+
       await serviceAgent.rateMovie(movieId, userState.userId, movieRate);
     }
   }

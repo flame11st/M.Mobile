@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/MovieSearchItem.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';

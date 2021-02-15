@@ -160,6 +160,16 @@ class ServiceAgent {
         }));
   }
 
+  removeMovieFromList(String userId, String movieId, String listName) {
+    return post(
+        'Movies/RemoveMovieFromList',
+        jsonEncode({
+          'UserId': userId,
+          'MovieId': movieId,
+          'ListName': listName,
+        }));
+  }
+
   get(String uri) async {
     var baseUri = baseUrl;
 

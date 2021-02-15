@@ -8,6 +8,7 @@ import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
+import 'Shared/MDialog.dart';
 
 class MoviesListPage extends StatefulWidget {
   final MoviesList moviesList;
@@ -36,32 +37,63 @@ class MovieListPageState extends State<MoviesListPage> {
         child: Column(
           children: [
             MovieListItem(
-              movie: movie,
-            )
+                movie: movie,
+                moviesList:
+                    this.moviesList.movieListType == MovieListType.personal
+                        ? this.moviesList
+                        : null)
           ],
         ));
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void removeListButtonClicked() {
+    var mDialog = new MDialog(
+        context: context,
+        content: Text(
+            'Are You really want to remove your list "${moviesList.name}"?'),
+        firstButtonText: 'Yes, remove',
+        firstButtonCallback: () {
+          removeList();
+        },
+        secondButtonText: 'Cancel',
+        secondButtonCallback: () {});
+
+    mDialog.openDialog();
+  }
+
+  void removeList() {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
 
+    moviesState.removeMoviesList(moviesList.name);
+
+    Navigator.of(context).pop();
+
+    if (!userState.isIncognitoMode) {
+      serviceAgent.state = userState;
+
+      serviceAgent.removeUserMoviesList(userState.userId, moviesList.name);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     GlobalKey globalKey = new GlobalKey();
 
     if (ModalRoute.of(context).isCurrent && moviesList.listMovies.isNotEmpty) {
       MyGlobals.activeKey = globalKey;
     }
 
-    GlobalKey<AnimatedListState> key = GlobalKey<AnimatedListState>();
+    MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
 
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        Text(
+        Expanded(
+            child: Text(
           moviesList.name,
           style: Theme.of(context).textTheme.headline5,
-        ),
+        )),
         if (moviesList.movieListType == MovieListType.personal)
           IconButton(
             icon: Icon(
@@ -71,16 +103,7 @@ class MovieListPageState extends State<MoviesListPage> {
             ),
             color: Theme.of(context).cardColor,
             onPressed: () {
-              moviesState.removeMoviesList(moviesList.name);
-
-              Navigator.of(context).pop();
-              
-              if (!userState.isIncognitoMode) {
-                serviceAgent.state = userState;
-
-                serviceAgent.removeUserMoviesList(
-                    userState.userId, moviesList.name);
-              }
+              removeListButtonClicked();
             },
           )
       ],
@@ -95,7 +118,7 @@ class MovieListPageState extends State<MoviesListPage> {
           key: globalKey,
           child: AnimatedList(
             padding: EdgeInsets.only(bottom: 90),
-            key: key,
+            key: MyGlobals.personalListsKey,
             initialItemCount: moviesList.listMovies.length,
             itemBuilder: (context, index, animation) {
               if (moviesList.listMovies.length <= index) return null;

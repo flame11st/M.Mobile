@@ -72,8 +72,6 @@ class MyMoviesState extends State<MyMovies> {
     if (moviesState.isMoviesListsRequested) return;
     moviesState.isMoviesListsRequested = true;
 
-    moviesState.setCachedMoviesLists();
-
     final moviesListsResponse = await serviceAgent.getMoviesLists(userState.userId);
 
     Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
@@ -84,7 +82,11 @@ class MyMoviesState extends State<MyMovies> {
         return MoviesList.fromJson(list);
       }).toList();
 
-      moviesState.setInitialMoviesLists(moviesLists);
+      if (userState.isIncognitoMode) {
+        moviesState.setInitialMoviesListsIncognito(moviesLists);
+      } else {
+        moviesState.setInitialMoviesLists(moviesLists);
+      }
     }
   }
 

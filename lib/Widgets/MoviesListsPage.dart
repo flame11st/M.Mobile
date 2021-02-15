@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
@@ -76,6 +77,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
   }
 
   getMovieListWidget(MoviesList moviesList, MovieListType type) {
+    String imageBaseUrl =
+        "https://moviediarystorage.blob.core.windows.net/movies";
     // final moviesState = Provider.of<MoviesState>(context);
     // final moviesLists = moviesState.moviesLists
     //     .where((element) => element.movieListType == type)
@@ -89,61 +92,85 @@ class MoviesListsPageState extends State<MoviesListsPage>
     return GestureDetector(
       onTap: () => Navigator.of(context).push(_createRoute(moviesList)),
       child: MCard(
+          padding: 0,
           child: Container(
+              height: 80,
+              padding: EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  colorFilter: ColorFilter.mode(
+                      Colors.black.withOpacity(
+                          moviesList.listMovies.isNotEmpty ? 0.3 : 0.0),
+                      BlendMode.dstATop),
+                  image: moviesList.listMovies.isNotEmpty
+                      ? NetworkImage(
+                          imageBaseUrl + moviesList.listMovies.first.posterPath)
+                      : AssetImage("Assets/emptyList.jpg"),
+                  fit: BoxFit.cover,
+                ),
+              ),
               child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            moviesList.name,
-            style: Theme.of(context).textTheme.headline5,
-          ),
-          Icon(
-            Icons.arrow_forward,
-            color: Theme.of(context).hintColor,
-          ),
-        ],
-      ))),
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              moviesList.name,
+                              style:
+                                  TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              moviesList.listMovies.length.toString() + " item" + (moviesList.listMovies.length == 1 ? "" : "s"),
+                              style:
+                                  TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            )
+                        ])),
+                  Icon(
+                    Icons.arrow_forward,
+                    color: Theme.of(context).hintColor,
+                  ),
+                ],
+              ))),
     );
   }
 
-  addNewList(List<MoviesList> personalLists) {
+  addNewList() {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    final order = getMaxListOrder(personalLists) + 1;
+    final order = getMaxListOrder(moviesState.personalMoviesLists) + 1;
 
     showDialog<String>(
         context: context,
         builder: (BuildContext context1) => AlertDialog(
+              contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
               backgroundColor: Theme.of(context).primaryColor,
               contentTextStyle: Theme.of(context).textTheme.headline5,
               content: Container(
-                  height: 100,
+                  height: 90,
+                  padding: EdgeInsets.all(10),
                   margin: EdgeInsets.all(0),
                   child: Form(
                     key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Text(
-                          'Enter movies list name:',
-                          style: Theme.of(context).textTheme.headline2,
-                        ),
-                        TextFormField(
+                    child: Theme(
+                        data: Theme.of(context).copyWith(
+                            primaryColor: Theme.of(context).accentColor),
+                        child: TextFormField(
                           validator: (value) => nameController.text.isEmpty
                               ? "Please enter name"
-                              : personalLists.any((element) =>
+                              : moviesState.personalMoviesLists.any((element) =>
                                       element.name == nameController.text)
                                   ? "List with the same name already exists"
                                   : null,
                           controller: nameController,
                           decoration: InputDecoration(
-                            contentPadding:
-                                EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                          ),
-                        )
-                      ],
-                    ),
+                              contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                              labelText: "Enter movies list name",
+                              hintStyle: Theme.of(context).textTheme.headline5),
+                        )),
                   )),
               actions: [
                 MButton(
@@ -202,16 +229,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    final externalLists = moviesState.moviesLists
-        .where((element) => element.movieListType == MovieListType.external)
-        .toList();
-
-    final personalLists = moviesState.moviesLists
-        .where((element) => element.movieListType == MovieListType.personal)
-        .toList();
-
-    externalLists.sort((a, b) => a.order > b.order ? 1 : 0);
-    personalLists.sort((a, b) => a.order > b.order ? 1 : 0);
+    moviesState.externalMoviesLists.sort((a, b) => a.order > b.order ? 1 : 0);
+    moviesState.personalMoviesLists.sort((a, b) => a.order > b.order ? 1 : 0);
 
     final headingRow = AppBar(
       title: TabBar(
@@ -224,12 +243,12 @@ class MoviesListsPageState extends State<MoviesListsPage>
               child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(FontAwesome5.imdb),
+              Icon(FontAwesome5.empire),
               SizedBox(
                 width: 7,
               ),
               Text(
-                'External',
+                'General',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
@@ -241,7 +260,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
               child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(Icons.person),
+              Icon(FontAwesome5.jedi_order),
               SizedBox(
                 width: 5,
               ),
@@ -280,16 +299,19 @@ class MoviesListsPageState extends State<MoviesListsPage>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
-                              if (moviesState.moviesLists.length == 0)
+                              if (moviesState.externalMoviesLists.isEmpty)
                                 SizedBox(
                                   height: 40,
                                 ),
-                              if (moviesState.moviesLists.length == 0)
+                              if (moviesState.externalMoviesLists.isEmpty)
                                 Center(child: CircularProgressIndicator()),
-                              if (moviesState.moviesLists.length > 0)
-                                for (int i = 0; i < externalLists.length; i++)
+                              if (moviesState.externalMoviesLists.isNotEmpty)
+                                for (int i = 0;
+                                    i < moviesState.externalMoviesLists.length;
+                                    i++)
                                   getMovieListWidget(
-                                      externalLists[i], MovieListType.external),
+                                      moviesState.externalMoviesLists[i],
+                                      MovieListType.external),
                             ],
                           ))),
                   Stack(
@@ -302,24 +324,29 @@ class MoviesListsPageState extends State<MoviesListsPage>
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: <Widget>[
-                                  if (moviesState.moviesLists.isEmpty)
+                                  if (moviesState.externalMoviesLists.isEmpty)
                                     SizedBox(
                                       height: 40,
                                     ),
-                                  if (moviesState.moviesLists.length == 0)
+                                  if (moviesState.externalMoviesLists.isEmpty)
                                     Center(child: CircularProgressIndicator()),
-                                  if (moviesState.moviesLists.isNotEmpty &&
-                                      personalLists.isEmpty)
+                                  if (moviesState
+                                          .externalMoviesLists.isNotEmpty &&
+                                      moviesState.personalMoviesLists.isEmpty)
                                     Text(
                                       "You haven't created any personal list.\n"
-                                          "Please tap the 'Add' button to create a new one.",
+                                      "Please tap the 'Add' button to create a new one.",
                                       style: TextStyle(fontSize: 17, height: 2),
                                     ),
-                                  if (moviesState.moviesLists.length > 0)
+                                  if (moviesState.personalMoviesLists.length >
+                                      0)
                                     for (int i = 0;
-                                        i < personalLists.length;
+                                        i <
+                                            moviesState
+                                                .personalMoviesLists.length;
                                         i++)
-                                      getMovieListWidget(personalLists[i],
+                                      getMovieListWidget(
+                                          moviesState.personalMoviesLists[i],
                                           MovieListType.personal),
                                 ],
                               ))),
@@ -331,7 +358,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
                               child: FittedBox(
                                 child: FloatingActionButton(
                                   onPressed: () {
-                                    addNewList(personalLists);
+                                    addNewList();
                                   },
                                   child: const Icon(
                                     Icons.add,

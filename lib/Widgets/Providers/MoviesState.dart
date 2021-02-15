@@ -7,6 +7,7 @@ import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
@@ -26,7 +27,8 @@ class MoviesState with ChangeNotifier {
   List<Movie> userMovies = new List<Movie>();
   List<Movie> watchlistMovies = new List<Movie>();
   List<Movie> viewedMovies = new List<Movie>();
-  List<MoviesList> moviesLists = new List<MoviesList>();
+  List<MoviesList> externalMoviesLists = new List<MoviesList>();
+  List<MoviesList> personalMoviesLists = new List<MoviesList>();
   List<DropdownMenuItem<String>> genres = new List<DropdownMenuItem<String>>();
   bool moviesOnly = false;
   bool tvOnly = false;
@@ -119,34 +121,93 @@ class MoviesState with ChangeNotifier {
   }
 
   setCachedMoviesLists() async {
-    var storedMoviesLists;
+    var storedExternalMoviesLists;
+    var storedPersonalMoviesLists;
     try {
-      storedMoviesLists = await storage.read(key: 'moviesLists');
+      storedExternalMoviesLists = await storage.read(key: 'externalMoviesLists');
+      storedPersonalMoviesLists = await storage.read(key: 'personalMoviesLists');
     } catch (on, ex) {
       await clearStorage();
     }
 
-    if (storedMoviesLists == null) return;
+    if (storedExternalMoviesLists == null || storedPersonalMoviesLists == null) return;
 
-    Iterable iterableMoviesLists = json.decode(storedMoviesLists);
+    var externalMoviesListValue = getMoviesListFromJson(storedExternalMoviesLists);
+    var personalMoviesListValue = getMoviesListFromJson(storedPersonalMoviesLists);
+
+    if (externalMoviesListValue != null)
+      setExternalMoviesLists(externalMoviesListValue);
+
+    if (personalMoviesListValue != null)
+      setPersonalMoviesLists(personalMoviesListValue);
+  }
+
+  getMoviesListFromJson(String jsonString) {
+    Iterable iterableMoviesLists = json.decode(jsonString);
+    List<MoviesList> moviesLists;
 
     if (iterableMoviesLists.length != 0) {
-      List<MoviesList> moviesLists = iterableMoviesLists.map((model) {
+      moviesLists = iterableMoviesLists.map((model) {
         return MoviesList.fromJson(model);
       }).toList();
-
-      setMoviesLists(moviesLists);
     }
+
+    return moviesLists;
   }
 
   setInitialMoviesLists(List<MoviesList> moviesLists) async {
-    await storage.write(key: 'moviesLists', value: jsonEncode(moviesLists));
+    final externalLists = moviesLists
+        .where((list) => list.movieListType == MovieListType.external)
+        .toList();
+    final personalLists = moviesLists
+        .where((list) => list.movieListType == MovieListType.personal)
+        .toList();
 
-    setMoviesLists(moviesLists);
+    await storage.write(key: 'externalMoviesLists', value: jsonEncode(externalLists));
+    await storage.write(key: 'personalMoviesLists', value: jsonEncode(personalLists));
+
+    setExternalMoviesLists(externalLists);
+    setPersonalMoviesLists(personalLists);
   }
 
-  setMoviesLists(List<MoviesList> moviesLists) {
-    this.moviesLists = moviesLists.map((ml) {
+  setInitialMoviesListsIncognito(List<MoviesList> moviesLists) async {
+    final externalLists = moviesLists
+        .where((list) => list.movieListType == MovieListType.external)
+        .toList();
+
+    await storage.write(key: 'externalMoviesLists', value: jsonEncode(externalLists));
+
+    setExternalMoviesLists(externalLists);
+
+    notifyListeners();
+  }
+
+  // setMoviesLists(List<MoviesList> moviesLists) {
+  //   final externalLists = moviesLists
+  //       .where((list) => list.movieListType == MovieListType.external)
+  //       .toList();
+  //
+  //   setExternalMoviesLists(externalLists);
+  //
+  //   final personalLists = moviesLists
+  //       .where((list) => list.movieListType == MovieListType.personal)
+  //       .toList();
+  //
+  //   setPersonalMoviesLists(personalLists);
+  // }
+
+  setExternalMoviesLists(List<MoviesList> moviesLists) {
+    this.externalMoviesLists = getMappedMoviesList(moviesLists);
+  }
+
+  setPersonalMoviesLists(List<MoviesList> moviesLists) {
+    this.personalMoviesLists = getMappedMoviesList(moviesLists);
+
+    notifyListeners();
+  }
+
+  getMappedMoviesList(List<MoviesList> moviesLists) {
+    var lists = moviesLists.map((ml) {
       final movies = ml.listMovies.map((movie) {
         final userMovie = userMovies.where((um) => um.id == movie.id);
 
@@ -164,36 +225,44 @@ class MoviesState with ChangeNotifier {
       return ml;
     }).toList();
 
-    notifyListeners();
+    return lists;
   }
 
   addMoviesList(String listName, int order) async {
-    this.moviesLists.add(new MoviesList(
+    this.personalMoviesLists.add(new MoviesList(
         name: listName,
         movieListType: MovieListType.personal,
         order: order,
         listMovies: []));
 
-    storage.write(
-        key: 'moviesLists', value: jsonEncode(this.moviesLists));
+    storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
   }
 
   removeMoviesList(String listName) {
-    this.moviesLists =
-        this.moviesLists.where((element) => element.name != listName).toList();
+    this.personalMoviesLists =
+        this.personalMoviesLists.where((element) => element.name != listName).toList();
 
-    storage.write(
-        key: 'moviesLists', value: jsonEncode(this.moviesLists));
+    storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
   }
 
   addMovieToPersonalList(String listName, Movie movie) {
-    final list = moviesLists.singleWhere((element) => element.name == listName);
+    final list = personalMoviesLists.singleWhere((element) => element.name == listName);
 
     list.listMovies.add(movie);
 
-    final listsStringValue = jsonEncode(this.moviesLists);
+    final listsStringValue = jsonEncode(this.personalMoviesLists);
 
-    storage.write(key: 'moviesLists', value: listsStringValue);
+    storage.write(key: 'personalMoviesLists', value: listsStringValue);
+  }
+
+  removeMovieFromPersonalList(String listName, Movie movie) {
+    final list = personalMoviesLists.singleWhere((element) => element.name == listName);
+
+    removeMovieFromList(movie, list.listMovies, MyGlobals.personalListsKey);
+
+    final listsStringValue = jsonEncode(this.personalMoviesLists);
+
+    storage.write(key: 'personalMoviesLists', value: listsStringValue);
   }
 
   setGenres() {
@@ -487,7 +556,13 @@ class MoviesState with ChangeNotifier {
   }
 
   void setRateToMovieInLists(String movieId, int rate) {
-    moviesLists.forEach((element) {
+    externalMoviesLists.forEach((element) {
+      var movies = element.listMovies.where((element) => element.id == movieId);
+
+      if (movies.length > 0) movies.first.movieRate = rate;
+    });
+
+    personalMoviesLists.forEach((element) {
       var movies = element.listMovies.where((element) => element.id == movieId);
 
       if (movies.length > 0) movies.first.movieRate = rate;
@@ -577,7 +652,8 @@ class MoviesState with ChangeNotifier {
 
   clearStorage() async {
     await storage.delete(key: 'movies');
-    await storage.delete(key: 'moviesLists');
+    await storage.delete(key: 'externalMoviesLists');
+    await storage.delete(key: 'personalMoviesLists');
   }
 
   clear() async {
@@ -590,11 +666,8 @@ class MoviesState with ChangeNotifier {
     viewedMovies.clear();
     userMovies.clear();
     cachedUserMovies.clear();
-
-    // moviesLists = moviesLists
-    //     .where((element) => element.movieListType == MovieListType.external)
-    //     .toList();
-    // setMoviesLists(moviesLists);
+    personalMoviesLists.clear();
+    externalMoviesLists = getMappedMoviesList(externalMoviesLists);
 
     await clearStorage();
   }
@@ -612,6 +685,7 @@ class MoviesState with ChangeNotifier {
   //Animated List area
   GlobalKey<AnimatedListState> watchlistKey = GlobalKey<AnimatedListState>();
   GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
+  // GlobalKey<AnimatedListState> personalListKey;
 
   Widget buildItem(Movie movie, Animation animation,
       {bool isPremium = false, BuildContext context}) {

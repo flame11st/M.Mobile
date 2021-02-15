@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/entypo_icons.dart';
 import 'package:mmobile/Widgets/MoviesListsPage.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
@@ -89,7 +90,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               withBorder: false,
               hint: 'Lists',
               icon: Icon(
-                Icons.list,
+                Entypo.menu,
                 color: Theme.of(context).hintColor,
               ),
               onPressedCallback: () {

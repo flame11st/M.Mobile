@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
 import 'package:provider/provider.dart';
@@ -16,13 +17,13 @@ import 'package:http/http.dart' as http;
 
 class MovieListItem extends StatefulWidget {
   final Movie movie;
-  final String imageUrl;
+  final MoviesList moviesList;
 
-  const MovieListItem({Key key, this.movie, this.imageUrl}) : super(key: key);
+  const MovieListItem({Key key, this.movie, this.moviesList}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemState(movie, imageUrl);
+    return MovieListItemState(movie, moviesList);
   }
 }
 
@@ -31,11 +32,13 @@ class MovieListItemState extends State<MovieListItem> {
   String imageBaseUrl =
       "https://moviediarystorage.blob.core.windows.net/movies";
   bool imageChecked = false;
+  MoviesList moviesList;
 
   Movie movie;
 
-  MovieListItemState(Movie movie, String url) {
+  MovieListItemState(Movie movie, MoviesList moviesList) {
     this.movie = movie;
+    this.moviesList = moviesList;
   }
 
   checkImage(String imageUrl) async {
@@ -67,7 +70,7 @@ class MovieListItemState extends State<MovieListItem> {
     switch (movie.movieRate) {
       case MovieRate.addedToWatchlist:
         {
-          icon = Icons.check;
+          icon = Icons.add_to_queue;
           break;
         }
       case MovieRate.liked:
@@ -201,6 +204,7 @@ class MovieListItemState extends State<MovieListItem> {
                                   context: context,
                                   builder: (BuildContext context) =>
                                       MovieRateButtons(
+                                        moviesList: moviesList,
                                         movie: movie,
                                         showTitle: true,
                                         addMargin: false,
@@ -219,6 +223,7 @@ class MovieListItemState extends State<MovieListItem> {
         builder: (ctx) => MovieListItemExpanded(
               movie: movie,
               imageUrl: imageBaseUrl,
+              moviesList: moviesList,
             )));
   }
 }

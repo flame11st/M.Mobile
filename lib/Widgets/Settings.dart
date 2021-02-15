@@ -120,10 +120,6 @@ class SettingsState extends State<Settings> {
 
     if (clearMoviesResponse.statusCode == 200) {
       MSnackBar.showSnackBar('All movies removed', true);
-
-      setState(() {
-        userMoviesCount = 0;
-      });
     }
   }
 
@@ -387,7 +383,7 @@ class SettingsState extends State<Settings> {
                       .headline5,
                   children: <TextSpan>[
                     new TextSpan(
-                        text: 'User movies count:   ',
+                        text: 'Your movies count:   ',
                         style: Theme
                             .of(context)
                             .textTheme
@@ -406,6 +402,10 @@ class SettingsState extends State<Settings> {
                       if (!userState.isIncognitoMode) {
                         clearUserMovies(userState.userId);
                       }
+
+                      setState(() {
+                        userMoviesCount = 0;
+                      });
 
                       moviesState.clear();
                     },

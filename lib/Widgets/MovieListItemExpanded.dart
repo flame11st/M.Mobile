@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Widgets/Shared/MBoxShadow.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MTextField.dart';
@@ -15,28 +16,31 @@ class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
   final bool fromSearch;
   final String imageUrl;
+  final MoviesList moviesList;
 
   const MovieListItemExpanded(
-      {Key key, this.movie, this.fromSearch = false, this.imageUrl})
+      {Key key, this.movie, this.fromSearch = false, this.imageUrl, this.moviesList})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemExpandedState(movie, fromSearch, imageUrl);
+    return MovieListItemExpandedState(movie, fromSearch, imageUrl, moviesList);
   }
 }
 
 class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   Movie movie;
   bool fromSearch;
+  MoviesList moviesList;
 
   String imageBaseUrl =
       'https://moviediarystorage.blob.core.windows.net/movies';
 
   MovieListItemExpandedState(
-      Movie movie, bool fromSearch, String url) {
+      Movie movie, bool fromSearch, String url, MoviesList moviesList) {
     this.movie = movie;
     this.fromSearch = fromSearch;
+    this.moviesList = moviesList;
   }
 
   getProgressColor() {
@@ -229,7 +233,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             bottomNavigationBar: MoviesBottomNavigationBarExpanded(
               movie: movie,
               fromSearch: fromSearch,
-              shouldRequestReview: true
+              shouldRequestReview: true,
+              moviesList: moviesList,
             )));
   }
 }
