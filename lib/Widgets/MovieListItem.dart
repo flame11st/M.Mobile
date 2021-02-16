@@ -70,7 +70,7 @@ class MovieListItemState extends State<MovieListItem> {
     switch (movie.movieRate) {
       case MovieRate.addedToWatchlist:
         {
-          icon = Icons.add_to_queue;
+          icon = Icons.bookmark_border;
           break;
         }
       case MovieRate.liked:
@@ -101,6 +101,11 @@ class MovieListItemState extends State<MovieListItem> {
                 color: Theme.of(context).cardColor,
                 type: MaterialType.transparency,
                 child: MCard(
+                    foregroundColor: movie.movieRate == MovieRate.liked
+                        ? Colors.green.withOpacity(0.08)
+                        : movie.movieRate == MovieRate.notLiked
+                            ? Colors.red.withOpacity(0.08)
+                            : Colors.transparent,
                     marginBottom: 5,
                     marginLR: 10,
                     marginTop: 15,
@@ -196,7 +201,7 @@ class MovieListItemState extends State<MovieListItem> {
                                   ? Colors.green
                                   : movie.movieRate == MovieRate.notLiked
                                       ? Colors.red
-                                      : Theme.of(context).hintColor,
+                                      : Theme.of(context).accentColor,
                             ),
                             onPressed: () async {
                               showModalBottomSheet<void>(

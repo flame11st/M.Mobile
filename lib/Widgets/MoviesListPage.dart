@@ -5,9 +5,11 @@ import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
+import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
+import 'Shared/MButton.dart';
 import 'Shared/MDialog.dart';
 
 class MoviesListPage extends StatefulWidget {
@@ -23,6 +25,8 @@ class MoviesListPage extends StatefulWidget {
 
 class MovieListPageState extends State<MoviesListPage> {
   MoviesList moviesList;
+  final nameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   MovieListPageState(MoviesList moviesList) {
     this.moviesList = moviesList;
@@ -47,6 +51,8 @@ class MovieListPageState extends State<MoviesListPage> {
   }
 
   void removeListButtonClicked() {
+    Navigator.of(context).pop();
+
     var mDialog = new MDialog(
         context: context,
         content: Text(
@@ -61,6 +67,81 @@ class MovieListPageState extends State<MoviesListPage> {
     mDialog.openDialog();
   }
 
+  void renameListButtonClicked() {
+    Navigator.of(context).pop();
+
+    final moviesState = Provider.of<MoviesState>(context);
+    final userState = Provider.of<UserState>(context);
+
+    nameController.text = moviesList.name;
+
+    showDialog<String>(
+        context: context,
+        builder: (BuildContext context1) => AlertDialog(
+          contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+          backgroundColor: Theme.of(context).primaryColor,
+          contentTextStyle: Theme.of(context).textTheme.headline5,
+          content: Container(
+              height: 90,
+              padding: EdgeInsets.all(10),
+              margin: EdgeInsets.all(0),
+              child: Form(
+                key: _formKey,
+                child: Theme(
+                    data: Theme.of(context).copyWith(
+                        primaryColor: Theme.of(context).accentColor),
+                    child: TextFormField(
+                      validator: (value) => nameController.text.isEmpty
+                          ? "Please enter name"
+                          : moviesState.personalMoviesLists.any((element) =>
+                      element.name == nameController.text && element != moviesList)
+                          ? "List with the same name already exists"
+                          : null,
+                      controller: nameController,
+                      decoration: InputDecoration(
+                          contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                          labelText: "Enter new list name",
+                          hintStyle: Theme.of(context).textTheme.headline5),
+                    )),
+              )),
+          actions: [
+            MButton(
+              active: true,
+              text: 'Rename',
+              parentContext: context,
+              onPressedCallback: () async {
+                if (_formKey.currentState != null &&
+                    _formKey.currentState.validate()) {
+                  if (!userState.isIncognitoMode) {
+                    serviceAgent.state = userState;
+
+                    await serviceAgent.renameUserMoviesList(
+                        userState.userId, moviesList.name, nameController.text);
+                  }
+
+                  moviesState.renameMoviesList(moviesList.name, nameController.text);
+
+                  MSnackBar.showSnackBar('The List renamed to "${nameController.text}"', true);
+
+                  nameController.clear();
+
+                  Navigator.of(context1).pop();
+                }
+              },
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            MButton(
+              active: true,
+              text: 'Cancel',
+              parentContext: context,
+              onPressedCallback: () => Navigator.of(context1).pop(),
+            )
+          ],
+        ));
+  }
+
   void removeList() {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
@@ -70,14 +151,18 @@ class MovieListPageState extends State<MoviesListPage> {
     Navigator.of(context).pop();
 
     if (!userState.isIncognitoMode) {
-      serviceAgent.state = userState;
-
       serviceAgent.removeUserMoviesList(userState.userId, moviesList.name);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final userState = Provider.of<UserState>(context);
+
+    if (serviceAgent.state == null) {
+      serviceAgent.state = userState;
+    }
+
     GlobalKey globalKey = new GlobalKey();
 
     if (ModalRoute.of(context).isCurrent && moviesList.listMovies.isNotEmpty) {
@@ -95,17 +180,34 @@ class MovieListPageState extends State<MoviesListPage> {
           style: Theme.of(context).textTheme.headline5,
         )),
         if (moviesList.movieListType == MovieListType.personal)
-          IconButton(
-            icon: Icon(
-              Icons.delete_forever,
-              size: 25,
-              color: Colors.red,
-            ),
-            color: Theme.of(context).cardColor,
-            onPressed: () {
-              removeListButtonClicked();
-            },
-          )
+          PopupMenuButton(
+            padding: EdgeInsets.zero,
+            itemBuilder: (context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                  child: GestureDetector(
+                      onTap: () => removeListButtonClicked(),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.delete_forever,
+                          size: 25,
+                          color: Theme.of(context).accentColor,
+                        ),
+                        title: Text("Remove List"),
+                      ))),
+              PopupMenuDivider(height: 5,),
+              PopupMenuItem<String>(
+                  child: GestureDetector(
+                      onTap: () => renameListButtonClicked(),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.edit,
+                          size: 25,
+                          color: Theme.of(context).accentColor,
+                        ),
+                        title: Text("Change List Name"),
+                      ))),
+            ],
+          ),
       ],
     );
 

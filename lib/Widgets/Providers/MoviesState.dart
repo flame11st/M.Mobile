@@ -238,6 +238,14 @@ class MoviesState with ChangeNotifier {
     storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
   }
 
+  renameMoviesList(String oldName, String newName) async {
+    final list = this.personalMoviesLists.singleWhere((element) => element.name == oldName);
+
+    list.name = newName;
+
+    storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
+  }
+
   removeMoviesList(String listName) {
     this.personalMoviesLists =
         this.personalMoviesLists.where((element) => element.name != listName).toList();

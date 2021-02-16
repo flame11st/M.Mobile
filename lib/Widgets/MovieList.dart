@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttericon/web_symbols_icons.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
+import 'package:mmobile/Widgets/EmptyMoviesCard.dart';
 import 'package:mmobile/Widgets/MoviesListsPage.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
@@ -22,25 +23,6 @@ class MovieList extends StatefulWidget {
 class MovieListState extends State<MovieList>
     with SingleTickerProviderStateMixin {
   TabController tabController;
-
-  Route _createRoute(Function page) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => page(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var begin = Offset(0.0, 1.0);
-        var end = Offset.zero;
-        var curve = Curves.ease;
-
-        var tween =
-            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-    );
-  }
 
   @override
   void initState() {
@@ -130,63 +112,7 @@ class MovieListState extends State<MovieList>
   }
 
   getEmptyMoviesCardWidget(String tabName) {
-    return Column(children: [
-      MCard(
-        marginLR: 20,
-        child: Column(
-          children: [
-            Text(
-              "Welcome to MovieDiary!",
-              style: TextStyle(
-                  color: Theme.of(context).accentColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Text(
-              "You didn't add any Movie or TV Series yet. \n\n"
-              "Please use Search to add items to your $tabName. \n\n"
-              "Also you can check Lists with popular Movies or TV Series, top rated, etc.\n\n",
-              style:
-                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
-            ),
-            MButton(
-              active: true,
-              text: 'Find Movie or TV Show',
-              prependIcon: Icons.search,
-              width: MediaQuery.of(context).size.width - 50,
-              onPressedCallback: () => showSearch(
-                context: context,
-                delegate: MSearchDelegate(),
-              ),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            MButton(
-              active: true,
-              text: 'Open Lists',
-              prependIcon: Icons.list,
-              width: MediaQuery.of(context).size.width - 50,
-              onPressedCallback: () => Navigator.of(context)
-                  .push(_createRoute(() => MoviesListsPage())),
-            ),
-            SizedBox(
-              height: 30,
-            ),
-            Text(
-              "P.S. With this app you can't watch tv shows or movies!",
-              style: TextStyle(
-                  color: Theme.of(context).accentColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
-            )
-          ],
-        ),
-      )
-    ]);
+    return EmptyMoviesCard(tabName: tabName);
   }
 
   @override
@@ -209,7 +135,7 @@ class MovieListState extends State<MovieList>
 
     if (userState.shouldRequestReview &&
         !userState.appReviewRequested &&
-        movieState.userMovies.length > 10) {
+        movieState.userMovies.length > 6) {
       requestReview();
     }
 

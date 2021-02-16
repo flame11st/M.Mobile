@@ -25,8 +25,8 @@ class ServiceAgent {
 
     var uri = responseAWS.body;
 
-    // return uri + "/api/";
-    return baseUrlLocal + "api/";
+    return uri + "/api/";
+    // return baseUrlLocal + "api/";
   }
 
   checkAuthorization() {
@@ -138,6 +138,16 @@ class ServiceAgent {
           'UserId': userId,
           'Order': order,
           'ListName': listName,
+        }));
+  }
+
+  renameUserMoviesList(String userId, String oldName, String newName) {
+    return post(
+        'Movies/RenameUserMoviesList',
+        jsonEncode({
+          'UserId': userId,
+          'OldName': oldName,
+          'NewName': newName,
         }));
   }
 

@@ -22,6 +22,7 @@ class MSearchDelegate extends SearchDelegate {
   bool notFound = false;
   bool showAdvancedCard = false;
   bool isAdvanced = false;
+  GlobalKey globalKey;
 
   setAdvacedSearch() {
     setStateFunction(() => isLoading = !isLoading);
@@ -42,9 +43,9 @@ class MSearchDelegate extends SearchDelegate {
         searchMovies(context);
       }
 
-      GlobalKey globalKey = new GlobalKey();
+      if (ModalRoute.of(context).isCurrent && (this.globalKey == null || this.globalKey != MyGlobals.activeKey)) {
+        globalKey = new GlobalKey();
 
-      if (ModalRoute.of(context).isCurrent) {
         MyGlobals.activeKey = globalKey;
       }
 

@@ -28,13 +28,13 @@ class MovieRateButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = (MediaQuery.of(context).size.width - 50) / 4;
+    final width = ((MediaQuery.of(context).size.width - 50) / 3) - 15;
     final text = movie.movieRate == MovieRate.notRated
         ? "Add to your movies "
         : "Change score of ";
 
     return Container(
-        height: showTitle != null && showTitle ? 200 : 105,
+        height: showTitle != null && showTitle ? 200 : 60,
         margin: addMargin != null && !addMargin
             ? EdgeInsets.all(0)
             : EdgeInsets.fromLTRB(10, 5, 10, 10),
@@ -68,8 +68,7 @@ class MovieRateButtons extends StatelessWidget {
                     children: <TextSpan>[
                       new TextSpan(text: text),
                       new TextSpan(
-                          text:
-                              '"${movie.title}"?',
+                          text: '"${movie.title}"?',
                           style: Theme.of(context).textTheme.headline4),
                     ],
                   )),
@@ -127,7 +126,7 @@ class MovieRateButtons extends StatelessWidget {
                   color: movie.movieRate == MovieRate.addedToWatchlist
                       ? Theme.of(context).accentColor
                       : Theme.of(context).cardColor.withOpacity(0.95),
-                  icon: Icon(Icons.add_to_queue,
+                  icon: Icon(Icons.bookmark_border,
                       color: movie.movieRate == MovieRate.addedToWatchlist
                           ? Theme.of(context).cardColor
                           : Theme.of(context).hintColor),
@@ -138,13 +137,40 @@ class MovieRateButtons extends StatelessWidget {
                   width: width,
                   fromSearch: fromSearch,
                 ),
+                if (showTitle == null || !showTitle)
+                  Container(
+                    width: 30,
+                    child: PopupMenuButton(
+                      padding: EdgeInsets.zero,
+                      itemBuilder: (context) => <PopupMenuItem<String>>[
+                        PopupMenuItem<String>(
+                            height: 80,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Other actions', style: Theme.of(context).textTheme.headline2,),
+                                Divider(
+                                  height: 5,
+                                  thickness: 2,
+                                ),
+                                SizedBox(height: 15,),
+                                MAddToListButton(
+                                  movie: movie,
+                                  moviesList: moviesList,
+                                  fromMenu: true,
+                                ),
+                              ],
+                            )),
+                      ],
+                    ),
+                  )
               ],
             ),
-            // if (showTitle != null && showTitle)
-            MAddToListButton(
-              movie: movie,
-              moviesList: moviesList,
-            ),
+            if (showTitle != null && showTitle)
+              MAddToListButton(
+                movie: movie,
+                moviesList: moviesList,
+              ),
           ],
         ));
   }

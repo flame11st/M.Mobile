@@ -4,7 +4,7 @@ import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 
 class MoviesList {
-  final String name;
+  String name;
   final int order;
 
   final MovieListType movieListType;

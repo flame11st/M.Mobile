@@ -11,6 +11,7 @@ class MCard extends StatelessWidget {
   final double marginLR;
   final Color color;
   final Color shadowColor;
+  final Color foregroundColor;
 
   MCard(
       {this.text,
@@ -21,7 +22,8 @@ class MCard extends StatelessWidget {
       this.color,
       this.shadowColor,
       this.marginLR,
-      this.marginBottom});
+      this.marginBottom,
+      this.foregroundColor});
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +45,9 @@ class MCard extends StatelessWidget {
           ],
           borderRadius: BorderRadius.circular(4.0),
           color: color != null ? color : Theme.of(context).cardColor,
+        ),
+        foregroundDecoration: BoxDecoration(
+            color: foregroundColor != null ? foregroundColor : Colors.transparent,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

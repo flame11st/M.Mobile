@@ -19,8 +19,9 @@ class MAddToListButton extends StatelessWidget {
   final serviceAgent = new ServiceAgent();
   final Movie movie;
   final MoviesList moviesList;
+  final bool fromMenu;
 
-  MAddToListButton({this.movie, this.moviesList});
+  MAddToListButton({this.movie, this.moviesList, this.fromMenu = false});
 
   Widget getMovieListWidget(
       MoviesList list, BuildContext context, BuildContext dialogContext) {
@@ -39,6 +40,10 @@ class MAddToListButton extends StatelessWidget {
           Navigator.of(dialogContext).pop();
 
           Navigator.of(context).pop();
+
+          if (fromMenu) {
+            Navigator.of(context).pop();
+          }
 
           await new Future.delayed(const Duration(milliseconds: 300));
 
@@ -63,14 +68,22 @@ class MAddToListButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (movieInList)
-                  SizedBox(
-                    height: 10,
-                  ),
                 Expanded(
-                    child: Text(
-                  list.name,
-                  style: Theme.of(context).textTheme.headline5,
+                    child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      list.name,
+                      style: Theme.of(context).textTheme.headline5,
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Text(list.listMovies.length.toString() +
+                        " item" +
+                        (list.listMovies.length == 1 ? "" : "s"))
+                  ],
                 )),
                 if (movieInList) Icon(Icons.check)
               ],
@@ -91,9 +104,12 @@ class MAddToListButton extends StatelessWidget {
               backgroundColor: Theme.of(context).primaryColor,
               contentTextStyle: Theme.of(context).textTheme.headline5,
               content: Container(
-                height: userLists.isEmpty ? 100 : MediaQuery.of(context).size.height,
+                height: userLists.isEmpty
+                    ? 100
+                    : (80 * userLists.length + 80).toDouble(),
                 width: MediaQuery.of(context).size.width,
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     if (userLists.isNotEmpty)
                       Text(
@@ -129,15 +145,19 @@ class MAddToListButton extends StatelessWidget {
                   active: true,
                   text: 'Personal Lists',
                   onPressedCallback: () {
+                    Navigator.of(context).pop();
+
                     Navigator.of(context1).pop();
 
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (ctx) => MoviesListsPage(
-                          initialPageIndex: 1,
-                        )));
+                              initialPageIndex: 1,
+                            )));
                   },
                 ),
-                SizedBox(width: 10,),
+                SizedBox(
+                  width: 10,
+                ),
                 MButton(
                   width: (MediaQuery.of(context).size.width / 2) - 55,
                   active: true,
@@ -156,10 +176,15 @@ class MAddToListButton extends StatelessWidget {
     final userState = Provider.of<UserState>(context);
 
     if (!userState.isIncognitoMode) {
-      await serviceAgent.removeMovieFromList(userState.userId, movie.id, moviesList.name);
+      await serviceAgent.removeMovieFromList(
+          userState.userId, movie.id, moviesList.name);
     }
 
     Navigator.of(context).pop();
+
+    if (fromMenu) {
+      Navigator.of(context).pop();
+    }
 
     await new Future.delayed(const Duration(milliseconds: 300));
 
@@ -174,7 +199,7 @@ class MAddToListButton extends StatelessWidget {
     final userState = Provider.of<UserState>(context);
 
     bool isRemove = moviesList != null;
-    var text = isRemove ? 'Remove from this List': 'Add to Personal List';
+    var text = isRemove ? 'Remove from this List' : 'Add to Personal List';
 
     if (serviceAgent.state == null) serviceAgent.state = userState;
 
