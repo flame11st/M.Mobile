@@ -44,7 +44,7 @@ class MovieListState extends State<MovieList>
 
   @override
   void dispose() {
-    AdManager.bannerAd?.dispose();
+    AdManager.hideBanner();
     tabController.dispose();
 
     super.dispose();
@@ -155,7 +155,7 @@ class MovieListState extends State<MovieList>
 
     if (!userState.premiumPurchasedIncognito &&
         (userState.user == null || !userState.user.premiumPurchased)
-        && movieState.userMovies.length > 9) {
+        && movieState.userMovies.length > 6) {
       var offset = MediaQuery.of(context).size.height - 140.0;
 
       if (ModalRoute.of(context).isCurrent) AdManager.showBanner(offset);
