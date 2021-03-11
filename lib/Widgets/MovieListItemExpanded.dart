@@ -67,6 +67,12 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   Widget build(BuildContext context) {
     final formatter = new NumberFormat("#,###");
 
+    if (AdManager.bannerVisible) {
+      final offset = MediaQuery.of(context).size.height - (movie.genres.isNotEmpty ? 170.0 : 150);
+
+      AdManager.showBanner(offset);
+    }
+
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     final topCard = MCard(
@@ -109,11 +115,11 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     style: Theme.of(context).textTheme.headline5)
             ],
           ),
-          if (movie.genres.isNotEmpty && !AdManager.bannerVisible)
+          if (movie.genres.isNotEmpty)
             SizedBox(
               height: 5,
             ),
-          if (movie.genres.isNotEmpty && !AdManager.bannerVisible)
+          if (movie.genres.isNotEmpty)
             Text(movie.genres.join(', '),
                 style: Theme.of(context).textTheme.headline5)
         ],
@@ -189,11 +195,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        if (movie.genres.isNotEmpty && AdManager.bannerVisible)
-          MTextField(
-              subtitleText: 'Genres',
-              bodyText: movie.genres.map((director) => director).join(', ')),
-        if (movie.genres.isNotEmpty && AdManager.bannerVisible) SizedBox(height: 10),
         if (movie.tagline != null && movie.tagline.isNotEmpty)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         if (movie.directors.isNotEmpty) SizedBox(height: 10),
@@ -220,9 +221,25 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       ],
     );
 
-    return GestureDetector(
+    return WillPopScope(
+        onWillPop: () {
+          if (AdManager.bannerVisible) {
+            final offset = MediaQuery.of(context).size.height - 140.0;
+
+            AdManager.showBanner(offset);
+          }
+
+          Navigator.of(context).pop();
+          return;
+        },
+        child: GestureDetector(
             onTap: () {
               Navigator.of(context).pop();
+              if (AdManager.bannerVisible) {
+                final offset = MediaQuery.of(context).size.height - 140.0;
+
+                AdManager.showBanner(offset);
+              }
             },
             child: Scaffold(
                 backgroundColor: Theme.of(context).primaryColor,
@@ -230,7 +247,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                   tag: 'movie-hero-animation' + movie.id,
                   child: SingleChildScrollView(
                     child: Container(
-                        margin: EdgeInsets.fromLTRB(10, 10, 10, 20),
+                        margin: EdgeInsets.fromLTRB(10, 15, 10, 20),
                         child: Material(
                           type: MaterialType.transparency,
                           child: Container(
@@ -254,6 +271,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                   fromSearch: fromSearch,
                   shouldRequestReview: shouldRequestReview,
                   moviesList: moviesList,
-                )));
+                ))));
   }
 }
