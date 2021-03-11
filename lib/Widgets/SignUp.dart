@@ -28,10 +28,6 @@ class SignUpState extends State<SignUp> {
   final _formKey = GlobalKey<FormState>();
 
   signUp() async {
-    setState(() {
-      this.signUpButtonActive = false;
-    });
-
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
     loaderState.setIsLoaderVisible(true);

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:fluttericon/octicons_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
@@ -158,27 +157,6 @@ class Premium extends StatelessWidget {
       ],
     );
 
-    final removeAdFeature = Column(
-      children: <Widget>[
-        Icon(
-          FontAwesome5.ad,
-          color: Theme.of(context).accentColor,
-          size: 40,
-        ),
-        SizedBox(
-          height: 10,
-        ),
-        Text(
-          'Remove Ads',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Theme.of(context).accentColor,
-              fontSize: 18,
-              fontWeight: FontWeight.bold),
-        )
-      ],
-    );
-
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
@@ -189,7 +167,7 @@ class Premium extends StatelessWidget {
         child: SingleChildScrollView(
           child: Container(
               margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-              padding: EdgeInsets.fromLTRB(20, AdManager.bannerVisible ? 60 : 0, 20, 20),
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
               color: Theme.of(context).primaryColor,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -202,23 +180,19 @@ class Premium extends StatelessWidget {
                   SizedBox(
                     height: 20,
                   ),
-                  removeAdFeature,
-                  SizedBox(
-                    height: 20,
-                  ),
                   themeFeature,
                   SizedBox(
-                    height: 20,
+                    height: 30,
                   ),
                   allMoviesFeature,
                   SizedBox(
-                    height: 20,
+                    height: 30,
                   ),
                   filtersFeature,
                   SizedBox(
                     height: 30,
                   ),
-                  supportFeature,
+                  supportFeature
                 ],
               )),
         ),

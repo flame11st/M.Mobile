@@ -11,7 +11,7 @@ description: M.Mobile application.
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.1.9+28
+version: 1.1.7+26
 
 environment:
   sdk: ">=2.6.0 <3.0.0"
@@ -22,19 +22,19 @@ dependencies:
 
   http: ^0.12.1
   provider: ^3.0.0
-  flutter_secure_storage: ^3.3.5
+  flutter_secure_storage: ^3.3.3
   cached_network_image: ^2.2.0
   percent_indicator: ^2.1.5
   flutter_neumorphic: ^3.0.1
   fluttericon: ^1.0.7
   google_sign_in: ^4.5.1
+  firebase_auth: ^0.16.1
   flutter_launcher_icons: ^0.8.1
   device_info: ^0.4.2+7
   in_app_purchase: ^0.3.4+5
   intl: ^0.16.1
   app_review: ^2.0.1
   in_app_review: ^1.0.4
-  firebase_admob: ^0.11.0+1
 
 flutter_icons:
   image_path: "Assets/mdIcon_IX.png"

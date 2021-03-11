@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mmobile/Enums/MovieType.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Widgets/Shared/MBoxShadow.dart';
@@ -11,7 +10,6 @@ import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MTextField.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'MoviesBottomNavigationBarExpanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
@@ -19,21 +17,14 @@ class MovieListItemExpanded extends StatefulWidget {
   final bool fromSearch;
   final String imageUrl;
   final MoviesList moviesList;
-  final bool shouldRequestReview;
 
   const MovieListItemExpanded(
-      {Key key,
-      this.movie,
-      this.fromSearch = false,
-      this.imageUrl,
-      this.moviesList,
-      this.shouldRequestReview = false})
+      {Key key, this.movie, this.fromSearch = false, this.imageUrl, this.moviesList})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemExpandedState(
-        movie, fromSearch, imageUrl, moviesList, shouldRequestReview);
+    return MovieListItemExpandedState(movie, fromSearch, imageUrl, moviesList);
   }
 }
 
@@ -41,17 +32,15 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   Movie movie;
   bool fromSearch;
   MoviesList moviesList;
-  bool shouldRequestReview;
 
   String imageBaseUrl =
       'https://moviediarystorage.blob.core.windows.net/movies';
 
-  MovieListItemExpandedState(Movie movie, bool fromSearch, String url,
-      MoviesList moviesList, bool shouldRequestReview) {
+  MovieListItemExpandedState(
+      Movie movie, bool fromSearch, String url, MoviesList moviesList) {
     this.movie = movie;
     this.fromSearch = fromSearch;
     this.moviesList = moviesList;
-    this.shouldRequestReview = shouldRequestReview;
   }
 
   getProgressColor() {
@@ -66,12 +55,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   @override
   Widget build(BuildContext context) {
     final formatter = new NumberFormat("#,###");
-
-    if (AdManager.bannerVisible) {
-      final offset = MediaQuery.of(context).size.height - (movie.genres.isNotEmpty ? 170.0 : 150);
-
-      AdManager.showBanner(offset);
-    }
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
@@ -221,56 +204,37 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       ],
     );
 
-    return WillPopScope(
-        onWillPop: () {
-          if (AdManager.bannerVisible) {
-            final offset = MediaQuery.of(context).size.height - 140.0;
-
-            AdManager.showBanner(offset);
-          }
-
-          Navigator.of(context).pop();
-          return;
-        },
-        child: GestureDetector(
-            onTap: () {
-              Navigator.of(context).pop();
-              if (AdManager.bannerVisible) {
-                final offset = MediaQuery.of(context).size.height - 140.0;
-
-                AdManager.showBanner(offset);
-              }
-            },
-            child: Scaffold(
-                backgroundColor: Theme.of(context).primaryColor,
-                body: Hero(
-                  tag: 'movie-hero-animation' + movie.id,
-                  child: SingleChildScrollView(
-                    child: Container(
-                        margin: EdgeInsets.fromLTRB(10, 15, 10, 20),
-                        child: Material(
-                          type: MaterialType.transparency,
-                          child: Container(
-                            color: Theme.of(context).primaryColor,
-                            child: Column(
-                              children: <Widget>[
-                                topCard,
-                                SizedBox(
-                                    height: AdManager.bannerVisible ? 62 : 20),
-                                contentBody,
-                                SizedBox(height: 20),
-                                textFields,
-                              ],
-                            ),
-                          ),
-                        )),
-                  ),
-                ),
-                bottomNavigationBar: MoviesBottomNavigationBarExpanded(
-                  movie: movie,
-                  fromSearch: fromSearch,
-                  shouldRequestReview: shouldRequestReview,
-                  moviesList: moviesList,
-                ))));
+    return GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Scaffold(
+            backgroundColor: Theme.of(context).primaryColor,
+            body: Hero(
+              tag: 'movie-hero-animation' + movie.id,
+              child: SingleChildScrollView(
+                child: Container(
+                    margin: EdgeInsets.fromLTRB(10, 20, 10, 20),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: Container(
+                        color: Theme.of(context).primaryColor,
+                        child: Column(
+                          children: <Widget>[
+                            topCard,
+                            SizedBox(height: 20),
+                            contentBody,
+                            SizedBox(height: 20),
+                            textFields,
+                          ],
+                        ),
+                      ),
+                    )),
+              ),
+            ),
+            bottomNavigationBar: MoviesBottomNavigationBarExpanded(
+              movie: movie,
+              fromSearch: fromSearch,
+              shouldRequestReview: true,
+              moviesList: moviesList,
+            )));
   }
 }

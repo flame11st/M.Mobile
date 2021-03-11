@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Validators.dart';
@@ -595,7 +594,6 @@ class SettingsState extends State<Settings> {
             title: headingField,
           ),
           body: Container(
-            padding: EdgeInsets.only(top: AdManager.bannerVisible ? 65 : 0),
             key: globalKey,
             child: SingleChildScrollView(
               child: Container(

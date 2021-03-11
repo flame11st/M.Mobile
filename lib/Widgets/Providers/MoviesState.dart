@@ -702,7 +702,7 @@ class MoviesState with ChangeNotifier {
         sizeFactor: animation,
         child: Column(
           children: [
-            MovieListItem(movie: movie, shouldRequestReview: true,),
+            MovieListItem(movie: movie),
             // MovieListItem(movie: movie, imageUrl: imageBaseUrl,),
             if (currentLatestMovie == movie)
               SizedBox(

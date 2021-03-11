@@ -1,17 +1,17 @@
 import 'package:app_review/app_review.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:fluttericon/web_symbols_icons.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/EmptyMoviesCard.dart';
+import 'package:mmobile/Widgets/MoviesListsPage.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
+import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
-import 'package:firebase_admob/firebase_admob.dart';
+import 'SearchDelegate.dart';
 
 class MovieList extends StatefulWidget {
   @override
@@ -24,16 +24,12 @@ class MovieListState extends State<MovieList>
     with SingleTickerProviderStateMixin {
   TabController tabController;
 
-  InterstitialAd _interstitialAd;
-
   @override
   void initState() {
     super.initState();
     tabController = new TabController(vsync: this, length: 2);
 
     tabController.addListener(changeCurrentTabIndex);
-
-    _initAdMob();
   }
 
   changeCurrentTabIndex() {
@@ -44,15 +40,9 @@ class MovieListState extends State<MovieList>
 
   @override
   void dispose() {
-    AdManager.bannerAd?.dispose();
     tabController.dispose();
 
     super.dispose();
-  }
-
-  Future<void> _initAdMob() {
-    // TODO: Initialize AdMob SDK
-    return FirebaseAdMob.instance.initialize(appId: AdManager.appId);
   }
 
   requestReview() async {
@@ -77,17 +67,13 @@ class MovieListState extends State<MovieList>
                         Text(
                           'Enjoying MovieDiary?',
                           style: TextStyle(
-                              fontSize: 23,
-                              color: Theme.of(context).accentColor),
+                              fontSize: 23, color: Theme.of(context).accentColor),
                         ),
-                        SizedBox(
-                          height: 10,
-                        ),
+                        SizedBox(height: 10,),
                         Text(
                           'Your reviews keep our small team motivated to make MovieDiary better.\n\n'
-                          '5 stars rating makes us really happy',
-                          style: TextStyle(fontSize: 17),
-                          textAlign: TextAlign.center,
+                              '5 star rating makes us really happy',
+                          style: TextStyle(fontSize: 17),textAlign: TextAlign.center,
                         ),
                       ],
                     ),
@@ -153,18 +139,6 @@ class MovieListState extends State<MovieList>
       requestReview();
     }
 
-    if (!userState.premiumPurchasedIncognito &&
-        (userState.user == null || !userState.user.premiumPurchased)
-        && movieState.userMovies.length > 9) {
-      var offset = MediaQuery.of(context).size.height - 140.0;
-
-      if (ModalRoute.of(context).isCurrent) AdManager.showBanner(offset);
-    } else if (AdManager.bannerVisible) {
-      AdManager.bannerVisible = false;
-
-      AdManager.hideBanner();
-    }
-
     final List<Movie> watchlistMovies = movieState.watchlistMovies;
     final List<Movie> viewedMovies = movieState.viewedMovies;
 
@@ -182,10 +156,7 @@ class MovieListState extends State<MovieList>
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(
-                  Icons.playlist_play,
-                  size: 30,
-                ),
+                Icon(Icons.playlist_play, size: 30,),
                 SizedBox(
                   width: 7,
                 ),
@@ -202,10 +173,7 @@ class MovieListState extends State<MovieList>
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(
-                  WebSymbols.ok,
-                  size: 17,
-                ),
+                Icon(WebSymbols.ok, size: 17,),
                 SizedBox(
                   width: 5,
                 ),
@@ -222,7 +190,6 @@ class MovieListState extends State<MovieList>
         ),
       ),
       body: Container(
-        padding: EdgeInsets.only(top: AdManager.bannerVisible ? 60 : 0),
         color: Theme.of(context).primaryColor,
         child: TabBarView(
           controller: tabController,

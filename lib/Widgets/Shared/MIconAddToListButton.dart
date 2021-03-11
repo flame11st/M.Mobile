@@ -2,7 +2,6 @@ import 'package:app_review/app_review.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
@@ -21,9 +20,8 @@ class MAddToListButton extends StatelessWidget {
   final Movie movie;
   final MoviesList moviesList;
   final bool fromMenu;
-  final double offset;
 
-  MAddToListButton({this.movie, this.moviesList, this.fromMenu = false, this.offset});
+  MAddToListButton({this.movie, this.moviesList, this.fromMenu = false});
 
   Widget getMovieListWidget(
       MoviesList list, BuildContext context, BuildContext dialogContext) {
@@ -38,8 +36,6 @@ class MAddToListButton extends StatelessWidget {
     return GestureDetector(
         onTap: () async {
           if (movieInList) return;
-
-          AdManager.showBanner(offset);
 
           Navigator.of(dialogContext).pop();
 
@@ -97,8 +93,6 @@ class MAddToListButton extends StatelessWidget {
   void showListsDialog(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
 
-    AdManager.hideBanner();
-
     var userLists = moviesState.personalMoviesLists;
 
     userLists.sort((a, b) => a.order > b.order ? 1 : 0);
@@ -155,8 +149,6 @@ class MAddToListButton extends StatelessWidget {
 
                     Navigator.of(context1).pop();
 
-                    AdManager.showBanner(offset);
-
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (ctx) => MoviesListsPage(
                               initialPageIndex: 1,
@@ -172,8 +164,6 @@ class MAddToListButton extends StatelessWidget {
                   text: "Close",
                   parentContext: context,
                   onPressedCallback: () {
-                    AdManager.showBanner(offset);
-
                     Navigator.of(context1).pop();
                   },
                 ),
