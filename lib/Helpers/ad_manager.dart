@@ -24,13 +24,6 @@ class AdManager {
       bannerAd
         ..load()
         ..show(anchorOffset: offset);
-    } else if (currentOffset != offset) {
-      currentOffset = offset;
-      await hideBanner();
-      bannerVisible = true;
-
-      await bannerAd.load();
-      await bannerAd.show(anchorOffset: offset);
     }
   }
 

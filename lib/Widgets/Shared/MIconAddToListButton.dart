@@ -22,6 +22,7 @@ class MAddToListButton extends StatelessWidget {
   final MoviesList moviesList;
   final bool fromMenu;
   final double offset;
+  final bannerVisible = AdManager.bannerVisible;
 
   MAddToListButton({this.movie, this.moviesList, this.fromMenu = false, this.offset});
 
@@ -39,7 +40,7 @@ class MAddToListButton extends StatelessWidget {
         onTap: () async {
           if (movieInList) return;
 
-          AdManager.showBanner(offset);
+          if (bannerVisible) AdManager.showBanner(offset);
 
           Navigator.of(dialogContext).pop();
 
@@ -97,7 +98,7 @@ class MAddToListButton extends StatelessWidget {
   void showListsDialog(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
 
-    AdManager.hideBanner();
+    if (bannerVisible) AdManager.hideBanner();
 
     var userLists = moviesState.personalMoviesLists;
 
@@ -155,7 +156,7 @@ class MAddToListButton extends StatelessWidget {
 
                     Navigator.of(context1).pop();
 
-                    AdManager.showBanner(offset);
+                    if (bannerVisible) AdManager.showBanner(offset);
 
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (ctx) => MoviesListsPage(
@@ -172,7 +173,7 @@ class MAddToListButton extends StatelessWidget {
                   text: "Close",
                   parentContext: context,
                   onPressedCallback: () {
-                    AdManager.showBanner(offset);
+                    if (bannerVisible) AdManager.showBanner(offset);
 
                     Navigator.of(context1).pop();
                   },

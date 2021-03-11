@@ -225,7 +225,7 @@ class MovieListPageState extends State<MoviesListPage> {
                         title: Text("Remove List"),
                       ))),
               PopupMenuDivider(
-                height: 5,
+                height: AdManager.bannerVisible ? 50 : 5,
               ),
               PopupMenuItem<String>(
                   child: GestureDetector(
