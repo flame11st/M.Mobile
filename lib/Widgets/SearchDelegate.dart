@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
@@ -50,6 +51,7 @@ class MSearchDelegate extends SearchDelegate {
       }
 
       return Container(
+          padding: EdgeInsets.only(top: AdManager.bannerVisible ? 65 : 0),
           key: globalKey,
           color: Theme.of(context).primaryColor,
           child: ListView(

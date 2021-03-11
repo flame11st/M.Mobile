@@ -18,12 +18,15 @@ import 'package:http/http.dart' as http;
 class MovieListItem extends StatefulWidget {
   final Movie movie;
   final MoviesList moviesList;
+  final bool shouldRequestReview;
 
-  const MovieListItem({Key key, this.movie, this.moviesList}) : super(key: key);
+  const MovieListItem(
+      {Key key, this.movie, this.moviesList, this.shouldRequestReview = false})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemState(movie, moviesList);
+    return MovieListItemState(movie, moviesList, shouldRequestReview);
   }
 }
 
@@ -33,12 +36,15 @@ class MovieListItemState extends State<MovieListItem> {
       "https://moviediarystorage.blob.core.windows.net/movies";
   bool imageChecked = false;
   MoviesList moviesList;
+  bool shouldRequestReview;
 
   Movie movie;
 
-  MovieListItemState(Movie movie, MoviesList moviesList) {
+  MovieListItemState(
+      Movie movie, MoviesList moviesList, bool shouldRequestReview) {
     this.movie = movie;
     this.moviesList = moviesList;
+    this.shouldRequestReview = shouldRequestReview;
   }
 
   checkImage(String imageUrl) async {
@@ -229,6 +235,7 @@ class MovieListItemState extends State<MovieListItem> {
               movie: movie,
               imageUrl: imageBaseUrl,
               moviesList: moviesList,
+              shouldRequestReview: shouldRequestReview,
             )));
   }
 }

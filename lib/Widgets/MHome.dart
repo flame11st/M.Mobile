@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Objects/MColorTheme.dart';
@@ -60,6 +59,7 @@ class MHomeState extends State<MHome> {
     _subscription = purchaseUpdates.listen((purchases) {
       _handlePurchaseUpdates(purchases);
     });
+
     super.initState();
   }
 

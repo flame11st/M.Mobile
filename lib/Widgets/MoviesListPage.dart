@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
@@ -41,6 +42,7 @@ class MovieListPageState extends State<MoviesListPage> {
         child: Column(
           children: [
             MovieListItem(
+                shouldRequestReview: false,
                 movie: movie,
                 moviesList:
                     this.moviesList.movieListType == MovieListType.personal
@@ -78,68 +80,73 @@ class MovieListPageState extends State<MoviesListPage> {
     showDialog<String>(
         context: context,
         builder: (BuildContext context1) => AlertDialog(
-          contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-          backgroundColor: Theme.of(context).primaryColor,
-          contentTextStyle: Theme.of(context).textTheme.headline5,
-          content: Container(
-              height: 90,
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.all(0),
-              child: Form(
-                key: _formKey,
-                child: Theme(
-                    data: Theme.of(context).copyWith(
-                        primaryColor: Theme.of(context).accentColor),
-                    child: TextFormField(
-                      validator: (value) => nameController.text.isEmpty
-                          ? "Please enter name"
-                          : moviesState.personalMoviesLists.any((element) =>
-                      element.name == nameController.text && element != moviesList)
-                          ? "List with the same name already exists"
-                          : null,
-                      controller: nameController,
-                      decoration: InputDecoration(
-                          contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                          labelText: "Enter new list name",
-                          hintStyle: Theme.of(context).textTheme.headline5),
-                    )),
-              )),
-          actions: [
-            MButton(
-              active: true,
-              text: 'Rename',
-              parentContext: context,
-              onPressedCallback: () async {
-                if (_formKey.currentState != null &&
-                    _formKey.currentState.validate()) {
-                  if (!userState.isIncognitoMode) {
-                    serviceAgent.state = userState;
+              contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+              backgroundColor: Theme.of(context).primaryColor,
+              contentTextStyle: Theme.of(context).textTheme.headline5,
+              content: Container(
+                  height: 90,
+                  padding: EdgeInsets.all(10),
+                  margin: EdgeInsets.all(0),
+                  child: Form(
+                    key: _formKey,
+                    child: Theme(
+                        data: Theme.of(context).copyWith(
+                            primaryColor: Theme.of(context).accentColor),
+                        child: TextFormField(
+                          validator: (value) => nameController.text.isEmpty
+                              ? "Please enter name"
+                              : moviesState.personalMoviesLists.any((element) =>
+                                      element.name == nameController.text &&
+                                      element != moviesList)
+                                  ? "List with the same name already exists"
+                                  : null,
+                          controller: nameController,
+                          decoration: InputDecoration(
+                              contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                              labelText: "Enter new list name",
+                              hintStyle: Theme.of(context).textTheme.headline5),
+                        )),
+                  )),
+              actions: [
+                MButton(
+                  active: true,
+                  text: 'Rename',
+                  parentContext: context,
+                  onPressedCallback: () async {
+                    if (_formKey.currentState != null &&
+                        _formKey.currentState.validate()) {
+                      moviesState.renameMoviesList(
+                          moviesList.name, nameController.text);
 
-                    await serviceAgent.renameUserMoviesList(
-                        userState.userId, moviesList.name, nameController.text);
-                  }
+                      MSnackBar.showSnackBar(
+                          'The List renamed to "${nameController.text}"', true);
 
-                  moviesState.renameMoviesList(moviesList.name, nameController.text);
+                      Navigator.of(context1).pop();
 
-                  MSnackBar.showSnackBar('The List renamed to "${nameController.text}"', true);
+                      if (!userState.isIncognitoMode) {
+                        serviceAgent.state = userState;
 
-                  nameController.clear();
+                        await serviceAgent.renameUserMoviesList(
+                            userState.userId,
+                            moviesList.name,
+                            nameController.text);
+                      }
 
-                  Navigator.of(context1).pop();
-                }
-              },
-            ),
-            SizedBox(
-              width: 10,
-            ),
-            MButton(
-              active: true,
-              text: 'Cancel',
-              parentContext: context,
-              onPressedCallback: () => Navigator.of(context1).pop(),
-            )
-          ],
-        ));
+                      nameController.clear();
+                    }
+                  },
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                MButton(
+                  active: true,
+                  text: 'Cancel',
+                  parentContext: context,
+                  onPressedCallback: () => Navigator.of(context1).pop(),
+                )
+              ],
+            ));
   }
 
   void removeList() {
@@ -153,6 +160,29 @@ class MovieListPageState extends State<MoviesListPage> {
     if (!userState.isIncognitoMode) {
       serviceAgent.removeUserMoviesList(userState.userId, moviesList.name);
     }
+  }
+
+  Widget getBody() {
+    Widget widgetToReturn = moviesList.listMovies.isNotEmpty
+        ? AnimatedList(
+            padding: EdgeInsets.only(bottom: 90),
+            key: MyGlobals.personalListsKey,
+            initialItemCount: moviesList.listMovies.length,
+            itemBuilder: (context, index, animation) {
+              if (moviesList.listMovies.length <= index) return null;
+
+              return buildItem(moviesList.listMovies[index], animation);
+            },
+          )
+        : Padding(
+            padding: EdgeInsets.all(10),
+            child: Text(
+              "You haven't added any items to this list.\n"
+              "Please use Search or Check General Movies Lists to find items which you want to add.",
+              style: TextStyle(fontSize: 17, height: 2),
+            ));
+
+    return widgetToReturn;
   }
 
   @override
@@ -194,7 +224,9 @@ class MovieListPageState extends State<MoviesListPage> {
                         ),
                         title: Text("Remove List"),
                       ))),
-              PopupMenuDivider(height: 5,),
+              PopupMenuDivider(
+                height: 5,
+              ),
               PopupMenuItem<String>(
                   child: GestureDetector(
                       onTap: () => renameListButtonClicked(),
@@ -217,17 +249,8 @@ class MovieListPageState extends State<MoviesListPage> {
           title: headingField,
         ),
         body: Container(
-          key: globalKey,
-          child: AnimatedList(
-            padding: EdgeInsets.only(bottom: 90),
-            key: MyGlobals.personalListsKey,
-            initialItemCount: moviesList.listMovies.length,
-            itemBuilder: (context, index, animation) {
-              if (moviesList.listMovies.length <= index) return null;
-
-              return buildItem(moviesList.listMovies[index], animation);
-            },
-          ),
-        ));
+            key: globalKey,
+            padding: EdgeInsets.only(top: AdManager.bannerVisible ? 65 : 0),
+            child: getBody()));
   }
 }

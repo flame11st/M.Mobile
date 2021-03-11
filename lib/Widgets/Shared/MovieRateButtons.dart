@@ -155,6 +155,7 @@ class MovieRateButtons extends StatelessWidget {
                                 ),
                                 SizedBox(height: 15,),
                                 MAddToListButton(
+                                  offset: MediaQuery.of(context).size.height - 175,
                                   movie: movie,
                                   moviesList: moviesList,
                                   fromMenu: true,
@@ -168,6 +169,7 @@ class MovieRateButtons extends StatelessWidget {
             ),
             if (showTitle != null && showTitle)
               MAddToListButton(
+                offset: MediaQuery.of(context).size.height - 140,
                 movie: movie,
                 moviesList: moviesList,
               ),

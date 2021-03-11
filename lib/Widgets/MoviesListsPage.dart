@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
@@ -288,6 +289,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
             backgroundColor: Theme.of(context).primaryColor,
             appBar: headingRow,
             body: Container(
+              padding: EdgeInsets.only(top: AdManager.bannerVisible ? 60 : 0),
               color: Theme.of(context).primaryColor,
               child: TabBarView(
                 controller: tabController,
