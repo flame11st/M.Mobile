@@ -155,7 +155,7 @@ class MovieListState extends State<MovieList>
 
     if (!userState.premiumPurchasedIncognito &&
         (userState.user == null || !userState.user.premiumPurchased)
-        && movieState.userMovies.length > 6) {
+        && movieState.userMovies.length > 0) {
       var offset = MediaQuery.of(context).size.height - 140.0;
 
       if (ModalRoute.of(context).isCurrent) AdManager.showBanner(offset);
@@ -227,7 +227,7 @@ class MovieListState extends State<MovieList>
         child: TabBarView(
           controller: tabController,
           children: [
-            if (movieState.userMovies.length > 0)
+            if (movieState.userMovies.length > 0 && watchlistMovies.isNotEmpty)
               AnimatedList(
                 padding: EdgeInsets.only(bottom: 90),
                 key: movieState.watchlistKey,
@@ -239,11 +239,16 @@ class MovieListState extends State<MovieList>
                       watchlistMovies[index], animation);
                 },
               ),
+            if (movieState.userMovies.isNotEmpty && watchlistMovies.isEmpty)
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Your Watchlist is empty.', style: Theme.of(context).textTheme.headline2,),
+              ),
             if (movieState.userMovies.length == 0)
               getEmptyMoviesCardWidget("Watchlist"),
             if (movieState.userMovies.length == 0)
               getEmptyMoviesCardWidget("Viewed list"),
-            if (movieState.userMovies.length > 0)
+            if (movieState.userMovies.length > 0 && viewedMovies.isNotEmpty)
               Container(
                 child: AnimatedList(
                   padding: EdgeInsets.only(bottom: 90),
@@ -256,7 +261,12 @@ class MovieListState extends State<MovieList>
                         isPremium: userState.isPremium, context: context);
                   },
                 ),
-              )
+              ),
+            if (movieState.userMovies.isNotEmpty && viewedMovies.isEmpty)
+                Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text('Your Viewed list is empty.', style: Theme.of(context).textTheme.headline2,),
+                )
           ],
         ),
       ),
