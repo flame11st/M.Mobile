@@ -9,6 +9,7 @@ import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
+import 'dart:convert' show utf8;
 
 class MSearchDelegate extends SearchDelegate {
   List<Movie> foundMovies = new List<Movie>();
@@ -17,7 +18,7 @@ class MSearchDelegate extends SearchDelegate {
   String oldQuery;
   String currentQuery;
   bool isLoading = false;
-  StateSetter setStateFunction;
+
   StateSetter setStateSwitcherFunction;
   int searchTimestamp;
   bool notFound = false;
@@ -25,15 +26,9 @@ class MSearchDelegate extends SearchDelegate {
   bool isAdvanced = false;
   GlobalKey globalKey;
 
-  setAdvacedSearch() {
-    setStateFunction(() => isLoading = !isLoading);
-  }
-
   getResultsWidget(String query) {
     return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
-      this.setStateFunction = setState;
-
       if (query == '') {
         oldQuery = '';
         isLoading = false;
@@ -41,10 +36,11 @@ class MSearchDelegate extends SearchDelegate {
         setState(() => foundMovies.clear());
       } else if (query != oldQuery) {
         oldQuery = query;
-        searchMovies(context);
+        searchMovies(context, setState);
       }
 
-      if (ModalRoute.of(context).isCurrent && (this.globalKey == null || this.globalKey != MyGlobals.activeKey)) {
+      if (ModalRoute.of(context).isCurrent &&
+          (this.globalKey == null || this.globalKey != MyGlobals.activeKey)) {
         globalKey = new GlobalKey();
 
         MyGlobals.activeKey = globalKey;
@@ -75,7 +71,7 @@ class MSearchDelegate extends SearchDelegate {
     });
   }
 
-  searchMovies(BuildContext context) async {
+  searchMovies(BuildContext context, StateSetter setStateFunction) async {
     currentQuery = query;
     setStateFunction(() => isLoading = true);
 
@@ -93,10 +89,12 @@ class MSearchDelegate extends SearchDelegate {
 
     var moviesResponse;
 
+    final encoded = Uri.encodeFull(queryToDebounce).replaceAll('&', '%26');
+
     if (isAdvanced) {
-      moviesResponse = await serviceAgent.advancedSearch(query);
+      moviesResponse = await serviceAgent.advancedSearch(encoded);
     } else {
-      moviesResponse = await serviceAgent.search(query);
+      moviesResponse = await serviceAgent.search(encoded);
     }
 
     if (searchTimestamp != null && timestamp < searchTimestamp) return;
@@ -105,18 +103,19 @@ class MSearchDelegate extends SearchDelegate {
       searchTimestamp = timestamp;
 
       Iterable iterableMovies = json.decode(moviesResponse.body);
-      final foundMovies = iterableMovies.map((model) {
+      final foundMoviesNew = iterableMovies.map((model) {
         return Movie.fromJson(model);
       }).toList();
 
-      refreshMoviesRating(foundMovies, context);
+      refreshMoviesRating(foundMoviesNew, context);
 
-      setStateFunction(() => this.foundMovies = foundMovies);
+      setStateFunction(() => foundMovies = foundMoviesNew);
+      globalKey = new GlobalKey();
 
       notFound = foundMovies.isEmpty;
     }
 
-    isLoading = currentQuery != queryToDebounce;
+    setStateFunction(() => isLoading = currentQuery != queryToDebounce);
   }
 
   refreshMoviesRating(List<Movie> movies, BuildContext context) {
@@ -124,7 +123,7 @@ class MSearchDelegate extends SearchDelegate {
 
     movies.forEach((movie) {
       final userMoviesList =
-      moviesState.userMovies.where((um) => um.id == movie.id);
+          moviesState.userMovies.where((um) => um.id == movie.id);
 
       if (userMoviesList.length > 0) {
         movie.movieRate = userMoviesList.first.movieRate;
@@ -165,6 +164,8 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
+    refreshMoviesRating(foundMovies, context);
+
     final resultsWidget = getResultsWidget(query);
 
     return resultsWidget;

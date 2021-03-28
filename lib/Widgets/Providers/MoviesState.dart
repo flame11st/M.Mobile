@@ -95,6 +95,17 @@ class MoviesState with ChangeNotifier {
 
   Future<void> setUserMovies(List<Movie> userMovies) async {
     isMoviesRequested = true;
+    updateUserMovies(userMovies, false);
+
+    setGenres();
+
+    refreshMovies();
+    refreshDates();
+
+    await storage.write(key: 'movies', value: jsonEncode(userMovies));
+  }
+
+  void updateUserMovies(List<Movie> userMovies, bool shouldSetRate) {
     var updatedUserMovies = new List<Movie>();
 
     for (var i = 0; i < userMovies.length; i++) {
@@ -103,6 +114,10 @@ class MoviesState with ChangeNotifier {
           this.userMovies.where((element) => element.id == movie.id);
 
       if (existedMovies.isNotEmpty) {
+        if (shouldSetRate) {
+          movie.movieRate = existedMovies.first.movieRate;
+        }
+
         existedMovies.first.updateMovie(movie);
         updatedUserMovies.add(existedMovies.first);
       } else {
@@ -111,13 +126,6 @@ class MoviesState with ChangeNotifier {
     }
 
     this.userMovies = updatedUserMovies;
-
-    setGenres();
-
-    refreshMovies();
-    refreshDates();
-
-    await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
 
   setCachedMoviesLists() async {
@@ -562,6 +570,10 @@ class MoviesState with ChangeNotifier {
 
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
+
+  // Future<void> updateMoviePosterPath(Movie movie, String posterPath) async {
+  //   await storage.write(key: 'movies', value: jsonEncode(userMovies));
+  // }
 
   void setRateToMovieInLists(String movieId, int rate) {
     externalMoviesLists.forEach((element) {

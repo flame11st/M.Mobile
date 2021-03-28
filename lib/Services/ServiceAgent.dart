@@ -105,6 +105,10 @@ class ServiceAgent {
     return get('movies/GetMovie?id=$movieId');
   }
 
+  getMoviesByIds(String ids) {
+    return get('movies/GetMoviesByIds?ids=$ids');
+  }
+
   reloadMoviePoster(String movieId) {
     return get('movies/ReloadMoviePoster?id=$movieId');
   }

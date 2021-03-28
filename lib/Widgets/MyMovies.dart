@@ -29,6 +29,8 @@ class MyMoviesState extends State<MyMovies> {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
 
+    serviceAgent.state = userState;
+
     if (moviesState.isMoviesRequested) {
       return;
     }
@@ -41,10 +43,11 @@ class MyMoviesState extends State<MyMovies> {
         loaderState.setIsLoaderVisible(false);
       }
 
+      setIncognitoUserMovies(moviesState);
+
       return;
     }
 
-    serviceAgent.state = userState;
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
     Iterable iterableMovies = json.decode(moviesResponse.body);
@@ -62,6 +65,24 @@ class MyMoviesState extends State<MyMovies> {
 
     if (loaderState.isLoaderVisible) {
       loaderState.setIsLoaderVisible(false);
+    }
+  }
+
+  setIncognitoUserMovies(MoviesState moviesState) async {
+    final moviesIds = moviesState.cachedUserMovies.map((e) => e.id).toList();
+
+    var encodedIds = json.encode(moviesIds);
+
+    final moviesResponse = await serviceAgent.getMoviesByIds(encodedIds);
+
+    Iterable iterableMovies = json.decode(moviesResponse.body);
+
+    if (iterableMovies.length != 0) {
+      List<Movie> movies = iterableMovies.map((model) {
+        return Movie.fromJson(model);
+      }).toList();
+
+      moviesState.updateUserMovies(movies, true);
     }
   }
 

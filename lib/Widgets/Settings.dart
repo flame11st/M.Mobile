@@ -237,6 +237,8 @@ class SettingsState extends State<Settings> {
                   userState.logout();
                   moviesState.logout();
                   themeState.logout();
+
+                  AdManager.hideBanner();
                   Navigator.of(context).pop();
                 },
               ),
@@ -267,6 +269,8 @@ class SettingsState extends State<Settings> {
               onPressedCallback: () {
                 userState.logout();
                 moviesState.isMoviesRequested = false;
+
+                AdManager.hideBanner();
 
                 Navigator.of(context).pop();
               },
