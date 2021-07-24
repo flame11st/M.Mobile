@@ -82,7 +82,7 @@ class MSearchDelegate extends SearchDelegate {
 
     // Debounce
     final queryToDebounce = query;
-    await Future.delayed(Duration(milliseconds: 1500));
+    await Future.delayed(Duration(milliseconds: 2000));
     if (queryToDebounce != query) return;
 
     var timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -119,7 +119,7 @@ class MSearchDelegate extends SearchDelegate {
   }
 
   refreshMoviesRating(List<Movie> movies, BuildContext context) {
-    final moviesState = Provider.of<MoviesState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
 
     movies.forEach((movie) {
       final userMoviesList =

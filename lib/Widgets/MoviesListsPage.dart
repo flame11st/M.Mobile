@@ -139,8 +139,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
   }
 
   addNewList() {
-    final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     final order = getMaxListOrder(moviesState.personalMoviesLists) + 1;
 

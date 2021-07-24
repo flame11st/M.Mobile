@@ -11,7 +11,7 @@ import 'Shared/MSnackBar.dart';
 
 class Premium extends StatelessWidget {
   purchaseButtonClick() async {
-    final bool available = await InAppPurchaseConnection.instance.isAvailable();
+    final bool available = await InAppPurchase.instance.isAvailable();
 
     if (!available) {
       MSnackBar.showSnackBar("Not available now. Please try later", false);
@@ -21,7 +21,7 @@ class Premium extends StatelessWidget {
 
     const Set<String> _kIds = {'premium_purchase'};
     final ProductDetailsResponse response =
-        await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
+        await InAppPurchase.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
       MSnackBar.showSnackBar("Not available now. Please try later", false);
 
@@ -32,7 +32,7 @@ class Premium extends StatelessWidget {
 
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: product);
 
-    InAppPurchaseConnection.instance
+    InAppPurchase.instance
         .buyNonConsumable(purchaseParam: purchaseParam);
   }
 

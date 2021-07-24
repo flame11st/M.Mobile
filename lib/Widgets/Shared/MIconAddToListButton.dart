@@ -96,7 +96,7 @@ class MAddToListButton extends StatelessWidget {
   }
 
   void showListsDialog(BuildContext context) {
-    final moviesState = Provider.of<MoviesState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
 
     if (bannerVisible) AdManager.hideBanner();
 
@@ -183,8 +183,8 @@ class MAddToListButton extends StatelessWidget {
   }
 
   removeMovieFromList(BuildContext context) async {
-    final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     if (!userState.isIncognitoMode) {
       await serviceAgent.removeMovieFromList(

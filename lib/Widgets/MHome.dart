@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:mmobile/Objects/MColorTheme.dart';
-import 'package:mmobile/Objects/MTextStyleTheme.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MoviesListPage.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
 import 'package:provider/provider.dart';
@@ -33,7 +30,7 @@ class MHomeState extends State<MHome> {
     if (purchases.isEmpty) return;
 
     if (purchases.first.status == PurchaseStatus.purchased) {
-      InAppPurchaseConnection.instance.completePurchase(purchases.first);
+      InAppPurchase.instance.completePurchase(purchases.first);
 
       userState.setPremium(true);
 
@@ -55,7 +52,7 @@ class MHomeState extends State<MHome> {
   @override
   void initState() {
     final Stream purchaseUpdates =
-        InAppPurchaseConnection.instance.purchaseUpdatedStream;
+        InAppPurchase.instance.purchaseStream;
     _subscription = purchaseUpdates.listen((purchases) {
       _handlePurchaseUpdates(purchases);
     });

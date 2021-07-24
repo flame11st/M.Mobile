@@ -48,7 +48,7 @@ class MovieListItemState extends State<MovieListItem> {
   }
 
   checkImage(String imageUrl) async {
-    final response = await http.head(imageBaseUrl + imageUrl);
+    final response = await http.head(Uri.parse(imageBaseUrl + imageUrl));
 
     if (response.statusCode == 404) {
       final serviceAgent = new ServiceAgent();

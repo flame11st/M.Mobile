@@ -21,7 +21,7 @@ class ServiceAgent {
   }
 
   getBaseUrl() async {
-    var responseAWS = await http.get(functionUriAWS);
+    var responseAWS = await http.get(Uri.parse(functionUriAWS));
 
     var uri = responseAWS.body;
 
@@ -196,7 +196,7 @@ class ServiceAgent {
       headers.putIfAbsent(
           HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
-    var response = await http.get(baseUri + uri, headers: headers);
+    var response = await http.get(Uri.parse(baseUri + uri), headers: headers);
 
     if (response.statusCode == 401) {
       headers.clear();
@@ -206,7 +206,7 @@ class ServiceAgent {
           headers.putIfAbsent(
               HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
-        response = await http.get(baseUri + uri, headers: headers);
+        response = await http.get(Uri.parse(baseUri + uri), headers: headers);
       }
     }
 
@@ -226,13 +226,13 @@ class ServiceAgent {
           HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
     var response =
-        await http.post(baseUri + uri, body: postData, headers: headers);
+        await http.post(Uri.parse(baseUri + uri), body: postData, headers: headers);
 
     if (response.statusCode == 401) {
       bool isTokenRefreshed = await refreshAccessToken();
       if (isTokenRefreshed) {
         response = await http
-            .post(baseUri + uri, body: postData, headers: <String, String>{
+            .post(Uri.parse(baseUri + uri), body: postData, headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
           HttpHeaders.authorizationHeader: "Bearer ${state.token}"
         });
@@ -249,8 +249,7 @@ class ServiceAgent {
       baseUri = await getBaseUrl();
     }
 
-    var response = await http.get(
-        baseUri + 'Identity/RefreshTokenMobile?token=${state.refreshToken}');
+    var response = await http.get(Uri.parse(baseUri + 'Identity/RefreshTokenMobile?token=${state.refreshToken}'));
 
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);

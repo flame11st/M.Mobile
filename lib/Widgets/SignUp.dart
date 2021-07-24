@@ -32,8 +32,8 @@ class SignUpState extends State<SignUp> {
       this.signUpButtonActive = false;
     });
 
-    final userState = Provider.of<UserState>(context);
-    final loaderState = Provider.of<LoaderState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
+    final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
 
     var response = await serviceAgent.signUp(

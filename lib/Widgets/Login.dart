@@ -49,13 +49,13 @@ class LoginState extends State<Login> {
   }
 
   proceedIncognitoMode() {
-    final userState = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     userState.proceedIncognitoMode();
   }
 
   signInWithGoogle() async {
-    final loaderState = Provider.of<LoaderState>(context);
+    final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
 
     final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
@@ -114,7 +114,7 @@ class LoginState extends State<Login> {
   }
 
   processLoginResponse(String response, bool isSignedInWithGoogle) {
-    final userState = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     userState.processLoginResponse(response, isSignedInWithGoogle);
   }

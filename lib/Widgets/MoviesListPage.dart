@@ -72,8 +72,8 @@ class MovieListPageState extends State<MoviesListPage> {
   void renameListButtonClicked() {
     Navigator.of(context).pop();
 
-    final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     nameController.text = moviesList.name;
 
@@ -150,8 +150,8 @@ class MovieListPageState extends State<MoviesListPage> {
   }
 
   void removeList() {
-    final userState = Provider.of<UserState>(context);
-    final moviesState = Provider.of<MoviesState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
 
     moviesState.removeMoviesList(moviesList.name);
 

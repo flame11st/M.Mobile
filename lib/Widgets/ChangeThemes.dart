@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Variables/Themes.dart';
 import 'package:provider/provider.dart';
 import 'Premium.dart';
@@ -20,10 +21,10 @@ class ChangeThemesState extends State<ChangeThemes>
   selectTheme(BuildContext context, TabController controller) {
     var index = controller.animation.value.round();
 
-    final userState = Provider.of<UserState>(context);
-    final themeState = Provider.of<ThemeState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
+    final themeState = Provider.of<ThemeState>(context, listen: false);
 
-    if (userState.isPremium || currentTabIndex < 2) {
+    if (userState.isPremium || index <= 1) {
       themeState.selectTheme(Themes.allThemes[index]);
     } else {
       Navigator.of(context)
@@ -87,6 +88,8 @@ class ChangeThemesState extends State<ChangeThemes>
       ],
     );
 
+    final paddingTop = AdManager.bannerVisible ? 65.0 : 0.0;
+
     return Builder(builder: (BuildContext context1) {
       return Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
@@ -94,7 +97,7 @@ class ChangeThemesState extends State<ChangeThemes>
           title: headingField,
         ),
         body: Container(
-            padding: EdgeInsets.fromLTRB(50, 0, 50, 20),
+            padding: EdgeInsets.fromLTRB(50, paddingTop, 50, 20),
             child: Column(
               children: [
                 TabPageSelector(

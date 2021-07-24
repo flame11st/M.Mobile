@@ -37,7 +37,7 @@ class MovieListState extends State<MovieList>
   }
 
   changeCurrentTabIndex() {
-    final moviesState = Provider.of<MoviesState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
 
     moviesState.setCurrentTabIndex(tabController.index);
   }
@@ -56,7 +56,7 @@ class MovieListState extends State<MovieList>
   }
 
   requestReview() async {
-    final userState = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
     userState.shouldRequestReview = false;
 
     await userState.setAppReviewRequested(true);
@@ -169,7 +169,7 @@ class MovieListState extends State<MovieList>
     final List<Movie> viewedMovies = movieState.viewedMovies;
 
     return Scaffold(
-      resizeToAvoidBottomPadding: false,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
         title: TabBar(
