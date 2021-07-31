@@ -1,15 +1,17 @@
 import 'package:app_review/app_review.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:fluttericon/web_symbols_icons.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/MoviesListsPage.dart';
+import 'package:mmobile/Widgets/EmptyMoviesCard.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
-import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
-import 'SearchDelegate.dart';
+import 'package:firebase_admob/firebase_admob.dart';
 
 class MovieList extends StatefulWidget {
   @override
@@ -22,26 +24,7 @@ class MovieListState extends State<MovieList>
     with SingleTickerProviderStateMixin {
   TabController tabController;
 
-  // List<Movie> watchlistMovies;
-  // List<Movie> viewedMovies;
-  Route _createRoute(Function page) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => page(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var begin = Offset(0.0, 1.0);
-        var end = Offset.zero;
-        var curve = Curves.ease;
-
-        var tween =
-            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-    );
-  }
+  // InterstitialAd _interstitialAd;
 
   @override
   void initState() {
@@ -49,23 +32,31 @@ class MovieListState extends State<MovieList>
     tabController = new TabController(vsync: this, length: 2);
 
     tabController.addListener(changeCurrentTabIndex);
+
+    _initAdMob();
   }
 
   changeCurrentTabIndex() {
-    final moviesState = Provider.of<MoviesState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
 
     moviesState.setCurrentTabIndex(tabController.index);
   }
 
   @override
   void dispose() {
+    AdManager.hideBanner();
     tabController.dispose();
 
     super.dispose();
   }
 
+  Future<void> _initAdMob() {
+    // TODO: Initialize AdMob SDK
+    return FirebaseAdMob.instance.initialize(appId: AdManager.appId);
+  }
+
   requestReview() async {
-    final userState = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
     userState.shouldRequestReview = false;
 
     await userState.setAppReviewRequested(true);
@@ -86,13 +77,17 @@ class MovieListState extends State<MovieList>
                         Text(
                           'Enjoying MovieDiary?',
                           style: TextStyle(
-                              fontSize: 23, color: Theme.of(context).accentColor),
+                              fontSize: 23,
+                              color: Theme.of(context).accentColor),
                         ),
-                        SizedBox(height: 10,),
+                        SizedBox(
+                          height: 10,
+                        ),
                         Text(
                           'Your reviews keep our small team motivated to make MovieDiary better.\n\n'
-                              '5 star rating makes us really happy',
-                          style: TextStyle(fontSize: 17),textAlign: TextAlign.center,
+                          '5 stars rating makes us really happy',
+                          style: TextStyle(fontSize: 17),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
@@ -131,63 +126,7 @@ class MovieListState extends State<MovieList>
   }
 
   getEmptyMoviesCardWidget(String tabName) {
-    return Column(children: [
-      MCard(
-        marginLR: 20,
-        child: Column(
-          children: [
-            Text(
-              "Welcome to MovieDiary!",
-              style: TextStyle(
-                  color: Theme.of(context).accentColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Text(
-              "You didn't add any Movie or TV Series yet. \n\n"
-              "Please use Search to add items to your $tabName. \n\n"
-              "Also you can check Lists with popular Movies or TV Series, top rated, etc.\n\n",
-              style:
-                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
-            ),
-            MButton(
-              active: true,
-              text: 'Find Movie or TV Show',
-              prependIcon: Icons.search,
-              width: MediaQuery.of(context).size.width - 50,
-              onPressedCallback: () => showSearch(
-                context: context,
-                delegate: MSearchDelegate(),
-              ),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            MButton(
-              active: true,
-              text: 'Open Lists',
-              prependIcon: Icons.list,
-              width: MediaQuery.of(context).size.width - 50,
-              onPressedCallback: () => Navigator.of(context)
-                  .push(_createRoute(() => MoviesListsPage())),
-            ),
-            SizedBox(
-              height: 30,
-            ),
-            Text(
-              "P.S. With this app you can't watch tv shows or movies!",
-              style: TextStyle(
-                  color: Theme.of(context).accentColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
-            )
-          ],
-        ),
-      )
-    ]);
+    return EmptyMoviesCard(tabName: tabName);
   }
 
   @override
@@ -199,21 +138,38 @@ class MovieListState extends State<MovieList>
       tabController.animateTo(targetIndex);
     }
 
+    GlobalKey globalKey = new GlobalKey();
+
+    if (ModalRoute.of(context).isCurrent) {
+      MyGlobals.activeKey = globalKey;
+    }
+
     final movieState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
     if (userState.shouldRequestReview &&
         !userState.appReviewRequested &&
-        movieState.userMovies.length > 10) {
+        movieState.userMovies.length > 6) {
       requestReview();
+    }
+
+    if (!userState.premiumPurchasedIncognito &&
+        (userState.user == null || !userState.user.premiumPurchased)
+        && movieState.userMovies.length > 0) {
+      var offset = MediaQuery.of(context).size.height - 140.0;
+
+      if (ModalRoute.of(context).isCurrent) AdManager.showBanner(offset);
+    } else if (AdManager.bannerVisible) {
+      AdManager.bannerVisible = false;
+
+      AdManager.hideBanner();
     }
 
     final List<Movie> watchlistMovies = movieState.watchlistMovies;
     final List<Movie> viewedMovies = movieState.viewedMovies;
-    MyGlobals.scaffoldKey = new GlobalKey();
 
     return Scaffold(
-      resizeToAvoidBottomPadding: false,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
         title: TabBar(
@@ -226,7 +182,10 @@ class MovieListState extends State<MovieList>
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(Icons.queue_play_next),
+                Icon(
+                  Icons.playlist_play,
+                  size: 30,
+                ),
                 SizedBox(
                   width: 7,
                 ),
@@ -243,12 +202,15 @@ class MovieListState extends State<MovieList>
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(Icons.check),
+                Icon(
+                  WebSymbols.ok,
+                  size: 17,
+                ),
                 SizedBox(
                   width: 5,
                 ),
                 Text(
-                  'Viewed',
+                  '  Viewed',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
@@ -260,11 +222,12 @@ class MovieListState extends State<MovieList>
         ),
       ),
       body: Container(
+        padding: EdgeInsets.only(top: AdManager.bannerVisible ? 60 : 0),
         color: Theme.of(context).primaryColor,
         child: TabBarView(
           controller: tabController,
           children: [
-            if (movieState.userMovies.length > 0)
+            if (movieState.userMovies.length > 0 && watchlistMovies.isNotEmpty)
               AnimatedList(
                 padding: EdgeInsets.only(bottom: 90),
                 key: movieState.watchlistKey,
@@ -276,11 +239,16 @@ class MovieListState extends State<MovieList>
                       watchlistMovies[index], animation);
                 },
               ),
+            if (movieState.userMovies.isNotEmpty && watchlistMovies.isEmpty)
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Your Watchlist is empty.', style: Theme.of(context).textTheme.headline2,),
+              ),
             if (movieState.userMovies.length == 0)
               getEmptyMoviesCardWidget("Watchlist"),
             if (movieState.userMovies.length == 0)
               getEmptyMoviesCardWidget("Viewed list"),
-            if (movieState.userMovies.length > 0)
+            if (movieState.userMovies.length > 0 && viewedMovies.isNotEmpty)
               Container(
                 child: AnimatedList(
                   padding: EdgeInsets.only(bottom: 90),
@@ -293,11 +261,16 @@ class MovieListState extends State<MovieList>
                         isPremium: userState.isPremium, context: context);
                   },
                 ),
-              )
+              ),
+            if (movieState.userMovies.isNotEmpty && viewedMovies.isEmpty)
+                Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text('Your Viewed list is empty.', style: Theme.of(context).textTheme.headline2,),
+                )
           ],
         ),
       ),
-      key: MyGlobals.scaffoldKey,
+      key: globalKey,
     );
   }
 }

@@ -13,7 +13,6 @@ import '../Services/ServiceAgent.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MButton.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -50,13 +49,13 @@ class LoginState extends State<Login> {
   }
 
   proceedIncognitoMode() {
-    final userState = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     userState.proceedIncognitoMode();
   }
 
   signInWithGoogle() async {
-    final loaderState = Provider.of<LoaderState>(context);
+    final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
 
     final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
@@ -71,8 +70,7 @@ class LoginState extends State<Login> {
       processLoginResponse(response.body, true);
     } else {
       loaderState.setIsLoaderVisible(false);
-      MSnackBar.showSnackBar('Sign in with Google failed', false,
-          MyGlobals.scaffoldLoginKey.currentContext);
+      MSnackBar.showSnackBar('Sign in with Google failed', false);
     }
   }
 
@@ -103,8 +101,7 @@ class LoginState extends State<Login> {
     } else {
       loaderState.setIsLoaderVisible(false);
 
-      MSnackBar.showSnackBar('Incorrect Email or Password', false,
-          MyGlobals.scaffoldLoginKey.currentContext);
+      MSnackBar.showSnackBar('Incorrect Email or Password', false);
     }
   }
 
@@ -117,7 +114,7 @@ class LoginState extends State<Login> {
   }
 
   processLoginResponse(String response, bool isSignedInWithGoogle) {
-    final userState = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     userState.processLoginResponse(response, isSignedInWithGoogle);
   }
@@ -130,8 +127,11 @@ class LoginState extends State<Login> {
       isLoaderHided = true;
     }
 
-    if (MyGlobals.scaffoldLoginKey == null)
-      MyGlobals.scaffoldLoginKey = new GlobalKey();
+    GlobalKey globalKey = new GlobalKey();
+
+    if (ModalRoute.of(context).isCurrent) {
+      MyGlobals.activeKey = globalKey;
+    }
 
     final emailField = Theme(
         data: Theme.of(context)
@@ -205,7 +205,7 @@ class LoginState extends State<Login> {
         backgroundColor: Theme.of(context).primaryColor,
         body: Container(
           margin: EdgeInsets.only(top: 40),
-          key: MyGlobals.scaffoldLoginKey,
+          key: globalKey,
           child: SingleChildScrollView(
             child: Container(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, 20),

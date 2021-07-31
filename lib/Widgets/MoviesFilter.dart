@@ -21,7 +21,7 @@ class MoviesFilter extends StatelessWidget {
         return Theme(
           data: Theme.of(context).accentColorBrightness == Brightness.dark
               ? ThemeData.dark()
-              : ThemeData.light(), // This will change to light theme.
+              : ThemeData.light(),
           child: child,
         );
       },
@@ -40,7 +40,7 @@ class MoviesFilter extends StatelessWidget {
         return Theme(
           data: Theme.of(context).accentColorBrightness == Brightness.dark
               ? ThemeData.dark()
-              : ThemeData.light(), // This will change to light theme.
+              : ThemeData.light(),
           child: child,
         );
       },
@@ -68,7 +68,7 @@ class MoviesFilter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
             Text(
-              'User Movies Filter',
+              'Filter Your Movies',
               style: Theme.of(context).textTheme.headline2,
             ),
             Row(
@@ -159,7 +159,7 @@ class MoviesFilter extends StatelessWidget {
                       }),
                   FilterIcon(
                       icon: FontAwesome5.ban,
-                      text: 'Not Liked',
+                      text: 'Disliked',
                       isActive: moviesState.notLikedOnly,
                       onPressedCallback: () {
                         moviesState.changeNotLikedOnlyFilter();

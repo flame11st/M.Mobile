@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
 import 'Shared/MovieRateButtons.dart';
 
 class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   final Movie movie;
   final bool fromSearch;
   final bool shouldRequestReview;
+  final MoviesList moviesList;
 
   const MoviesBottomNavigationBarExpanded(
       {Key key,
-      this.fromSearch = false, this.movie, this.shouldRequestReview = false})
+      this.fromSearch = false,
+      this.movie,
+      this.shouldRequestReview = false,
+      this.moviesList})
       : super(key: key);
 
   @override
@@ -19,7 +24,8 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
         child: MovieRateButtons(
           movie: movie,
           fromSearch: fromSearch,
-            shouldRequestReview: shouldRequestReview
+          shouldRequestReview: shouldRequestReview,
+          moviesList: moviesList,
         ));
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttericon/web_symbols_icons.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'Shared/MCard.dart';
 
@@ -115,7 +116,7 @@ class ThemePresentation extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
                           Icon(
-                            Icons.queue_play_next,
+                            Icons.playlist_play,
                             color: theme.colorTheme.additionalColor,
                           ),
                           SizedBox(
@@ -134,14 +135,15 @@ class ThemePresentation extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
                           Icon(
-                            Icons.check,
+                            WebSymbols.ok,
                             color: theme.colorTheme.fontsColor,
+                            size: 13,
                           ),
                           SizedBox(
                             width: 5,
                           ),
                           Text(
-                            'Viewed',
+                            ' Viewed',
                             style: TextStyle(
                               color: theme.colorTheme.fontsColor,
                               fontSize: 18,

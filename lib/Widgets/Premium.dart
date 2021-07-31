@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:fluttericon/octicons_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
@@ -10,22 +11,19 @@ import 'Shared/MSnackBar.dart';
 
 class Premium extends StatelessWidget {
   purchaseButtonClick() async {
-    final bool available = await InAppPurchaseConnection.instance.isAvailable();
+    final bool available = await InAppPurchase.instance.isAvailable();
 
     if (!available) {
-      MSnackBar.showSnackBar("Not available now. Please try later", false,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Not available now. Please try later", false);
 
       return;
     }
 
-    // const Set<String> _kIds = {'test_purchase2'};
     const Set<String> _kIds = {'premium_purchase'};
     final ProductDetailsResponse response =
-        await InAppPurchaseConnection.instance.queryProductDetails(_kIds);
+        await InAppPurchase.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
-      MSnackBar.showSnackBar("Not available now. Please try later", false,
-          MyGlobals.scaffoldPremiumKey.currentContext);
+      MSnackBar.showSnackBar("Not available now. Please try later", false);
 
       return;
     }
@@ -34,14 +32,17 @@ class Premium extends StatelessWidget {
 
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: product);
 
-    InAppPurchaseConnection.instance
+    InAppPurchase.instance
         .buyNonConsumable(purchaseParam: purchaseParam);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (MyGlobals.scaffoldPremiumKey == null)
-      MyGlobals.scaffoldPremiumKey = new GlobalKey();
+    GlobalKey globalKey = new GlobalKey();
+
+    if (ModalRoute.of(context).isCurrent) {
+      MyGlobals.activeKey = globalKey;
+    }
 
     final userState = Provider.of<UserState>(context);
 
@@ -72,15 +73,6 @@ class Premium extends StatelessWidget {
           fontSize: 18,
           fontWeight: FontWeight.bold),
     );
-
-    // final description = Text(
-    //   'Premium features: ',
-    //   textAlign: TextAlign.center,
-    //   style: TextStyle(
-    //       color: Theme.of(context).hintColor,
-    //       fontSize: 18,
-    //       fontWeight: FontWeight.bold),
-    // );
 
     final themeFeature = Column(
       children: <Widget>[
@@ -166,17 +158,38 @@ class Premium extends StatelessWidget {
       ],
     );
 
+    final removeAdFeature = Column(
+      children: <Widget>[
+        Icon(
+          FontAwesome5.ad,
+          color: Theme.of(context).accentColor,
+          size: 40,
+        ),
+        SizedBox(
+          height: 10,
+        ),
+        Text(
+          'Remove Ads',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: Theme.of(context).accentColor,
+              fontSize: 18,
+              fontWeight: FontWeight.bold),
+        )
+      ],
+    );
+
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
         title: headingField,
       ),
       body: Container(
-        key: MyGlobals.scaffoldPremiumKey,
+        key: globalKey,
         child: SingleChildScrollView(
           child: Container(
               margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+              padding: EdgeInsets.fromLTRB(20, AdManager.bannerVisible ? 55 : 0, 20, 20),
               color: Theme.of(context).primaryColor,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -186,26 +199,26 @@ class Premium extends StatelessWidget {
                     height: 20,
                   ),
                   subTitleText,
-                  // SizedBox(
-                  //   height: 20,
-                  // ),
-                  // description,
+                  SizedBox(
+                    height: 20,
+                  ),
+                  removeAdFeature,
                   SizedBox(
                     height: 20,
                   ),
                   themeFeature,
                   SizedBox(
-                    height: 30,
+                    height: 20,
                   ),
                   allMoviesFeature,
                   SizedBox(
-                    height: 30,
+                    height: 20,
                   ),
                   filtersFeature,
                   SizedBox(
                     height: 30,
                   ),
-                  supportFeature
+                  supportFeature,
                 ],
               )),
         ),

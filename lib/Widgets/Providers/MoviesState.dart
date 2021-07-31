@@ -2,18 +2,15 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:fluttericon/elusive_icons.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
-import 'package:mmobile/Widgets/MovieList.dart';
+import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
-import 'package:collection/collection.dart';
-import 'package:http/http.dart' as http;
 
 import '../Premium.dart';
 
@@ -21,7 +18,6 @@ class MoviesState with ChangeNotifier {
   MoviesState() {
     setCachedUserMovies();
     setCachedMoviesLists();
-    // setBaseUrl();
   }
 
   final serviceAgent = new ServiceAgent();
@@ -31,7 +27,8 @@ class MoviesState with ChangeNotifier {
   List<Movie> userMovies = new List<Movie>();
   List<Movie> watchlistMovies = new List<Movie>();
   List<Movie> viewedMovies = new List<Movie>();
-  List<MoviesList> moviesLists = new List<MoviesList>();
+  List<MoviesList> externalMoviesLists = new List<MoviesList>();
+  List<MoviesList> personalMoviesLists = new List<MoviesList>();
   List<DropdownMenuItem<String>> genres = new List<DropdownMenuItem<String>>();
   bool moviesOnly = false;
   bool tvOnly = false;
@@ -41,7 +38,6 @@ class MoviesState with ChangeNotifier {
   DateTime dateTo;
   String selectedGenre;
   int currentTabIndex = 0;
-  // String imageBaseUrl = "";
 
   DateTime dateMin;
   DateTime dateMax;
@@ -57,18 +53,6 @@ class MoviesState with ChangeNotifier {
   bool isMoviesRequested = false;
   bool isMoviesListsRequested = false;
   bool isCachedMoviesLoaded = false;
-
-  // final functionUri =
-  //     "https://moviediaryuri.azurewebsites.net/api/Function1?code=EBPmifSJ9racxxwyy2YviarnX4SQKOy98J4EWVfUNohI3OEj8rBIHg==";
-
-  // setBaseUrl() async {
-  //   if (imageBaseUrl != "") return;
-  //
-  //   var response = await http.get(functionUri);
-  //   imageBaseUrl = response.body + "/images";
-  //
-  //   notifyListeners();
-  // }
 
   setCachedUserMovies() async {
     var storedMovies;
@@ -111,22 +95,7 @@ class MoviesState with ChangeNotifier {
 
   Future<void> setUserMovies(List<Movie> userMovies) async {
     isMoviesRequested = true;
-    var updatedUserMovies = new List<Movie>();
-
-    for (var i = 0; i < userMovies.length; i++) {
-      var movie = userMovies[i];
-      var existedMovies =
-          this.userMovies.where((element) => element.id == movie.id);
-
-      if (existedMovies.isNotEmpty) {
-        existedMovies.first.updateMovie(movie);
-        updatedUserMovies.add(existedMovies.first);
-      } else {
-        updatedUserMovies.add(movie);
-      }
-    }
-
-    this.userMovies = updatedUserMovies;
+    updateUserMovies(userMovies, false);
 
     setGenres();
 
@@ -136,35 +105,117 @@ class MoviesState with ChangeNotifier {
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
 
+  void updateUserMovies(List<Movie> userMovies, bool shouldSetRate) {
+    var updatedUserMovies = new List<Movie>();
+
+    for (var i = 0; i < userMovies.length; i++) {
+      var movie = userMovies[i];
+      var existedMovies =
+          this.userMovies.where((element) => element.id == movie.id);
+
+      if (existedMovies.isNotEmpty) {
+        if (shouldSetRate) {
+          movie.movieRate = existedMovies.first.movieRate;
+        }
+
+        existedMovies.first.updateMovie(movie);
+        updatedUserMovies.add(existedMovies.first);
+      } else {
+        updatedUserMovies.add(movie);
+      }
+    }
+
+    this.userMovies = updatedUserMovies;
+  }
+
   setCachedMoviesLists() async {
-    var storedMoviesLists;
+    var storedExternalMoviesLists;
+    var storedPersonalMoviesLists;
     try {
-      storedMoviesLists = await storage.read(key: 'moviesLists');
+      storedExternalMoviesLists = await storage.read(key: 'externalMoviesLists');
+      storedPersonalMoviesLists = await storage.read(key: 'personalMoviesLists');
     } catch (on, ex) {
       await clearStorage();
     }
 
-    if (storedMoviesLists == null) return;
+    if (storedExternalMoviesLists == null || storedPersonalMoviesLists == null) return;
 
-    Iterable iterableMoviesLists = json.decode(storedMoviesLists);
+    var externalMoviesListValue = getMoviesListFromJson(storedExternalMoviesLists);
+    var personalMoviesListValue = getMoviesListFromJson(storedPersonalMoviesLists);
+
+    if (externalMoviesListValue != null)
+      setExternalMoviesLists(externalMoviesListValue);
+
+    if (personalMoviesListValue != null)
+      setPersonalMoviesLists(personalMoviesListValue);
+  }
+
+  getMoviesListFromJson(String jsonString) {
+    Iterable iterableMoviesLists = json.decode(jsonString);
+    List<MoviesList> moviesLists;
 
     if (iterableMoviesLists.length != 0) {
-      List<MoviesList> moviesLists = iterableMoviesLists.map((model) {
+      moviesLists = iterableMoviesLists.map((model) {
         return MoviesList.fromJson(model);
       }).toList();
-
-      setMoviesLists(moviesLists);
     }
+
+    return moviesLists;
   }
 
   setInitialMoviesLists(List<MoviesList> moviesLists) async {
-    await storage.write(key: 'moviesLists', value: jsonEncode(moviesLists));
+    final externalLists = moviesLists
+        .where((list) => list.movieListType == MovieListType.external)
+        .toList();
+    final personalLists = moviesLists
+        .where((list) => list.movieListType == MovieListType.personal)
+        .toList();
 
-    setMoviesLists(moviesLists);
+    await storage.write(key: 'externalMoviesLists', value: jsonEncode(externalLists));
+    await storage.write(key: 'personalMoviesLists', value: jsonEncode(personalLists));
+
+    setExternalMoviesLists(externalLists);
+    setPersonalMoviesLists(personalLists);
   }
 
-  setMoviesLists(List<MoviesList> moviesLists) {
-    this.moviesLists = moviesLists.map((ml) {
+  setInitialMoviesListsIncognito(List<MoviesList> moviesLists) async {
+    final externalLists = moviesLists
+        .where((list) => list.movieListType == MovieListType.external)
+        .toList();
+
+    await storage.write(key: 'externalMoviesLists', value: jsonEncode(externalLists));
+
+    setExternalMoviesLists(externalLists);
+
+    notifyListeners();
+  }
+
+  // setMoviesLists(List<MoviesList> moviesLists) {
+  //   final externalLists = moviesLists
+  //       .where((list) => list.movieListType == MovieListType.external)
+  //       .toList();
+  //
+  //   setExternalMoviesLists(externalLists);
+  //
+  //   final personalLists = moviesLists
+  //       .where((list) => list.movieListType == MovieListType.personal)
+  //       .toList();
+  //
+  //   setPersonalMoviesLists(personalLists);
+  // }
+
+  setExternalMoviesLists(List<MoviesList> moviesLists) {
+    this.externalMoviesLists = getMappedMoviesList(moviesLists);
+  }
+
+  setPersonalMoviesLists(List<MoviesList> moviesLists) {
+    this.personalMoviesLists = getMappedMoviesList(moviesLists);
+
+    notifyListeners();
+  }
+
+  getMappedMoviesList(List<MoviesList> moviesLists) {
+    var lists = moviesLists.map((ml) {
       final movies = ml.listMovies.map((movie) {
         final userMovie = userMovies.where((um) => um.id == movie.id);
 
@@ -182,7 +233,52 @@ class MoviesState with ChangeNotifier {
       return ml;
     }).toList();
 
-    notifyListeners();
+    return lists;
+  }
+
+  addMoviesList(String listName, int order) async {
+    this.personalMoviesLists.add(new MoviesList(
+        name: listName,
+        movieListType: MovieListType.personal,
+        order: order,
+        listMovies: []));
+
+    storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
+  }
+
+  renameMoviesList(String oldName, String newName) async {
+    final list = this.personalMoviesLists.singleWhere((element) => element.name == oldName);
+
+    list.name = newName;
+
+    storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
+  }
+
+  removeMoviesList(String listName) {
+    this.personalMoviesLists =
+        this.personalMoviesLists.where((element) => element.name != listName).toList();
+
+    storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
+  }
+
+  addMovieToPersonalList(String listName, Movie movie) {
+    final list = personalMoviesLists.singleWhere((element) => element.name == listName);
+
+    list.listMovies.add(movie);
+
+    final listsStringValue = jsonEncode(this.personalMoviesLists);
+
+    storage.write(key: 'personalMoviesLists', value: listsStringValue);
+  }
+
+  removeMovieFromPersonalList(String listName, Movie movie) {
+    final list = personalMoviesLists.singleWhere((element) => element.name == listName);
+
+    removeMovieFromList(movie, list.listMovies, MyGlobals.personalListsKey);
+
+    final listsStringValue = jsonEncode(this.personalMoviesLists);
+
+    storage.write(key: 'personalMoviesLists', value: listsStringValue);
   }
 
   setGenres() {
@@ -475,8 +571,18 @@ class MoviesState with ChangeNotifier {
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
 
+  // Future<void> updateMoviePosterPath(Movie movie, String posterPath) async {
+  //   await storage.write(key: 'movies', value: jsonEncode(userMovies));
+  // }
+
   void setRateToMovieInLists(String movieId, int rate) {
-    moviesLists.forEach((element) {
+    externalMoviesLists.forEach((element) {
+      var movies = element.listMovies.where((element) => element.id == movieId);
+
+      if (movies.length > 0) movies.first.movieRate = rate;
+    });
+
+    personalMoviesLists.forEach((element) {
       var movies = element.listMovies.where((element) => element.id == movieId);
 
       if (movies.length > 0) movies.first.movieRate = rate;
@@ -500,14 +606,10 @@ class MoviesState with ChangeNotifier {
       userMovies.insert(0, movieToAdd);
       movieToAdd.updated = DateTime.now().toUtc();
 
-      // removeMovieFromList(movieToAdd, viewedMovies, viewedListKey);
-
       if (movieToAdd == currentLatestMovie) {
         currentLatestMovie = viewedMovies.last;
       }
     }
-
-    // addMovieToList(movieToAdd, watchlistMovies, watchlistKey, 0);
 
     movieToAdd.movieRate = movieRate;
   }
@@ -515,12 +617,9 @@ class MoviesState with ChangeNotifier {
   void addMovieToViewed(Movie movieToAdd, int movieRate) {
     if (movieToAdd.movieRate == MovieRate.addedToWatchlist ||
         movieToAdd.movieRate == 0) {
-      // removeMovieFromList(movieToAdd, watchlistMovies, watchlistKey);
       userMovies.remove(movieToAdd);
       userMovies.insert(0, movieToAdd);
       movieToAdd.updated = DateTime.now().toUtc();
-
-      // addMovieToList(movieToAdd, viewedMovies, viewedListKey, 0);
     }
 
     movieToAdd.movieRate = movieRate;
@@ -573,6 +672,8 @@ class MoviesState with ChangeNotifier {
 
   clearStorage() async {
     await storage.delete(key: 'movies');
+    await storage.delete(key: 'externalMoviesLists');
+    await storage.delete(key: 'personalMoviesLists');
   }
 
   clear() async {
@@ -585,29 +686,11 @@ class MoviesState with ChangeNotifier {
     viewedMovies.clear();
     userMovies.clear();
     cachedUserMovies.clear();
-    // moviesLists = moviesLists
-    //     .where((element) => element.movieListType == MovieListType.external)
-    //     .toList();
-    setMoviesLists(moviesLists);
+    personalMoviesLists.clear();
+    externalMoviesLists = getMappedMoviesList(externalMoviesLists);
 
     await clearStorage();
   }
-
-//  bool equals(List<Movie> list1, List<Movie> list2) {
-//    if (identical(list1, list2)) return true;
-//    if (list1 == null || list2 == null) return false;
-//    var length = list1.length;
-//    if (length != list2.length) return false;
-//    for (var i = 0; i < length; i++) {
-//      if (!list2
-//          .any((m) => m.id == list1[i].id && m.movieRate == list1[i].movieRate))
-//        return false;
-//      if (!list1
-//          .any((m) => m.id == list2[i].id && m.movieRate == list2[i].movieRate))
-//        return false;
-//    }
-//    return true;
-//  }
 
   showMoreMovies(BuildContext context, bool isPremium) {
     if (isPremium) {
@@ -622,6 +705,7 @@ class MoviesState with ChangeNotifier {
   //Animated List area
   GlobalKey<AnimatedListState> watchlistKey = GlobalKey<AnimatedListState>();
   GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
+  // GlobalKey<AnimatedListState> personalListKey;
 
   Widget buildItem(Movie movie, Animation animation,
       {bool isPremium = false, BuildContext context}) {
@@ -630,7 +714,7 @@ class MoviesState with ChangeNotifier {
         sizeFactor: animation,
         child: Column(
           children: [
-            MovieListItem(movie: movie),
+            MovieListItem(movie: movie, shouldRequestReview: true,),
             // MovieListItem(movie: movie, imageUrl: imageBaseUrl,),
             if (currentLatestMovie == movie)
               SizedBox(

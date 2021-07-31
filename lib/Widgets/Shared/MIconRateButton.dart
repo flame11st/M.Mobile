@@ -37,6 +37,7 @@ class MIconRateButton extends StatelessWidget {
 
     if (!userState.isIncognitoMode) {
       serviceAgent.state = userState;
+
       await serviceAgent.rateMovie(movieId, userState.userId, movieRate);
     }
   }
@@ -89,7 +90,7 @@ class MIconRateButton extends StatelessWidget {
 
         await new Future.delayed(const Duration(milliseconds: 300));
 
-        MSnackBar.showSnackBar(text, true, null);
+        MSnackBar.showSnackBar(text, true);
 
         await new Future.delayed(const Duration(milliseconds: 300));
 

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MovieListItemExpanded.dart';
 import 'package:provider/provider.dart';
@@ -16,31 +17,38 @@ import 'package:http/http.dart' as http;
 
 class MovieListItem extends StatefulWidget {
   final Movie movie;
-  final String imageUrl;
+  final MoviesList moviesList;
+  final bool shouldRequestReview;
 
-  const MovieListItem({Key key, this.movie, this.imageUrl})
+  const MovieListItem(
+      {Key key, this.movie, this.moviesList, this.shouldRequestReview = false})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemState(movie, imageUrl);
+    return MovieListItemState(movie, moviesList, shouldRequestReview);
   }
 }
 
 class MovieListItemState extends State<MovieListItem> {
   bool expanded = false;
-  String imageBaseUrl = "https://moviediarystorage.blob.core.windows.net/movies";
+  String imageBaseUrl =
+      "https://moviediarystorage.blob.core.windows.net/movies";
   bool imageChecked = false;
+  MoviesList moviesList;
+  bool shouldRequestReview;
 
   Movie movie;
 
-  MovieListItemState(Movie movie, String url) {
+  MovieListItemState(
+      Movie movie, MoviesList moviesList, bool shouldRequestReview) {
     this.movie = movie;
-    // this.imageBaseUrl = url;
+    this.moviesList = moviesList;
+    this.shouldRequestReview = shouldRequestReview;
   }
 
   checkImage(String imageUrl) async {
-    final response = await http.head(imageBaseUrl + imageUrl);
+    final response = await http.head(Uri.parse(imageBaseUrl + imageUrl));
 
     if (response.statusCode == 404) {
       final serviceAgent = new ServiceAgent();
@@ -55,6 +63,8 @@ class MovieListItemState extends State<MovieListItem> {
     //Don't remove this not used state declaration. It is needed for lists update.
     final moviesState = Provider.of<MoviesState>(context);
 
+    final formatter = new NumberFormat("#,###");
+
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
     IconData icon;
@@ -66,7 +76,7 @@ class MovieListItemState extends State<MovieListItem> {
     switch (movie.movieRate) {
       case MovieRate.addedToWatchlist:
         {
-          icon = Icons.check;
+          icon = Icons.bookmark_border;
           break;
         }
       case MovieRate.liked:
@@ -97,6 +107,11 @@ class MovieListItemState extends State<MovieListItem> {
                 color: Theme.of(context).cardColor,
                 type: MaterialType.transparency,
                 child: MCard(
+                    foregroundColor: movie.movieRate == MovieRate.liked
+                        ? Colors.green.withOpacity(0.08)
+                        : movie.movieRate == MovieRate.notLiked
+                            ? Colors.red.withOpacity(0.08)
+                            : Colors.transparent,
                     marginBottom: 5,
                     marginLR: 10,
                     marginTop: 15,
@@ -107,12 +122,17 @@ class MovieListItemState extends State<MovieListItem> {
                           borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(4),
                               bottomLeft: Radius.circular(4)),
-                          child: imageBaseUrl != "" ? CachedNetworkImage(
-                            imageUrl: imageBaseUrl + imageUrl,
-                            height: 90,
-                            fit: BoxFit.fill,
-                            width: 60,
-                          ) : SizedBox(height: 90, width: 60,),
+                          child: imageBaseUrl != ""
+                              ? CachedNetworkImage(
+                                  imageUrl: imageBaseUrl + imageUrl,
+                                  height: 90,
+                                  fit: BoxFit.fill,
+                                  width: 60,
+                                )
+                              : SizedBox(
+                                  height: 90,
+                                  width: 60,
+                                ),
                         ),
                         Expanded(
                           child: Container(
@@ -157,9 +177,16 @@ class MovieListItemState extends State<MovieListItem> {
                                               .headline5),
                                   ],
                                 ),
-                                Text(movie.genres.join(', '),
-                                    style:
-                                        Theme.of(context).textTheme.headline5),
+                                if (movie.genres.isNotEmpty)
+                                  Text(movie.genres.join(', '),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headline5),
+                                if (movie.genres.isEmpty)
+                                  Text(
+                                      'Imdb: ${movie.imdbRate} (${formatter.format(movie.imdbVotes)})',
+                                      style:
+                                          Theme.of(context).textTheme.headline5)
                               ],
                             ),
                           ),
@@ -180,7 +207,7 @@ class MovieListItemState extends State<MovieListItem> {
                                   ? Colors.green
                                   : movie.movieRate == MovieRate.notLiked
                                       ? Colors.red
-                                      : Theme.of(context).hintColor,
+                                      : Theme.of(context).accentColor,
                             ),
                             onPressed: () async {
                               showModalBottomSheet<void>(
@@ -188,6 +215,7 @@ class MovieListItemState extends State<MovieListItem> {
                                   context: context,
                                   builder: (BuildContext context) =>
                                       MovieRateButtons(
+                                        moviesList: moviesList,
                                         movie: movie,
                                         showTitle: true,
                                         addMargin: false,
@@ -204,7 +232,10 @@ class MovieListItemState extends State<MovieListItem> {
   showFullMovie(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute(
         builder: (ctx) => MovieListItemExpanded(
-              movie: movie, imageUrl: imageBaseUrl,
+              movie: movie,
+              imageUrl: imageBaseUrl,
+              moviesList: moviesList,
+              shouldRequestReview: shouldRequestReview,
             )));
   }
 }

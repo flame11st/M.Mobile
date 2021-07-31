@@ -1,14 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-//
-//class MColors {
-//    static const PrimaryColor = Color(0xff222831);
-//    static const SecondaryColor = Color(0xff393e46);
-//    static const AdditionalColor = Color(0xff00adb5);
-//    static const FontsColor = Color(0xffeeeeee);
-//}
-
 class MColors {
   static const PrimaryColor = Color(0xff232931);
   static const SecondaryColor = Color(0xff252D37);
@@ -37,10 +29,7 @@ class MTextStyles {
 }
 
 class MyGlobals {
-  static GlobalKey scaffoldKey;
-  static GlobalKey scaffoldSettingsKey;
-  static GlobalKey scaffoldLoginKey;
-  static GlobalKey scaffoldSignUpKey;
-  static GlobalKey scaffoldPremiumKey;
-  static GlobalKey scaffoldMoviesListsKey;
+  static GlobalKey activeKey;
+
+  static GlobalKey<AnimatedListState> personalListsKey;
 }

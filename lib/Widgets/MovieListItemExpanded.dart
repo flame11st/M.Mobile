@@ -3,41 +3,55 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mmobile/Enums/MovieType.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Widgets/Shared/MBoxShadow.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MTextField.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'MoviesBottomNavigationBarExpanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
   final bool fromSearch;
   final String imageUrl;
+  final MoviesList moviesList;
+  final bool shouldRequestReview;
 
   const MovieListItemExpanded(
-      {Key key, this.movie, this.fromSearch = false, this.imageUrl})
+      {Key key,
+      this.movie,
+      this.fromSearch = false,
+      this.imageUrl,
+      this.moviesList,
+      this.shouldRequestReview = false})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemExpandedState(movie, fromSearch, imageUrl);
+    return MovieListItemExpandedState(
+        movie, fromSearch, imageUrl, moviesList, shouldRequestReview);
   }
 }
 
 class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   Movie movie;
   bool fromSearch;
+  MoviesList moviesList;
+  bool shouldRequestReview;
 
   String imageBaseUrl =
       'https://moviediarystorage.blob.core.windows.net/movies';
 
-  MovieListItemExpandedState(
-      Movie movie, bool fromSearch, String url) {
+  MovieListItemExpandedState(Movie movie, bool fromSearch, String url,
+      MoviesList moviesList, bool shouldRequestReview) {
     this.movie = movie;
     this.fromSearch = fromSearch;
-    // this.imageBaseUrl = url;
+    this.moviesList = moviesList;
+    this.shouldRequestReview = shouldRequestReview;
   }
 
   getProgressColor() {
@@ -95,11 +109,11 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     style: Theme.of(context).textTheme.headline5)
             ],
           ),
-          if (movie.genres.isNotEmpty)
+          if (movie.genres.isNotEmpty && !AdManager.bannerVisible)
             SizedBox(
               height: 5,
             ),
-          if (movie.genres.isNotEmpty)
+          if (movie.genres.isNotEmpty && !AdManager.bannerVisible)
             Text(movie.genres.join(', '),
                 style: Theme.of(context).textTheme.headline5)
         ],
@@ -119,7 +133,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               height: 180,
               fit: BoxFit.fill,
               width: 120,
-//              placeholder: (context, url) => CircularProgressIndicator(),
             ),
           ),
         ),
@@ -176,6 +189,11 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
+        if (movie.genres.isNotEmpty && AdManager.bannerVisible)
+          MTextField(
+              subtitleText: 'Genres',
+              bodyText: movie.genres.map((director) => director).join(', ')),
+        if (movie.genres.isNotEmpty && AdManager.bannerVisible) SizedBox(height: 10),
         if (movie.tagline != null && movie.tagline.isNotEmpty)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         if (movie.directors.isNotEmpty) SizedBox(height: 10),
@@ -203,35 +221,39 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     );
 
     return GestureDetector(
-        onTap: () => Navigator.of(context).pop(),
-        child: Scaffold(
-            backgroundColor: Theme.of(context).primaryColor,
-            body: Hero(
-              tag: 'movie-hero-animation' + movie.id,
-              child: SingleChildScrollView(
-                child: Container(
-                    margin: EdgeInsets.fromLTRB(10, 20, 10, 20),
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: Container(
-                        color: Theme.of(context).primaryColor,
-                        child: Column(
-                          children: <Widget>[
-                            topCard,
-                            SizedBox(height: 20),
-                            contentBody,
-                            SizedBox(height: 20),
-                            textFields,
-                          ],
-                        ),
-                      ),
-                    )),
-              ),
-            ),
-            bottomNavigationBar: MoviesBottomNavigationBarExpanded(
-              movie: movie,
-              fromSearch: fromSearch,
-              shouldRequestReview: true
-            )));
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+            child: Scaffold(
+                backgroundColor: Theme.of(context).primaryColor,
+                body: Hero(
+                  tag: 'movie-hero-animation' + movie.id,
+                  child: SingleChildScrollView(
+                    child: Container(
+                        margin: EdgeInsets.fromLTRB(10, 10, 10, 20),
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Container(
+                            color: Theme.of(context).primaryColor,
+                            child: Column(
+                              children: <Widget>[
+                                topCard,
+                                SizedBox(
+                                    height: AdManager.bannerVisible ? 62 : 20),
+                                contentBody,
+                                SizedBox(height: 20),
+                                textFields,
+                              ],
+                            ),
+                          ),
+                        )),
+                  ),
+                ),
+                bottomNavigationBar: MoviesBottomNavigationBarExpanded(
+                  movie: movie,
+                  fromSearch: fromSearch,
+                  shouldRequestReview: shouldRequestReview,
+                  moviesList: moviesList,
+                )));
   }
 }

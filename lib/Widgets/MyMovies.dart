@@ -29,6 +29,8 @@ class MyMoviesState extends State<MyMovies> {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
 
+    serviceAgent.state = userState;
+
     if (moviesState.isMoviesRequested) {
       return;
     }
@@ -41,10 +43,11 @@ class MyMoviesState extends State<MyMovies> {
         loaderState.setIsLoaderVisible(false);
       }
 
+      setIncognitoUserMovies(moviesState);
+
       return;
     }
 
-    serviceAgent.state = userState;
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
     Iterable iterableMovies = json.decode(moviesResponse.body);
@@ -65,15 +68,33 @@ class MyMoviesState extends State<MyMovies> {
     }
   }
 
+  setIncognitoUserMovies(MoviesState moviesState) async {
+    final moviesIds = moviesState.cachedUserMovies.map((e) => e.id).toList();
+
+    var encodedIds = json.encode(moviesIds);
+
+    final moviesResponse = await serviceAgent.getMoviesByIds(encodedIds);
+
+    Iterable iterableMovies = json.decode(moviesResponse.body);
+
+    if (iterableMovies.length != 0) {
+      List<Movie> movies = iterableMovies.map((model) {
+        return Movie.fromJson(model);
+      }).toList();
+
+      moviesState.updateUserMovies(movies, true);
+    }
+  }
+
   setMoviesLists() async {
     final moviesState = Provider.of<MoviesState>(context);
+    final userState = Provider.of<UserState>(context);
 
     if (moviesState.isMoviesListsRequested) return;
     moviesState.isMoviesListsRequested = true;
 
-    moviesState.setCachedMoviesLists();
+    final moviesListsResponse = await serviceAgent.getMoviesLists(userState.userId);
 
-    final moviesListsResponse = await serviceAgent.getMoviesLists();
     Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
 
     if (iterableMoviesLists.length != 0) {
@@ -82,7 +103,11 @@ class MyMoviesState extends State<MyMovies> {
         return MoviesList.fromJson(list);
       }).toList();
 
-      moviesState.setInitialMoviesLists(moviesLists);
+      if (userState.isIncognitoMode) {
+        moviesState.setInitialMoviesListsIncognito(moviesLists);
+      } else {
+        moviesState.setInitialMoviesLists(moviesLists);
+      }
     }
   }
 
@@ -121,11 +146,6 @@ class MyMoviesState extends State<MyMovies> {
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-
-    // if (moviesState.imageBaseUrl == "") {
-    //   return SizedBox();
-    // }
-
     final loaderState = Provider.of<LoaderState>(context);
     final userState = Provider.of<UserState>(context);
 
@@ -138,7 +158,7 @@ class MyMoviesState extends State<MyMovies> {
     }
 
     final myMoviesWidget = Scaffold(
-      resizeToAvoidBottomPadding: false,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: <Widget>[
           MovieList(),
