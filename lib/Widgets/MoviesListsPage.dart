@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
@@ -115,20 +116,22 @@ class MoviesListsPageState extends State<MoviesListsPage>
                 children: [
                   Expanded(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              moviesList.name,
-                              style:
-                                  TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              moviesList.listMovies.length.toString() + " item" + (moviesList.listMovies.length == 1 ? "" : "s"),
-                              style:
-                                  TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            )
-                        ])),
+                        Text(
+                          moviesList.name,
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          moviesList.listMovies.length.toString() +
+                              " item" +
+                              (moviesList.listMovies.length == 1 ? "" : "s"),
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        )
+                      ])),
                   Icon(
                     Icons.arrow_forward,
                     color: Theme.of(context).hintColor,
@@ -289,93 +292,103 @@ class MoviesListsPageState extends State<MoviesListsPage>
             backgroundColor: Theme.of(context).primaryColor,
             appBar: headingRow,
             body: Container(
-              padding: EdgeInsets.only(top: AdManager.bannerVisible ? 60 : 0),
               color: Theme.of(context).primaryColor,
-              child: TabBarView(
-                controller: tabController,
-                children: [
-                  SingleChildScrollView(
-                      child: Container(
-                          padding: EdgeInsets.fromLTRB(10, 0, 10, 20),
-                          color: Theme.of(context).primaryColor,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              if (moviesState.externalMoviesLists.isEmpty)
-                                SizedBox(
-                                  height: 40,
-                                ),
-                              if (moviesState.externalMoviesLists.isEmpty)
-                                Center(child: CircularProgressIndicator()),
-                              if (moviesState.externalMoviesLists.isNotEmpty)
-                                for (int i = 0;
-                                    i < moviesState.externalMoviesLists.length;
-                                    i++)
-                                  getMovieListWidget(
-                                      moviesState.externalMoviesLists[i],
-                                      MovieListType.external),
-                            ],
-                          ))),
-                  Stack(
-                    children: [
-                      SingleChildScrollView(
-                          child: Container(
-                              padding: EdgeInsets.fromLTRB(10, 0, 10, 20),
-                              color: Theme.of(context).primaryColor,
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: <Widget>[
-                                  if (moviesState.externalMoviesLists.isEmpty)
-                                    SizedBox(
-                                      height: 40,
-                                    ),
-                                  if (moviesState.externalMoviesLists.isEmpty)
-                                    Center(child: CircularProgressIndicator()),
-                                  if (moviesState
-                                          .externalMoviesLists.isNotEmpty &&
-                                      moviesState.personalMoviesLists.isEmpty)
-                                    Text(
-                                      "You haven't created any personal list.\n"
-                                      "Please tap the 'Add' button to create a new one.",
-                                      style: TextStyle(fontSize: 17, height: 2),
-                                    ),
-                                  if (moviesState.personalMoviesLists.length >
-                                      0)
-                                    for (int i = 0;
-                                        i <
-                                            moviesState
-                                                .personalMoviesLists.length;
-                                        i++)
-                                      getMovieListWidget(
-                                          moviesState.personalMoviesLists[i],
-                                          MovieListType.personal),
-                                ],
-                              ))),
-                      Align(
-                          alignment: Alignment(0.83, 0.92),
-                          child: Container(
-                              height: 55.0,
-                              width: 55.0,
-                              child: FittedBox(
-                                child: FloatingActionButton(
-                                  onPressed: () {
-                                    addNewList();
-                                  },
-                                  child: const Icon(
-                                    Icons.add,
-                                    size: 35,
+              child: Column(children: [
+                if (AdManager.bannerVisible && AdManager.bannersReady)
+                  Container(
+                    height: 55,
+                    child: AdWidget(ad: AdManager.listsBannerAd),
+                  ),
+                Expanded(child: TabBarView(
+                  controller: tabController,
+                  children: [
+                    SingleChildScrollView(
+                        child: Container(
+                            padding: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                            color: Theme.of(context).primaryColor,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: <Widget>[
+                                if (moviesState.externalMoviesLists.isEmpty)
+                                  SizedBox(
+                                    height: 40,
                                   ),
-                                  backgroundColor:
-                                      Theme.of(context).accentColor,
-                                  foregroundColor:
-                                      Theme.of(context).primaryColor,
-                                ),
-                              )))
-                    ],
-                  )
-                ],
-              ),
+                                if (moviesState.externalMoviesLists.isEmpty)
+                                  Center(child: CircularProgressIndicator()),
+                                if (moviesState.externalMoviesLists.isNotEmpty)
+                                  for (int i = 0;
+                                      i <
+                                          moviesState
+                                              .externalMoviesLists.length;
+                                      i++)
+                                    getMovieListWidget(
+                                        moviesState.externalMoviesLists[i],
+                                        MovieListType.external),
+                              ],
+                            ))),
+                    Stack(
+                      children: [
+                        SingleChildScrollView(
+                            child: Container(
+                                padding: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                                color: Theme.of(context).primaryColor,
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: <Widget>[
+                                    if (moviesState.externalMoviesLists.isEmpty)
+                                      SizedBox(
+                                        height: 40,
+                                      ),
+                                    if (moviesState.externalMoviesLists.isEmpty)
+                                      Center(
+                                          child: CircularProgressIndicator()),
+                                    if (moviesState
+                                            .externalMoviesLists.isNotEmpty &&
+                                        moviesState.personalMoviesLists.isEmpty)
+                                      Text(
+                                        "You haven't created any personal list.\n"
+                                        "Please tap the 'Add' button to create a new one.",
+                                        style:
+                                            TextStyle(fontSize: 17, height: 2),
+                                      ),
+                                    if (moviesState.personalMoviesLists.length >
+                                        0)
+                                      for (int i = 0;
+                                          i <
+                                              moviesState
+                                                  .personalMoviesLists.length;
+                                          i++)
+                                        getMovieListWidget(
+                                            moviesState.personalMoviesLists[i],
+                                            MovieListType.personal),
+                                  ],
+                                ))),
+                        Align(
+                            alignment: Alignment(0.83, 0.92),
+                            child: Container(
+                                height: 55.0,
+                                width: 55.0,
+                                child: FittedBox(
+                                  child: FloatingActionButton(
+                                    onPressed: () {
+                                      addNewList();
+                                    },
+                                    child: const Icon(
+                                      Icons.add,
+                                      size: 35,
+                                    ),
+                                    backgroundColor:
+                                        Theme.of(context).accentColor,
+                                    foregroundColor:
+                                        Theme.of(context).primaryColor,
+                                  ),
+                                )))
+                      ],
+                    )
+                  ],
+                ))
+              ]),
             )));
   }
 }

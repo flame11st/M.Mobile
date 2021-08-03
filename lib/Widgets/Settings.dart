@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
@@ -599,7 +600,6 @@ class SettingsState extends State<Settings> {
             title: headingField,
           ),
           body: Container(
-            padding: EdgeInsets.only(top: AdManager.bannerVisible ? 65 : 0),
             key: globalKey,
             child: SingleChildScrollView(
               child: Container(
@@ -610,6 +610,11 @@ class SettingsState extends State<Settings> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
+                      if (AdManager.bannerVisible && AdManager.bannersReady)
+                        Container(
+                          height: 55,
+                          child: AdWidget(ad: AdManager.settingsBannerAd),
+                        ),
                       if (!userState.isIncognitoMode) nameField,
                       if (!userState.isSignedInWithGoogle &&
                           !userState.isIncognitoMode) emailField,

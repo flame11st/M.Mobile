@@ -7,6 +7,9 @@ class AdManager {
   static BannerAd _bannerAd;
   static BannerAd _settingsBannerAd;
   static BannerAd _itemExpandedBannerAd;
+  static BannerAd _listsBannerAd;
+  static BannerAd _listBannerAd;
+  static BannerAd _searchBannerAd;
   static bool bannersReady = false;
 
   static Future<void> hideBanner() async {
@@ -28,6 +31,9 @@ class AdManager {
       await bannerAd.load();
       await settingsBannerAd.load();
       await itemExpandedBannerAd.load();
+      await listsBannerAd.load();
+      await listBannerAd.load();
+      await searchBannerAd.load();
 
       bannersReady = true;
     }
@@ -41,7 +47,6 @@ class AdManager {
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
-      // _bannerAd.load();
     }
 
     return _bannerAd;
@@ -55,7 +60,6 @@ class AdManager {
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
-      // _bannerAd.load();
     }
 
     return _itemExpandedBannerAd;
@@ -69,23 +73,48 @@ class AdManager {
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
-      // _bannerAd.load();
     }
 
     return _settingsBannerAd;
   }
 
-  static Future<BannerAd> getBannerAd() async {
-    final banner = BannerAd(
-      size: AdSize.banner,
-      adUnitId: BannerAd.testAdUnitId,
-      listener: AdManagerBannerAdListener(),
-      request: AdRequest(),
-    );
+  static BannerAd get listsBannerAd {
+    if (_listsBannerAd == null ) {
+      _listsBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: BannerAd.testAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
 
-    await banner.load();
+    return _listsBannerAd;
+  }
 
-    return banner;
+  static BannerAd get listBannerAd {
+    if (_listBannerAd == null ) {
+      _listBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: BannerAd.testAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _listBannerAd;
+  }
+
+  static BannerAd get searchBannerAd {
+    if (_searchBannerAd == null ) {
+      _searchBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: BannerAd.testAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _searchBannerAd;
   }
 
   static String get appId {

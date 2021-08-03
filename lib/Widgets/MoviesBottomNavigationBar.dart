@@ -37,7 +37,8 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final userState = Provider.of<UserState>(context);
 
     return Container(
-        height: 50,
+      padding: EdgeInsets.only(bottom: 10),
+        height: 60,
         width: double.infinity,
         decoration: BoxDecoration(
           boxShadow: [

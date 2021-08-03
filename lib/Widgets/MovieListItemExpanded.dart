@@ -64,10 +64,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       return Colors.green;
   }
 
-  getBanner() async {
-    await AdManager.getBannerAd();
-  }
-
   @override
   Widget build(BuildContext context) {
     final formatter = new NumberFormat("#,###");

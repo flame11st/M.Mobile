@@ -166,10 +166,10 @@ class MyMoviesState extends State<MyMovies> {
               alignment: Alignment.bottomCenter,
               child: MoviesBottomNavigationBar()),
           Align(
-              alignment: Alignment(0.0, 0.982),
+              alignment: Alignment(0.0, 0.955),
               child: Container(
-                  height: 50.0,
-                  width: 50.0,
+                  height: 55.0,
+                  width: 55.0,
                   child: FittedBox(
                     child: FloatingActionButton(
                       onPressed: () {
