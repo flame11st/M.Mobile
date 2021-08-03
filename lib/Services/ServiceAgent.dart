@@ -25,8 +25,8 @@ class ServiceAgent {
 
     var uri = responseAWS.body;
 
-    return uri + "/api/";
-    // return baseUrlLocal + "api/";
+    // return uri + "/api/";
+    return baseUrlLocal + "api/";
   }
 
   checkAuthorization() {

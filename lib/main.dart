@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 import 'Widgets/MHome.dart';
 import 'Widgets/Providers/MoviesState.dart';
 import 'Widgets/Providers/UserState.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   InAppPurchaseAndroidPlatformAddition.enablePendingPurchases();
+  PlatformViewsService.synchronizeToNativeViewHierarchy(false);
 
   runApp(ChangeNotifierProvider(
     create: (context) => UserState(),
