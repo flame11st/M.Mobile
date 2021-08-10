@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
@@ -36,15 +38,17 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
+    var additionalPadding = Platform.isIOS ? 20 : 0;
+
     return Container(
-      padding: EdgeInsets.only(bottom: 10),
-        height: 60,
+      padding: EdgeInsets.only(bottom: 0.0 + additionalPadding),
+        height: 60.0 + additionalPadding,
         width: double.infinity,
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.9),
-              blurRadius: 1,
+              blurRadius: 0.9,
             ),
           ],
           color: Theme.of(context).primaryColor,
@@ -86,7 +90,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     .push(_createRoute(() => Settings()));
               },
             ),
-            SizedBox(width: 58,),
+            SizedBox(width: 30,),
             MIconButton(
               withBorder: false,
               hint: 'Lists',

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -157,6 +158,8 @@ class MyMoviesState extends State<MyMovies> {
       loaderState.setIsLoaderVisible(false);
     }
 
+    var additionalPadding = Platform.isIOS ? 0.06 : 0;
+
     final myMoviesWidget = Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
@@ -166,7 +169,7 @@ class MyMoviesState extends State<MyMovies> {
               alignment: Alignment.bottomCenter,
               child: MoviesBottomNavigationBar()),
           Align(
-              alignment: Alignment(0.0, 0.955),
+              alignment: Alignment(0.0, 0.97 - additionalPadding),
               child: Container(
                   height: 55.0,
                   width: 55.0,

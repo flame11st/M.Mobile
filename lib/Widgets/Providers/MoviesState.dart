@@ -190,20 +190,6 @@ class MoviesState with ChangeNotifier {
     notifyListeners();
   }
 
-  // setMoviesLists(List<MoviesList> moviesLists) {
-  //   final externalLists = moviesLists
-  //       .where((list) => list.movieListType == MovieListType.external)
-  //       .toList();
-  //
-  //   setExternalMoviesLists(externalLists);
-  //
-  //   final personalLists = moviesLists
-  //       .where((list) => list.movieListType == MovieListType.personal)
-  //       .toList();
-  //
-  //   setPersonalMoviesLists(personalLists);
-  // }
-
   setExternalMoviesLists(List<MoviesList> moviesLists) {
     this.externalMoviesLists = getMappedMoviesList(moviesLists);
   }
@@ -538,13 +524,16 @@ class MoviesState with ChangeNotifier {
     return result;
   }
 
-  changeMovieRate(String movieId, int movieRate, bool isIncognitoMode) async {
+  changeMovieRate(String movieId, int movieRate, bool isIncognitoMode, Movie movie) async {
     if (movieId == null) return;
 
-    var foundMovies = userMovies.where((m) => m.id == movieId);
     Movie movieToRate;
+    var foundMovies = userMovies.where((m) => m.id == movieId);
 
-    if (foundMovies.length == 0) {
+    if (movie != null && (movie.actors.isNotEmpty || movie.directors.isNotEmpty || movie.genres.isNotEmpty))
+    {
+      movieToRate = movie;
+    } else if (foundMovies.length == 0) {
       final moviesResponse = await serviceAgent.getMovie(movieId);
       movieToRate = Movie.fromJson(json.decode(moviesResponse.body));
       userMovies.insert(0, movieToRate);

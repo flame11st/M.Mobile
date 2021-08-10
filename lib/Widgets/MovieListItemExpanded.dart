@@ -226,7 +226,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                   tag: 'movie-hero-animation' + movie.id,
                   child: SingleChildScrollView(
                     child: Container(
-                        margin: EdgeInsets.fromLTRB(10, 10, 10, 20),
+                        margin: EdgeInsets.fromLTRB(10, 20, 10, 20),
                         child: Material(
                           type: MaterialType.transparency,
                           child: Container(

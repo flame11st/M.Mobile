@@ -598,6 +598,9 @@ class SettingsState extends State<Settings> {
               .primaryColor,
           appBar: AppBar(
             title: headingField,
+            backgroundColor: Theme
+                .of(context)
+                .primaryColor,
           ),
           body: Container(
             key: globalKey,

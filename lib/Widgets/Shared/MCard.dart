@@ -1,5 +1,5 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:mmobile/Variables/Variables.dart';
 
 class MCard extends StatelessWidget {
   final text;
@@ -40,7 +40,8 @@ class MCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.8),
-              offset: Offset(0.0, 0.05),
+              blurRadius: 0.5
+              // offset: Offset(0.0, 0.9),
             ),
           ],
           borderRadius: BorderRadius.circular(4.0),
