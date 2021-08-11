@@ -196,6 +196,9 @@ class SettingsState extends State<Settings> {
             Icon(
               Icons.settings,
               size: 25,
+              color: Theme
+                  .of(context)
+                  .hintColor,
             ),
             SizedBox(
               width: 10,
@@ -601,6 +604,9 @@ class SettingsState extends State<Settings> {
             backgroundColor: Theme
                 .of(context)
                 .primaryColor,
+            foregroundColor: Theme
+                .of(context)
+                .hintColor,
           ),
           body: Container(
             key: globalKey,
