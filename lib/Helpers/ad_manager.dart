@@ -108,7 +108,7 @@ class AdManager {
     if (_searchBannerAd == null ) {
       _searchBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: BannerAd.testAdUnitId,
+        adUnitId: AdManager.bannerAdUnitId,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -121,7 +121,7 @@ class AdManager {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532~2399817888";
     } else if (Platform.isIOS) {
-      return "";
+      return "ca-app-pub-5540129750283532~9895592468";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }
@@ -131,7 +131,7 @@ class AdManager {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532/9763657807";
     } else if (Platform.isIOS) {
-      return "<YOUR_IOS_BANNER_AD_UNIT_ID>";
+      return "ca-app-pub-5540129750283532/4970568843";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }

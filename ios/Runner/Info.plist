@@ -41,7 +41,15 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>GADApplicationIdentifier</key>
-    <string>ca-app-pub-5540129750283532~2399817888</string>
+    <key>GADApplicationIdentifier</key>
+    <string>ca-app-pub-5540129750283532~9895592468</string>
+    <key>SKAdNetworkItems</key>
+      <array>
+        <dict>
+          <key>SKAdNetworkIdentifier</key>
+          <string>cstr6suwn9.skadnetwork</string>
+        </dict>
+      </array>
+
 </dict>
 </plist>
