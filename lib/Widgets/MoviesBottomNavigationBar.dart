@@ -39,6 +39,8 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final userState = Provider.of<UserState>(context);
 
     var additionalPadding = Platform.isIOS ? 20 : 0;
+    var middleSizedBoxWidth = 50.0;
+    var buttonWidth = (MediaQuery.of(context).size.width - middleSizedBoxWidth) / 4;
 
     return Container(
       padding: EdgeInsets.only(bottom: 0.0 + additionalPadding),
@@ -57,6 +59,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Filters',
               icon: Icon(
@@ -79,6 +82,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               },
             ),
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Settings',
               icon: Icon(
@@ -90,8 +94,9 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     .push(_createRoute(() => Settings()));
               },
             ),
-            SizedBox(width: 30,),
+            SizedBox(width: middleSizedBoxWidth,),
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Lists',
               icon: Icon(
@@ -104,9 +109,9 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               },
             ),
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Premium',
-              width: 65.0,
               icon: Icon(
                 userState.isPremium
                     ? Icons.check

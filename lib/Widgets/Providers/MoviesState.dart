@@ -536,9 +536,12 @@ class MoviesState with ChangeNotifier {
     } else if (foundMovies.length == 0) {
       final moviesResponse = await serviceAgent.getMovie(movieId);
       movieToRate = Movie.fromJson(json.decode(moviesResponse.body));
-      userMovies.insert(0, movieToRate);
     } else {
       movieToRate = foundMovies.first;
+    }
+
+    if (foundMovies.length == 0) {
+      userMovies.insert(0, movieToRate);
     }
 
     if (!isIncognitoMode) recalculateMovieRating(movieToRate, movieRate);

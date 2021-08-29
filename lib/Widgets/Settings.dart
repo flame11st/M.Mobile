@@ -601,12 +601,6 @@ class SettingsState extends State<Settings> {
               .primaryColor,
           appBar: AppBar(
             title: headingField,
-            backgroundColor: Theme
-                .of(context)
-                .primaryColor,
-            foregroundColor: Theme
-                .of(context)
-                .hintColor,
           ),
           body: Container(
             key: globalKey,
@@ -620,10 +614,7 @@ class SettingsState extends State<Settings> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
                       if (AdManager.bannerVisible && AdManager.bannersReady)
-                        Container(
-                          height: 55,
-                          child: AdWidget(ad: AdManager.settingsBannerAd),
-                        ),
+                        AdManager.getBannerWidget(AdManager.settingsBannerAd),
                       if (!userState.isIncognitoMode) nameField,
                       if (!userState.isSignedInWithGoogle &&
                           !userState.isIncognitoMode) emailField,

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdManager {
@@ -9,7 +10,6 @@ class AdManager {
   static BannerAd _itemExpandedBannerAd;
   static BannerAd _listsBannerAd;
   static BannerAd _listBannerAd;
-  static BannerAd _searchBannerAd;
   static bool bannersReady = false;
 
   static Future<void> hideBanner() async {
@@ -33,17 +33,27 @@ class AdManager {
       await itemExpandedBannerAd.load();
       await listsBannerAd.load();
       await listBannerAd.load();
-      await searchBannerAd.load();
 
       bannersReady = true;
     }
+  }
+
+  static Widget getBannerWidget(BannerAd bannerAd) {
+    return StatefulBuilder(
+      builder: (context, setState) => Container(
+        child: AdWidget(ad: bannerAd),
+        width: bannerAd.size.width.toDouble(),
+        height: bannerAd.size.height.toDouble(),
+        alignment: Alignment.center,
+      ),
+    );
   }
 
   static BannerAd get bannerAd {
     if (_bannerAd == null ) {
       _bannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: BannerAd.testAdUnitId,
+        adUnitId: bannerAdUnitId,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -56,7 +66,7 @@ class AdManager {
     if (_itemExpandedBannerAd == null ) {
       _itemExpandedBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: BannerAd.testAdUnitId,
+        adUnitId: bannerAdUnitId,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -69,7 +79,7 @@ class AdManager {
     if (_settingsBannerAd == null ) {
       _settingsBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: BannerAd.testAdUnitId,
+        adUnitId: bannerAdUnitId,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -82,7 +92,7 @@ class AdManager {
     if (_listsBannerAd == null ) {
       _listsBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: BannerAd.testAdUnitId,
+        adUnitId: bannerAdUnitId,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -95,26 +105,13 @@ class AdManager {
     if (_listBannerAd == null ) {
       _listBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: BannerAd.testAdUnitId,
+        adUnitId: bannerAdUnitId,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
     }
 
     return _listBannerAd;
-  }
-
-  static BannerAd get searchBannerAd {
-    if (_searchBannerAd == null ) {
-      _searchBannerAd = BannerAd(
-        size: AdSize.banner,
-        adUnitId: AdManager.bannerAdUnitId,
-        listener: AdManagerBannerAdListener(),
-        request: AdRequest(),
-      );
-    }
-
-    return _searchBannerAd;
   }
 
   static String get appId {

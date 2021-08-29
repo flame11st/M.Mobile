@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Objects/User.dart';
@@ -162,6 +163,9 @@ class MyMoviesState extends State<MyMovies> {
 
     final myMoviesWidget = Scaffold(
       resizeToAvoidBottomInset: false,
+      appBar: AdManager.bannerVisible && AdManager.bannersReady ? AppBar(
+        title:  AdManager.getBannerWidget(AdManager.bannerAd)
+      ) : PreferredSize(preferredSize: Size(0,0), child: Container()),
       body: Stack(
         children: <Widget>[
           MovieList(),
@@ -188,7 +192,7 @@ class MyMoviesState extends State<MyMovies> {
                       backgroundColor: Theme.of(context).accentColor,
                       foregroundColor: Theme.of(context).primaryColor,
                     ),
-                  )))
+                  ))),
         ],
       ),
     );

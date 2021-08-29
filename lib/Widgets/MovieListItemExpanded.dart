@@ -237,10 +237,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                 SizedBox(
                                     height: AdManager.bannerVisible ? 5 : 15),
                                 if (AdManager.bannerVisible && AdManager.bannersReady)
-                                  Container(
-                                    height: 60,
-                                    child: AdWidget(ad: AdManager.itemExpandedBannerAd),
-                                  ),
+                                  AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
                                 contentBody,
                                 SizedBox(height: 20),
                                 textFields,

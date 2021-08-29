@@ -225,11 +225,6 @@ class MovieListState extends State<MovieList>
           color: Theme.of(context).primaryColor,
           child: Column(
             children: [
-              if (AdManager.bannerVisible && AdManager.bannersReady)
-              Container(
-                height: 55,
-                child: AdWidget(ad: AdManager.bannerAd),
-              ),
               Expanded(
                 child: TabBarView(
                   controller: tabController,

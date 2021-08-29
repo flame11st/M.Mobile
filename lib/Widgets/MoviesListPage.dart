@@ -167,10 +167,7 @@ class MovieListPageState extends State<MoviesListPage> {
     Widget widgetToReturn = moviesList.listMovies.isNotEmpty
         ? Column(children: [
             if (AdManager.bannerVisible && AdManager.bannersReady)
-              Container(
-                height: 55,
-                child: AdWidget(ad: AdManager.listBannerAd),
-              ),
+              AdManager.getBannerWidget(AdManager.listBannerAd),
             Expanded(
                 child: AnimatedList(
               padding: EdgeInsets.only(bottom: 90),

@@ -184,7 +184,9 @@ class MovieListItemState extends State<MovieListItem> {
                                           .headline5),
                                 if (movie.genres.isEmpty)
                                   Text(
-                                      'Imdb: ${movie.imdbRate} (${formatter.format(movie.imdbVotes)})',
+                                      movie.imdbVotes > 0
+                                          ? 'Imdb: ${movie.imdbRate} (${formatter.format(movie.imdbVotes)})'
+                                          : 'Imdb: Not rated',
                                       style:
                                           Theme.of(context).textTheme.headline5)
                               ],
