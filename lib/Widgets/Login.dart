@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -13,6 +15,7 @@ import '../Services/ServiceAgent.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MButton.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -31,6 +34,8 @@ class LoginState extends State<Login> {
 
   bool isLoaderHided = false;
   bool signInButtonActive = false;
+
+  String email = 'empty';
 
   @override
   void initState() {
@@ -72,6 +77,55 @@ class LoginState extends State<Login> {
       loaderState.setIsLoaderVisible(false);
       MSnackBar.showSnackBar('Sign in with Google failed', false);
     }
+  }
+
+  Future<void> signInWithApple() async {
+    final credential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      webAuthenticationOptions: WebAuthenticationOptions(
+        clientId:
+        'com.flame.moviediary-service',
+        redirectUri: Uri.parse(
+          'https://moviediary.site/callbacks/sign_in_with_apple',
+        ),
+      ),
+      // // TODO: Remove these if you have no need for them
+      // nonce: 'example-nonce',
+      // state: 'example-state',
+    );
+
+    setState(() {
+      email = credential.email;
+    });
+
+    // This is the endpoint that will convert an authorization code obtained
+    // via Sign in with Apple into a session in your system
+    // final signInWithAppleEndpoint = Uri(
+    //   scheme: 'https',
+    //   host: 'moviediary.site/callbacks',
+    //   path: '/sign_in_with_apple',
+    //   queryParameters: <String, String>{
+    //     'code': credential.authorizationCode,
+    //     if (credential.givenName != null)
+    //       'firstName': credential.givenName!,
+    //     if (credential.familyName != null)
+    //       'lastName': credential.familyName!,
+    //     'useBundleId':
+    //     Platform.isIOS || Platform.isMacOS ? 'true' : 'false',
+    //     if (credential.state != null) 'state': credential.state!,
+    //   },
+    // );
+    //
+    // final session = await http.Client().post(
+    //   signInWithAppleEndpoint,
+    // );
+
+    // If we got this far, a session based on the Apple ID credential has been created in your system,
+    // and you can now set this as the app's session
+    // print(session);
   }
 
   void signOutGoogle() async {}
@@ -180,6 +234,11 @@ class LoginState extends State<Login> {
       prependImage: AssetImage("Assets/google_logo.png"),
     );
 
+    final signInWithAppleButton = SignInWithAppleButton(
+      height: 50,
+      onPressed: () => signInWithApple(),
+    );
+
     final incognitoButton = MButton(
       text: 'Skip Authorization',
       onPressedCallback: () => proceedIncognitoMode(),
@@ -245,6 +304,8 @@ class LoginState extends State<Login> {
                       height: 20,
                     ),
                     googleLoginButton,
+                    signInWithAppleButton,
+                    Text(email),
                     SizedBox(
                       height: 20,
                     ),

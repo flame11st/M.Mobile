@@ -35,6 +35,7 @@ dependencies:
 #  in_app_review: ^2.0.2
 #  firebase_admob: ^0.11.2
   google_mobile_ads: ^0.13.2+1
+  sign_in_with_apple: ^3.0.0
 
 flutter_icons:
   image_path: "Assets/mdIcon_IX.png"
