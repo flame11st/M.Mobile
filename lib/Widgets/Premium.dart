@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:fluttericon/octicons_icons.dart';
@@ -199,10 +201,12 @@ class Premium extends StatelessWidget {
                     height: 20,
                   ),
                   subTitleText,
-                  SizedBox(
-                    height: 20,
-                  ),
-                  removeAdFeature,
+                  if (Platform.isAndroid)
+                    SizedBox(
+                      height: 20,
+                    ),
+                  if (Platform.isAndroid)
+                    removeAdFeature,
                   SizedBox(
                     height: 20,
                   ),
