@@ -25,6 +25,9 @@ class AdManager {
   }
 
   static Future<void> showBanner() async {
+    //TODO: Setup Google Ads for iOS
+    if (Platform.isIOS) return;
+
     if (!bannerVisible) {
       bannerVisible = true;
 
