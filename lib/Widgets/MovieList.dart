@@ -11,7 +11,7 @@ import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
-import 'package:firebase_admob/firebase_admob.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class MovieList extends StatefulWidget {
   @override
@@ -52,7 +52,7 @@ class MovieListState extends State<MovieList>
 
   Future<void> _initAdMob() {
     // TODO: Initialize AdMob SDK
-    return FirebaseAdMob.instance.initialize(appId: AdManager.appId);
+    return MobileAds.instance.initialize();
   }
 
   requestReview() async {
@@ -154,11 +154,10 @@ class MovieListState extends State<MovieList>
     }
 
     if (!userState.premiumPurchasedIncognito &&
-        (userState.user == null || !userState.user.premiumPurchased)
-        && movieState.userMovies.length > 0) {
-      var offset = MediaQuery.of(context).size.height - 140.0;
+        (userState.user == null || !userState.user.premiumPurchased) &&
+        movieState.userMovies.length > 0) {
 
-      if (ModalRoute.of(context).isCurrent) AdManager.showBanner(offset);
+      if (ModalRoute.of(context).isCurrent) AdManager.showBanner();
     } else if (AdManager.bannerVisible) {
       AdManager.bannerVisible = false;
 
@@ -222,54 +221,71 @@ class MovieListState extends State<MovieList>
         ),
       ),
       body: Container(
-        padding: EdgeInsets.only(top: AdManager.bannerVisible ? 60 : 0),
-        color: Theme.of(context).primaryColor,
-        child: TabBarView(
-          controller: tabController,
-          children: [
-            if (movieState.userMovies.length > 0 && watchlistMovies.isNotEmpty)
-              AnimatedList(
-                padding: EdgeInsets.only(bottom: 90),
-                key: movieState.watchlistKey,
-                initialItemCount: watchlistMovies.length,
-                itemBuilder: (context, index, animation) {
-                  if (watchlistMovies.length <= index) return null;
+          // padding: EdgeInsets.only(top: AdManager.bannerVisible ? 60 : 0),
+          color: Theme.of(context).primaryColor,
+          child: Column(
+            children: [
+              Expanded(
+                child: TabBarView(
+                  controller: tabController,
+                  children: [
+                    if (movieState.userMovies.length > 0 &&
+                        watchlistMovies.isNotEmpty)
+                      AnimatedList(
+                        padding: EdgeInsets.only(bottom: 90),
+                        key: movieState.watchlistKey,
+                        initialItemCount: watchlistMovies.length,
+                        itemBuilder: (context, index, animation) {
+                          if (watchlistMovies.length <= index) return null;
 
-                  return movieState.buildItem(
-                      watchlistMovies[index], animation);
-                },
-              ),
-            if (movieState.userMovies.isNotEmpty && watchlistMovies.isEmpty)
-              Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('Your Watchlist is empty.', style: Theme.of(context).textTheme.headline2,),
-              ),
-            if (movieState.userMovies.length == 0)
-              getEmptyMoviesCardWidget("Watchlist"),
-            if (movieState.userMovies.length == 0)
-              getEmptyMoviesCardWidget("Viewed list"),
-            if (movieState.userMovies.length > 0 && viewedMovies.isNotEmpty)
-              Container(
-                child: AnimatedList(
-                  padding: EdgeInsets.only(bottom: 90),
-                  key: movieState.viewedListKey,
-                  initialItemCount: viewedMovies.length,
-                  itemBuilder: (context, index, animation) {
-                    if (viewedMovies.length <= index) return null;
+                          return movieState.buildItem(
+                              watchlistMovies[index], animation);
+                        },
+                      ),
+                    if (movieState.userMovies.isNotEmpty &&
+                        watchlistMovies.isEmpty)
+                      Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text(
+                          'Your Watchlist is empty.',
+                          style: Theme.of(context).textTheme.headline2,
+                        ),
+                      ),
+                    if (movieState.userMovies.length == 0)
+                      getEmptyMoviesCardWidget("Watchlist"),
+                    if (movieState.userMovies.length == 0)
+                      getEmptyMoviesCardWidget("Viewed list"),
+                    if (movieState.userMovies.length > 0 &&
+                        viewedMovies.isNotEmpty)
+                      Container(
+                        child: AnimatedList(
+                          padding: EdgeInsets.only(bottom: 90),
+                          key: movieState.viewedListKey,
+                          initialItemCount: viewedMovies.length,
+                          itemBuilder: (context, index, animation) {
+                            if (viewedMovies.length <= index) return null;
 
-                    return movieState.buildItem(viewedMovies[index], animation,
-                        isPremium: userState.isPremium, context: context);
-                  },
+                            return movieState.buildItem(
+                                viewedMovies[index], animation,
+                                isPremium: userState.isPremium,
+                                context: context);
+                          },
+                        ),
+                      ),
+                    if (movieState.userMovies.isNotEmpty &&
+                        viewedMovies.isEmpty)
+                      Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text(
+                          'Your Viewed list is empty.',
+                          style: Theme.of(context).textTheme.headline2,
+                        ),
+                      )
+                  ],
                 ),
-              ),
-            if (movieState.userMovies.isNotEmpty && viewedMovies.isEmpty)
-                Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text('Your Viewed list is empty.', style: Theme.of(context).textTheme.headline2,),
-                )
-          ],
-        ),
-      ),
+              )
+            ],
+          )),
       key: globalKey,
     );
   }

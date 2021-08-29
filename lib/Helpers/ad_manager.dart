@@ -1,11 +1,16 @@
 import 'dart:io';
 
-import 'package:firebase_admob/firebase_admob.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdManager {
   static bool bannerVisible = false;
   static BannerAd _bannerAd;
-  static double currentOffset = 0;
+  static BannerAd _settingsBannerAd;
+  static BannerAd _itemExpandedBannerAd;
+  static BannerAd _listsBannerAd;
+  static BannerAd _listBannerAd;
+  static bool bannersReady = false;
 
   static Future<void> hideBanner() async {
     try {
@@ -13,36 +18,110 @@ class AdManager {
     } catch (on){}
 
     _bannerAd = null;
+    _settingsBannerAd = null;
+    _itemExpandedBannerAd = null;
     bannerVisible = false;
+    bannersReady = false;
   }
 
-  static Future<void> showBanner(double offset) async {
+  static Future<void> showBanner() async {
+    //TODO: Setup Google Ads for iOS
+    if (Platform.isIOS) return;
+
     if (!bannerVisible) {
       bannerVisible = true;
-      currentOffset = offset;
 
-      bannerAd
-        ..load()
-        ..show(anchorOffset: offset);
+      await bannerAd.load();
+      await settingsBannerAd.load();
+      await itemExpandedBannerAd.load();
+      await listsBannerAd.load();
+      await listBannerAd.load();
+
+      bannersReady = true;
     }
+  }
+
+  static Widget getBannerWidget(BannerAd bannerAd) {
+    return StatefulBuilder(
+      builder: (context, setState) => Container(
+        child: AdWidget(ad: bannerAd),
+        width: bannerAd.size.width.toDouble(),
+        height: bannerAd.size.height.toDouble(),
+        alignment: Alignment.center,
+      ),
+    );
   }
 
   static BannerAd get bannerAd {
     if (_bannerAd == null ) {
       _bannerAd = BannerAd(
-        adUnitId: AdManager.bannerAdUnitId,
         size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
       );
     }
 
     return _bannerAd;
   }
 
+  static BannerAd get itemExpandedBannerAd {
+    if (_itemExpandedBannerAd == null ) {
+      _itemExpandedBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _itemExpandedBannerAd;
+  }
+
+  static BannerAd get settingsBannerAd {
+    if (_settingsBannerAd == null ) {
+      _settingsBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _settingsBannerAd;
+  }
+
+  static BannerAd get listsBannerAd {
+    if (_listsBannerAd == null ) {
+      _listsBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _listsBannerAd;
+  }
+
+  static BannerAd get listBannerAd {
+    if (_listBannerAd == null ) {
+      _listBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _listBannerAd;
+  }
+
   static String get appId {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532~2399817888";
     } else if (Platform.isIOS) {
-      return "";
+      return "ca-app-pub-5540129750283532~9895592468";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }
@@ -52,7 +131,7 @@ class AdManager {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532/9763657807";
     } else if (Platform.isIOS) {
-      return "<YOUR_IOS_BANNER_AD_UNIT_ID>";
+      return "ca-app-pub-5540129750283532/4970568843";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }

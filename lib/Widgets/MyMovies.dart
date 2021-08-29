@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Objects/User.dart';
@@ -157,8 +159,13 @@ class MyMoviesState extends State<MyMovies> {
       loaderState.setIsLoaderVisible(false);
     }
 
+    var additionalPadding = Platform.isIOS ? 0.06 : 0;
+
     final myMoviesWidget = Scaffold(
       resizeToAvoidBottomInset: false,
+      appBar: AdManager.bannerVisible && AdManager.bannersReady ? AppBar(
+        title:  AdManager.getBannerWidget(AdManager.bannerAd)
+      ) : PreferredSize(preferredSize: Size(0,0), child: Container()),
       body: Stack(
         children: <Widget>[
           MovieList(),
@@ -166,10 +173,10 @@ class MyMoviesState extends State<MyMovies> {
               alignment: Alignment.bottomCenter,
               child: MoviesBottomNavigationBar()),
           Align(
-              alignment: Alignment(0.0, 0.982),
+              alignment: Alignment(0.0, 0.97 - additionalPadding),
               child: Container(
-                  height: 50.0,
-                  width: 50.0,
+                  height: 55.0,
+                  width: 55.0,
                   child: FittedBox(
                     child: FloatingActionButton(
                       onPressed: () {
@@ -185,7 +192,7 @@ class MyMoviesState extends State<MyMovies> {
                       backgroundColor: Theme.of(context).accentColor,
                       foregroundColor: Theme.of(context).primaryColor,
                     ),
-                  )))
+                  ))),
         ],
       ),
     );

@@ -90,7 +90,7 @@ class LoginState extends State<Login> {
   }
 
   login() async {
-    final loaderState = Provider.of<LoaderState>(context);
+    final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
 
     var response =

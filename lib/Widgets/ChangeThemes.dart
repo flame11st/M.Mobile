@@ -88,8 +88,6 @@ class ChangeThemesState extends State<ChangeThemes>
       ],
     );
 
-    final paddingTop = AdManager.bannerVisible ? 65.0 : 0.0;
-
     return Builder(builder: (BuildContext context1) {
       return Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
@@ -97,7 +95,7 @@ class ChangeThemesState extends State<ChangeThemes>
           title: headingField,
         ),
         body: Container(
-            padding: EdgeInsets.fromLTRB(50, paddingTop, 50, 20),
+            padding: EdgeInsets.fromLTRB(50, 0, 50, 20),
             child: Column(
               children: [
                 TabPageSelector(

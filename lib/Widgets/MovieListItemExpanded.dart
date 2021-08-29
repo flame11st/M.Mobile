@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -109,11 +110,11 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     style: Theme.of(context).textTheme.headline5)
             ],
           ),
-          if (movie.genres.isNotEmpty && !AdManager.bannerVisible)
+          if (movie.genres.isNotEmpty)
             SizedBox(
               height: 5,
             ),
-          if (movie.genres.isNotEmpty && !AdManager.bannerVisible)
+          if (movie.genres.isNotEmpty)
             Text(movie.genres.join(', '),
                 style: Theme.of(context).textTheme.headline5)
         ],
@@ -189,11 +190,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        if (movie.genres.isNotEmpty && AdManager.bannerVisible)
-          MTextField(
-              subtitleText: 'Genres',
-              bodyText: movie.genres.map((director) => director).join(', ')),
-        if (movie.genres.isNotEmpty && AdManager.bannerVisible) SizedBox(height: 10),
         if (movie.tagline != null && movie.tagline.isNotEmpty)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         if (movie.directors.isNotEmpty) SizedBox(height: 10),
@@ -230,7 +226,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                   tag: 'movie-hero-animation' + movie.id,
                   child: SingleChildScrollView(
                     child: Container(
-                        margin: EdgeInsets.fromLTRB(10, 10, 10, 20),
+                        margin: EdgeInsets.fromLTRB(10, 20, 10, 20),
                         child: Material(
                           type: MaterialType.transparency,
                           child: Container(
@@ -239,7 +235,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                               children: <Widget>[
                                 topCard,
                                 SizedBox(
-                                    height: AdManager.bannerVisible ? 62 : 20),
+                                    height: AdManager.bannerVisible ? 5 : 15),
+                                if (AdManager.bannerVisible && AdManager.bannersReady)
+                                  AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
                                 contentBody,
                                 SizedBox(height: 20),
                                 textFields,

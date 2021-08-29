@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -164,16 +165,21 @@ class MovieListPageState extends State<MoviesListPage> {
 
   Widget getBody() {
     Widget widgetToReturn = moviesList.listMovies.isNotEmpty
-        ? AnimatedList(
-            padding: EdgeInsets.only(bottom: 90),
-            key: MyGlobals.personalListsKey,
-            initialItemCount: moviesList.listMovies.length,
-            itemBuilder: (context, index, animation) {
-              if (moviesList.listMovies.length <= index) return null;
+        ? Column(children: [
+            if (AdManager.bannerVisible && AdManager.bannersReady)
+              AdManager.getBannerWidget(AdManager.listBannerAd),
+            Expanded(
+                child: AnimatedList(
+              padding: EdgeInsets.only(bottom: 90),
+              key: MyGlobals.personalListsKey,
+              initialItemCount: moviesList.listMovies.length,
+              itemBuilder: (context, index, animation) {
+                if (moviesList.listMovies.length <= index) return null;
 
-              return buildItem(moviesList.listMovies[index], animation);
-            },
-          )
+                return buildItem(moviesList.listMovies[index], animation);
+              },
+            ))
+          ])
         : Padding(
             padding: EdgeInsets.all(10),
             child: Text(
@@ -225,7 +231,7 @@ class MovieListPageState extends State<MoviesListPage> {
                         title: Text("Remove List"),
                       ))),
               PopupMenuDivider(
-                height: AdManager.bannerVisible ? 50 : 5,
+                height: 5,
               ),
               PopupMenuItem<String>(
                   child: GestureDetector(
@@ -250,7 +256,6 @@ class MovieListPageState extends State<MoviesListPage> {
         ),
         body: Container(
             key: globalKey,
-            padding: EdgeInsets.only(top: AdManager.bannerVisible ? 65 : 0),
             child: getBody()));
   }
 }

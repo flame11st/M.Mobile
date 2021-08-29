@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:fluttericon/octicons_icons.dart';
@@ -189,7 +191,7 @@ class Premium extends StatelessWidget {
         child: SingleChildScrollView(
           child: Container(
               margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-              padding: EdgeInsets.fromLTRB(20, AdManager.bannerVisible ? 55 : 0, 20, 20),
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
               color: Theme.of(context).primaryColor,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -199,10 +201,12 @@ class Premium extends StatelessWidget {
                     height: 20,
                   ),
                   subTitleText,
-                  SizedBox(
-                    height: 20,
-                  ),
-                  removeAdFeature,
+                  if (Platform.isAndroid)
+                    SizedBox(
+                      height: 20,
+                    ),
+                  if (Platform.isAndroid)
+                    removeAdFeature,
                   SizedBox(
                     height: 20,
                   ),

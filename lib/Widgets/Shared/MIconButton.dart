@@ -57,7 +57,7 @@ class MIconButton extends StatelessWidget {
                   if (hint != null && hint.isNotEmpty)
                     Text(
                       hint,
-                      style: TextStyle(fontSize: 15, color: itemsColor),
+                      style: TextStyle(fontSize: 14, color: itemsColor),
                     )
                 ],
               ),

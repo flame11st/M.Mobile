@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
@@ -36,14 +38,19 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
+    var additionalPadding = Platform.isIOS ? 20 : 0;
+    var middleSizedBoxWidth = 50.0;
+    var buttonWidth = (MediaQuery.of(context).size.width - middleSizedBoxWidth) / 4;
+
     return Container(
-        height: 50,
+      padding: EdgeInsets.only(bottom: 0.0 + additionalPadding),
+        height: 60.0 + additionalPadding,
         width: double.infinity,
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.9),
-              blurRadius: 1,
+              blurRadius: 0.9,
             ),
           ],
           color: Theme.of(context).primaryColor,
@@ -52,6 +59,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Filters',
               icon: Icon(
@@ -74,6 +82,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               },
             ),
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Settings',
               icon: Icon(
@@ -85,8 +94,9 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     .push(_createRoute(() => Settings()));
               },
             ),
-            SizedBox(width: 58,),
+            SizedBox(width: middleSizedBoxWidth,),
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Lists',
               icon: Icon(
@@ -99,9 +109,9 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               },
             ),
             MIconButton(
+              width: buttonWidth,
               withBorder: false,
               hint: 'Premium',
-              width: 65.0,
               icon: Icon(
                 userState.isPremium
                     ? Icons.check
