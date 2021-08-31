@@ -98,7 +98,7 @@ class LoginState extends State<Login> {
     );
 
     setState(() {
-      email = credential.email;
+      email = credential.userIdentifier;
     });
 
     // This is the endpoint that will convert an authorization code obtained
