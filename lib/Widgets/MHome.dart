@@ -125,7 +125,6 @@ class MHomeState extends State<MHome> {
           cardColor: theme.colorTheme.secondaryColor,
           highlightColor: theme.colorTheme.fontsColor,
           splashColor: theme.colorTheme.primaryColor,
-          scaffoldBackgroundColor: theme.colorTheme.primaryColor,
           iconTheme: IconThemeData(
               color: theme.colorTheme.fontsColor
           ),
