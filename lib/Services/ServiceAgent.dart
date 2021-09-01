@@ -56,6 +56,14 @@ class ServiceAgent {
     return get('Identity/GoogleLoginAndroid?idToken=$idToken');
   }
 
+  googleLoginIOS(String idToken) {
+    return get('Identity/GoogleLoginIOS?idToken=$idToken');
+  }
+
+  appleLogin(String appleId, String email, String name) {
+    return get('Identity/AppleLogin?appleId=$appleId&email=$email&name=$name');
+  }
+
   getUserMovies(String userId) {
     return get('User/GetUserMovies?userId=$userId');
   }

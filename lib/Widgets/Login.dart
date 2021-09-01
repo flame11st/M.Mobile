@@ -68,8 +68,9 @@ class LoginState extends State<Login> {
     final GoogleSignInAuthentication googleSignInAuthentication =
         await googleSignInAccount.authentication;
 
-    var response =
-        await serviceAgent.googleLogin(googleSignInAuthentication.idToken);
+    var response = Platform.isIOS
+        ? await serviceAgent.googleLoginIOS(googleSignInAuthentication.idToken)
+        : await serviceAgent.googleLogin(googleSignInAuthentication.idToken);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, true);
@@ -80,14 +81,14 @@ class LoginState extends State<Login> {
   }
 
   Future<void> signInWithApple() async {
+    final loaderState = Provider.of<LoaderState>(context, listen: false);
     final credential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
         AppleIDAuthorizationScopes.fullName,
       ],
       webAuthenticationOptions: WebAuthenticationOptions(
-        clientId:
-        'com.flame.moviediary-service',
+        clientId: 'com.flame.moviediary-service',
         redirectUri: Uri.parse(
           'https://moviediary.site/callbacks/sign_in_with_apple',
         ),
@@ -98,34 +99,20 @@ class LoginState extends State<Login> {
     );
 
     setState(() {
-      email = credential.userIdentifier;
+      email = credential.givenName + ' ' + credential.familyName;
     });
 
-    // This is the endpoint that will convert an authorization code obtained
-    // via Sign in with Apple into a session in your system
-    // final signInWithAppleEndpoint = Uri(
-    //   scheme: 'https',
-    //   host: 'moviediary.site/callbacks',
-    //   path: '/sign_in_with_apple',
-    //   queryParameters: <String, String>{
-    //     'code': credential.authorizationCode,
-    //     if (credential.givenName != null)
-    //       'firstName': credential.givenName!,
-    //     if (credential.familyName != null)
-    //       'lastName': credential.familyName!,
-    //     'useBundleId':
-    //     Platform.isIOS || Platform.isMacOS ? 'true' : 'false',
-    //     if (credential.state != null) 'state': credential.state!,
-    //   },
-    // );
-    //
-    // final session = await http.Client().post(
-    //   signInWithAppleEndpoint,
-    // );
+    // loaderState.setIsLoaderVisible(true);
 
-    // If we got this far, a session based on the Apple ID credential has been created in your system,
-    // and you can now set this as the app's session
-    // print(session);
+    var response = await serviceAgent.appleLogin(credential.userIdentifier,
+        credential.email, '${credential.givenName} ${credential.familyName}');
+
+    if (response.statusCode == 200) {
+      processLoginResponse(response.body, true);
+    } else {
+      loaderState.setIsLoaderVisible(false);
+      MSnackBar.showSnackBar('Apple sign in failed', false);
+    }
   }
 
   void signOutGoogle() async {}
@@ -163,7 +150,9 @@ class LoginState extends State<Login> {
     final userState = Provider.of<UserState>(context);
     var result = userState.androidVersion == 1 || userState.androidVersion > 7
         ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
-        : userState.androidVersion == 0 ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂' : 'MovieDiary';
+        : userState.androidVersion == 0
+            ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
+            : 'MovieDiary';
     return result;
   }
 
