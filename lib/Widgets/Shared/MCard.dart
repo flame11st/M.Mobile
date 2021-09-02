@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -28,6 +30,7 @@ class MCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double marginLRValue = marginLR != null ? marginLR : 0;
+    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
 
     return Container(
         padding: EdgeInsets.all(padding != null ? padding : 20),
@@ -44,7 +47,7 @@ class MCard extends StatelessWidget {
               // offset: Offset(0.0, 0.9),
             ),
           ],
-          borderRadius: BorderRadius.circular(4.0),
+          borderRadius: BorderRadius.circular(borderRadius),
           color: color != null ? color : Theme.of(context).cardColor,
         ),
         foregroundDecoration: BoxDecoration(

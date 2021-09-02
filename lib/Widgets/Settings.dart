@@ -615,9 +615,8 @@ class SettingsState extends State<Settings> {
                     children: <Widget>[
                       if (AdManager.bannerVisible && AdManager.bannersReady)
                         AdManager.getBannerWidget(AdManager.settingsBannerAd),
-                      if (!userState.isIncognitoMode) nameField,
-                      if (!userState.isSignedInWithGoogle &&
-                          !userState.isIncognitoMode) emailField,
+                      if (!userState.isIncognitoMode && userState.user.name.isNotEmpty) nameField,
+                      if (!userState.isIncognitoMode && userState.user.email.isNotEmpty) emailField,
                       changeThemeField,
                       userMoviesCountField,
                       if (!userState.isSignedInWithGoogle &&

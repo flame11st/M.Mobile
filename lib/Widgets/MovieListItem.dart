@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -62,7 +64,7 @@ class MovieListItemState extends State<MovieListItem> {
   Widget build(BuildContext context) {
     //Don't remove this not used state declaration. It is needed for lists update.
     final moviesState = Provider.of<MoviesState>(context);
-
+    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
     final formatter = new NumberFormat("#,###");
 
     final imageUrl =
@@ -120,8 +122,8 @@ class MovieListItemState extends State<MovieListItem> {
                       children: <Widget>[
                         ClipRRect(
                           borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(4),
-                              bottomLeft: Radius.circular(4)),
+                              topLeft: Radius.circular(borderRadius),
+                              bottomLeft: Radius.circular(borderRadius)),
                           child: imageBaseUrl != ""
                               ? CachedNetworkImage(
                                   imageUrl: imageBaseUrl + imageUrl,

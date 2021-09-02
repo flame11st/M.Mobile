@@ -148,7 +148,7 @@ class UserState with ChangeNotifier {
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
   }
 
-  processLoginResponse(String response, bool isSignedInWithGoogle) {
+  processLoginResponse(String response, bool isSignedInWithThirdPartyServices) {
     var responseJson = json.decode(response);
     var accessToken = responseJson['access_token'];
     var refreshToken = responseJson['refresh_token'];
@@ -157,7 +157,7 @@ class UserState with ChangeNotifier {
     var showTutorial = false; //responseJson['showTutorial'];
 
     setInitialUserData(accessToken, refreshToken, userId, userName,
-        isSignedInWithGoogle, showTutorial);
+        isSignedInWithThirdPartyServices, showTutorial);
   }
 
   logout() async {

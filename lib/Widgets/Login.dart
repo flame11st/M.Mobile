@@ -35,8 +35,6 @@ class LoginState extends State<Login> {
   bool isLoaderHided = false;
   bool signInButtonActive = false;
 
-  String email = 'empty';
-
   @override
   void initState() {
     super.initState();
@@ -83,10 +81,6 @@ class LoginState extends State<Login> {
   Future<void> signInWithApple() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
 
-    setState(() {
-      email = 'get credentials';
-    });
-
     final credential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
@@ -98,16 +92,10 @@ class LoginState extends State<Login> {
           'https://moviediary.site/callbacks/sign_in_with_apple',
         ),
       ),
-      // // TODO: Remove these if you have no need for them
-      // nonce: 'example-nonce',
-      // state: 'example-state',
     );
 
-    setState(() {
-      email = email + '\n' + 'Credentials readed ' + 'id = ${credential.userIdentifier}';
-    });
-
     var name = '';
+    var email = '';
 
     if (credential.givenName != null) {
       name += credential.givenName;
@@ -117,14 +105,14 @@ class LoginState extends State<Login> {
       name += ' ${credential.familyName}';
     }
 
-    setState(() {
-      email = email + '\n' + 'name = $name';
-    });
+    if (credential.email != null) {
+      email = credential.email;
+    }
 
-    // loaderState.setIsLoaderVisible(true);
+    loaderState.setIsLoaderVisible(true);
 
     var response = await serviceAgent.appleLogin(credential.userIdentifier,
-        credential.email, name);
+        email, name);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, true);
@@ -175,10 +163,10 @@ class LoginState extends State<Login> {
     return result;
   }
 
-  processLoginResponse(String response, bool isSignedInWithGoogle) {
+  processLoginResponse(String response, bool isSignedInWithThirdPartyServices) {
     final userState = Provider.of<UserState>(context, listen: false);
 
-    userState.processLoginResponse(response, isSignedInWithGoogle);
+    userState.processLoginResponse(response, isSignedInWithThirdPartyServices);
   }
 
   @override
@@ -243,7 +231,7 @@ class LoginState extends State<Login> {
     );
 
     final signInWithAppleButton = SignInWithAppleButton(
-      height: 50,
+      height: 55,
       onPressed: () => signInWithApple(),
     );
 
@@ -307,13 +295,18 @@ class LoginState extends State<Login> {
                     SizedBox(
                       height: 30,
                     ),
-                    signUpButton,
+                    if (Platform.isIOS)
+                      signInWithAppleButton,
+                    if (Platform.isIOS)
+                      SizedBox(
+                        height: 20,
+                      ),
+                    googleLoginButton,
                     SizedBox(
                       height: 20,
                     ),
-                    googleLoginButton,
-                    signInWithAppleButton,
-                    Text(email),
+                    signUpButton,
+                    // Text(email),
                     SizedBox(
                       height: 20,
                     ),
