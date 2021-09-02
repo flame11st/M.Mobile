@@ -104,17 +104,27 @@ class LoginState extends State<Login> {
     );
 
     setState(() {
-      email = email + '\n' + 'Credentials reade' + 'id = ${credential.identityToken}';
+      email = email + '\n' + 'Credentials readed ' + 'id = ${credential.userIdentifier}';
     });
 
+    var name = '';
+
+    if (credential.givenName != null) {
+      name += credential.givenName;
+    }
+
+    if (credential.familyName != null) {
+      name += ' ${credential.familyName}';
+    }
+
     setState(() {
-      email = email + '\n' + 'name = ' + credential.givenName + ' ' + credential.familyName;
+      email = email + '\n' + 'name = $name';
     });
 
     // loaderState.setIsLoaderVisible(true);
 
     var response = await serviceAgent.appleLogin(credential.userIdentifier,
-        credential.email, '${credential.givenName} ${credential.familyName}');
+        credential.email, name);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, true);
