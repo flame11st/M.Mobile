@@ -82,6 +82,11 @@ class LoginState extends State<Login> {
 
   Future<void> signInWithApple() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
+
+    setState(() {
+      email = 'get credentials';
+    });
+
     final credential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
@@ -99,7 +104,11 @@ class LoginState extends State<Login> {
     );
 
     setState(() {
-      email = credential.givenName + ' ' + credential.familyName;
+      email = email + '\n' + 'Credentials reade' + 'id = ${credential.identityToken}';
+    });
+
+    setState(() {
+      email = email + '\n' + 'name = ' + credential.givenName + ' ' + credential.familyName;
     });
 
     // loaderState.setIsLoaderVisible(true);
