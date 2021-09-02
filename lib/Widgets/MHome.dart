@@ -145,6 +145,13 @@ class MHomeState extends State<MHome> {
             headline5: theme.textStyleTheme.bodyText,
             headline6: theme.textStyleTheme.expandedTitle,
           ),
+
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder()
+            }
+          )
         ));
   }
 }

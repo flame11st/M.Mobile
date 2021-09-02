@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
 import 'package:mmobile/Widgets/Providers/ThemeState.dart';
@@ -11,6 +12,10 @@ import 'Widgets/Providers/UserState.dart';
 void main() {
   InAppPurchaseAndroidPlatformAddition.enablePendingPurchases();
   // PlatformViewsService.synchronizeToNativeViewHierarchy(false);
+
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations
+    ([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
   runApp(ChangeNotifierProvider(
     create: (context) => UserState(),
