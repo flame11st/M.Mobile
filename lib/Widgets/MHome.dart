@@ -131,7 +131,6 @@ class MHomeState extends State<MHome> {
 
           appBarTheme: AppBarTheme(
             backgroundColor: theme.colorTheme.primaryColor,
-            foregroundColor: theme.colorTheme.primaryColor,
             iconTheme: IconThemeData(
               color: theme.colorTheme.fontsColor
             )
