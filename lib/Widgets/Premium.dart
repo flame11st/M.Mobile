@@ -16,7 +16,7 @@ class Premium extends StatelessWidget {
     final bool available = await InAppPurchase.instance.isAvailable();
 
     if (!available) {
-      MSnackBar.showSnackBar("Not available now. Please try later", false);
+      MSnackBar.showSnackBar("Instance Not available now. Please try later", false);
 
       return;
     }
@@ -25,7 +25,7 @@ class Premium extends StatelessWidget {
     final ProductDetailsResponse response =
         await InAppPurchase.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
-      MSnackBar.showSnackBar("Not available now. Please try later", false);
+      MSnackBar.showSnackBar("Purchase Not available now. Please try later", false);
 
       return;
     }

@@ -16,6 +16,8 @@ import 'Shared/MIconButton.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
   Route _createRoute(Function page) {
+    if (Platform.isIOS) return MaterialPageRoute(builder: (context) => page());
+    
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => page(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {

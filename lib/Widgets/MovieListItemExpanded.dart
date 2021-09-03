@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -67,6 +69,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   @override
   Widget build(BuildContext context) {
     final formatter = new NumberFormat("#,###");
+    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
@@ -128,7 +131,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           padding: 1,
           marginTop: 0,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4.0),
+            borderRadius: BorderRadius.circular(borderRadius),
             child: CachedNetworkImage(
               imageUrl: imageBaseUrl + imageUrl,
               height: 180,

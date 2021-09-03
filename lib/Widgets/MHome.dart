@@ -45,7 +45,7 @@ class MHomeState extends State<MHome> {
     } else if (purchases.first.status == PurchaseStatus.pending) {
       MSnackBar.showSnackBar("Your request is being processed. It can take a while", true);
     } else {
-      MSnackBar.showSnackBar("Not available now. Please try later", false);
+      MSnackBar.showSnackBar("Status Not available now. Please try later", false);
     }
   }
 

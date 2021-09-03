@@ -588,45 +588,37 @@ class SettingsState extends State<Settings> {
       ),
     );
 
-    return WillPopScope(
-      onWillPop: () {
-        Navigator.of(context).pop();
-
-        userState.shouldRequestReview = true;
-        return;
-      },
-      child: Scaffold(
-          backgroundColor: Theme
-              .of(context)
-              .primaryColor,
-          appBar: AppBar(
-            title: headingField,
+    return Scaffold(
+        backgroundColor: Theme
+            .of(context)
+            .primaryColor,
+        appBar: AppBar(
+          title: headingField,
+        ),
+        body: Container(
+          key: globalKey,
+          child: SingleChildScrollView(
+            child: Container(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                color: Theme
+                    .of(context)
+                    .primaryColor,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    if (AdManager.bannerVisible && AdManager.bannersReady)
+                      AdManager.getBannerWidget(AdManager.settingsBannerAd),
+                    if (!userState.isIncognitoMode && userState.user.name.isNotEmpty) nameField,
+                    if (!userState.isIncognitoMode && userState.user.email.isNotEmpty) emailField,
+                    changeThemeField,
+                    userMoviesCountField,
+                    if (!userState.isSignedInWithGoogle &&
+                        !userState.isIncognitoMode) changePasswordField,
+                    if (!userState.isIncognitoMode) removeUserField,
+                    if (userState.isIncognitoMode) incognitoModeCard,
+                  ],
+                )),
           ),
-          body: Container(
-            key: globalKey,
-            child: SingleChildScrollView(
-              child: Container(
-                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  color: Theme
-                      .of(context)
-                      .primaryColor,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      if (AdManager.bannerVisible && AdManager.bannersReady)
-                        AdManager.getBannerWidget(AdManager.settingsBannerAd),
-                      if (!userState.isIncognitoMode && userState.user.name.isNotEmpty) nameField,
-                      if (!userState.isIncognitoMode && userState.user.email.isNotEmpty) emailField,
-                      changeThemeField,
-                      userMoviesCountField,
-                      if (!userState.isSignedInWithGoogle &&
-                          !userState.isIncognitoMode) changePasswordField,
-                      if (!userState.isIncognitoMode) removeUserField,
-                      if (userState.isIncognitoMode) incognitoModeCard,
-                    ],
-                  )),
-            ),
-          )),
-    );
+        ));
   }
 }
