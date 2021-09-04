@@ -91,8 +91,9 @@ class MoviesListsPageState extends State<MoviesListsPage>
           padding: 0,
           child: Container(
               height: 80,
-              padding: EdgeInsets.all(borderRadius),
+              padding: EdgeInsets.all(5),
               decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(borderRadius),
                 image: DecorationImage(
                   colorFilter: ColorFilter.mode(
                       Colors.black.withOpacity(

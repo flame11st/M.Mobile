@@ -154,16 +154,6 @@ class LoginState extends State<Login> {
     }
   }
 
-  getText() {
-    final userState = Provider.of<UserState>(context);
-    var result = userState.androidVersion == 1 || userState.androidVersion > 7
-        ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
-        : userState.androidVersion == 0
-        ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
-        : 'MovieDiary';
-    return result;
-  }
-
   processLoginResponse(String response, bool isSignedInWithThirdPartyServices) {
     final userState = Provider.of<UserState>(context, listen: false);
 
@@ -304,7 +294,7 @@ class LoginState extends State<Login> {
                       width: 130,
                     ),
                     Text(
-                      'MovieDiary',//getText(),
+                      'MovieDiary',
                       style:  GoogleFonts.parisienne(textStyle: TextStyle(
                         fontSize: 45,
                         color: Theme.of(context).accentColor

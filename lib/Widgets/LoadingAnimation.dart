@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'Providers/UserState.dart';
 
 class LoadingAnimation extends StatelessWidget {
-  getText(BuildContext context) {
-    final userState = Provider.of<UserState>(context);
-    var result = userState.androidVersion == 1 || userState.androidVersion > 7
-        ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂'
-        : userState.androidVersion == 0 ? '𝓜𝓸𝓿𝓲𝓮𝓓𝓲𝓪𝓻𝔂' : 'MovieDiary';
-    return result;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,8 +16,11 @@ class LoadingAnimation extends StatelessWidget {
           children: <Widget>[
             Image(image: AssetImage("Assets/mdIcon_V_with_effect.png"), width: 130,),
             Text(
-              getText(context),
-              style: TextStyle(fontSize: 40, color: Theme.of(context).accentColor),
+              'MovieDiary',
+              style:  GoogleFonts.parisienne(textStyle: TextStyle(
+                  fontSize: 45,
+                  color: Theme.of(context).accentColor
+              )),
             ),
           ],
         ),
