@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
@@ -85,6 +86,19 @@ class SettingsState extends State<Settings> {
         this.changePasswordButtonActive = changePasswordButtonActive;
       });
     }
+  }
+
+
+  restorePurchases() async {
+    final bool available = await InAppPurchase.instance.isAvailable();
+
+    if (!available) {
+      MSnackBar.showSnackBar("Not available now. Please try later", false);
+
+      return;
+    }
+
+    await InAppPurchase.instance.restorePurchases();
   }
 
   changeUserInfo(String userId, String name, String email, User user,
@@ -616,6 +630,15 @@ class SettingsState extends State<Settings> {
                         !userState.isIncognitoMode) changePasswordField,
                     if (!userState.isIncognitoMode) removeUserField,
                     if (userState.isIncognitoMode) incognitoModeCard,
+                    SizedBox(height: 20,),
+                    MButton(
+                      text: 'Restore purchases',
+                      onPressedCallback: () => restorePurchases(),
+                      active: true,
+                      height: 50,
+                      width: MediaQuery.of(context).size.width,
+                      prependIconColor: Colors.green,
+                      prependIcon: Icons.monetization_on,),
                   ],
                 )),
           ),
