@@ -23,7 +23,6 @@ class UserState with ChangeNotifier {
   String token = '';
   String refreshToken = '';
   User user;
-  int androidVersion = 0;
   bool userRequested = false;
   bool showTutorial = false;
   bool isIncognitoMode = false;
@@ -41,11 +40,6 @@ class UserState with ChangeNotifier {
     var storedIsIncognitoMode;
     var storedPremiumPurchasedIncognito;
     var storedAppReviewRequested;
-
-    if (Platform.isAndroid) {
-      var androidInfo = await DeviceInfoPlugin().androidInfo;
-      androidVersion = int.parse(androidInfo.version.release.substring(0, 1));
-    }
 
     try {
       storedToken = await storage.read(key: 'token');

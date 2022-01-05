@@ -201,12 +201,10 @@ class Premium extends StatelessWidget {
                     height: 20,
                   ),
                   subTitleText,
-                  if (Platform.isAndroid)
-                    SizedBox(
+                  SizedBox(
                       height: 20,
                     ),
-                  if (Platform.isAndroid)
-                    removeAdFeature,
+                  removeAdFeature,
                   SizedBox(
                     height: 20,
                   ),
