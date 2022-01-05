@@ -26,7 +26,7 @@ class AdManager {
 
   static Future<void> showBanner() async {
     //TODO: Setup Google Ads for iOS
-    if (Platform.isIOS) return;
+    // if (Platform.isIOS) return;
 
     if (!bannerVisible) {
       bannerVisible = true;
@@ -131,7 +131,9 @@ class AdManager {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532/9763657807";
     } else if (Platform.isIOS) {
-      return "ca-app-pub-5540129750283532/4970568843";
+      //TODO: REPLACE WITH REAL BANNER ID
+      return "ca-app-pub-3940256099942544/2934735716";
+      // return "ca-app-pub-5540129750283532/4970568843";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }

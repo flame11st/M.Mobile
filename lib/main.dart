@@ -7,11 +7,12 @@ import 'package:provider/provider.dart';
 import 'Widgets/MHome.dart';
 import 'Widgets/Providers/MoviesState.dart';
 import 'Widgets/Providers/UserState.dart';
-// import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() {
   InAppPurchaseAndroidPlatformAddition.enablePendingPurchases();
-  // PlatformViewsService.synchronizeToNativeViewHierarchy(false);
+  WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
 
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations

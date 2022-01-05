@@ -25,26 +25,21 @@ class MyMovies extends StatefulWidget {
 
 class MyMoviesState extends State<MyMovies> {
   final serviceAgent = new ServiceAgent();
+  bool userDataRequested = false;
 
   setUserMovies() async {
-    final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
-    final loaderState = Provider.of<LoaderState>(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
+    final loaderState = Provider.of<LoaderState>(context, listen: false);
 
     serviceAgent.state = userState;
-
-    if (moviesState.isMoviesRequested) {
-      return;
-    }
-
-    moviesState.setInitialData();
-    moviesState.isMoviesRequested = true;
 
     if (userState.isIncognitoMode) {
       if (loaderState.isLoaderVisible) {
         loaderState.setIsLoaderVisible(false);
       }
 
+      moviesState.setInitialData();
       setIncognitoUserMovies(moviesState);
 
       return;
@@ -59,8 +54,7 @@ class MyMoviesState extends State<MyMovies> {
         return Movie.fromJson(model);
       }).toList();
 
-      if (userState.user != null)
-        moviesState.setUserMovies(movies);
+      moviesState.setUserMovies(movies);
     } else {
       moviesState.setUserMovies(new List<Movie>());
     }
@@ -84,16 +78,13 @@ class MyMoviesState extends State<MyMovies> {
         return Movie.fromJson(model);
       }).toList();
 
-      moviesState.updateUserMovies(movies, true);
+      moviesState.updateUserMoviesIncognito(movies);
     }
   }
 
   setMoviesLists() async {
-    final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
-
-    if (moviesState.isMoviesListsRequested) return;
-    moviesState.isMoviesListsRequested = true;
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     final moviesListsResponse = await serviceAgent.getMoviesLists(userState.userId);
 
@@ -113,13 +104,9 @@ class MyMoviesState extends State<MyMovies> {
     }
   }
 
-  setUserInfo() async {
+  Future<void> setUserInfo() async {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
-
-    if (userState.userRequested) return;
-
-    userState.userRequested = true;
 
     if (userState.userId != null && userState.userId.isNotEmpty) {
       serviceAgent.state = userState;
@@ -145,15 +132,23 @@ class MyMoviesState extends State<MyMovies> {
     }
   }
 
+  Future<void> SetUserData() async {
+    await setUserInfo();
+    setUserMovies();
+    setMoviesLists();
+  }
+
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final loaderState = Provider.of<LoaderState>(context);
     final userState = Provider.of<UserState>(context);
 
-    setUserInfo();
-    setUserMovies();
-    setMoviesLists();
+    if (!userDataRequested){
+      SetUserData();
+
+      userDataRequested = true;
+    }
 
     if (loaderState.isLoaderVisible && moviesState.userMovies.length > 0) {
       loaderState.setIsLoaderVisible(false);

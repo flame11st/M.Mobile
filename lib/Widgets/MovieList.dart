@@ -33,7 +33,7 @@ class MovieListState extends State<MovieList>
 
     tabController.addListener(changeCurrentTabIndex);
 
-    _initAdMob();
+    // _initAdMob();
   }
 
   changeCurrentTabIndex() {
@@ -51,7 +51,6 @@ class MovieListState extends State<MovieList>
   }
 
   Future<void> _initAdMob() {
-    // TODO: Initialize AdMob SDK
     return MobileAds.instance.initialize();
   }
 

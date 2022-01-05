@@ -204,7 +204,8 @@ class ServiceAgent {
       headers.putIfAbsent(
           HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
-    var response = await http.get(Uri.parse(baseUri + uri), headers: headers);
+    var fullUri = Uri.parse(baseUri + uri);
+    var response = await http.get(fullUri, headers: headers);
 
     if (response.statusCode == 401) {
       headers.clear();

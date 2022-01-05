@@ -105,6 +105,15 @@ class MoviesState with ChangeNotifier {
     await storage.write(key: 'movies', value: jsonEncode(userMovies));
   }
 
+  void updateUserMoviesIncognito(List<Movie> movies){
+    updateUserMovies(movies, true);
+
+    setGenres();
+
+    refreshMovies();
+    refreshDates();
+  }
+
   void updateUserMovies(List<Movie> userMovies, bool shouldSetRate) {
     var updatedUserMovies = new List<Movie>();
 
