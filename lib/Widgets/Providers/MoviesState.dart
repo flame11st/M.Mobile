@@ -147,16 +147,19 @@ class MoviesState with ChangeNotifier {
       await clearStorage();
     }
 
-    if (storedExternalMoviesLists == null || storedPersonalMoviesLists == null) return;
+    if (storedExternalMoviesLists != null) {
+      var externalMoviesListValue = getMoviesListFromJson(storedExternalMoviesLists);
 
-    var externalMoviesListValue = getMoviesListFromJson(storedExternalMoviesLists);
-    var personalMoviesListValue = getMoviesListFromJson(storedPersonalMoviesLists);
+      if (externalMoviesListValue != null)
+        setExternalMoviesLists(externalMoviesListValue);
+    }
 
-    if (externalMoviesListValue != null)
-      setExternalMoviesLists(externalMoviesListValue);
+    if (storedPersonalMoviesLists != null) {
+      var personalMoviesListValue = getMoviesListFromJson(storedPersonalMoviesLists);
 
-    if (personalMoviesListValue != null)
-      setPersonalMoviesLists(personalMoviesListValue);
+      if (personalMoviesListValue != null)
+        setPersonalMoviesLists(personalMoviesListValue);
+    }
   }
 
   getMoviesListFromJson(String jsonString) {

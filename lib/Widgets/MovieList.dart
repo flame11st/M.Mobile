@@ -153,8 +153,7 @@ class MovieListState extends State<MovieList>
     }
 
     if (!userState.premiumPurchasedIncognito &&
-        (userState.user == null || !userState.user.premiumPurchased) &&
-        movieState.userMovies.length > 0) {
+        (userState.user == null || !userState.user.premiumPurchased)) {
 
       if (ModalRoute.of(context).isCurrent) AdManager.showBanner();
     } else if (AdManager.bannerVisible) {
