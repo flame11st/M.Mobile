@@ -236,13 +236,12 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                             color: Theme.of(context).primaryColor,
                             child: Column(
                               children: <Widget>[
-                                topCard,
-                                SizedBox(
-                                    height: AdManager.bannerVisible ? 5 : 15),
                                 if (AdManager.bannerVisible && AdManager.bannersReady)
                                   AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
+                                topCard,
+                                SizedBox(height: 15),
                                 contentBody,
-                                SizedBox(height: 20),
+                                SizedBox(height: 10),
                                 textFields,
                               ],
                             ),

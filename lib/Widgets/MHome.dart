@@ -125,7 +125,6 @@ class MHomeState extends State<MHome> {
           ],
         ),
         routes: {
-          // When navigating to the "/second" route, build the SecondScreen widget.
           'moviesList': (context) => MoviesListPage(),
         },
         theme: ThemeData(

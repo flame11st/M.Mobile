@@ -16,8 +16,8 @@ import '../Premium.dart';
 
 class MoviesState with ChangeNotifier {
   MoviesState() {
-    setCachedUserMovies();
-    setCachedMoviesLists();
+    // setCachedUserMovies();
+    // setCachedMoviesLists();
   }
 
   final serviceAgent = new ServiceAgent();

@@ -131,7 +131,9 @@ class AdManager {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532/9763657807";
     } else if (Platform.isIOS) {
-      return "ca-app-pub-5540129750283532/4970568843";
+      //TODO: this is test banner id
+      return "ca-app-pub-3940256099942544/2934735716";
+      // return "ca-app-pub-5540129750283532/4970568843";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }

@@ -159,7 +159,7 @@ class MyMoviesState extends State<MyMovies> {
     final myMoviesWidget = Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AdManager.bannerVisible && AdManager.bannersReady ? AppBar(
-        title:  AdManager.getBannerWidget(AdManager.bannerAd)
+        title:  Center(child: AdManager.getBannerWidget(AdManager.bannerAd))
       ) : PreferredSize(preferredSize: Size(0,0), child: Container()),
       body: Stack(
         children: <Widget>[
