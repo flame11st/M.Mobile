@@ -219,49 +219,45 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       ],
     );
 
-    return GestureDetector(
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            child: Scaffold(
-                backgroundColor: Theme.of(context).primaryColor,
-                body: Hero(
-                  tag: 'movie-hero-animation' + movie.id,
-                  child: SingleChildScrollView(
-                    child: Container(
-                        margin: EdgeInsets.fromLTRB(10, 20, 10, 20),
-                        child: Material(
-                          type: MaterialType.transparency,
-                          child: Container(
-                            color: Theme.of(context).primaryColor,
-                            child: Column(
-                              children: <Widget>[
-                                if (AdManager.bannerVisible && AdManager.bannersReady)
-                                SizedBox(height: 15),
-                                if (AdManager.bannerVisible && AdManager.bannersReady)
-                                  AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
-                                if (AdManager.bannerVisible && AdManager.bannersReady)
-                                Divider(
-                                  color: Theme.of(context).hintColor.withOpacity(0.2),
-                                  height: 5,
-                                  thickness: 1,
-                                ),
-                                topCard,
-                                SizedBox(height: 15),
-                                contentBody,
-                                SizedBox(height: 10),
-                                textFields,
-                              ],
-                            ),
-                          ),
-                        )),
-                  ),
+    return Scaffold(
+        appBar: AdManager.bannerVisible && AdManager.bannersReady
+            ? AppBar(
+                title: Center(
+                  child:
+                      AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
                 ),
-                bottomNavigationBar: MoviesBottomNavigationBarExpanded(
-                  movie: movie,
-                  fromSearch: fromSearch,
-                  shouldRequestReview: shouldRequestReview,
-                  moviesList: moviesList,
-                )));
+                automaticallyImplyLeading: false,
+                elevation: 0.7,
+              )
+            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+        body: Scaffold(
+          appBar: AppBar(title: Text(
+            'Details',
+            style: Theme.of(context).textTheme.headline5,
+          ),),
+            backgroundColor: Theme.of(context).primaryColor,
+            body: SingleChildScrollView(child: Container(
+                margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Container(
+                    color: Theme.of(context).primaryColor,
+                    child: Column(
+                      children: <Widget>[
+                        topCard,
+                        SizedBox(height: 15),
+                        contentBody,
+                        SizedBox(height: 10),
+                        textFields,
+                      ],
+                    ),
+                  ),
+                ))),
+            bottomNavigationBar: MoviesBottomNavigationBarExpanded(
+              movie: movie,
+              fromSearch: fromSearch,
+              shouldRequestReview: shouldRequestReview,
+              moviesList: moviesList,
+            )));
   }
 }

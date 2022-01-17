@@ -235,6 +235,9 @@ class MoviesFilter extends StatelessWidget {
                     )
                   ],
                 ),
+                SizedBox(
+                  height: 10,
+                ),
               ],
             )
           ],
