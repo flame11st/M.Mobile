@@ -233,14 +233,12 @@ class MovieListItemState extends State<MovieListItem> {
     );
   }
 
-  showFullMovie(BuildContext context) {
-    Navigator.of(context).push(PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            MovieListItemExpanded(
-              movie: movie,
-              imageUrl: imageBaseUrl,
-              moviesList: moviesList,
-              shouldRequestReview: shouldRequestReview,
-            )));
+  showFullMovie(BuildContext context) { Navigator.of(context).push(MaterialPageRoute(
+      builder: (ctx) => MovieListItemExpanded(
+        movie: movie,
+        imageUrl: imageBaseUrl,
+        moviesList: moviesList,
+        shouldRequestReview: shouldRequestReview,
+      )));
   }
 }

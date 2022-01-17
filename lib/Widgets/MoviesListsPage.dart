@@ -60,26 +60,6 @@ class MoviesListsPageState extends State<MoviesListsPage>
     });
   }
 
-  Route _createRoute(MoviesList moviesList) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          MoviesListPage(moviesList: moviesList),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var begin = Offset(1.0, 0.0);
-        var end = Offset.zero;
-        var curve = Curves.ease;
-
-        var tween =
-            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-    );
-  }
-
   getMovieListWidget(MoviesList moviesList, MovieListType type) {
     String imageBaseUrl =
         "https://moviediarystorage.blob.core.windows.net/movies";
