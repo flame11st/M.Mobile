@@ -230,7 +230,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             appBar: AppBar(
               title: Text(
                 movie.title,
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme.of(context).textTheme.headline2,
               ),
             ),
             backgroundColor: Theme.of(context).primaryColor,
