@@ -86,7 +86,8 @@ class MyMoviesState extends State<MyMovies> {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
 
-    final moviesListsResponse = await serviceAgent.getMoviesLists(userState.userId);
+    final moviesListsResponse =
+        await serviceAgent.getMoviesLists(userState.userId);
 
     Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
 
@@ -117,7 +118,8 @@ class MyMoviesState extends State<MyMovies> {
         var movies = moviesState.userMovies;
 
         movies.forEach((movie) async {
-          await serviceAgent.rateMovie(movie.id, userState.userId, movie.movieRate);
+          await serviceAgent.rateMovie(
+              movie.id, userState.userId, movie.movieRate);
         });
 
         if (userState.premiumPurchasedIncognito) {
@@ -144,7 +146,7 @@ class MyMoviesState extends State<MyMovies> {
     final loaderState = Provider.of<LoaderState>(context);
     final userState = Provider.of<UserState>(context);
 
-    if (!userDataRequested){
+    if (!userDataRequested) {
       SetUserData();
 
       userDataRequested = true;
@@ -158,9 +160,13 @@ class MyMoviesState extends State<MyMovies> {
 
     final myMoviesWidget = Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AdManager.bannerVisible && AdManager.bannersReady ? AppBar(
-        title:  Center(child: AdManager.getBannerWidget(AdManager.bannerAd))
-      ) : PreferredSize(preferredSize: Size(0,0), child: Container()),
+      appBar: AdManager.bannerVisible && AdManager.bannersReady
+          ? AppBar(
+              title:
+                  Center(child: AdManager.getBannerWidget(AdManager.bannerAd)),
+              elevation: 0.7,
+            )
+          : PreferredSize(preferredSize: Size(0, 0), child: Container()),
       body: Stack(
         children: <Widget>[
           MovieList(),

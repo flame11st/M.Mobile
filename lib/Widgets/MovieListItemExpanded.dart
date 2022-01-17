@@ -237,7 +237,15 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                             child: Column(
                               children: <Widget>[
                                 if (AdManager.bannerVisible && AdManager.bannersReady)
+                                SizedBox(height: 15),
+                                if (AdManager.bannerVisible && AdManager.bannersReady)
                                   AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
+                                if (AdManager.bannerVisible && AdManager.bannersReady)
+                                Divider(
+                                  color: Theme.of(context).hintColor.withOpacity(0.2),
+                                  height: 5,
+                                  thickness: 1,
+                                ),
                                 topCard,
                                 SizedBox(height: 15),
                                 contentBody,

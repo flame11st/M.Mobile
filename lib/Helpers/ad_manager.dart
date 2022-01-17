@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -30,6 +31,8 @@ class AdManager {
 
     if (!bannerVisible) {
       bannerVisible = true;
+
+      if (Platform.isIOS) await AppTrackingTransparency.requestTrackingAuthorization();
 
       await bannerAd.load();
       await settingsBannerAd.load();
@@ -131,9 +134,7 @@ class AdManager {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532/9763657807";
     } else if (Platform.isIOS) {
-      //TODO: this is test banner id
-      return "ca-app-pub-3940256099942544/2934735716";
-      // return "ca-app-pub-5540129750283532/4970568843";
+      return "ca-app-pub-5540129750283532/4970568843";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }

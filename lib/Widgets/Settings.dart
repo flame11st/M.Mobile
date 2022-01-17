@@ -538,7 +538,9 @@ class SettingsState extends State<Settings> {
                 title: Center(
                   child: AdManager.getBannerWidget(AdManager.settingsBannerAd),
                 ),
-                automaticallyImplyLeading: false)
+                automaticallyImplyLeading: false,
+                elevation: 0.7,
+              )
             : PreferredSize(preferredSize: Size(0, 0), child: Container()),
         body: Scaffold(
             backgroundColor: Theme.of(context).primaryColor,
