@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Variables/Validators.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
@@ -13,6 +15,7 @@ import 'package:mmobile/Widgets/SignUp.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Services/ServiceAgent.dart';
+import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MButton.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -35,6 +38,7 @@ class LoginState extends State<Login> {
 
   bool isLoaderHided = false;
   bool signInButtonActive = false;
+  bool isListsRequested = false;
 
   @override
   void initState() {
@@ -160,8 +164,32 @@ class LoginState extends State<Login> {
     userState.processLoginResponse(response, isSignedInWithThirdPartyServices);
   }
 
+  setMoviesLists() async {
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+
+    final moviesListsResponse =
+    await serviceAgent.getMoviesLists("");
+
+    Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
+
+    if (iterableMoviesLists.length != 0) {
+      List<MoviesList> moviesLists = iterableMoviesLists.map((model) {
+        var list = json.decode(model);
+        return MoviesList.fromJson(list);
+      }).toList();
+
+      moviesState.setInitialMoviesListsIncognito(moviesLists);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (!isListsRequested) {
+      setMoviesLists();
+
+      isListsRequested = true;
+    }
+
     if (!isLoaderHided) {
       final loaderState = Provider.of<LoaderState>(context);
       loaderState.setIsLoaderVisible(false);

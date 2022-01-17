@@ -79,10 +79,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
-          Text(movie.title, style: Theme.of(context).textTheme.headline2),
-          SizedBox(
-            height: 5,
-          ),
           Row(
             children: <Widget>[
               Text(
@@ -231,28 +227,35 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               )
             : PreferredSize(preferredSize: Size(0, 0), child: Container()),
         body: Scaffold(
-          appBar: AppBar(title: Text(
-            'Details',
-            style: Theme.of(context).textTheme.headline5,
-          ),),
+            appBar: AppBar(
+              title: Text(
+                movie.title,
+                style: Theme.of(context).textTheme.headline5,
+              ),
+            ),
             backgroundColor: Theme.of(context).primaryColor,
-            body: SingleChildScrollView(child: Container(
-                margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: Container(
-                    color: Theme.of(context).primaryColor,
-                    child: Column(
-                      children: <Widget>[
-                        topCard,
-                        SizedBox(height: 15),
-                        contentBody,
-                        SizedBox(height: 10),
-                        textFields,
-                      ],
-                    ),
-                  ),
-                ))),
+            body: SingleChildScrollView(
+                child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                      child: Material(
+                          type: MaterialType.transparency,
+                          child: Container(
+                            color: Theme.of(context).primaryColor,
+                            child: Column(
+                              children: <Widget>[
+                                topCard,
+                                SizedBox(height: 15),
+                                contentBody,
+                                SizedBox(height: 10),
+                                textFields,
+                              ],
+                            ),
+                          )),
+                    ))),
             bottomNavigationBar: MoviesBottomNavigationBarExpanded(
               movie: movie,
               fromSearch: fromSearch,
