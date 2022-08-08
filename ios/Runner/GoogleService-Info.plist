@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>4993407912-o02t4dng0k5drcj441bqgfh126u80eco.apps.googleusercontent.com</string>
+	<string>id</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.4993407912-o02t4dng0k5drcj441bqgfh126u80eco</string>
+	<string>id</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>4993407912-8uvi80jgb3an1nmisej9iigs9f16pi5r.apps.googleusercontent.com</string>
+	<string>id</string>
 	<key>API_KEY</key>
-	<string>AIzaSyASprdwseqTQkIWJx2oezDiq01R6EJEp0c</string>
+	<string>key</string>
 	<key>GCM_SENDER_ID</key>
-	<string>4993407912</string>
+	<string>id</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.flame.moviediary</string>
+	<string>id</string>
 	<key>PROJECT_ID</key>
 	<string>watchlist-ec3a7</string>
 	<key>STORAGE_BUCKET</key>
-	<string>watchlist-ec3a7.appspot.com</string>
+	<string>bucket</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,8 +31,8 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:4993407912:ios:e205e5df211cb4ba529b9d</string>
+	<string>id</string>
 	<key>DATABASE_URL</key>
-	<string>https://watchlist-ec3a7.firebaseio.com</string>
+	<string>url</string>
 </dict>
 </plist>
