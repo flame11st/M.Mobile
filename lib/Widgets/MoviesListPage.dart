@@ -165,21 +165,16 @@ class MovieListPageState extends State<MoviesListPage> {
 
   Widget getBody() {
     Widget widgetToReturn = moviesList.listMovies.isNotEmpty
-        ? Column(children: [
-            if (AdManager.bannerVisible && AdManager.bannersReady)
-              AdManager.getBannerWidget(AdManager.listBannerAd),
-            Expanded(
-                child: AnimatedList(
-              padding: EdgeInsets.only(bottom: 90),
-              key: MyGlobals.personalListsKey,
-              initialItemCount: moviesList.listMovies.length,
-              itemBuilder: (context, index, animation) {
-                if (moviesList.listMovies.length <= index) return null;
+        ? AnimatedList(
+            padding: EdgeInsets.only(bottom: 90),
+            key: MyGlobals.personalListsKey,
+            initialItemCount: moviesList.listMovies.length,
+            itemBuilder: (context, index, animation) {
+              if (moviesList.listMovies.length <= index) return null;
 
-                return buildItem(moviesList.listMovies[index], animation);
-              },
-            ))
-          ])
+              return buildItem(moviesList.listMovies[index], animation);
+            },
+          )
         : Padding(
             padding: EdgeInsets.all(10),
             child: Text(
@@ -250,12 +245,19 @@ class MovieListPageState extends State<MoviesListPage> {
     );
 
     return Scaffold(
-        backgroundColor: Theme.of(context).primaryColor,
-        appBar: AppBar(
-          title: headingField,
-        ),
-        body: Container(
-            key: globalKey,
-            child: getBody()));
+        appBar: AdManager.bannerVisible && AdManager.bannersReady
+            ? AppBar(
+                title: Center(
+                  child: AdManager.getBannerWidget(AdManager.listBannerAd),
+                ),
+                elevation: 0.7,
+                automaticallyImplyLeading: false)
+            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+        body: Scaffold(
+            backgroundColor: Theme.of(context).primaryColor,
+            appBar: AppBar(
+              title: headingField,
+            ),
+            body: Container(key: globalKey, child: getBody())));
   }
 }

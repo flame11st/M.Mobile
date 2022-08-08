@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -10,6 +11,7 @@ class AdManager {
   static BannerAd _itemExpandedBannerAd;
   static BannerAd _listsBannerAd;
   static BannerAd _listBannerAd;
+  static BannerAd _premiumBannerAd;
   static bool bannersReady = false;
 
   static Future<void> hideBanner() async {
@@ -20,22 +22,25 @@ class AdManager {
     _bannerAd = null;
     _settingsBannerAd = null;
     _itemExpandedBannerAd = null;
+    _listsBannerAd = null;
+    _listBannerAd = null;
+    _premiumBannerAd = null;
     bannerVisible = false;
     bannersReady = false;
   }
 
   static Future<void> showBanner() async {
-    //TODO: Setup Google Ads for iOS
-    if (Platform.isIOS) return;
-
     if (!bannerVisible) {
       bannerVisible = true;
+
+      if (Platform.isIOS) await AppTrackingTransparency.requestTrackingAuthorization();
 
       await bannerAd.load();
       await settingsBannerAd.load();
       await itemExpandedBannerAd.load();
       await listsBannerAd.load();
       await listBannerAd.load();
+      await premiumBannerAd.load();
 
       bannersReady = true;
     }
@@ -115,6 +120,19 @@ class AdManager {
     }
 
     return _listBannerAd;
+  }
+
+  static BannerAd get premiumBannerAd {
+    if (_premiumBannerAd == null ) {
+      _premiumBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _premiumBannerAd;
   }
 
   static String get appId {

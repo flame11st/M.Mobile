@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
@@ -87,10 +88,22 @@ class SettingsState extends State<Settings> {
     }
   }
 
-  changeUserInfo(String userId, String name, String email, User user,
-      String field) async {
+  restorePurchases() async {
+    final bool available = await InAppPurchase.instance.isAvailable();
+
+    if (!available) {
+      MSnackBar.showSnackBar("Not available now. Please try later", false);
+
+      return;
+    }
+
+    await InAppPurchase.instance.restorePurchases();
+  }
+
+  changeUserInfo(
+      String userId, String name, String email, User user, String field) async {
     var changeUserInfoResponse =
-    await serviceAgent.changeUserInfo(userId, name, email);
+        await serviceAgent.changeUserInfo(userId, name, email);
 
     if (changeUserInfoResponse.statusCode == 200) {
       MSnackBar.showSnackBar('$field successfully changed', true);
@@ -108,7 +121,7 @@ class SettingsState extends State<Settings> {
 
   changePassword(String userId, String oldPassword, String newPassword) async {
     var changePasswordResponse =
-    await serviceAgent.changeUserPassword(userId, oldPassword, newPassword);
+        await serviceAgent.changeUserPassword(userId, oldPassword, newPassword);
 
     if (changePasswordResponse.statusCode == 200) {
       MSnackBar.showSnackBar('Password successfully changed', true);
@@ -196,34 +209,26 @@ class SettingsState extends State<Settings> {
             Icon(
               Icons.settings,
               size: 25,
-              color: Theme
-                  .of(context)
-                  .hintColor,
+              color: Theme.of(context).hintColor,
             ),
             SizedBox(
               width: 10,
             ),
             Text(
               'Settings',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5,
+              style: Theme.of(context).textTheme.headline5,
             )
           ],
         ),
         Row(
           children: <Widget>[
-            if(!userState.isIncognitoMode)
+            if (!userState.isIncognitoMode)
               MaterialButton(
                 child: Row(
                   children: <Widget>[
                     Text(
                       'Sign out',
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .headline5,
+                      style: Theme.of(context).textTheme.headline5,
                     ),
                     SizedBox(
                       width: 10,
@@ -231,9 +236,7 @@ class SettingsState extends State<Settings> {
                     new Icon(
                       Entypo.logout,
                       size: 25,
-                      color: Theme
-                          .of(context)
-                          .hintColor,
+                      color: Theme.of(context).hintColor,
                     )
                   ],
                 ),
@@ -253,35 +256,30 @@ class SettingsState extends State<Settings> {
 
     final incognitoModeCard = MCard(
         child: Column(
-          children: [
-            Text(
-              "You are not signed in. Your scores don't affect the rating of movies",
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .headline3,
-            ),
-            SizedBox(height: 20,),
-            MButton(
-              width: MediaQuery
-                  .of(context)
-                  .size
-                  .width,
-              prependIcon: Entypo.login,
-              active: true,
-              text: 'Sign in',
-              onPressedCallback: () {
-                userState.logout();
-                moviesState.isMoviesRequested = false;
+      children: [
+        Text(
+          "You are not signed in. Your scores don't affect the rating of movies",
+          style: Theme.of(context).textTheme.headline3,
+        ),
+        SizedBox(
+          height: 20,
+        ),
+        MButton(
+          width: MediaQuery.of(context).size.width,
+          prependIcon: Entypo.login,
+          active: true,
+          text: 'Sign in',
+          onPressedCallback: () {
+            userState.logout();
+            moviesState.isMoviesRequested = false;
 
-                AdManager.hideBanner();
+            AdManager.hideBanner();
 
-                Navigator.of(context).pop();
-              },
-            )
-          ],
+            Navigator.of(context).pop();
+          },
         )
-    );
+      ],
+    ));
 
     final nameField = MCard(
       text: "Name",
@@ -289,14 +287,9 @@ class SettingsState extends State<Settings> {
         key: _formNameKey,
         child: Theme(
             data: Theme.of(context)
-                .copyWith(primaryColor: Theme
-                .of(context)
-                .accentColor),
+                .copyWith(primaryColor: Theme.of(context).accentColor),
             child: TextFormField(
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5,
+              style: Theme.of(context).textTheme.headline5,
               decoration: InputDecoration(
                 fillColor: Colors.redAccent,
               ),
@@ -310,9 +303,8 @@ class SettingsState extends State<Settings> {
       ),
       button: MButton(
         text: 'Change name',
-        onPressedCallback: () =>
-            changeUserInfo(userState.userId,
-                nameController.text, initialUserEmail, userState.user, 'Name'),
+        onPressedCallback: () => changeUserInfo(userState.userId,
+            nameController.text, initialUserEmail, userState.user, 'Name'),
         active: nameButtonActive,
       ),
     );
@@ -323,14 +315,9 @@ class SettingsState extends State<Settings> {
           key: _formEmailKey,
           child: Theme(
               data: Theme.of(context)
-                  .copyWith(primaryColor: Theme
-                  .of(context)
-                  .accentColor),
+                  .copyWith(primaryColor: Theme.of(context).accentColor),
               child: TextFormField(
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headline5,
+                style: Theme.of(context).textTheme.headline5,
                 validator: (value) {
                   return emailController.text.isEmpty
                       ? 'Email can\'t be empty'
@@ -340,102 +327,84 @@ class SettingsState extends State<Settings> {
               ))),
       button: MButton(
         text: 'Change Email',
-        onPressedCallback: () =>
-            changeUserInfo(userState.userId,
-                initialUserName, emailController.text, userState.user, 'Email'),
+        onPressedCallback: () => changeUserInfo(userState.userId,
+            initialUserName, emailController.text, userState.user, 'Email'),
         active: emailButtonActive,
       ),
     );
 
     final changeThemeField = MCard(
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            RichText(
-                text: TextSpan(
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline5,
-                  children: <TextSpan>[
-                    new TextSpan(
-                        text: 'Theme:  ', style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline3),
-                    new TextSpan(
-                        text: themeState.selectedTheme.name,
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headline5)
-                  ],
-                )),
-            MButton(
-              onPressedCallback: () => changeTheme(),
-              text: 'Change',
-              active: true,
-            )
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        RichText(
+            text: TextSpan(
+          style: Theme.of(context).textTheme.headline5,
+          children: <TextSpan>[
+            new TextSpan(
+                text: 'Theme:  ', style: Theme.of(context).textTheme.headline3),
+            new TextSpan(
+                text: themeState.selectedTheme.name,
+                style: Theme.of(context).textTheme.headline5)
           ],
-        ));
+        )),
+        MButton(
+          onPressedCallback: () => changeTheme(),
+          text: 'Change',
+          active: true,
+        )
+      ],
+    ));
 
     final userMoviesCountField = MCard(
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            RichText(
-                text: TextSpan(
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline5,
-                  children: <TextSpan>[
-                    new TextSpan(
-                        text: 'Your movies count:   ',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headline3),
-                    new TextSpan(text: userMoviesCount.toString())
-                  ],
-                )),
-            MButton(
-              text: 'Clear all',
-              onPressedCallback: () {
-                var mDialog = new MDialog(
-                    context: context,
-                    content: Text('Are You really want to clear your movies?'),
-                    firstButtonText: 'Yes, clear all',
-                    firstButtonCallback: () {
-                      if (!userState.isIncognitoMode) {
-                        clearUserMovies(userState.userId);
-                      }
-
-                      setState(() {
-                        userMoviesCount = 0;
-                      });
-
-                      moviesState.clear();
-                    },
-                  secondButtonText: 'Cancel',
-                  secondButtonCallback: (){}
-                );
-
-                mDialog.openDialog();
-              },
-              active: true,
-            )
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        RichText(
+            text: TextSpan(
+          style: Theme.of(context).textTheme.headline5,
+          children: <TextSpan>[
+            new TextSpan(
+                text: 'Your movies count:   ',
+                style: Theme.of(context).textTheme.headline3),
+            new TextSpan(text: userMoviesCount.toString())
           ],
-        ));
+        )),
+        MButton(
+          text: 'Clear all',
+          onPressedCallback: () {
+            var mDialog = new MDialog(
+                context: context,
+                content: Text('Are You really want to clear your movies?'),
+                firstButtonText: 'Yes, clear all',
+                firstButtonCallback: () {
+                  if (!userState.isIncognitoMode) {
+                    clearUserMovies(userState.userId);
+                  }
+
+                  setState(() {
+                    userMoviesCount = 0;
+                  });
+
+                  moviesState.clear();
+                },
+                secondButtonText: 'Cancel',
+                secondButtonCallback: () {});
+
+            mDialog.openDialog();
+          },
+          active: true,
+        )
+      ],
+    ));
 
     final changePasswordField = MCard(
         text: 'Change Password',
         button: MButton(
           text: 'Change',
-          onPressedCallback: () =>
-              changePassword(userState.userId,
-                  oldPasswordController.text, newPasswordController.text),
+          onPressedCallback: () => changePassword(userState.userId,
+              oldPasswordController.text, newPasswordController.text),
           active: changePasswordButtonActive,
         ),
         child: Form(
@@ -448,25 +417,16 @@ class SettingsState extends State<Settings> {
               ),
               Text(
                 'Old Password',
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headline5,
+                style: Theme.of(context).textTheme.headline5,
               ),
               Theme(
                   data: Theme.of(context)
-                      .copyWith(primaryColor: Theme
-                      .of(context)
-                      .accentColor),
+                      .copyWith(primaryColor: Theme.of(context).accentColor),
                   child: TextFormField(
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline5,
-                    validator: (value) =>
-                    oldPasswordController.text.isNotEmpty
+                    style: Theme.of(context).textTheme.headline5,
+                    validator: (value) => oldPasswordController.text.isNotEmpty
                         ? Validators.passwordValidator(
-                        oldPasswordController.text)
+                            oldPasswordController.text)
                         : null,
                     controller: oldPasswordController,
                     obscureText: true,
@@ -476,21 +436,13 @@ class SettingsState extends State<Settings> {
               ),
               Text(
                 'New Password',
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headline5,
+                style: Theme.of(context).textTheme.headline5,
               ),
               Theme(
                   data: Theme.of(context)
-                      .copyWith(primaryColor: Theme
-                      .of(context)
-                      .accentColor),
+                      .copyWith(primaryColor: Theme.of(context).accentColor),
                   child: TextFormField(
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline5,
+                    style: Theme.of(context).textTheme.headline5,
                     validator: (value) {
                       if (newPasswordController.text.isEmpty) return null;
 
@@ -510,21 +462,13 @@ class SettingsState extends State<Settings> {
               ),
               Text(
                 'Confirm Password',
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headline5,
+                style: Theme.of(context).textTheme.headline5,
               ),
               Theme(
                   data: Theme.of(context)
-                      .copyWith(primaryColor: Theme
-                      .of(context)
-                      .accentColor),
+                      .copyWith(primaryColor: Theme.of(context).accentColor),
                   child: TextFormField(
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .headline5,
+                    style: Theme.of(context).textTheme.headline5,
                     validator: (value) {
                       if (confirmPasswordController.text.isEmpty) return null;
 
@@ -557,28 +501,28 @@ class SettingsState extends State<Settings> {
                     height: 143,
                     child: Column(
                       children: [
-                        Text(
-                            'Are you sure you want to remove your user?'),
-                        SizedBox(height: 10,),
+                        Text('Are you sure you want to remove your user?'),
+                        SizedBox(
+                          height: 10,
+                        ),
                         TextField(
                           controller: removeController,
                           maxLines: 3,
                           decoration: InputDecoration(
-                              hintText: 'Please tell us why are you going to remove your user.\n',
-                              border: const OutlineInputBorder()
-                          ),
+                              hintText:
+                                  'Please tell us why are you going to remove your user.\n',
+                              border: const OutlineInputBorder()),
                         ),
                       ],
                     ),
                   ),
                   firstButtonText: 'Remove',
                   firstButtonCallback: () {
-                    removeUser(userState.userId, userState,
-                        moviesState, themeState);
+                    removeUser(
+                        userState.userId, userState, moviesState, themeState);
                   },
                   secondButtonText: 'Cancel',
-                  secondButtonCallback: (){}
-              );
+                  secondButtonCallback: () {});
 
               mDialog.openDialog();
             },
@@ -588,46 +532,60 @@ class SettingsState extends State<Settings> {
       ),
     );
 
-    return WillPopScope(
-      onWillPop: () {
-        Navigator.of(context).pop();
-
-        userState.shouldRequestReview = true;
-        return;
-      },
-      child: Scaffold(
-          backgroundColor: Theme
-              .of(context)
-              .primaryColor,
-          appBar: AppBar(
-            title: headingField,
-          ),
-          body: Container(
-            key: globalKey,
-            child: SingleChildScrollView(
-              child: Container(
-                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  color: Theme
-                      .of(context)
-                      .primaryColor,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      if (AdManager.bannerVisible && AdManager.bannersReady)
-                        AdManager.getBannerWidget(AdManager.settingsBannerAd),
-                      if (!userState.isIncognitoMode) nameField,
-                      if (!userState.isSignedInWithGoogle &&
-                          !userState.isIncognitoMode) emailField,
-                      changeThemeField,
-                      userMoviesCountField,
-                      if (!userState.isSignedInWithGoogle &&
-                          !userState.isIncognitoMode) changePasswordField,
-                      if (!userState.isIncognitoMode) removeUserField,
-                      if (userState.isIncognitoMode) incognitoModeCard,
-                    ],
-                  )),
+    return Scaffold(
+        appBar: AdManager.bannerVisible && AdManager.bannersReady
+            ? AppBar(
+                title: Center(
+                  child: AdManager.getBannerWidget(AdManager.settingsBannerAd),
+                ),
+                automaticallyImplyLeading: false,
+                elevation: 0.7,
+              )
+            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+        body: Scaffold(
+            backgroundColor: Theme.of(context).primaryColor,
+            appBar: AppBar(
+              title: headingField,
             ),
-          )),
-    );
+            body: Container(
+              key: globalKey,
+              child: SingleChildScrollView(
+                child: Container(
+                    padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    color: Theme.of(context).primaryColor,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        if (!userState.isIncognitoMode &&
+                            userState.user != null &&
+                            userState.user.name.isNotEmpty)
+                          nameField,
+                        if (!userState.isIncognitoMode &&
+                            userState.user != null &&
+                            userState.user.email.isNotEmpty)
+                          emailField,
+                        changeThemeField,
+                        userMoviesCountField,
+                        if (!userState.isSignedInWithGoogle &&
+                            !userState.isIncognitoMode)
+                          changePasswordField,
+                        if (!userState.isIncognitoMode) removeUserField,
+                        if (userState.isIncognitoMode) incognitoModeCard,
+                        SizedBox(
+                          height: 20,
+                        ),
+                        MButton(
+                          text: 'Restore purchases',
+                          onPressedCallback: () => restorePurchases(),
+                          active: true,
+                          height: 50,
+                          width: MediaQuery.of(context).size.width,
+                          prependIconColor: Colors.green,
+                          prependIcon: Icons.monetization_on,
+                        ),
+                      ],
+                    )),
+              ),
+            )));
   }
 }

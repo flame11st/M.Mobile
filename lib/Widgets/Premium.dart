@@ -25,7 +25,7 @@ class Premium extends StatelessWidget {
     final ProductDetailsResponse response =
         await InAppPurchase.instance.queryProductDetails(_kIds);
     if (response.notFoundIDs.isNotEmpty) {
-      MSnackBar.showSnackBar("Not available now. Please try later", false);
+      MSnackBar.showSnackBar("Not available now. Please try later.", false);
 
       return;
     }
@@ -34,8 +34,7 @@ class Premium extends StatelessWidget {
 
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: product);
 
-    InAppPurchase.instance
-        .buyNonConsumable(purchaseParam: purchaseParam);
+    InAppPurchase.instance.buyNonConsumable(purchaseParam: purchaseParam);
   }
 
   @override
@@ -182,68 +181,76 @@ class Premium extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
-      appBar: AppBar(
-        title: headingField,
-      ),
-      body: Container(
-        key: globalKey,
-        child: SingleChildScrollView(
-          child: Container(
-              margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-              color: Theme.of(context).primaryColor,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  titleText,
-                  SizedBox(
-                    height: 20,
-                  ),
-                  subTitleText,
-                  if (Platform.isAndroid)
-                    SizedBox(
-                      height: 20,
-                    ),
-                  if (Platform.isAndroid)
-                    removeAdFeature,
-                  SizedBox(
-                    height: 20,
-                  ),
-                  themeFeature,
-                  SizedBox(
-                    height: 20,
-                  ),
-                  allMoviesFeature,
-                  SizedBox(
-                    height: 20,
-                  ),
-                  filtersFeature,
-                  SizedBox(
-                    height: 30,
-                  ),
-                  supportFeature,
-                ],
-              )),
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-          color: Theme.of(context).primaryColor,
-          child: Container(
-            margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
-            child: MButton(
-              onPressedCallback: () => purchaseButtonClick(),
-              prependIconColor: userState.isPremium
-                  ? Colors.green.withOpacity(0.4)
-                  : Colors.green,
-              prependIcon:
-                  userState.isPremium ? Icons.check : Icons.monetization_on,
-              height: 50,
-              borderRadius: 25,
-              text: 'Unlock Premium Features',
-              active: !userState.isPremium,
+        appBar: AdManager.bannerVisible && AdManager.bannersReady
+            ? AppBar(
+                title: Center(
+                  child: AdManager.getBannerWidget(AdManager.premiumBannerAd),
+                ),
+                automaticallyImplyLeading: false,
+                elevation: 0.7,
+              )
+            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+        body: Scaffold(
+          backgroundColor: Theme.of(context).primaryColor,
+          appBar: AppBar(
+            title: headingField,
+          ),
+          body: Container(
+            key: globalKey,
+            child: SingleChildScrollView(
+              child: Container(
+                  margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  color: Theme.of(context).primaryColor,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      titleText,
+                      SizedBox(
+                        height: 20,
+                      ),
+                      subTitleText,
+                      SizedBox(
+                        height: 20,
+                      ),
+                      removeAdFeature,
+                      SizedBox(
+                        height: 20,
+                      ),
+                      themeFeature,
+                      SizedBox(
+                        height: 20,
+                      ),
+                      allMoviesFeature,
+                      SizedBox(
+                        height: 20,
+                      ),
+                      filtersFeature,
+                      SizedBox(
+                        height: 30,
+                      ),
+                      supportFeature,
+                    ],
+                  )),
             ),
-          )),
-    );
+          ),
+          bottomNavigationBar: BottomAppBar(
+              color: Theme.of(context).primaryColor,
+              child: Container(
+                margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                child: MButton(
+                  onPressedCallback: () => purchaseButtonClick(),
+                  prependIconColor: userState.isPremium
+                      ? Colors.green.withOpacity(0.4)
+                      : Colors.green,
+                  prependIcon:
+                      userState.isPremium ? Icons.check : Icons.monetization_on,
+                  height: 50,
+                  borderRadius: 25,
+                  text: 'Unlock Premium Features',
+                  active: !userState.isPremium,
+                ),
+              )),
+        ));
   }
 }

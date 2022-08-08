@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
@@ -58,47 +60,21 @@ class MoviesListsPageState extends State<MoviesListsPage>
     });
   }
 
-  Route _createRoute(MoviesList moviesList) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          MoviesListPage(moviesList: moviesList),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var begin = Offset(1.0, 0.0);
-        var end = Offset.zero;
-        var curve = Curves.ease;
-
-        var tween =
-            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-    );
-  }
-
   getMovieListWidget(MoviesList moviesList, MovieListType type) {
     String imageBaseUrl =
         "https://moviediarystorage.blob.core.windows.net/movies";
-    // final moviesState = Provider.of<MoviesState>(context);
-    // final moviesLists = moviesState.moviesLists
-    //     .where((element) => element.movieListType == type)
-    //     .toList();
-    //
-    // moviesLists.sort((a, b) => a.order > b.order ? 1 : 0);
-    //
-    // if (moviesLists.isEmpty) return SizedBox();
-    //
-    // final moviesList = moviesLists[order];
+    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
+
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(_createRoute(moviesList)),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (ctx) => MoviesListPage(moviesList: moviesList))),
       child: MCard(
           padding: 0,
           child: Container(
               height: 80,
               padding: EdgeInsets.all(5),
               decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(borderRadius),
                 image: DecorationImage(
                   colorFilter: ColorFilter.mode(
                       Colors.black.withOpacity(
@@ -281,22 +257,22 @@ class MoviesListsPageState extends State<MoviesListsPage>
       ),
     );
 
-    return WillPopScope(
-        onWillPop: () {
-          Navigator.of(context).pop();
-
-          userState.shouldRequestReview = true;
-          return;
-        },
-        child: Scaffold(
+    return Scaffold(
+        appBar: AdManager.bannerVisible && AdManager.bannersReady
+            ? AppBar(
+                title: Center(
+                  child: AdManager.getBannerWidget(AdManager.listsBannerAd),
+                ),
+                automaticallyImplyLeading: false,
+                elevation: 0.7,
+              )
+            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+        body: Scaffold(
             backgroundColor: Theme.of(context).primaryColor,
             appBar: headingRow,
             body: Container(
-              color: Theme.of(context).primaryColor,
-              child: Column(children: [
-                if (AdManager.bannerVisible && AdManager.bannersReady)
-                  AdManager.getBannerWidget(AdManager.listsBannerAd),
-                Expanded(child: TabBarView(
+                color: Theme.of(context).primaryColor,
+                child: TabBarView(
                   controller: tabController,
                   children: [
                     SingleChildScrollView(
@@ -384,8 +360,6 @@ class MoviesListsPageState extends State<MoviesListsPage>
                       ],
                     )
                   ],
-                ))
-              ]),
-            )));
+                ))));
   }
 }

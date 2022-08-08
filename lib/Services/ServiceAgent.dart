@@ -56,6 +56,14 @@ class ServiceAgent {
     return get('Identity/GoogleLoginAndroid?idToken=$idToken');
   }
 
+  googleLoginIOS(String idToken) {
+    return get('Identity/GoogleLoginIOS?idToken=$idToken');
+  }
+
+  appleLogin(String appleId, String email, String name) {
+    return get('Identity/AppleLogin?appleId=$appleId&email=$email&name=$name');
+  }
+
   getUserMovies(String userId) {
     return get('User/GetUserMovies?userId=$userId');
   }
@@ -196,7 +204,8 @@ class ServiceAgent {
       headers.putIfAbsent(
           HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
 
-    var response = await http.get(Uri.parse(baseUri + uri), headers: headers);
+    var fullUri = Uri.parse(baseUri + uri);
+    var response = await http.get(fullUri, headers: headers);
 
     if (response.statusCode == 401) {
       headers.clear();

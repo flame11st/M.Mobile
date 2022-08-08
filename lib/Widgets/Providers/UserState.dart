@@ -23,7 +23,6 @@ class UserState with ChangeNotifier {
   String token = '';
   String refreshToken = '';
   User user;
-  int androidVersion = 0;
   bool userRequested = false;
   bool showTutorial = false;
   bool isIncognitoMode = false;
@@ -41,11 +40,6 @@ class UserState with ChangeNotifier {
     var storedIsIncognitoMode;
     var storedPremiumPurchasedIncognito;
     var storedAppReviewRequested;
-
-    if (Platform.isAndroid) {
-      var androidInfo = await DeviceInfoPlugin().androidInfo;
-      androidVersion = int.parse(androidInfo.version.release.substring(0, 1));
-    }
 
     try {
       storedToken = await storage.read(key: 'token');
@@ -148,7 +142,7 @@ class UserState with ChangeNotifier {
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
   }
 
-  processLoginResponse(String response, bool isSignedInWithGoogle) {
+  processLoginResponse(String response, bool isSignedInWithThirdPartyServices) {
     var responseJson = json.decode(response);
     var accessToken = responseJson['access_token'];
     var refreshToken = responseJson['refresh_token'];
@@ -157,7 +151,7 @@ class UserState with ChangeNotifier {
     var showTutorial = false; //responseJson['showTutorial'];
 
     setInitialUserData(accessToken, refreshToken, userId, userName,
-        isSignedInWithGoogle, showTutorial);
+        isSignedInWithThirdPartyServices, showTutorial);
   }
 
   logout() async {

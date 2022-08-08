@@ -405,9 +405,10 @@ class WelcomeTutorialState extends State<WelcomeTutorial> {
                 currentIndex = index;
               });
             },
-            controlsBuilder: (BuildContext context,
-                    {VoidCallback onStepContinue, VoidCallback onStepCancel}) =>
-                Text("")),
+            // controlsBuilder: (BuildContext context,
+            //         {VoidCallback onStepContinue, VoidCallback onStepCancel}) =>
+            //     Text("")
+        ),
       ),
     );
   }

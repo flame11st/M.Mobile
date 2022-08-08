@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
 
@@ -24,13 +26,16 @@ class MButton extends StatelessWidget {
     this.prependImage,
     this.appendIcon,
     this.prependIconColor,
-    this.borderRadius, this.parentContext,
+    this.borderRadius,
+    this.parentContext,
   });
 
   @override
   Widget build(BuildContext context) {
     final contextValue = parentContext != null ? parentContext : context;
-    final color = Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
+    final color =
+        Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
+    final defaultBorderRadius = Platform.isIOS ? 8.0 : 4.0;
 
     return Container(
         width: width != null ? width : 110,
@@ -39,12 +44,12 @@ class MButton extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              offset: Offset(0.0, 0.2),
-              blurRadius: 0.4
-            ),
+                color: Colors.black.withOpacity(0.8),
+                offset: Offset(0.0, 0.2),
+                blurRadius: 0.4),
           ],
-          borderRadius: BorderRadius.circular(borderRadius != null ? borderRadius : 2.0),
+          borderRadius: BorderRadius.circular(
+              borderRadius != null ? borderRadius : defaultBorderRadius),
           color: Theme.of(contextValue).cardColor.withOpacity(0.95),
         ),
         child: MaterialButton(

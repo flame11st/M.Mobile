@@ -25,11 +25,13 @@ class MHomeState extends State<MHome> {
   final serviceAgent = ServiceAgent();
 
   _handlePurchaseUpdates(List<PurchaseDetails> purchases) {
-    final userState = Provider.of<UserState>(context);
+    final userState = Provider.of<UserState>(context, listen: false);
 
     if (purchases.isEmpty) return;
 
-    if (purchases.first.status == PurchaseStatus.purchased) {
+    final purchase = purchases.first;
+
+    if (purchase.status == PurchaseStatus.purchased) {
       InAppPurchase.instance.completePurchase(purchases.first);
 
       userState.setPremium(true);
@@ -40,11 +42,21 @@ class MHomeState extends State<MHome> {
       }
 
       MSnackBar.showSnackBar("Premium features successfully unlocked", true);
-    } else if(purchases.first.status == PurchaseStatus.error && purchases.first.error.details != "") {
+    } else if(purchase.status == PurchaseStatus.error && purchase.error.details != "") {
       MSnackBar.showSnackBar(purchases.first.error.details , false);
-    } else if (purchases.first.status == PurchaseStatus.pending) {
+    } else if (purchase.status == PurchaseStatus.pending) {
       MSnackBar.showSnackBar("Your request is being processed. It can take a while", true);
-    } else {
+    } else if (purchase.status == PurchaseStatus.restored && purchase.productID == 'premium_purchase'){
+      userState.setPremium(true);
+
+      if (!userState.isIncognitoMode) {
+        serviceAgent.state = userState;
+        serviceAgent.setUserPremiumPurchased(userState.userId, true);
+      }
+
+      MSnackBar.showSnackBar("Premium features successfully restored", true);
+    }
+    else {
       MSnackBar.showSnackBar("Not available now. Please try later", false);
     }
   }
@@ -113,7 +125,6 @@ class MHomeState extends State<MHome> {
           ],
         ),
         routes: {
-          // When navigating to the "/second" route, build the SecondScreen widget.
           'moviesList': (context) => MoviesListPage(),
         },
         theme: ThemeData(
@@ -125,14 +136,12 @@ class MHomeState extends State<MHome> {
           cardColor: theme.colorTheme.secondaryColor,
           highlightColor: theme.colorTheme.fontsColor,
           splashColor: theme.colorTheme.primaryColor,
-          scaffoldBackgroundColor: theme.colorTheme.primaryColor,
           iconTheme: IconThemeData(
               color: theme.colorTheme.fontsColor
           ),
 
           appBarTheme: AppBarTheme(
             backgroundColor: theme.colorTheme.primaryColor,
-            foregroundColor: theme.colorTheme.primaryColor,
             iconTheme: IconThemeData(
               color: theme.colorTheme.fontsColor
             )
@@ -146,6 +155,13 @@ class MHomeState extends State<MHome> {
             headline5: theme.textStyleTheme.bodyText,
             headline6: theme.textStyleTheme.expandedTitle,
           ),
+
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder()
+            }
+          )
         ));
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -67,6 +69,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   @override
   Widget build(BuildContext context) {
     final formatter = new NumberFormat("#,###");
+    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
@@ -76,10 +79,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
-          Text(movie.title, style: Theme.of(context).textTheme.headline2),
-          SizedBox(
-            height: 5,
-          ),
           Row(
             children: <Widget>[
               Text(
@@ -128,7 +127,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           padding: 1,
           marginTop: 0,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4.0),
+            borderRadius: BorderRadius.circular(borderRadius),
             child: CachedNetworkImage(
               imageUrl: imageBaseUrl + imageUrl,
               height: 180,
@@ -216,42 +215,52 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       ],
     );
 
-    return GestureDetector(
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            child: Scaffold(
-                backgroundColor: Theme.of(context).primaryColor,
-                body: Hero(
-                  tag: 'movie-hero-animation' + movie.id,
-                  child: SingleChildScrollView(
+    return Scaffold(
+        appBar: AdManager.bannerVisible && AdManager.bannersReady
+            ? AppBar(
+                title: Center(
+                  child:
+                      AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
+                ),
+                automaticallyImplyLeading: false,
+                elevation: 0.7,
+              )
+            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+        body: Scaffold(
+            appBar: AppBar(
+              title: Text(
+                movie.title,
+                style: Theme.of(context).textTheme.headline2,
+              ),
+            ),
+            backgroundColor: Theme.of(context).primaryColor,
+            body: SingleChildScrollView(
+                child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
                     child: Container(
-                        margin: EdgeInsets.fromLTRB(10, 20, 10, 20),
-                        child: Material(
+                      margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                      child: Material(
                           type: MaterialType.transparency,
                           child: Container(
                             color: Theme.of(context).primaryColor,
                             child: Column(
                               children: <Widget>[
                                 topCard,
-                                SizedBox(
-                                    height: AdManager.bannerVisible ? 5 : 15),
-                                if (AdManager.bannerVisible && AdManager.bannersReady)
-                                  AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
+                                SizedBox(height: 15),
                                 contentBody,
-                                SizedBox(height: 20),
+                                SizedBox(height: 10),
                                 textFields,
                               ],
                             ),
-                          ),
-                        )),
-                  ),
-                ),
-                bottomNavigationBar: MoviesBottomNavigationBarExpanded(
-                  movie: movie,
-                  fromSearch: fromSearch,
-                  shouldRequestReview: shouldRequestReview,
-                  moviesList: moviesList,
-                )));
+                          )),
+                    ))),
+            bottomNavigationBar: MoviesBottomNavigationBarExpanded(
+              movie: movie,
+              fromSearch: fromSearch,
+              shouldRequestReview: shouldRequestReview,
+              moviesList: moviesList,
+            )));
   }
 }
