@@ -69,7 +69,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   @override
   Widget build(BuildContext context) {
     final formatter = new NumberFormat("#,###");
-    final borderRadius = 13.0;
+    final borderRadius = 25.0;
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
