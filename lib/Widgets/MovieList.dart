@@ -1,7 +1,6 @@
 import 'package:app_review/app_review.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:fluttericon/web_symbols_icons.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -12,6 +11,8 @@ import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+import 'Shared/MMoviesAnimatedList.dart';
 
 class MovieList extends StatefulWidget {
   @override
@@ -229,16 +230,11 @@ class MovieListState extends State<MovieList>
                   children: [
                     if (movieState.userMovies.length > 0 &&
                         watchlistMovies.isNotEmpty)
-                      AnimatedList(
-                        padding: EdgeInsets.only(bottom: 90),
-                        key: movieState.watchlistKey,
-                        initialItemCount: watchlistMovies.length,
-                        itemBuilder: (context, index, animation) {
-                          if (watchlistMovies.length <= index) return null;
-
-                          return movieState.buildItem(
-                              watchlistMovies[index], animation);
-                        },
+                      MMoviesAnimatedList(
+                        buildItemFunction: movieState.buildItem,
+                        isPremium: userState.isPremium,
+                        listKey: movieState.watchlistKey,
+                        movies: watchlistMovies,
                       ),
                     if (movieState.userMovies.isNotEmpty &&
                         watchlistMovies.isEmpty)
@@ -255,20 +251,11 @@ class MovieListState extends State<MovieList>
                       getEmptyMoviesCardWidget("Viewed list"),
                     if (movieState.userMovies.length > 0 &&
                         viewedMovies.isNotEmpty)
-                      Container(
-                        child: AnimatedList(
-                          padding: EdgeInsets.only(bottom: 90),
-                          key: movieState.viewedListKey,
-                          initialItemCount: viewedMovies.length,
-                          itemBuilder: (context, index, animation) {
-                            if (viewedMovies.length <= index) return null;
-
-                            return movieState.buildItem(
-                                viewedMovies[index], animation,
-                                isPremium: userState.isPremium,
-                                context: context);
-                          },
-                        ),
+                      MMoviesAnimatedList(
+                        buildItemFunction: movieState.buildItem,
+                        isPremium: userState.isPremium,
+                        listKey: movieState.viewedListKey,
+                        movies: viewedMovies,
                       ),
                     if (movieState.userMovies.isNotEmpty &&
                         viewedMovies.isEmpty)

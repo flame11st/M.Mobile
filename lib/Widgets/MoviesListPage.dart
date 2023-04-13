@@ -13,6 +13,7 @@ import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/MButton.dart';
 import 'Shared/MDialog.dart';
+import 'Shared/MMoviesAnimatedList.dart';
 
 class MoviesListPage extends StatefulWidget {
   final MoviesList moviesList;
@@ -36,7 +37,7 @@ class MovieListPageState extends State<MoviesListPage> {
 
   final serviceAgent = new ServiceAgent();
 
-  Widget buildItem(Movie movie, Animation animation) {
+  Widget buildItem(Movie movie, Animation animation, {bool isPremium = false, BuildContext context}) {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,
@@ -165,15 +166,11 @@ class MovieListPageState extends State<MoviesListPage> {
 
   Widget getBody() {
     Widget widgetToReturn = moviesList.listMovies.isNotEmpty
-        ? AnimatedList(
-            padding: EdgeInsets.only(bottom: 90),
-            key: MyGlobals.personalListsKey,
-            initialItemCount: moviesList.listMovies.length,
-            itemBuilder: (context, index, animation) {
-              if (moviesList.listMovies.length <= index) return null;
-
-              return buildItem(moviesList.listMovies[index], animation);
-            },
+        ? MMoviesAnimatedList(
+            buildItemFunction: buildItem,
+            isPremium: false,
+            listKey: MyGlobals.personalListsKey,
+            movies: moviesList.listMovies,
           )
         : Padding(
             padding: EdgeInsets.all(10),

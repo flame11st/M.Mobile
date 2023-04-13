@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:mmobile/Helpers/RouteHelper.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
@@ -13,6 +14,7 @@ import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MDialog.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
+import 'Premium.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'Shared/MCard.dart';
@@ -564,6 +566,23 @@ class SettingsState extends State<Settings> {
                             userState.user != null &&
                             userState.user.email.isNotEmpty)
                           emailField,
+                        SizedBox(
+                          height: 20,
+                        ),
+                        MButton(
+                          text: 'Explore Premium Features',
+                          onPressedCallback: () => { Navigator.of(context)
+                              .push(RouteHelper.createRoute(() => Premium()))
+                          },
+                          active: true,
+                          height: 50,
+                          width: MediaQuery.of(context).size.width,
+                          prependIconColor: Colors.green,
+                          prependIcon: userState.isPremium
+                              ? Icons.check
+                              : Icons.monetization_on,
+                          backgroundColor: Theme.of(context).cardColor,
+                        ),
                         changeThemeField,
                         userMoviesCountField,
                         if (!userState.isSignedInWithGoogle &&
@@ -580,8 +599,7 @@ class SettingsState extends State<Settings> {
                           active: true,
                           height: 50,
                           width: MediaQuery.of(context).size.width,
-                          prependIconColor: Colors.green,
-                          prependIcon: Icons.monetization_on,
+                          backgroundColor: Theme.of(context).cardColor,
                         ),
                       ],
                     )),

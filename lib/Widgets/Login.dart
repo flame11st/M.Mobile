@@ -69,7 +69,7 @@ class LoginState extends State<Login> {
     final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
 
     final GoogleSignInAuthentication googleSignInAuthentication =
-    await googleSignInAccount.authentication;
+        await googleSignInAccount.authentication;
 
     var response = Platform.isIOS
         ? await serviceAgent.googleLoginIOS(googleSignInAuthentication.idToken)
@@ -116,8 +116,8 @@ class LoginState extends State<Login> {
 
     loaderState.setIsLoaderVisible(true);
 
-    var response = await serviceAgent.appleLogin(credential.userIdentifier,
-        email, name);
+    var response =
+        await serviceAgent.appleLogin(credential.userIdentifier, email, name);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, true);
@@ -147,7 +147,7 @@ class LoginState extends State<Login> {
     loaderState.setIsLoaderVisible(true);
 
     var response =
-    await serviceAgent.login(emailController.text, passwordController.text);
+        await serviceAgent.login(emailController.text, passwordController.text);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, false);
@@ -167,8 +167,7 @@ class LoginState extends State<Login> {
   setMoviesLists() async {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
 
-    final moviesListsResponse =
-    await serviceAgent.getMoviesLists("");
+    final moviesListsResponse = await serviceAgent.getMoviesLists("");
 
     Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
 
@@ -198,40 +197,29 @@ class LoginState extends State<Login> {
 
     GlobalKey globalKey = new GlobalKey();
 
-    if (ModalRoute
-        .of(context)
-        .isCurrent) {
+    if (ModalRoute.of(context).isCurrent) {
       MyGlobals.activeKey = globalKey;
     }
 
     final emailField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme
-            .of(context)
-            .accentColor),
+            .copyWith(primaryColor: Theme.of(context).accentColor),
         child: TextFormField(
-          validator: (value) =>
-          emailController.text.isNotEmpty
+          validator: (value) => emailController.text.isNotEmpty
               ? Validators.emailValidator(emailController.text)
               : null,
           controller: emailController,
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Email",
-              hintStyle: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5),
+              hintStyle: Theme.of(context).textTheme.headline5),
         ));
 
     final passwordField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme
-            .of(context)
-            .accentColor),
+            .copyWith(primaryColor: Theme.of(context).accentColor),
         child: TextFormField(
-          validator: (value) =>
-          passwordController.text.isNotEmpty
+          validator: (value) => passwordController.text.isNotEmpty
               ? Validators.passwordValidator(passwordController.text)
               : null,
           controller: passwordController,
@@ -239,20 +227,14 @@ class LoginState extends State<Login> {
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Password",
-              hintStyle: Theme
-                  .of(context)
-                  .textTheme
-                  .headline5),
+              hintStyle: Theme.of(context).textTheme.headline5),
         ));
 
     final loginButton = MButton(
       text: 'Sign in',
       onPressedCallback: () => login(),
       active: signInButtonActive,
-      width: MediaQuery
-          .of(context)
-          .size
-          .width,
+      width: MediaQuery.of(context).size.width,
       height: 40,
       prependIcon: Entypo.login,
     );
@@ -261,10 +243,7 @@ class LoginState extends State<Login> {
       text: 'Sign in with Google',
       onPressedCallback: () => signInWithGoogle(),
       active: true,
-      width: MediaQuery
-          .of(context)
-          .size
-          .width,
+      width: MediaQuery.of(context).size.width,
       height: 50,
       prependImage: AssetImage("Assets/google_logo.png"),
     );
@@ -278,10 +257,7 @@ class LoginState extends State<Login> {
       text: 'Skip Authorization',
       onPressedCallback: () => proceedIncognitoMode(),
       active: true,
-      width: MediaQuery
-          .of(context)
-          .size
-          .width,
+      width: MediaQuery.of(context).size.width,
       height: 50,
       prependIcon: FontAwesome5.user_secret,
     );
@@ -293,27 +269,20 @@ class LoginState extends State<Login> {
             .push(MaterialPageRoute(builder: (ctx) => SignUp()));
       },
       active: true,
-      width: MediaQuery
-          .of(context)
-          .size
-          .width,
+      width: MediaQuery.of(context).size.width,
       height: 50,
       prependIcon: FontAwesome5.user_plus,
     );
 
     return Scaffold(
-        backgroundColor: Theme
-            .of(context)
-            .primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         body: Container(
           margin: EdgeInsets.only(top: 40),
           key: globalKey,
           child: SingleChildScrollView(
             child: Container(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
-                color: Theme
-                    .of(context)
-                    .primaryColor,
+                color: Theme.of(context).primaryColor,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
@@ -323,31 +292,30 @@ class LoginState extends State<Login> {
                     ),
                     Text(
                       'MovieDiary',
-                      style:  GoogleFonts.parisienne(textStyle: TextStyle(
-                        fontSize: 45,
-                        color: Theme.of(context).accentColor
-                      )),
+                      style: GoogleFonts.parisienne(
+                          textStyle: TextStyle(
+                              fontSize: 45,
+                              color: Theme.of(context).accentColor)),
                     ),
                     MCard(
                       child: Container(
                           child: Form(
-                            key: _formKey,
-                            child: Column(
-                              children: <Widget>[
-                                emailField,
-                                SizedBox(height: 25.0),
-                                passwordField,
-                                SizedBox(height: 35.0),
-                                loginButton,
-                              ],
-                            ),
-                          )),
+                        key: _formKey,
+                        child: Column(
+                          children: <Widget>[
+                            emailField,
+                            SizedBox(height: 25.0),
+                            passwordField,
+                            SizedBox(height: 35.0),
+                            loginButton,
+                          ],
+                        ),
+                      )),
                     ),
                     SizedBox(
                       height: 30,
                     ),
-                    if (Platform.isIOS)
-                      signInWithAppleButton,
+                    if (Platform.isIOS) signInWithAppleButton,
                     if (Platform.isIOS)
                       SizedBox(
                         height: 20,

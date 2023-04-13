@@ -5,44 +5,25 @@ import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:mmobile/Widgets/MoviesListsPage.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
+import 'package:mmobile/Widgets/RecommendationsPage.dart';
 import 'package:provider/provider.dart';
 
 import 'MoviesFilter.dart';
-import 'Premium.dart';
 import 'Providers/MoviesState.dart';
+import 'SearchDelegate.dart';
 import 'Settings.dart';
-import 'Shared/MBoxShadow.dart';
 import 'Shared/MIconButton.dart';
+import 'package:mmobile/Helpers/RouteHelper.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
-  Route _createRoute(Function page) {
-    if (Platform.isIOS) return MaterialPageRoute(builder: (context) => page());
-    
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => page(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var begin = Offset(0.0, 1.0);
-        var end = Offset.zero;
-        var curve = Curves.ease;
-
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-    );
-  }
-
-  @override
+   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
     var additionalPadding = Platform.isIOS ? 20 : 0;
-    var middleSizedBoxWidth = 50.0;
-    var buttonWidth = (MediaQuery.of(context).size.width - middleSizedBoxWidth) / 4;
+    var middleButtonWidth = 90.0;
+    var buttonWidth = (MediaQuery.of(context).size.width - middleButtonWidth) / 4;
 
     return Container(
       padding: EdgeInsets.only(bottom: 0.0 + additionalPadding),
@@ -86,17 +67,31 @@ class MoviesBottomNavigationBar extends StatelessWidget {
             MIconButton(
               width: buttonWidth,
               withBorder: false,
-              hint: 'Settings',
+              hint: 'Search',
               icon: Icon(
-                Icons.settings,
+                Icons.search,
+                color: Theme.of(context).hintColor,
+              ),
+              onPressedCallback: () {
+                showSearch(
+                  context: context,
+                  delegate: MSearchDelegate(),
+                );
+              },
+            ),
+            MIconButton(
+              width: middleButtonWidth,
+              withBorder: false,
+              hint: 'Discover',
+              icon: Icon(
+                Icons.movie_creation_outlined,
                 color: Theme.of(context).hintColor,
               ),
               onPressedCallback: () {
                 Navigator.of(context)
-                    .push(_createRoute(() => Settings()));
+                    .push(RouteHelper.createRoute(() => RecommendationsPage()));
               },
             ),
-            SizedBox(width: middleSizedBoxWidth,),
             MIconButton(
               width: buttonWidth,
               withBorder: false,
@@ -107,22 +102,20 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               ),
               onPressedCallback: () {
                 Navigator.of(context)
-                    .push(_createRoute(() => MoviesListsPage()));
+                    .push(RouteHelper.createRoute(() => MoviesListsPage()));
               },
             ),
             MIconButton(
               width: buttonWidth,
               withBorder: false,
-              hint: 'Premium',
+              hint: 'Settings',
               icon: Icon(
-                userState.isPremium
-                    ? Icons.check
-                    : Icons.monetization_on,
-                color: Colors.green,
+                Icons.settings,
+                color: Theme.of(context).hintColor,
               ),
               onPressedCallback: () {
                 Navigator.of(context)
-                    .push(_createRoute(() => Premium()));
+                    .push(RouteHelper.createRoute(() => Settings()));
               },
             ),
           ],

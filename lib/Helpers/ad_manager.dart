@@ -12,6 +12,7 @@ class AdManager {
   static BannerAd _listsBannerAd;
   static BannerAd _listBannerAd;
   static BannerAd _premiumBannerAd;
+  static BannerAd _recommendationsBannerAd;
   static bool bannersReady = false;
 
   static Future<void> hideBanner() async {
@@ -25,6 +26,7 @@ class AdManager {
     _listsBannerAd = null;
     _listBannerAd = null;
     _premiumBannerAd = null;
+    _recommendationsBannerAd = null;
     bannerVisible = false;
     bannersReady = false;
   }
@@ -41,6 +43,7 @@ class AdManager {
       await listsBannerAd.load();
       await listBannerAd.load();
       await premiumBannerAd.load();
+      await recommendationsBannerAd.load();
 
       bannersReady = true;
     }
@@ -133,6 +136,19 @@ class AdManager {
     }
 
     return _premiumBannerAd;
+  }
+
+  static BannerAd get recommendationsBannerAd {
+    if (_recommendationsBannerAd == null ) {
+      _recommendationsBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _recommendationsBannerAd;
   }
 
   static String get appId {

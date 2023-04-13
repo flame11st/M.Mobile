@@ -15,27 +15,30 @@ class MButton extends StatelessWidget {
   final prependImage;
   final Color prependIconColor;
   final BuildContext parentContext;
+  final Color backgroundColor;
+  final textColor;
 
-  MButton({
-    this.text,
-    this.onPressedCallback,
-    this.active,
-    this.height,
-    this.width,
-    this.prependIcon,
-    this.prependImage,
-    this.appendIcon,
-    this.prependIconColor,
-    this.borderRadius,
-    this.parentContext,
-  });
+  MButton(
+      {this.text,
+      this.onPressedCallback,
+      this.active,
+      this.height,
+      this.width,
+      this.prependIcon,
+      this.prependImage,
+      this.appendIcon,
+      this.prependIconColor,
+      this.borderRadius,
+      this.parentContext,
+      this.backgroundColor,
+      this.textColor});
 
   @override
   Widget build(BuildContext context) {
     final contextValue = parentContext != null ? parentContext : context;
-    final color =
+    final color = textColor != null ? textColor :
         Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
-    final defaultBorderRadius = Platform.isIOS ? 8.0 : 4.0;
+    final defaultBorderRadius = 25.0;
 
     return Container(
         width: width != null ? width : 110,
@@ -50,7 +53,9 @@ class MButton extends StatelessWidget {
           ],
           borderRadius: BorderRadius.circular(
               borderRadius != null ? borderRadius : defaultBorderRadius),
-          color: Theme.of(contextValue).cardColor.withOpacity(0.95),
+          color: backgroundColor != null
+              ? backgroundColor
+              : Theme.of(contextValue).cardColor.withOpacity(0.95),
         ),
         child: MaterialButton(
           padding: EdgeInsets.all(0),

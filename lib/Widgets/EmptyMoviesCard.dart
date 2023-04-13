@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 
+import '../Helpers/RouteHelper.dart';
 import 'MoviesListsPage.dart';
+import 'RecommendationsPage.dart';
 import 'SearchDelegate.dart';
 import 'Shared/MButton.dart';
 import 'Shared/MCard.dart';
@@ -20,7 +22,7 @@ class EmptyMoviesCard extends StatelessWidget {
         var curve = Curves.ease;
 
         var tween =
-        Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
         return SlideTransition(
           position: animation.drive(tween),
@@ -45,24 +47,39 @@ class EmptyMoviesCard extends StatelessWidget {
                   fontWeight: FontWeight.bold),
             ),
             SizedBox(
-              height: 20,
+              height: 15,
             ),
             Text(
-              "You haven't added any Movie or TV Series yet. \n\n"
-                  "Please use Search to find and add items to your $tabName.",
+              "This powerful app lets you keep track on movies you want to watch and movies you've already seen.",
               style:
-              TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
+                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
             ),
-            SizedBox(height: 10,),
+            SizedBox(
+              height: 5,
+            ),
+            Text(
+              "With our AI recommendation engine powered by creators of ChatGPT "
+              " you can get personalized movie suggestions tailored to your taste, making your movie-watching experience even more enjoyable!",
+              style:
+                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
+            ),
+            SizedBox(
+              height: 15,
+            ),
             MButton(
+              height: 40,
+              width: MediaQuery.of(context).size.width - 40,
+              backgroundColor: Theme.of(context).accentColor,
+              borderRadius: 20,
+              prependIcon: Icons.electric_bolt,
+              prependIconColor: Theme.of(context).cardColor,
+              text: "Get Recommendations",
+              onPressedCallback: () {
+                Navigator.of(context)
+                    .push(RouteHelper.createRoute(() => RecommendationsPage()));
+              },
               active: true,
-              text: 'Find Movie or TV Series',
-              prependIcon: Icons.search,
-              width: MediaQuery.of(context).size.width - 50,
-              onPressedCallback: () => showSearch(
-                context: context,
-                delegate: MSearchDelegate(),
-              ),
+              textColor: Theme.of(context).cardColor,
             ),
             SizedBox(
               height: 20,
@@ -70,37 +87,19 @@ class EmptyMoviesCard extends StatelessWidget {
             Text(
               "Check Lists with popular Movies or TV Series, top rated, etc.",
               style:
-              TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
+                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
             ),
             SizedBox(
               height: 10,
             ),
-            MButton(
+            MButton(height: 40,
+              borderRadius: 30,
               active: true,
               text: 'Open Lists',
               prependIcon: Entypo.menu,
-              width: MediaQuery.of(context).size.width - 50,
+              width: MediaQuery.of(context).size.width - 40,
               onPressedCallback: () => Navigator.of(context)
                   .push(_createRoute(() => MoviesListsPage())),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Text(
-              "You can create your personal Movies Lists and fill them in any way you want",
-              style:
-              TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            MButton(
-              active: true,
-              text: 'Open Personal Lists',
-              prependIcon: Icons.person,
-              width: MediaQuery.of(context).size.width - 50,
-              onPressedCallback: () => Navigator.of(context)
-                  .push(_createRoute(() => MoviesListsPage(initialPageIndex: 1,))),
             ),
             SizedBox(
               height: 30,
@@ -117,5 +116,4 @@ class EmptyMoviesCard extends StatelessWidget {
       )
     ]);
   }
-
 }

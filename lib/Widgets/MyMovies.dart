@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,13 +9,14 @@ import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Objects/User.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:provider/provider.dart';
+import '../Helpers/RouteHelper.dart';
 import 'MoviesBottomNavigationBar.dart';
 import 'MovieList.dart';
 import 'Providers/LoaderState.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
+import 'RecommendationsPage.dart';
 import 'SearchDelegate.dart';
-import 'WelcomeTutorial.dart';
 
 class MyMovies extends StatefulWidget {
   @override
@@ -47,6 +49,7 @@ class MyMoviesState extends State<MyMovies> {
 
     final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
 
+    print("Movies loaded");
     Iterable iterableMovies = json.decode(moviesResponse.body);
 
     if (iterableMovies.length != 0) {
@@ -174,20 +177,18 @@ class MyMoviesState extends State<MyMovies> {
               alignment: Alignment.bottomCenter,
               child: MoviesBottomNavigationBar()),
           Align(
-              alignment: Alignment(0.0, 0.97 - additionalPadding),
+              alignment: Alignment(0.0, 0.93 - additionalPadding),
               child: Container(
-                  height: 55.0,
-                  width: 55.0,
+                  height: 65.0,
+                  width: 65.0,
                   child: FittedBox(
                     child: FloatingActionButton(
                       onPressed: () {
-                        showSearch(
-                          context: context,
-                          delegate: MSearchDelegate(),
-                        );
+                        Navigator.of(context)
+                            .push(RouteHelper.createRoute(() => RecommendationsPage()));
                       },
                       child: const Icon(
-                        Icons.search,
+                        Icons.electric_bolt_rounded,
                         size: 35,
                       ),
                       backgroundColor: Theme.of(context).accentColor,
@@ -198,6 +199,6 @@ class MyMoviesState extends State<MyMovies> {
       ),
     );
 
-    return userState.showTutorial ? WelcomeTutorial() : myMoviesWidget;
+    return myMoviesWidget;
   }
 }

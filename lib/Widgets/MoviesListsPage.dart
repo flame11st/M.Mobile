@@ -63,7 +63,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
   getMovieListWidget(MoviesList moviesList, MovieListType type) {
     String imageBaseUrl =
         "https://moviediarystorage.blob.core.windows.net/movies";
-    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
+    final borderRadius = 25.0;
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(

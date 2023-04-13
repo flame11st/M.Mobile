@@ -36,7 +36,7 @@ class MovieRateButtons extends StatelessWidget {
     return Container(
         height: showTitle != null && showTitle ? 200 : 60,
         margin: addMargin != null && !addMargin
-            ? EdgeInsets.all(0)
+            ? EdgeInsets.fromLTRB(10, 5, 10, 10)
             : EdgeInsets.fromLTRB(10, 5, 10, 10),
         padding: EdgeInsets.fromLTRB(10, 0, 10, 5),
         decoration: BoxDecoration(
@@ -49,13 +49,7 @@ class MovieRateButtons extends StatelessWidget {
           color: showTitle != null && showTitle
               ? Theme.of(context).primaryColor
               : Theme.of(context).cardColor,
-          borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(10.0),
-              topRight: Radius.circular(10.0),
-              bottomLeft: Radius.circular(
-                  addMargin == null || addMargin == true ? 15.0 : 0),
-              bottomRight: Radius.circular(
-                  addMargin == null || addMargin == true ? 15.0 : 0)),
+          borderRadius: BorderRadius.all(Radius.circular(30)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,

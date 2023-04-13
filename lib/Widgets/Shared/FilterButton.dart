@@ -9,6 +9,8 @@ class FilterIcon extends StatelessWidget {
   final bool isActive;
   final double textSize;
   final Color iconColor;
+  final double width;
+  final BorderRadius borderRadius;
 
   FilterIcon(
       {this.icon,
@@ -16,29 +18,29 @@ class FilterIcon extends StatelessWidget {
       this.onPressedCallback,
       this.isActive,
       this.textSize,
-      this.iconColor});
+      this.iconColor,
+      this.width,
+      this.borderRadius});
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive
-        ? Theme.of(context).accentColor
-        : Theme.of(context).cardColor;
+    final color =
+        isActive ? Theme.of(context).accentColor : Theme.of(context).cardColor;
     final fontColor =
         isActive ? Theme.of(context).primaryColor : Theme.of(context).hintColor;
     return GestureDetector(
         onTap: () => onPressedCallback(),
         child: Container(
             height: 50,
-            width: 160,
+            width: width == null ? 160 : width,
             decoration: new BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(2.0),
+              borderRadius: borderRadius == null ? BorderRadius.circular(25) : borderRadius,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.8),
-                  offset: Offset(0.0, 0.1),
-                  blurRadius: 0.25
-                ),
+                    color: Colors.black.withOpacity(0.8),
+                    offset: Offset(0.0, 0.1),
+                    blurRadius: 0.25),
               ],
             ),
             child: Row(
@@ -53,7 +55,8 @@ class FilterIcon extends StatelessWidget {
                 Text(
                   text,
                   style: TextStyle(
-                      color: fontColor, fontSize: textSize != null ? textSize : 15),
+                      color: fontColor,
+                      fontSize: textSize != null ? textSize : 15),
                 )
               ],
             )));

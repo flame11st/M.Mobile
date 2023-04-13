@@ -64,7 +64,7 @@ class MovieListItemState extends State<MovieListItem> {
   Widget build(BuildContext context) {
     //Don't remove this not used state declaration. It is needed for lists update.
     final moviesState = Provider.of<MoviesState>(context);
-    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
+    final borderRadius = 25.0;
     final formatter = new NumberFormat("#,###");
 
     final imageUrl =
@@ -115,7 +115,7 @@ class MovieListItemState extends State<MovieListItem> {
                             ? Colors.red.withOpacity(0.08)
                             : Colors.transparent,
                     marginBottom: 5,
-                    marginLR: 10,
+                    marginLR: 11,
                     marginTop: 15,
                     padding: 0,
                     child: Row(

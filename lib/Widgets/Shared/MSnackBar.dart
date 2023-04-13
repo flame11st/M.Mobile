@@ -11,8 +11,8 @@ class MSnackBar {
   }
 
   static void show(BuildContext context, String text, bool isSuccess) {
-    Scaffold.of(context).hideCurrentSnackBar();
-    Scaffold.of(context).showSnackBar(SnackBar(
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Container(
           margin: EdgeInsets.all(0),
           height: 40,

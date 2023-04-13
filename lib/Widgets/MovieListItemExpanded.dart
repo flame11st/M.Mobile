@@ -69,7 +69,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   @override
   Widget build(BuildContext context) {
     final formatter = new NumberFormat("#,###");
-    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
+    final borderRadius = 13.0;
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
@@ -79,6 +79,10 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
+          Text(movie.title, style: Theme.of(context).textTheme.headline2),
+          SizedBox(
+            height: 5,
+          ),
           Row(
             children: <Widget>[
               Text(
@@ -152,7 +156,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                 ],
               ),
               child: CircularPercentIndicator(
-                radius: 140.0,
+                radius: 70.0,
                 lineWidth: 6.0,
                 percent: movie.allVotes > 0 && movie.rating == 0
                     ? 1
@@ -229,33 +233,33 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         body: Scaffold(
             appBar: AppBar(
               title: Text(
-                movie.title,
+                "Details",
                 style: Theme.of(context).textTheme.headline2,
               ),
             ),
             backgroundColor: Theme.of(context).primaryColor,
-            body: SingleChildScrollView(
-                child: GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
+            body: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
+                child: SingleChildScrollView(
                     child: Container(
-                      margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
-                      child: Material(
-                          type: MaterialType.transparency,
-                          child: Container(
-                            color: Theme.of(context).primaryColor,
-                            child: Column(
-                              children: <Widget>[
-                                topCard,
-                                SizedBox(height: 15),
-                                contentBody,
-                                SizedBox(height: 10),
-                                textFields,
-                              ],
-                            ),
-                          )),
-                    ))),
+                  margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                  child: Material(
+                      type: MaterialType.transparency,
+                      child: Container(
+                        color: Theme.of(context).primaryColor,
+                        child: Column(
+                          children: <Widget>[
+                            topCard,
+                            SizedBox(height: 15),
+                            contentBody,
+                            SizedBox(height: 10),
+                            textFields,
+                          ],
+                        ),
+                      )),
+                ))),
             bottomNavigationBar: MoviesBottomNavigationBarExpanded(
               movie: movie,
               fromSearch: fromSearch,

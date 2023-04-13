@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 
 class ServiceAgent {
@@ -8,7 +9,8 @@ class ServiceAgent {
   String baseUrl = "";
   final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/Function1";
 
-  var baseUrlLocal = "http://192.168.31.60/";
+  //var baseUrlLocal = "http://192.168.1.49/";
+  var baseUrlLocal = "http://51.81.79.14/";
 
   ServiceAgent() {
     setBaseUrl();
@@ -26,7 +28,7 @@ class ServiceAgent {
     var uri = responseAWS.body;
 
     return uri + "/api/";
-    // return baseUrlLocal + "api/";
+    //return baseUrlLocal + "api/";
   }
 
   checkAuthorization() {
@@ -66,6 +68,14 @@ class ServiceAgent {
 
   getUserMovies(String userId) {
     return get('User/GetUserMovies?userId=$userId');
+  }
+
+  getUserRecommendations(String userId, MovieType type) {
+    return get('Recommendations/GetUserMoviesRecommendations?userId=$userId&movieType=${type.index}');
+  }
+
+  getMovieRecommendationsByTitles(String titles, MovieType type) {
+    return get('Recommendations/GetMoviesRecommendationsByTitles?titles=$titles&movieType=${type.index}');
   }
 
   getUserInfo(String userId) {

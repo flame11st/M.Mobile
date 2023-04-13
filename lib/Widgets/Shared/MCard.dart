@@ -30,7 +30,7 @@ class MCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double marginLRValue = marginLR != null ? marginLR : 0;
-    final borderRadius = Platform.isIOS ? 10.0 : 4.0;
+    final borderRadius = 25.0;
 
     return Container(
         padding: EdgeInsets.all(padding != null ? padding : 20),
