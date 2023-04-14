@@ -10,6 +10,7 @@ class FilterIcon extends StatelessWidget {
   final double textSize;
   final Color iconColor;
   final double width;
+  final double height;
   final BorderRadius borderRadius;
 
   FilterIcon(
@@ -20,6 +21,7 @@ class FilterIcon extends StatelessWidget {
       this.textSize,
       this.iconColor,
       this.width,
+      this.height,
       this.borderRadius});
 
   @override
@@ -31,11 +33,13 @@ class FilterIcon extends StatelessWidget {
     return GestureDetector(
         onTap: () => onPressedCallback(),
         child: Container(
-            height: 50,
+            height: height == null ? 50 : height,
             width: width == null ? 160 : width,
             decoration: new BoxDecoration(
               color: color,
-              borderRadius: borderRadius == null ? BorderRadius.circular(25) : borderRadius,
+              borderRadius: borderRadius == null
+                  ? BorderRadius.circular(25)
+                  : borderRadius,
               boxShadow: [
                 BoxShadow(
                     color: Colors.black.withOpacity(0.8),

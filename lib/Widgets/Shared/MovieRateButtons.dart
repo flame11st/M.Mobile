@@ -35,9 +35,7 @@ class MovieRateButtons extends StatelessWidget {
 
     return Container(
         height: showTitle != null && showTitle ? 200 : 60,
-        margin: addMargin != null && !addMargin
-            ? EdgeInsets.fromLTRB(10, 5, 10, 10)
-            : EdgeInsets.fromLTRB(10, 5, 10, 10),
+        margin: EdgeInsets.fromLTRB(10, 5, 10, 15),
         padding: EdgeInsets.fromLTRB(10, 0, 10, 5),
         decoration: BoxDecoration(
           boxShadow: [

@@ -19,8 +19,8 @@ class ThemePresentation extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(3),
-                    bottomLeft: Radius.circular(3)),
+                    topLeft: Radius.circular(25),
+                    bottomLeft: Radius.circular(25)),
                 child: Container(
                   height: 70,
                   width: 50,

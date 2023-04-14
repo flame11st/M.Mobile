@@ -41,17 +41,16 @@ class MCard extends StatelessWidget {
             bottom: marginBottom != null ? marginBottom : 0),
         decoration: BoxDecoration(
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              blurRadius: 0.5
-              // offset: Offset(0.0, 0.9),
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.8), blurRadius: 0.5
+                // offset: Offset(0.0, 0.9),
+                ),
           ],
           borderRadius: BorderRadius.circular(borderRadius),
           color: color != null ? color : Theme.of(context).cardColor,
         ),
         foregroundDecoration: BoxDecoration(
-            color: foregroundColor != null ? foregroundColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(borderRadius),
+          color: foregroundColor != null ? foregroundColor : Colors.transparent,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

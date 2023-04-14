@@ -104,7 +104,6 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           ));
     }
 
-    var additionalPaddingValue = Platform.isIOS ? 20.0 : 0.0;
     MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
 
     return Scaffold(
@@ -121,7 +120,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             backgroundColor: Theme.of(context).primaryColor,
             appBar: AppBar(
               title: Text(
-                "Personal Recommendations",
+                "Personalized Recommendations",
                 style: Theme.of(context).textTheme.headline2,
               ),
             ),
@@ -140,7 +139,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                     if (recommendedMovies.isEmpty)
                       MCard(
                           marginTop: 15,
-                          marginLR: 20,
+                          marginLR: 10,
                           child: RichText(
                             text: TextSpan(
                               style: TextStyle(
@@ -156,7 +155,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                         "\n\nDiscover new movies personalized just for you."
                                         "\nBy analyzing your movie preferences and utilizing state-of-the-art machine learning algorithms, we can provide you with highly personalized movie recommendations that will blow your mind. "
                                         "\n\nTo make your recommendations more tailored to your tastes, we recommend you to rate at least 10 Movies or TV Shows."
-                                        "\n\nGet lightning-fast results and uncover hidden gems in just a one click.",
+                                        "\n\nGet ready to explore a world of cinematic wonders with just one click, as our cutting-edge algorithms work behind the scenes to bring you personalized movie recommendations that are sure to captivate your senses.",
                                     style:
                                         Theme.of(context).textTheme.headline5)
                               ],
@@ -178,38 +177,27 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                   alignment: Alignment(0.0, 1),
                   child: Container(
                       margin: EdgeInsets.fromLTRB(10, 0, 10, 10),
-                      height: 160,
+                      height: 145,
                       child: MCard(
                           padding: 15,
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                MButton(
-                                  height: 50,
-                                  width: MediaQuery.of(context).size.width - 10,
-                                  backgroundColor:
-                                      Theme.of(context).accentColor,
-                                  prependIcon: Icons.bolt_sharp,
-                                  borderRadius: 25,
-                                  text: "Get Recommended "
-                                      "${selectedType == MovieType.movie ? "Movies" : "TV Shows"}",
-                                  onPressedCallback: () => getRecommendations(),
-                                  active: true,
-                                  textColor: Theme.of(context).cardColor,
-                                ),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
+                          child: Column(children: [
+                            Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: <Widget>[
+                                  Text("Type:",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headline5),
+                                  Row(children: [
                                     FilterIcon(
+                                      height: 30,
                                       borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(25),
                                           bottomLeft: Radius.circular(25)),
                                       width: MediaQuery.of(context).size.width /
                                               2 -
-                                          26,
+                                          60,
                                       icon: FontAwesome.video,
                                       text: 'Movies',
                                       isActive: selectedType == MovieType.movie,
@@ -218,12 +206,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                       },
                                     ),
                                     FilterIcon(
+                                      height: 30,
                                       borderRadius: BorderRadius.only(
                                           topRight: Radius.circular(25),
                                           bottomRight: Radius.circular(25)),
                                       width: MediaQuery.of(context).size.width /
                                               2 -
-                                          26,
+                                          60,
                                       icon: Icons.tv,
                                       text: 'TV Shows',
                                       isActive: selectedType == MovieType.tv,
@@ -231,9 +220,24 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                         setSelectedType(MovieType.tv);
                                       },
                                     ),
-                                  ],
-                                ),
-                              ])))),
+                                  ]),
+                                ]),
+                            SizedBox(
+                              height: 15,
+                            ),
+                            MButton(
+                              height: 50,
+                              width: MediaQuery.of(context).size.width - 10,
+                              backgroundColor: Theme.of(context).accentColor,
+                              prependIcon: Icons.bolt_sharp,
+                              borderRadius: 25,
+                              text: "Get Recommended "
+                                  "${selectedType == MovieType.movie ? "Movies" : "TV Shows"}",
+                              onPressedCallback: () => getRecommendations(),
+                              active: true,
+                              textColor: Theme.of(context).cardColor,
+                            ),
+                          ])))),
             ])));
   }
 }

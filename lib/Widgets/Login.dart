@@ -249,6 +249,7 @@ class LoginState extends State<Login> {
     );
 
     final signInWithAppleButton = SignInWithAppleButton(
+      borderRadius: BorderRadius.circular(25),
       height: 50,
       onPressed: () => signInWithApple(),
     );
