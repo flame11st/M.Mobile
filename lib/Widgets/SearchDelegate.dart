@@ -58,7 +58,7 @@ class MSearchDelegate extends SearchDelegate {
                     marginLR: 10,
                     child: Container(
                       child: Text(
-                        "You can search in English, German and Russian languages.",
+                        "You can search in English and German languages.",
                         style: Theme.of(context).textTheme.headline5,
                       ),
                     )),

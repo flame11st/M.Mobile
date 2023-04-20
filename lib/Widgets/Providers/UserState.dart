@@ -29,6 +29,8 @@ class UserState with ChangeNotifier {
   bool premiumPurchasedIncognito = false;
   bool appReviewRequested = false;
   bool shouldRequestReview = false;
+  int aiRequestsCount = 0;
+  bool isRequestedAtLeastOnce = false;
 
   void setInitialData() async {
     var storedToken;
@@ -40,6 +42,7 @@ class UserState with ChangeNotifier {
     var storedIsIncognitoMode;
     var storedPremiumPurchasedIncognito;
     var storedAppReviewRequested;
+    var storedAiRequestsCount;
 
     try {
       storedToken = await storage.read(key: 'token');
@@ -52,6 +55,7 @@ class UserState with ChangeNotifier {
       storedPremiumPurchasedIncognito = await storage.read(key: 'premiumPurchasedIncognito');
       storedAppReviewRequested = await storage.read(key: "appReviewRequested");
       storedUser = await storage.read(key: 'user');
+      storedAiRequestsCount = await storage.read(key: 'aiRequestsCount');
     } catch (on, ex) {
       await clearStorage();
     }
@@ -74,6 +78,7 @@ class UserState with ChangeNotifier {
     this.userId = storedUserId;
     this.userName = storedUserName;
     this.isSignedInWithGoogle = storedSignedInWithGoogle == "true";
+    this.aiRequestsCount = storedAiRequestsCount != null ? int.parse(storedAiRequestsCount) : 0;
 
     if (storedUser != null) {
       final userJson = jsonDecode(storedUser);
@@ -104,6 +109,12 @@ class UserState with ChangeNotifier {
 
     await storage.write(key: "user", value: jsonEncode(user));
     notifyListeners();
+  }
+
+  Future<void> increaseAiRequestsCount() async {
+    this.aiRequestsCount += 1;
+
+    await storage.write(key: "aiRequestsCount", value: this.aiRequestsCount.toString());
   }
 
   Future<void> setPremium(bool value) async {

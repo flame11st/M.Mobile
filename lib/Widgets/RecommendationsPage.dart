@@ -39,6 +39,14 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     });
   }
 
+  @override
+  void dispose() {
+    // TODO: Dispose an InterstitialAd object
+    AdManager.disposeInterstitialAd();
+
+    super.dispose();
+  }
+
   getRecommendations() async {
     setState(() {
       isLoading = true;
@@ -47,6 +55,10 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     if (userState == null) {
       userState = Provider.of<UserState>(context, listen: false);
       movieState = Provider.of<MoviesState>(context, listen: false);
+    }
+
+    if (!userState.isPremium & userState.isRequestedAtLeastOnce && userState.aiRequestsCount % 3 == 0) {
+      AdManager.showInterstitialAd();
     }
 
     var moviesResponse;
@@ -76,6 +88,12 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         recommendedMovies = movies;
         isLoading = false;
       });
+
+      if (userState.isRequestedAtLeastOnce) {
+        userState.increaseAiRequestsCount();
+      } else {
+        userState.isRequestedAtLeastOnce = true;
+      }
     }
   }
 

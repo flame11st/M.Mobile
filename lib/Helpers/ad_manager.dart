@@ -13,11 +13,13 @@ class AdManager {
   static BannerAd _listBannerAd;
   static BannerAd _premiumBannerAd;
   static BannerAd _recommendationsBannerAd;
+  static InterstitialAd _recommendationsInterstitialAd;
   static bool bannersReady = false;
 
   static Future<void> hideBanner() async {
     try {
       await _bannerAd.dispose();
+      await _recommendationsInterstitialAd.dispose();
     } catch (on){}
 
     _bannerAd = null;
@@ -27,8 +29,13 @@ class AdManager {
     _listBannerAd = null;
     _premiumBannerAd = null;
     _recommendationsBannerAd = null;
+    _recommendationsInterstitialAd = null;
     bannerVisible = false;
     bannersReady = false;
+  }
+
+  static Future<void> disposeInterstitialAd() async {
+    await _recommendationsInterstitialAd.dispose();
   }
 
   static Future<void> showBanner() async {
@@ -44,6 +51,7 @@ class AdManager {
       await listBannerAd.load();
       await premiumBannerAd.load();
       await recommendationsBannerAd.load();
+      await loadInterstitialAd();
 
       bannersReady = true;
     }
@@ -151,6 +159,48 @@ class AdManager {
     return _recommendationsBannerAd;
   }
 
+  static void showInterstitialAd() {
+    _recommendationsInterstitialAd.show();
+  }
+
+  static Future<void> loadInterstitialAd() async {
+    await InterstitialAd.load(
+        adUnitId: interstitialAdUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          // Called when an ad is successfully received.
+          onAdLoaded: (ad) {
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              // Called when the ad showed the full screen content.
+              //   onAdShowedFullScreenContent: (ad) {},
+                // Called when an impression occurs on the ad.
+                // onAdImpression: (ad) {},
+                // Called when the ad failed to show full screen content.
+                onAdFailedToShowFullScreenContent: (ad, err) {
+                  // Dispose the ad here to free resources.
+                  ad.dispose();
+                },
+                // Called when the ad dismissed full screen content.
+                onAdDismissedFullScreenContent: (ad) {
+                  // Dispose the ad here to free resources.
+                  ad.dispose();
+                  loadInterstitialAd();
+                },
+                // Called when a click is recorded for an ad.
+                // onAdClicked: (ad) {}
+            );
+
+            debugPrint('$ad loaded.');
+            // Keep a reference to the ad so you can show it later.
+            _recommendationsInterstitialAd = ad;
+          },
+          // Called when an ad request failed.
+          onAdFailedToLoad: (LoadAdError error) {
+            debugPrint('InterstitialAd failed to load: $error');
+          },
+        ));
+  }
+
   static String get appId {
     if (Platform.isAndroid) {
       return "ca-app-pub-5540129750283532~2399817888";
@@ -163,7 +213,8 @@ class AdManager {
 
   static String get bannerAdUnitId {
     if (Platform.isAndroid) {
-      return "ca-app-pub-5540129750283532/9763657807";
+      //return 'ca-app-pub-3940256099942544/6300978111'; //test
+      return "ca-app-pub-5540129750283532/9763657807";//real
     } else if (Platform.isIOS) {
       return "ca-app-pub-5540129750283532/4970568843";
     } else {
@@ -173,9 +224,10 @@ class AdManager {
 
   static String get interstitialAdUnitId {
     if (Platform.isAndroid) {
-      return "ca-app-pub-5540129750283532/2008742121";
+      //return "ca-app-pub-3940256099942544/1033173712"; //test
+      return "ca-app-pub-5540129750283532/2008742121"; //real
     } else if (Platform.isIOS) {
-      return "<YOUR_IOS_INTERSTITIAL_AD_UNIT_ID>";
+      return "ca-app-pub-5540129750283532/4127478852";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }
