@@ -39,14 +39,6 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     });
   }
 
-  @override
-  void dispose() {
-    // TODO: Dispose an InterstitialAd object
-    AdManager.disposeInterstitialAd();
-
-    super.dispose();
-  }
-
   getRecommendations() async {
     setState(() {
       isLoading = true;
@@ -57,7 +49,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       movieState = Provider.of<MoviesState>(context, listen: false);
     }
 
-    if (!userState.isPremium & userState.isRequestedAtLeastOnce && userState.aiRequestsCount % 3 == 0) {
+    if (!userState.isPremium && userState.aiRequestsCount % 3 == 0) {
       AdManager.showInterstitialAd();
     }
 
@@ -89,11 +81,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         isLoading = false;
       });
 
-      if (userState.isRequestedAtLeastOnce) {
-        userState.increaseAiRequestsCount();
-      } else {
-        userState.isRequestedAtLeastOnce = true;
-      }
+      userState.increaseAiRequestsCount();
     }
   }
 
@@ -170,9 +158,9 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                         "Welcome to our movie recommendation system, powered by AI from the creators of ChatGPT!"),
                                 new TextSpan(
                                     text:
+                                        "\n\nTo make your recommendations more tailored to your tastes, we recommend you to rate at least 10 Movies or TV Shows."
                                         "\n\nDiscover new movies personalized just for you."
                                         "\nBy analyzing your movie preferences and utilizing state-of-the-art machine learning algorithms, we can provide you with highly personalized movie recommendations that will blow your mind. "
-                                        "\n\nTo make your recommendations more tailored to your tastes, we recommend you to rate at least 10 Movies or TV Shows."
                                         "\n\nGet ready to explore a world of cinematic wonders with just one click, as our cutting-edge algorithms work behind the scenes to bring you personalized movie recommendations that are sure to captivate your senses.",
                                     style:
                                         Theme.of(context).textTheme.headline5)

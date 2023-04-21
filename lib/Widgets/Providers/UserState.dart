@@ -30,7 +30,6 @@ class UserState with ChangeNotifier {
   bool appReviewRequested = false;
   bool shouldRequestReview = false;
   int aiRequestsCount = 0;
-  bool isRequestedAtLeastOnce = false;
 
   void setInitialData() async {
     var storedToken;
