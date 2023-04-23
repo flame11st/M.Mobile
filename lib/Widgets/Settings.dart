@@ -564,15 +564,17 @@ class SettingsState extends State<Settings> {
                           nameField,
                         if (!userState.isIncognitoMode &&
                             userState.user != null &&
-                            userState.user.email.isNotEmpty)
+                            userState.user.email.isNotEmpty &&
+                            !userState.user.isIncognito)
                           emailField,
                         SizedBox(
                           height: 20,
                         ),
                         MButton(
                           text: 'Explore Premium Features',
-                          onPressedCallback: () => { Navigator.of(context)
-                              .push(RouteHelper.createRoute(() => Premium()))
+                          onPressedCallback: () => {
+                            Navigator.of(context)
+                                .push(RouteHelper.createRoute(() => Premium()))
                           },
                           active: true,
                           height: 50,
@@ -586,9 +588,9 @@ class SettingsState extends State<Settings> {
                         changeThemeField,
                         userMoviesCountField,
                         if (!userState.isSignedInWithGoogle &&
-                            !userState.isIncognitoMode)
+                            !userState.isIncognitoMode && !userState.user.isIncognito)
                           changePasswordField,
-                        if (!userState.isIncognitoMode) removeUserField,
+                        if (!userState.isIncognitoMode && !userState.user.isIncognito) removeUserField,
                         if (userState.isIncognitoMode) incognitoModeCard,
                         SizedBox(
                           height: 20,

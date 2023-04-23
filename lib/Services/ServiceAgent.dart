@@ -9,9 +9,9 @@ class ServiceAgent {
   String baseUrl = "";
   final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/Function1";
 
-  //var baseUrlLocal = "http://192.168.1.49/";
+  var baseUrlLocal = "http://192.168.1.50/";
   //var baseUrlLocal = "https://localhost:5001/";
-  var baseUrlLocal = "http://51.81.79.14/";
+  //var baseUrlLocal = "http://51.81.79.14/";
 
   ServiceAgent() {
     setBaseUrl();
@@ -28,8 +28,8 @@ class ServiceAgent {
 
     var uri = responseAWS.body;
 
-    return uri + "/api/";
-    //return baseUrlLocal + "api/";
+    //return uri + "/api/";
+    return baseUrlLocal + "api/";
   }
 
   checkAuthorization() {
@@ -43,6 +43,11 @@ class ServiceAgent {
           'Email': email,
           'Password': password,
         }));
+  }
+
+  signInIncognito() {
+    return post(
+        'Identity/SignUpIncognito','');
   }
 
   signUp(String name, String email, String password) {
@@ -73,6 +78,10 @@ class ServiceAgent {
 
   getUserRecommendations(String userId, MovieType type) {
     return get('Recommendations/GetUserMoviesRecommendations?userId=$userId&movieType=${type.index}');
+  }
+
+  getUserRecommendationsHistory(String userId) {
+    return get('Recommendations/GetUserMoviesRecommendationsHistory?userId=$userId');
   }
 
   getMovieRecommendationsByTitles(String titles, MovieType type) {

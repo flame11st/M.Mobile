@@ -6,6 +6,7 @@ import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
+import '../Helpers/RatingHelper.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
 
@@ -104,7 +105,7 @@ class MSearchDelegate extends SearchDelegate {
         return Movie.fromJson(model);
       }).toList();
 
-      refreshMoviesRating(foundMoviesNew, context);
+      RatingHelper.refreshMoviesRating(foundMoviesNew, context);
 
       setStateFunction(() => foundMovies = foundMoviesNew);
       globalKey = new GlobalKey();
@@ -113,21 +114,6 @@ class MSearchDelegate extends SearchDelegate {
     }
 
     setStateFunction(() => isLoading = currentQuery != queryToDebounce);
-  }
-
-  refreshMoviesRating(List<Movie> movies, BuildContext context) {
-    final moviesState = Provider.of<MoviesState>(context, listen: false);
-
-    movies.forEach((movie) {
-      final userMoviesList =
-          moviesState.userMovies.where((um) => um.id == movie.id);
-
-      if (userMoviesList.length > 0) {
-        movie.movieRate = userMoviesList.first.movieRate;
-      } else {
-        movie.movieRate = 0;
-      }
-    });
   }
 
   @override
@@ -161,7 +147,7 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    refreshMoviesRating(foundMovies, context);
+    RatingHelper.refreshMoviesRating(foundMovies, context);
 
     final resultsWidget = getResultsWidget(query);
 
@@ -170,7 +156,7 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    refreshMoviesRating(foundMovies, context);
+    RatingHelper.refreshMoviesRating(foundMovies, context);
 
     final resultsWidget = getResultsWidget(query);
 

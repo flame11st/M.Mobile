@@ -23,7 +23,7 @@ class MSnackBar {
                 style: TextStyle(
                     color: Theme.of(context).primaryColor, fontSize: 16),
               ))),
-      duration: Duration(seconds: 2),
+      duration: Duration(milliseconds: 600),
       backgroundColor: isSuccess
           ? Theme.of(MyGlobals.activeKey.currentContext).accentColor
           : Colors.redAccent,

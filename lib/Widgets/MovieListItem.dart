@@ -195,38 +195,40 @@ class MovieListItemState extends State<MovieListItem> {
                             ),
                           ),
                         ),
-                        Container(
-                          width: 40,
-                          margin: EdgeInsets.only(right: 10),
-                          decoration: BoxDecoration(
-                            boxShadow: MBoxShadow.circleShadow,
-                            color:
-                                Theme.of(context).cardColor.withOpacity(0.95),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                              icon,
-                              color: movie.movieRate == MovieRate.liked
-                                  ? Colors.green
-                                  : movie.movieRate == MovieRate.notLiked
-                                      ? Colors.red
-                                      : Theme.of(context).accentColor,
+                        Column(children: [
+                          Container(
+                            width: 40,
+                            margin: EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              boxShadow: MBoxShadow.circleShadow,
+                              color:
+                              Theme.of(context).cardColor.withOpacity(0.95),
+                              shape: BoxShape.circle,
                             ),
-                            onPressed: () async {
-                              showModalBottomSheet<void>(
-                                  backgroundColor: Colors.transparent,
-                                  context: context,
-                                  builder: (BuildContext context) =>
-                                      MovieRateButtons(
-                                        moviesList: moviesList,
-                                        movie: movie,
-                                        showTitle: true,
-                                        addMargin: false,
-                                      ));
-                            },
-                          ),
-                        )
+                            child: IconButton(
+                              icon: Icon(
+                                icon,
+                                color: movie.movieRate == MovieRate.liked
+                                    ? Colors.green
+                                    : movie.movieRate == MovieRate.notLiked
+                                    ? Colors.red
+                                    : Theme.of(context).accentColor,
+                              ),
+                              onPressed: () async {
+                                showModalBottomSheet<void>(
+                                    backgroundColor: Colors.transparent,
+                                    context: context,
+                                    builder: (BuildContext context) =>
+                                        MovieRateButtons(
+                                          moviesList: moviesList,
+                                          movie: movie,
+                                          showTitle: true,
+                                          addMargin: false,
+                                        ));
+                              },
+                            ),
+                          )
+                        ],)
                       ],
                     )),
               ))),

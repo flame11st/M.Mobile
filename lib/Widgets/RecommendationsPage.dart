@@ -10,11 +10,15 @@ import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
 import '../Enums/MovieRate.dart';
 import '../Enums/MovieType.dart';
+import '../Helpers/RatingHelper.dart';
+import '../Helpers/RouteHelper.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
+import 'RecommendationsHistoryPage.dart';
 import 'Shared/FilterButton.dart';
 import 'Shared/MButton.dart';
 import 'Shared/MCard.dart';
+import 'Shared/MIconButton.dart';
 import 'Shared/MMoviesAnimatedList.dart';
 
 class RecommendationsPage extends StatefulWidget {
@@ -31,6 +35,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   MoviesState movieState;
   List<Movie> recommendedMovies = <Movie>[];
   bool isLoading = false;
+  bool isButtonDisabled = false;
   var selectedType = MovieType.movie;
 
   setSelectedType(MovieType type) {
@@ -42,6 +47,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   getRecommendations() async {
     setState(() {
       isLoading = true;
+      isButtonDisabled = true;
     });
 
     if (userState == null) {
@@ -69,6 +75,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           userState.userId, selectedType);
     }
 
+    if (moviesResponse.statusCode != 200) {
+      setState(() {
+        isLoading = false;
+        isButtonDisabled = false;
+      });
+    }
+
     Iterable iterableMovies = json.decode(moviesResponse.body);
 
     if (iterableMovies.length != 0) {
@@ -79,6 +92,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       setState(() {
         recommendedMovies = movies;
         isLoading = false;
+        isButtonDisabled = false;
       });
 
       userState.increaseAiRequestsCount();
@@ -87,7 +101,16 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = Provider.of<UserState>(context);
+    var movieState1 = Provider.of<MoviesState>(context, listen: false);
+
+    if (userState == null) {
+      userState = Provider.of<UserState>(context, listen: false);
+      movieState = Provider.of<MoviesState>(context, listen: false);
+    }
+
+    if (recommendedMovies.isNotEmpty) {
+      RatingHelper.refreshMoviesRating(recommendedMovies, context);
+    }
 
     if (serviceAgent.state == null) {
       serviceAgent.state = userState;
@@ -110,6 +133,27 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           ));
     }
 
+    final headingField = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Expanded(
+            child: Text(
+          "Personalized Recommendations",
+          style: Theme.of(context).textTheme.headline2,
+        )),
+        if (userState.user != null)
+          IconButton(
+              onPressed: () => {
+                    Navigator.of(context).push(RouteHelper.createRoute(
+                        () => RecommendationsHistoryPage()))
+                  },
+              icon: Icon(
+                Icons.history,
+                color: Theme.of(context).accentColor,
+              ))
+      ],
+    );
+
     MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
 
     return Scaffold(
@@ -124,12 +168,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             : PreferredSize(preferredSize: Size(0, 0), child: Container()),
         body: Scaffold(
             backgroundColor: Theme.of(context).primaryColor,
-            appBar: AppBar(
-              title: Text(
-                "Personalized Recommendations",
-                style: Theme.of(context).textTheme.headline2,
-              ),
-            ),
+            appBar: AppBar(title: headingField),
             body: Stack(children: [
               SizedBox(
                   height: 8,
@@ -146,27 +185,51 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                       MCard(
                           marginTop: 15,
                           marginLR: 10,
-                          child: RichText(
-                            text: TextSpan(
-                              style: TextStyle(
-                                  color: Theme.of(context).accentColor,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold),
-                              children: <TextSpan>[
-                                new TextSpan(
-                                    text:
-                                        "Welcome to our movie recommendation system, powered by AI from the creators of ChatGPT!"),
-                                new TextSpan(
-                                    text:
-                                        "\n\nTo make your recommendations more tailored to your tastes, we recommend you to rate at least 10 Movies or TV Shows."
-                                        "\n\nDiscover new movies personalized just for you."
-                                        "\nBy analyzing your movie preferences and utilizing state-of-the-art machine learning algorithms, we can provide you with highly personalized movie recommendations that will blow your mind. "
-                                        "\n\nGet ready to explore a world of cinematic wonders with just one click, as our cutting-edge algorithms work behind the scenes to bring you personalized movie recommendations that are sure to captivate your senses.",
-                                    style:
-                                        Theme.of(context).textTheme.headline5)
-                              ],
+                          child: Column(children: [
+                            RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                    color: Theme.of(context).accentColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold),
+                                children: <TextSpan>[
+                                  new TextSpan(
+                                      text:
+                                          "Welcome to our movie recommendation system, powered by AI from the creators of ChatGPT!"),
+                                  if (movieState.userMovies.length < 10)
+                                    new TextSpan(
+                                        text:
+                                            "\n\nTo make your recommendations more tailored to your tastes, we recommend you to rate at least 10 Movies or TV Shows.",
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5),
+                                  new TextSpan(
+                                      text:
+                                          "\n\nDiscover new movies personalized just for you."
+                                          "\nBy analyzing your movie preferences and utilizing state-of-the-art machine learning algorithms, we can provide you with highly personalized movie recommendations that will blow your mind. "
+                                          "\n\nGet ready to explore a world of cinematic wonders with just one click, as our cutting-edge algorithms work behind the scenes to bring you personalized movie recommendations that are sure to captivate your senses.",
+                                      style:
+                                          Theme.of(context).textTheme.headline5)
+                                ],
+                              ),
                             ),
-                          )),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            MButton(
+                              height: 50,
+                              width: MediaQuery.of(context).size.width - 10,
+                              prependIcon: Icons.history_outlined,
+                              borderRadius: 25,
+                              text: "Recommendations History",
+                              onPressedCallback: () {
+                                Navigator.of(context).push(
+                                    RouteHelper.createRoute(
+                                        () => RecommendationsHistoryPage()));
+                              },
+                              active: true,
+                            ),
+                          ])),
                   ])),
               if (recommendedMovies.isNotEmpty)
                 Container(
@@ -240,7 +303,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                               text: "Get Recommended "
                                   "${selectedType == MovieType.movie ? "Movies" : "TV Shows"}",
                               onPressedCallback: () => getRecommendations(),
-                              active: true,
+                              active: !isButtonDisabled,
                               textColor: Theme.of(context).cardColor,
                             ),
                           ])))),

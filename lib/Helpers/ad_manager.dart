@@ -13,6 +13,7 @@ class AdManager {
   static BannerAd _listBannerAd;
   static BannerAd _premiumBannerAd;
   static BannerAd _recommendationsBannerAd;
+  static BannerAd _recommendationsHistoryBannerAd;
   static InterstitialAd _recommendationsInterstitialAd;
   static bool bannersReady = false;
 
@@ -29,6 +30,7 @@ class AdManager {
     _listBannerAd = null;
     _premiumBannerAd = null;
     _recommendationsBannerAd = null;
+    _recommendationsHistoryBannerAd = null;
     _recommendationsInterstitialAd = null;
     bannerVisible = false;
     bannersReady = false;
@@ -51,6 +53,7 @@ class AdManager {
       await listBannerAd.load();
       await premiumBannerAd.load();
       await recommendationsBannerAd.load();
+      await recommendationsHistoryBannerAd.load();
       await loadInterstitialAd();
 
       bannersReady = true;
@@ -159,6 +162,19 @@ class AdManager {
     return _recommendationsBannerAd;
   }
 
+  static BannerAd get recommendationsHistoryBannerAd {
+    if (_recommendationsHistoryBannerAd == null ) {
+      _recommendationsHistoryBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _recommendationsHistoryBannerAd;
+  }
+
   static void showInterstitialAd() {
     _recommendationsInterstitialAd.show();
   }
@@ -213,7 +229,7 @@ class AdManager {
 
   static String get bannerAdUnitId {
     if (Platform.isAndroid) {
-      //return 'ca-app-pub-3940256099942544/6300978111'; //test
+      return 'ca-app-pub-3940256099942544/6300978111'; //test
       return "ca-app-pub-5540129750283532/9763657807";//real
     } else if (Platform.isIOS) {
       return "ca-app-pub-5540129750283532/4970568843";
@@ -224,7 +240,7 @@ class AdManager {
 
   static String get interstitialAdUnitId {
     if (Platform.isAndroid) {
-      //return "ca-app-pub-3940256099942544/1033173712"; //test
+      return "ca-app-pub-3940256099942544/1033173712"; //test
       return "ca-app-pub-5540129750283532/2008742121"; //real
     } else if (Platform.isIOS) {
       return "ca-app-pub-5540129750283532/4127478852";

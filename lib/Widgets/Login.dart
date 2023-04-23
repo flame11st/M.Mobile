@@ -56,10 +56,20 @@ class LoginState extends State<Login> {
     super.dispose();
   }
 
-  proceedIncognitoMode() {
-    final userState = Provider.of<UserState>(context, listen: false);
+  proceedIncognitoMode() async {
+    final loaderState = Provider.of<LoaderState>(context, listen: false);
+    loaderState.setIsLoaderVisible(true);
 
-    userState.proceedIncognitoMode();
+    var response =
+        await serviceAgent.signInIncognito();
+
+    if (response.statusCode == 200) {
+      processLoginResponse(response.body, false);
+    } else {
+      loaderState.setIsLoaderVisible(false);
+
+      MSnackBar.showSnackBar('Something went wrong', false);
+    }
   }
 
   signInWithGoogle() async {
