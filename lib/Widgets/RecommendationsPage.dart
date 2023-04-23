@@ -129,7 +129,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           key: ObjectKey(movie),
           sizeFactor: animation,
           child: Column(
-            children: [MovieListItem(movie: movie)],
+            children: [MovieListItem(movie: movie, showShortDescription: true,)],
           ));
     }
 

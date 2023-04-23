@@ -229,7 +229,7 @@ class AdManager {
 
   static String get bannerAdUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111'; //test
+      //return 'ca-app-pub-3940256099942544/6300978111'; //test
       return "ca-app-pub-5540129750283532/9763657807";//real
     } else if (Platform.isIOS) {
       return "ca-app-pub-5540129750283532/4970568843";
@@ -240,7 +240,7 @@ class AdManager {
 
   static String get interstitialAdUnitId {
     if (Platform.isAndroid) {
-      return "ca-app-pub-3940256099942544/1033173712"; //test
+      //return "ca-app-pub-3940256099942544/1033173712"; //test
       return "ca-app-pub-5540129750283532/2008742121"; //real
     } else if (Platform.isIOS) {
       return "ca-app-pub-5540129750283532/4127478852";

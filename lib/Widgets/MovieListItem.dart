@@ -21,14 +21,20 @@ class MovieListItem extends StatefulWidget {
   final Movie movie;
   final MoviesList moviesList;
   final bool shouldRequestReview;
+  final bool showShortDescription;
 
   const MovieListItem(
-      {Key key, this.movie, this.moviesList, this.shouldRequestReview = false})
+      {Key key,
+      this.movie,
+      this.moviesList,
+      this.shouldRequestReview = false,
+      this.showShortDescription = false})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemState(movie, moviesList, shouldRequestReview);
+    return MovieListItemState(
+        movie, moviesList, shouldRequestReview, showShortDescription);
   }
 }
 
@@ -39,14 +45,16 @@ class MovieListItemState extends State<MovieListItem> {
   bool imageChecked = false;
   MoviesList moviesList;
   bool shouldRequestReview;
+  bool showShortDescription;
 
   Movie movie;
 
-  MovieListItemState(
-      Movie movie, MoviesList moviesList, bool shouldRequestReview) {
+  MovieListItemState(Movie movie, MoviesList moviesList,
+      bool shouldRequestReview, bool showShortDescription) {
     this.movie = movie;
     this.moviesList = moviesList;
     this.shouldRequestReview = shouldRequestReview;
+    this.showShortDescription = showShortDescription;
   }
 
   checkImage(String imageUrl) async {
@@ -66,6 +74,8 @@ class MovieListItemState extends State<MovieListItem> {
     final moviesState = Provider.of<MoviesState>(context);
     final borderRadius = 25.0;
     final formatter = new NumberFormat("#,###");
+    final imageWidth = showShortDescription ? 63.0 : 60.0;
+    final imageHeight = showShortDescription ? 95.0 : 90.0;
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
@@ -118,129 +128,178 @@ class MovieListItemState extends State<MovieListItem> {
                     marginLR: 11,
                     marginTop: 15,
                     padding: 0,
-                    child: Row(
-                      children: <Widget>[
-                        ClipRRect(
-                          borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(borderRadius),
-                              bottomLeft: Radius.circular(borderRadius)),
-                          child: imageBaseUrl != ""
-                              ? CachedNetworkImage(
-                                  imageUrl: imageBaseUrl + imageUrl,
-                                  height: 90,
-                                  fit: BoxFit.fill,
-                                  width: 60,
-                                )
-                              : SizedBox(
-                                  height: 90,
-                                  width: 60,
-                                ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 90,
-                            padding: EdgeInsets.only(left: 5),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(movie.title,
-                                    style:
-                                        Theme.of(context).textTheme.headline3),
-                                Row(
-                                  children: <Widget>[
-                                    Text(
-                                        DateFormat('yyyy')
-                                            .format(movie.releaseDate),
+                    child: Column(children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Container(
+                            height: imageHeight,
+                            child: SizedBox(
+                                child: ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(borderRadius),
+                                  bottomLeft: Radius.circular(
+                                      showShortDescription ? 0 : borderRadius),
+                                  bottomRight: Radius.circular(
+                                      showShortDescription ? borderRadius : 0)),
+                              child: imageBaseUrl != ""
+                                  ? CachedNetworkImage(
+                                      imageUrl: imageBaseUrl + imageUrl,
+                                      height: imageHeight,
+                                      fit: BoxFit.fill,
+                                      width: imageWidth,
+                                    )
+                                  : SizedBox(
+                                      height: imageHeight,
+                                      width: imageWidth,
+                                    ),
+                            )),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: imageHeight,
+                              padding: EdgeInsets.only(left: 7),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(movie.title,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headline3),
+                                  Row(
+                                    children: <Widget>[
+                                      Text(
+                                          DateFormat('yyyy')
+                                              .format(movie.releaseDate),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5),
+                                      SizedBox(
+                                        width: 30,
+                                      ),
+                                      if (movie.duration > 0 ||
+                                          movie.averageTimeOfEpisode > 0)
+                                        Text(
+                                            (movie.movieType == MovieType.movie
+                                                    ? movie.duration.toString()
+                                                    : movie.averageTimeOfEpisode
+                                                        .toString()) +
+                                                ' min',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headline5),
+                                      SizedBox(
+                                        width: 30,
+                                      ),
+                                      if (movie.seasonsCount > 0)
+                                        Text("Seasons: ${movie.seasonsCount}",
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headline5),
+                                    ],
+                                  ),
+                                  if (movie.genres.isNotEmpty)
+                                    Text(movie.genres.join(', '),
                                         style: Theme.of(context)
                                             .textTheme
                                             .headline5),
-                                    SizedBox(
-                                      width: 30,
-                                    ),
-                                    if (movie.duration > 0 ||
-                                        movie.averageTimeOfEpisode > 0)
-                                      Text(
-                                          (movie.movieType == MovieType.movie
-                                                  ? movie.duration.toString()
-                                                  : movie.averageTimeOfEpisode
-                                                      .toString()) +
-                                              ' min',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline5),
-                                    SizedBox(
-                                      width: 30,
-                                    ),
-                                    if (movie.seasonsCount > 0)
-                                      Text("Seasons: ${movie.seasonsCount}",
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline5),
-                                  ],
-                                ),
-                                if (movie.genres.isNotEmpty)
-                                  Text(movie.genres.join(', '),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headline5),
-                                if (movie.genres.isEmpty)
-                                  Text(
-                                      movie.imdbVotes > 0
-                                          ? 'Imdb: ${movie.imdbRate} (${formatter.format(movie.imdbVotes)})'
-                                          : 'Imdb: Not rated',
-                                      style:
-                                          Theme.of(context).textTheme.headline5)
-                              ],
+                                  if (movie.genres.isEmpty)
+                                    Text(
+                                        movie.imdbVotes > 0
+                                            ? 'Imdb: ${movie.imdbRate} (${formatter.format(movie.imdbVotes)})'
+                                            : 'Imdb: Not rated',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        Column(children: [
                           Container(
-                            width: 40,
-                            margin: EdgeInsets.only(right: 10),
-                            decoration: BoxDecoration(
-                              boxShadow: MBoxShadow.circleShadow,
-                              color:
-                              Theme.of(context).cardColor.withOpacity(0.95),
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                icon,
-                                color: movie.movieRate == MovieRate.liked
-                                    ? Colors.green
-                                    : movie.movieRate == MovieRate.notLiked
-                                    ? Colors.red
-                                    : Theme.of(context).accentColor,
-                              ),
-                              onPressed: () async {
-                                showModalBottomSheet<void>(
-                                    backgroundColor: Colors.transparent,
-                                    context: context,
-                                    builder: (BuildContext context) =>
-                                        MovieRateButtons(
-                                          moviesList: moviesList,
-                                          movie: movie,
-                                          showTitle: true,
-                                          addMargin: false,
-                                        ));
-                              },
-                            ),
-                          )
-                        ],)
-                      ],
-                    )),
+                              height: imageHeight,
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    margin: EdgeInsets.only(right: 7),
+                                    decoration: BoxDecoration(
+                                      boxShadow: MBoxShadow.circleShadow,
+                                      color: Theme.of(context)
+                                          .cardColor
+                                          .withOpacity(0.95),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      icon: Icon(
+                                        icon,
+                                        color: movie.movieRate ==
+                                                MovieRate.liked
+                                            ? Colors.green
+                                            : movie.movieRate ==
+                                                    MovieRate.notLiked
+                                                ? Colors.red
+                                                : Theme.of(context).accentColor,
+                                      ),
+                                      onPressed: () async {
+                                        showModalBottomSheet<void>(
+                                            backgroundColor: Colors.transparent,
+                                            context: context,
+                                            builder: (BuildContext context) =>
+                                                MovieRateButtons(
+                                                  moviesList: moviesList,
+                                                  movie: movie,
+                                                  showTitle: true,
+                                                  addMargin: false,
+                                                ));
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ))
+                        ],
+                      ),
+                      if (showShortDescription)
+                        Container(
+                          padding: EdgeInsets.only(left: 7, bottom: 5, top: 1),
+                            height: imageHeight - 15,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    movie.overview,
+                                    style:
+                                        Theme.of(context).textTheme.headline5,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 4,
+                                  )
+                                ),
+                                SizedBox(
+                                  height: 30,
+                                  child: IconButton(
+                                    iconSize: 20,
+                                    icon: new Icon(Icons.arrow_forward_ios),
+                                    onPressed: () => showFullMovie(context),
+                                    color: Theme.of(context).accentColor,
+                                  ),
+                                )
+                              ],
+                            ))
+                    ])),
               ))),
     );
   }
 
-  showFullMovie(BuildContext context) { Navigator.of(context).push(MaterialPageRoute(
-      builder: (ctx) => MovieListItemExpanded(
-        movie: movie,
-        imageUrl: imageBaseUrl,
-        moviesList: moviesList,
-        shouldRequestReview: shouldRequestReview,
-      )));
+  showFullMovie(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (ctx) => MovieListItemExpanded(
+              movie: movie,
+              imageUrl: imageBaseUrl,
+              moviesList: moviesList,
+              shouldRequestReview: shouldRequestReview,
+            )));
   }
 }
