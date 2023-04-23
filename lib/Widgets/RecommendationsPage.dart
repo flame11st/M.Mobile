@@ -138,7 +138,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       children: <Widget>[
         Expanded(
             child: Text(
-          "Personalized Recommendations",
+          "Recommendations",
           style: Theme.of(context).textTheme.headline2,
         )),
         if (userState.user != null)
