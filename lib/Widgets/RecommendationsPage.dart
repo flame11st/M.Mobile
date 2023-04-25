@@ -190,7 +190,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                               text: TextSpan(
                                 style: TextStyle(
                                     color: Theme.of(context).accentColor,
-                                    fontSize: 18,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold),
                                 children: <TextSpan>[
                                   new TextSpan(
@@ -207,7 +207,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                       text:
                                           "\n\nDiscover new movies personalized just for you."
                                           "\nBy analyzing your movie preferences and utilizing state-of-the-art machine learning algorithms, we can provide you with highly personalized movie recommendations that will blow your mind. "
-                                          "\n\nGet ready to explore a world of cinematic wonders with just one click, as our cutting-edge algorithms work behind the scenes to bring you personalized movie recommendations that are sure to captivate your senses.",
+                                          "\n\nGet ready to explore a world of cinematic wonders with just one click",
                                       style:
                                           Theme.of(context).textTheme.headline5)
                                 ],

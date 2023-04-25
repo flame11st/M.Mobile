@@ -131,7 +131,6 @@ class MyMoviesState extends State<MyMovies> {
       }
 
       final userInfoResponse = await serviceAgent.getUserInfo(userState.userId);
-      print(userInfoResponse.body);
       final user = User.fromJson(json.decode(userInfoResponse.body));
 
       userState.setUser(user);

@@ -264,8 +264,8 @@ class MovieListItemState extends State<MovieListItem> {
                       ),
                       if (showShortDescription)
                         Container(
-                          padding: EdgeInsets.only(left: 7, bottom: 5, top: 1),
-                            height: imageHeight - 15,
+                          padding: EdgeInsets.all(10),
+                            height: movie.overview.length > 200 ? 115 : 95,
                             child: Row(
                               children: [
                                 Expanded(
@@ -274,20 +274,38 @@ class MovieListItemState extends State<MovieListItem> {
                                     style:
                                         Theme.of(context).textTheme.headline5,
                                     overflow: TextOverflow.ellipsis,
-                                    maxLines: 4,
+                                    maxLines: movie.overview.length > 200 ? 5 : 4,
                                   )
                                 ),
-                                SizedBox(
-                                  height: 30,
-                                  child: IconButton(
-                                    iconSize: 20,
-                                    icon: new Icon(Icons.arrow_forward_ios),
-                                    onPressed: () => showFullMovie(context),
-                                    color: Theme.of(context).accentColor,
-                                  ),
-                                )
                               ],
-                            ))
+                            )),
+                      if (showShortDescription)
+                        Container(
+                          padding: EdgeInsets.fromLTRB(10,0,10,0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Imdb: ${movie.imdbVotes > 0 ? '${movie.imdbRate} (${formatter.format(movie.imdbVotes)})' : 'Not rated'}",
+                                style: Theme.of(context).textTheme.headline4,
+                              ),
+                              Text(
+                                "MovieDIary: ${movie.rating > 0 ? '${movie.rating}% (${formatter.format(movie.allVotes)})' : 'Not rated'}",
+                                style: Theme.of(context).textTheme.headline4,
+                              )
+                            ],
+                          ),
+                        ),
+                      if (showShortDescription)
+                      SizedBox(
+                        height: 30,
+                        child: IconButton(
+                          iconSize: 20,
+                          icon: new Icon(Icons.keyboard_arrow_down),
+                          onPressed: () => showFullMovie(context),
+                          color: Theme.of(context).accentColor,
+                        ),
+                      )
                     ])),
               ))),
     );

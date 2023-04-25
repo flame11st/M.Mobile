@@ -34,6 +34,7 @@ class RecommendationsHistoryPageState
   UserState userState;
   MoviesState movieState;
   List<Movie> history = <Movie>[];
+  bool requested = false;
   bool isLoading = false;
 
   getHistory() async {
@@ -61,12 +62,11 @@ class RecommendationsHistoryPageState
 
           history = movies;
         });
-
-        print("movies count " + history.length.toString());
       }
     }
 
     setState(() {
+      requested = true;
       isLoading = false;
     });
   }
@@ -82,7 +82,7 @@ class RecommendationsHistoryPageState
       serviceAgent.state = userState;
     }
 
-    if (userState.user != null && history.isEmpty) {
+    if (userState.user != null && history.isEmpty && !requested) {
       getHistory();
     }
 
@@ -117,8 +117,16 @@ class RecommendationsHistoryPageState
           movies: history,
         ));
 
-    final loaderWidget = Container(
-        child: Center(child: CircularProgressIndicator()));
+    final emptyHistoryWidget = Container(
+      padding: EdgeInsets.all(20),
+      child: Text(
+        "Recommendations History is empty",
+        style: Theme.of(context).textTheme.headline2,
+      ),
+    );
+
+    final loaderWidget =
+        Container(child: Center(child: CircularProgressIndicator()));
 
     MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
 
@@ -135,6 +143,10 @@ class RecommendationsHistoryPageState
         body: Scaffold(
             backgroundColor: Theme.of(context).primaryColor,
             appBar: AppBar(title: headingField),
-            body: isLoading ? loaderWidget : moviesListWidget));
+            body: isLoading
+                ? loaderWidget
+                : history.isEmpty
+                    ? emptyHistoryWidget
+                    : moviesListWidget));
   }
 }
