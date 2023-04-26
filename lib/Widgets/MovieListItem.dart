@@ -264,8 +264,8 @@ class MovieListItemState extends State<MovieListItem> {
                       ),
                       if (showShortDescription)
                         Container(
-                          padding: EdgeInsets.all(10),
-                            height: movie.overview.length > 200 ? 115 : 95,
+                          padding: EdgeInsets.fromLTRB(10, 5, 10, 0),
+                            height: movie.overview.length > 200 ? 105 : 85,
                             child: Row(
                               children: [
                                 Expanded(
