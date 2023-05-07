@@ -14,8 +14,10 @@ class AdManager {
   static BannerAd _premiumBannerAd;
   static BannerAd _recommendationsBannerAd;
   static BannerAd _recommendationsHistoryBannerAd;
+  static BannerAd _searchBannerAd;
   static InterstitialAd _recommendationsInterstitialAd;
   static bool bannersReady = false;
+  static bool recommendationsInterstitialAdLoaded = false;
 
   static Future<void> hideBanner() async {
     try {
@@ -32,8 +34,11 @@ class AdManager {
     _recommendationsBannerAd = null;
     _recommendationsHistoryBannerAd = null;
     _recommendationsInterstitialAd = null;
+    _searchBannerAd = null;
+
     bannerVisible = false;
     bannersReady = false;
+    recommendationsInterstitialAdLoaded = false;
   }
 
   static Future<void> disposeInterstitialAd() async {
@@ -47,6 +52,7 @@ class AdManager {
       if (Platform.isIOS) await AppTrackingTransparency.requestTrackingAuthorization();
 
       await bannerAd.load();
+      await loadInterstitialAd();
       await settingsBannerAd.load();
       await itemExpandedBannerAd.load();
       await listsBannerAd.load();
@@ -54,7 +60,7 @@ class AdManager {
       await premiumBannerAd.load();
       await recommendationsBannerAd.load();
       await recommendationsHistoryBannerAd.load();
-      await loadInterstitialAd();
+      await searchBannerAd.load();
 
       bannersReady = true;
     }
@@ -161,7 +167,6 @@ class AdManager {
 
     return _recommendationsBannerAd;
   }
-
   static BannerAd get recommendationsHistoryBannerAd {
     if (_recommendationsHistoryBannerAd == null ) {
       _recommendationsHistoryBannerAd = BannerAd(
@@ -175,8 +180,23 @@ class AdManager {
     return _recommendationsHistoryBannerAd;
   }
 
+  static BannerAd get searchBannerAd {
+    if (_searchBannerAd == null ) {
+      _searchBannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _searchBannerAd;
+  }
+
   static void showInterstitialAd() {
-    _recommendationsInterstitialAd.show();
+    if (recommendationsInterstitialAdLoaded) {
+      _recommendationsInterstitialAd.show();
+    }
   }
 
   static Future<void> loadInterstitialAd() async {
@@ -205,8 +225,7 @@ class AdManager {
                 // Called when a click is recorded for an ad.
                 // onAdClicked: (ad) {}
             );
-
-            debugPrint('$ad loaded.');
+            recommendationsInterstitialAdLoaded = true;
             // Keep a reference to the ad so you can show it later.
             _recommendationsInterstitialAd = ad;
           },

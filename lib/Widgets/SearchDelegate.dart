@@ -7,6 +7,7 @@ import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
 import '../Helpers/RatingHelper.dart';
+import '../Helpers/ad_manager.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
 
@@ -45,27 +46,38 @@ class MSearchDelegate extends SearchDelegate {
         MyGlobals.activeKey = globalKey;
       }
 
-      return Container(
-          key: globalKey,
-          color: Theme.of(context).primaryColor,
-          child: ListView(
-            children: <Widget>[
-              SizedBox(
-                  height: 5,
-                  child: isLoading ? LinearProgressIndicator() : Text('')),
-              if (foundMovies.isEmpty && !notFound)
-                MCard(
-                    marginTop: 15,
-                    marginLR: 10,
-                    child: Container(
-                      child: Text(
-                        "You can search in English and German languages.",
-                        style: Theme.of(context).textTheme.headline5,
-                      ),
-                    )),
-              for (final movie in foundMovies) MovieListItem(movie: movie),
-            ],
-          ));
+      return Scaffold(
+          appBar: AdManager.bannerVisible && AdManager.bannersReady
+              ? AppBar(
+                  title: Center(
+                    child:
+                        AdManager.getBannerWidget(AdManager.searchBannerAd),
+                  ),
+                  automaticallyImplyLeading: false,
+                  elevation: 0.7,
+                )
+              : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+          body: Container(
+              key: globalKey,
+              color: Theme.of(context).primaryColor,
+              child: ListView(
+                children: <Widget>[
+                  SizedBox(
+                      height: 5,
+                      child: isLoading ? LinearProgressIndicator() : Text('')),
+                  if (foundMovies.isEmpty && !notFound)
+                    MCard(
+                        marginTop: 15,
+                        marginLR: 10,
+                        child: Container(
+                          child: Text(
+                            "You can search in English and German languages.",
+                            style: Theme.of(context).textTheme.headline5,
+                          ),
+                        )),
+                  for (final movie in foundMovies) MovieListItem(movie: movie),
+                ],
+              )));
     });
   }
 

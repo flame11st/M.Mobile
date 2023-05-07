@@ -25,8 +25,6 @@ class MovieListState extends State<MovieList>
     with SingleTickerProviderStateMixin {
   TabController tabController;
 
-  // InterstitialAd _interstitialAd;
-
   @override
   void initState() {
     super.initState();
