@@ -15,6 +15,7 @@ class AdManager {
   static BannerAd _recommendationsBannerAd;
   static BannerAd _recommendationsHistoryBannerAd;
   static BannerAd _searchBannerAd;
+  static BannerAd _searchBanner2Ad;
   static InterstitialAd _recommendationsInterstitialAd;
   static bool bannersReady = false;
   static bool recommendationsInterstitialAdLoaded = false;
@@ -35,6 +36,7 @@ class AdManager {
     _recommendationsHistoryBannerAd = null;
     _recommendationsInterstitialAd = null;
     _searchBannerAd = null;
+    _searchBanner2Ad = null;
 
     bannerVisible = false;
     bannersReady = false;
@@ -61,6 +63,7 @@ class AdManager {
       await recommendationsBannerAd.load();
       await recommendationsHistoryBannerAd.load();
       await searchBannerAd.load();
+      await searchBanner2Ad.load();
 
       bannersReady = true;
     }
@@ -191,6 +194,19 @@ class AdManager {
     }
 
     return _searchBannerAd;
+  }
+
+  static BannerAd get searchBanner2Ad {
+    if (_searchBanner2Ad == null ) {
+      _searchBanner2Ad = BannerAd(
+        size: AdSize.banner,
+        adUnitId: bannerAdUnitId,
+        listener: AdManagerBannerAdListener(),
+        request: AdRequest(),
+      );
+    }
+
+    return _searchBanner2Ad;
   }
 
   static void showInterstitialAd() {

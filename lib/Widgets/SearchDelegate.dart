@@ -26,7 +26,7 @@ class MSearchDelegate extends SearchDelegate {
   bool isAdvanced = false;
   GlobalKey globalKey;
 
-  getResultsWidget(String query) {
+  getResultsWidget(String query, bool isResultSearch) {
     return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
       if (query == '') {
@@ -51,7 +51,7 @@ class MSearchDelegate extends SearchDelegate {
               ? AppBar(
                   title: Center(
                     child:
-                        AdManager.getBannerWidget(AdManager.searchBannerAd),
+                        AdManager.getBannerWidget(isResultSearch ? AdManager.searchBanner2Ad : AdManager.searchBannerAd),
                   ),
                   automaticallyImplyLeading: false,
                   elevation: 0.7,
@@ -161,7 +161,7 @@ class MSearchDelegate extends SearchDelegate {
   Widget buildResults(BuildContext context) {
     RatingHelper.refreshMoviesRating(foundMovies, context);
 
-    final resultsWidget = getResultsWidget(query);
+    final resultsWidget = getResultsWidget(query, true);
 
     return resultsWidget;
   }
@@ -170,7 +170,7 @@ class MSearchDelegate extends SearchDelegate {
   Widget buildSuggestions(BuildContext context) {
     RatingHelper.refreshMoviesRating(foundMovies, context);
 
-    final resultsWidget = getResultsWidget(query);
+    final resultsWidget = getResultsWidget(query, false);
 
     return resultsWidget;
   }
