@@ -13,6 +13,9 @@ description: M.Mobile application.
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 version: 1.5.6+74
 
+environment:
+  sdk: '^3.0.0'
+  
 dependencies:
   flutter:
     sdk: flutter
