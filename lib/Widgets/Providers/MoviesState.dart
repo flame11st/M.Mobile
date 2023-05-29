@@ -45,11 +45,6 @@ class MoviesState with ChangeNotifier {
   var selectedRates = {MovieRate.liked, MovieRate.notLiked};
   var selectedTypes = {MovieType.movie, MovieType.tv};
 
-  int viewedLimit = 35;
-  int page = 1;
-  bool showMoreButton = false;
-  Movie currentLatestMovie;
-
   bool isMoviesRequested = false;
   bool isMoviesListsRequested = false;
   bool isCachedMoviesLoaded = false;
@@ -257,6 +252,8 @@ class MoviesState with ChangeNotifier {
         this.personalMoviesLists.where((element) => element.name != listName).toList();
 
     storage.write(key: 'personalMoviesLists', value: jsonEncode(this.personalMoviesLists));
+
+    notifyListeners();
   }
 
   addMovieToPersonalList(String listName, Movie movie) {
@@ -480,17 +477,7 @@ class MoviesState with ChangeNotifier {
       filteredMovies = allViewedMovies;
     }
 
-    var showedMoviesCount = viewedLimit * page;
-
-    if (filteredMovies.length > showedMoviesCount) {
-      showMoreButton = true;
-      currentLatestMovie = filteredMovies[showedMoviesCount - 1];
-    } else {
-      showMoreButton = false;
-      currentLatestMovie = null;
-    }
-
-    return filteredMovies.take(showedMoviesCount).toList();
+    return filteredMovies.toList();
   }
 
   void refreshDates() {
@@ -609,10 +596,6 @@ class MoviesState with ChangeNotifier {
       userMovies.remove(movieToAdd);
       userMovies.insert(0, movieToAdd);
       movieToAdd.updated = DateTime.now().toUtc();
-
-      if (movieToAdd == currentLatestMovie) {
-        currentLatestMovie = viewedMovies.last;
-      }
     }
 
     movieToAdd.movieRate = movieRate;
@@ -696,16 +679,6 @@ class MoviesState with ChangeNotifier {
     await clearStorage();
   }
 
-  showMoreMovies(BuildContext context, bool isPremium) {
-    if (isPremium) {
-      page += 1;
-      refreshMovies();
-    } else {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (ctx) => Premium()));
-    }
-  }
-
   //Animated List area
   GlobalKey<AnimatedListState> watchlistKey = GlobalKey<AnimatedListState>();
   GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
@@ -716,31 +689,6 @@ class MoviesState with ChangeNotifier {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,
-        child: Column(
-          children: [
-            MovieListItem(movie: movie, shouldRequestReview: true,),
-            // MovieListItem(movie: movie, imageUrl: imageBaseUrl,),
-            if (currentLatestMovie == movie)
-              SizedBox(
-                height: 15,
-              ),
-            if (currentLatestMovie == movie)
-              MButton(
-                prependIcon:
-                    isPremium ? Icons.expand_more : Icons.monetization_on,
-                prependIconColor:
-                    isPremium ? Theme.of(context).hintColor : Colors.green,
-                width: 250,
-                height: 40,
-                active: true,
-                text: 'Show more ${isPremium ? '' : ' (Premium only)'}',
-                onPressedCallback: () => showMoreMovies(context, isPremium),
-              ),
-            if (currentLatestMovie == movie)
-              SizedBox(
-                height: 5,
-              ),
-          ],
-        ));
+        child: MovieListItem(movie: movie, shouldRequestReview: true,));
   }
 }

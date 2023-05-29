@@ -9,9 +9,9 @@ class ServiceAgent {
   String baseUrl = "";
   final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/Function1";
 
-  //var baseUrlLocal = "http://192.168.1.50/";
+  var baseUrlLocal = "http://192.168.1.50/";
   //var baseUrlLocal = "https://localhost:5001/";
-  var baseUrlLocal = "http://51.81.79.14/";
+  //var baseUrlLocal = "http://51.81.79.14/";
 
   ServiceAgent() {
     setBaseUrl();
@@ -28,8 +28,8 @@ class ServiceAgent {
 
     var uri = responseAWS.body;
 
-    return uri + "/api/";
-    //return baseUrlLocal + "api/";
+    //return uri + "/api/";
+    return baseUrlLocal + "api/";
   }
 
   checkAuthorization() {

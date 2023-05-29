@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:mmobile/Widgets/Shared/MButton.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
-import 'Premium.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'Shared/FilterButton.dart';
@@ -57,12 +56,10 @@ class MoviesFilter extends StatelessWidget {
 
     return Container(
         height: isWatchlist ? 280 : 450,
+        margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(15.0),
-            topRight: Radius.circular(15.0),
-          ),
+          borderRadius: BorderRadius.all(Radius.circular(40)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -81,11 +78,14 @@ class MoviesFilter extends StatelessWidget {
                     marginTop: 0,
                     padding: 0,
                     child: Container(
-                        width: 330,
+                        width: 340,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          color: moviesState.selectedGenre != null
+                              ? Theme.of(context).accentColor
+                              : Theme.of(context).cardColor,
+                        ),
                         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                        color: moviesState.selectedGenre == null
-                            ? Theme.of(context).cardColor
-                            : Theme.of(context).accentColor,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -171,37 +171,17 @@ class MoviesFilter extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   FilterIcon(
-                    iconColor: userState.isPremium ? null : Colors.green,
-                    icon: userState.isPremium
-                        ? Icons.calendar_today
-                        : Icons.monetization_on,
                     text:
                         "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom != null ? moviesState.dateFrom : DateTime.now())}",
                     isActive: moviesState.isDateFromSelected(),
-                    onPressedCallback: () {
-                      if (userState.isPremium)
-                        selectDateFrom(context, moviesState);
-                      else
-                        Navigator.of(context).push(
-                            MaterialPageRoute(builder: (ctx) => Premium()));
-                    },
+                    onPressedCallback: () => selectDateFrom(context, moviesState),
                     textSize: 16,
                   ),
                   FilterIcon(
-                    iconColor: userState.isPremium ? null : Colors.green,
-                    icon: userState.isPremium
-                        ? Icons.calendar_today
-                        : Icons.monetization_on,
                     text:
                         "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo != null ? moviesState.dateTo : DateTime.now())}",
                     isActive: moviesState.isDateToSelected(),
-                    onPressedCallback: () {
-                      if (userState.isPremium)
-                        selectDateTo(context, moviesState);
-                      else
-                        Navigator.of(context).push(
-                            MaterialPageRoute(builder: (ctx) => Premium()));
-                    },
+                    onPressedCallback: () => selectDateTo(context, moviesState),
                     textSize: 16,
                   ),
                 ],

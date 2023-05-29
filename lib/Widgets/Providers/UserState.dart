@@ -29,7 +29,7 @@ class UserState with ChangeNotifier {
   bool premiumPurchasedIncognito = false;
   bool appReviewRequested = false;
   bool shouldRequestReview = false;
-  int aiRequestsCount = 0;
+  int aiRequestsCount = 2;
 
   void setInitialData() async {
     var storedToken;
@@ -184,6 +184,7 @@ class UserState with ChangeNotifier {
     await storage.delete(key: 'isSignedInWithGoogle');
     await storage.delete(key: 'user');
     await storage.delete(key: 'isIncognitoMode');
+    await storage.delete(key: 'aiRequestsCount');
   }
 
   Future<void> setTokens(String accessToken, String refreshToken) async {

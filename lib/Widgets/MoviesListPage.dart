@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -9,8 +8,11 @@ import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
 import 'package:provider/provider.dart';
+import '../Helpers/RouteHelper.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
+import 'RecommendationsPage.dart';
+import 'SearchDelegate.dart';
 import 'Shared/MButton.dart';
 import 'Shared/MDialog.dart';
 import 'Shared/MMoviesAnimatedList.dart';
@@ -37,7 +39,8 @@ class MovieListPageState extends State<MoviesListPage> {
 
   final serviceAgent = new ServiceAgent();
 
-  Widget buildItem(Movie movie, Animation animation, {bool isPremium = false, BuildContext context}) {
+  Widget buildItem(Movie movie, Animation animation,
+      {bool isPremium = false, BuildContext context}) {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,
@@ -173,12 +176,45 @@ class MovieListPageState extends State<MoviesListPage> {
             movies: moviesList.listMovies,
           )
         : Padding(
-            padding: EdgeInsets.all(10),
-            child: Text(
-              "You haven't added any items to this list.\n"
-              "Please use Search or Check General Movies Lists to find items which you want to add.",
-              style: TextStyle(fontSize: 17, height: 2),
-            ));
+            padding: EdgeInsets.all(20),
+            child: Column(children: [
+              Text(
+                "You haven't added any items to this list.\n"
+                "Please use Search or Check General Movies Lists to find items which you want to add.",
+                style: TextStyle(fontSize: 17, height: 2),
+              ),
+              SizedBox(
+                height: 40,
+              ),
+              MButton(
+                  active: true,
+                  text: 'Find Movie or TV Series',
+                  prependIcon: Icons.search,
+                  height: 40,
+                  width: MediaQuery.of(context).size.width - 50,
+                  onPressedCallback: () => showSearch(
+                        context: context,
+                        delegate: MSearchDelegate(),
+                      )),
+              SizedBox(
+                height: 30,
+              ),
+              MButton(
+                height: 40,
+                width: MediaQuery.of(context).size.width - 40,
+                backgroundColor: Theme.of(context).accentColor,
+                borderRadius: 20,
+                prependIcon: Icons.electric_bolt,
+                prependIconColor: Theme.of(context).cardColor,
+                text: "Get Recommendations",
+                onPressedCallback: () {
+                  Navigator.of(context).push(
+                      RouteHelper.createRoute(() => RecommendationsPage()));
+                },
+                active: true,
+                textColor: Theme.of(context).cardColor,
+              ),
+            ]));
 
     return widgetToReturn;
   }

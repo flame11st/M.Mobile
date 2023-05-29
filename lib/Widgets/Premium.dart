@@ -96,48 +96,6 @@ class Premium extends StatelessWidget {
       ],
     );
 
-    final allMoviesFeature = Column(
-      children: <Widget>[
-        Icon(
-          Octicons.tasklist,
-          color: Theme.of(context).accentColor,
-          size: 40,
-        ),
-        SizedBox(
-          height: 10,
-        ),
-        Text(
-          'See all viewed movies',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Theme.of(context).accentColor,
-              fontSize: 18,
-              fontWeight: FontWeight.bold),
-        )
-      ],
-    );
-
-    final filtersFeature = Column(
-      children: <Widget>[
-        Icon(
-          FontAwesome5.calendar_check,
-          color: Theme.of(context).accentColor,
-          size: 40,
-        ),
-        SizedBox(
-          height: 10,
-        ),
-        Text(
-          'Filter by viewed date',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Theme.of(context).accentColor,
-              fontSize: 18,
-              fontWeight: FontWeight.bold),
-        )
-      ],
-    );
-
     final supportFeature = Column(
       children: <Widget>[
         Icon(
@@ -220,14 +178,6 @@ class Premium extends StatelessWidget {
                       themeFeature,
                       SizedBox(
                         height: 20,
-                      ),
-                      allMoviesFeature,
-                      SizedBox(
-                        height: 20,
-                      ),
-                      filtersFeature,
-                      SizedBox(
-                        height: 30,
                       ),
                       supportFeature,
                     ],
