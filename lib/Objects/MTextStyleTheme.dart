@@ -8,7 +8,7 @@ class MTextStyleTheme {
 
   MTextStyleTheme(
       {this.title,
-      this.expandedTitle,
-      this.bodyText,
-      this.subtitleText});
+      required this.expandedTitle,
+      required this.bodyText,
+      required this.subtitleText});
 }

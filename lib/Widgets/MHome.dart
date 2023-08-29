@@ -21,7 +21,7 @@ class MHome extends StatefulWidget {
 }
 
 class MHomeState extends State<MHome> {
-  StreamSubscription<List<PurchaseDetails>> _subscription;
+  late StreamSubscription<dynamic> _subscription;
   final serviceAgent = ServiceAgent();
 
   _handlePurchaseUpdates(List<PurchaseDetails> purchases) {
@@ -38,12 +38,12 @@ class MHomeState extends State<MHome> {
 
       if (!userState.isIncognitoMode) {
         serviceAgent.state = userState;
-        serviceAgent.setUserPremiumPurchased(userState.userId, true);
+        serviceAgent.setUserPremiumPurchased(userState.userId!, true);
       }
 
       MSnackBar.showSnackBar("Premium features successfully unlocked", true);
-    } else if(purchase.status == PurchaseStatus.error && purchase.error.details != "") {
-      MSnackBar.showSnackBar(purchases.first.error.details , false);
+    } else if(purchase.status == PurchaseStatus.error && purchase.error!.details != "") {
+      MSnackBar.showSnackBar(purchases.first.error!.details , false);
     } else if (purchase.status == PurchaseStatus.pending) {
       MSnackBar.showSnackBar("Your request is being processed. It can take a while", true);
     } else if (purchase.status == PurchaseStatus.restored && purchase.productID == 'premium_purchase'){
@@ -51,7 +51,7 @@ class MHomeState extends State<MHome> {
 
       if (!userState.isIncognitoMode) {
         serviceAgent.state = userState;
-        serviceAgent.setUserPremiumPurchased(userState.userId, true);
+        serviceAgent.setUserPremiumPurchased(userState.userId!, true);
       }
 
       MSnackBar.showSnackBar("Premium features successfully restored", true);
@@ -74,7 +74,7 @@ class MHomeState extends State<MHome> {
 
   @override
   void dispose() {
-    _subscription.cancel();
+    _subscription!.cancel();
     super.dispose();
   }
 
@@ -124,14 +124,14 @@ class MHomeState extends State<MHome> {
             if (loaderState.isLoaderVisible) LoadingAnimation(),
           ],
         ),
-        routes: {
-          'moviesList': (context) => MoviesListPage(),
-        },
+        // routes: {
+        //   'moviesList': (context) => MoviesListPage(),
+        // },
         theme: ThemeData(
           // Define the default brightness and colors.
           brightness: theme.brightness,
           primaryColor: theme.colorTheme.primaryColor,
-          accentColor: theme.colorTheme.additionalColor,
+          indicatorColor: theme.colorTheme.additionalColor,
           hintColor: theme.colorTheme.fontsColor,
           cardColor: theme.colorTheme.secondaryColor,
           highlightColor: theme.colorTheme.fontsColor,

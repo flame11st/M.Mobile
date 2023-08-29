@@ -9,22 +9,21 @@ import 'MIconAddToListButton.dart';
 import 'MIconRateButton.dart';
 
 class MovieRateButtons extends StatelessWidget {
-  final bool showTitle;
-  final bool addMargin;
-  final bool fromSearch;
+  final bool? showTitle;
+  final bool? addMargin;
+  final bool? fromSearch;
   final Movie movie;
   final bool shouldRequestReview;
-  final MoviesList moviesList;
+  final MoviesList? moviesList;
 
   const MovieRateButtons(
-      {Key key,
+      {super.key,
       this.showTitle,
       this.addMargin,
       this.fromSearch = false,
-      this.movie,
+      required this.movie,
       this.shouldRequestReview = false,
-      this.moviesList})
-      : super(key: key);
+      this.moviesList});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +33,7 @@ class MovieRateButtons extends StatelessWidget {
         : "Change score of ";
 
     return Container(
-        height: showTitle != null && showTitle ? 200 : 60,
+        height: showTitle != null && showTitle! ? 200 : 60,
         margin: EdgeInsets.fromLTRB(10, 5, 10, 15),
         padding: EdgeInsets.fromLTRB(10, 0, 10, 5),
         decoration: BoxDecoration(
@@ -44,7 +43,7 @@ class MovieRateButtons extends StatelessWidget {
                 offset: Offset(0.0, 0.05),
                 blurRadius: 0.5),
           ],
-          color: showTitle != null && showTitle
+          color: showTitle != null && showTitle!
               ? Theme.of(context).primaryColor
               : Theme.of(context).cardColor,
           borderRadius: BorderRadius.all(Radius.circular(30)),
@@ -52,7 +51,7 @@ class MovieRateButtons extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            if (showTitle != null && showTitle)
+            if (showTitle != null && showTitle!)
               RichText(
                   textAlign: TextAlign.center,
                   text: TextSpan(
@@ -69,7 +68,7 @@ class MovieRateButtons extends StatelessWidget {
               children: <Widget>[
                 MIconRateButton(
                   shouldRequestReview: shouldRequestReview,
-                  hint: showTitle == null || !showTitle
+                  hint: showTitle == null || !showTitle!
                       ? ""
                       : "Like" +
                           (movie.movieRate == MovieRate.liked ? "d" : ""),
@@ -85,11 +84,11 @@ class MovieRateButtons extends StatelessWidget {
                       ? MovieRate.notRated
                       : MovieRate.liked,
                   width: width,
-                  fromSearch: fromSearch,
+                  fromSearch: fromSearch!,
                 ),
                 MIconRateButton(
                   shouldRequestReview: shouldRequestReview,
-                  hint: showTitle == null || !showTitle
+                  hint: showTitle == null || !showTitle!
                       ? ""
                       : "Dislike" +
                           (movie.movieRate == MovieRate.notLiked ? "d" : ""),
@@ -105,18 +104,18 @@ class MovieRateButtons extends StatelessWidget {
                       ? MovieRate.notRated
                       : MovieRate.notLiked,
                   width: width,
-                  fromSearch: fromSearch,
+                  fromSearch: fromSearch!,
                 ),
                 MIconRateButton(
                   shouldRequestReview: shouldRequestReview,
-                  hint: showTitle == null || !showTitle
+                  hint: showTitle == null || !showTitle!
                       ? ""
                       : (movie.movieRate == MovieRate.addedToWatchlist
                               ? "In"
                               : "To") +
                           " watchlist",
                   color: movie.movieRate == MovieRate.addedToWatchlist
-                      ? Theme.of(context).accentColor
+                      ? Theme.of(context).indicatorColor
                       : Theme.of(context).cardColor.withOpacity(0.95),
                   icon: Icon(Icons.bookmark_border,
                       color: movie.movieRate == MovieRate.addedToWatchlist
@@ -127,9 +126,9 @@ class MovieRateButtons extends StatelessWidget {
                       ? MovieRate.notRated
                       : MovieRate.addedToWatchlist,
                   width: width,
-                  fromSearch: fromSearch,
+                  fromSearch: fromSearch!,
                 ),
-                if (showTitle == null || !showTitle)
+                if (showTitle == null || !showTitle!)
                   Container(
                     width: 30,
                     child: PopupMenuButton(
@@ -140,16 +139,20 @@ class MovieRateButtons extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Other actions', style: Theme.of(context).textTheme.headline2,),
+                                Text(
+                                  'Other actions',
+                                  style: Theme.of(context).textTheme.headline2,
+                                ),
                                 Divider(
                                   height: 5,
                                   thickness: 2,
                                 ),
-                                SizedBox(height: 15,),
+                                SizedBox(
+                                  height: 15,
+                                ),
                                 MAddToListButton(
-                                  offset: MediaQuery.of(context).size.height - 140,
                                   movie: movie,
-                                  moviesList: moviesList,
+                                  moviesList: moviesList!,
                                   fromMenu: true,
                                 ),
                               ],
@@ -159,9 +162,8 @@ class MovieRateButtons extends StatelessWidget {
                   )
               ],
             ),
-            if (showTitle != null && showTitle)
+            if (showTitle != null && showTitle!)
               MAddToListButton(
-                offset: MediaQuery.of(context).size.height - 140,
                 movie: movie,
                 moviesList: moviesList,
               ),

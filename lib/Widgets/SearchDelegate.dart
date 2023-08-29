@@ -12,19 +12,18 @@ import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
 
 class MSearchDelegate extends SearchDelegate {
-  List<Movie> foundMovies = new List<Movie>();
+  List<Movie> foundMovies = [];
   final serviceAgent = new ServiceAgent();
-  UserState userState;
-  String oldQuery;
-  String currentQuery;
+  UserState? userState;
+  String? oldQuery;
+  String? currentQuery;
   bool isLoading = false;
 
-  StateSetter setStateSwitcherFunction;
-  int searchTimestamp;
+  int? searchTimestamp;
   bool notFound = false;
   bool showAdvancedCard = false;
   bool isAdvanced = false;
-  GlobalKey globalKey;
+  GlobalKey? globalKey;
 
   getResultsWidget(String query, bool isResultSearch) {
     return StatefulBuilder(
@@ -39,7 +38,7 @@ class MSearchDelegate extends SearchDelegate {
         searchMovies(context, setState);
       }
 
-      if (ModalRoute.of(context).isCurrent &&
+      if (ModalRoute.of(context)!.isCurrent &&
           (this.globalKey == null || this.globalKey != MyGlobals.activeKey)) {
         globalKey = new GlobalKey();
 
@@ -51,7 +50,7 @@ class MSearchDelegate extends SearchDelegate {
               ? AppBar(
                   title: Center(
                     child:
-                        AdManager.getBannerWidget(isResultSearch ? AdManager.searchBanner2Ad : AdManager.searchBannerAd),
+                        AdManager.getBannerWidget(isResultSearch ? AdManager.searchBanner2Ad! : AdManager.searchBannerAd!),
                   ),
                   automaticallyImplyLeading: false,
                   elevation: 0.7,
@@ -107,7 +106,7 @@ class MSearchDelegate extends SearchDelegate {
       moviesResponse = await serviceAgent.search(encoded);
     }
 
-    if (searchTimestamp != null && timestamp < searchTimestamp) return;
+    if (searchTimestamp != null && timestamp < searchTimestamp!) return;
 
     if (moviesResponse.statusCode == 200) {
       searchTimestamp = timestamp;
@@ -149,7 +148,7 @@ class MSearchDelegate extends SearchDelegate {
       icon: Icon(Icons.arrow_back),
       onPressed: () {
         if (userState != null) {
-          userState.shouldRequestReview = true;
+          userState!.shouldRequestReview = true;
         }
 
         close(context, null);

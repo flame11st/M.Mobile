@@ -19,17 +19,16 @@ import 'package:http/http.dart' as http;
 
 class MovieListItem extends StatefulWidget {
   final Movie movie;
-  final MoviesList moviesList;
+  final MoviesList? moviesList;
   final bool shouldRequestReview;
   final bool showShortDescription;
 
   const MovieListItem(
-      {Key key,
-      this.movie,
+      {super.key,
+      required this.movie,
       this.moviesList,
       this.shouldRequestReview = false,
-      this.showShortDescription = false})
-      : super(key: key);
+      this.showShortDescription = false});
 
   @override
   State<StatefulWidget> createState() {
@@ -43,13 +42,13 @@ class MovieListItemState extends State<MovieListItem> {
   String imageBaseUrl =
       "https://moviediarystorage.blob.core.windows.net/movies";
   bool imageChecked = false;
-  MoviesList moviesList;
-  bool shouldRequestReview;
-  bool showShortDescription;
+  MoviesList? moviesList;
+  late bool shouldRequestReview;
+  late bool showShortDescription;
 
-  Movie movie;
+  late Movie movie;
 
-  MovieListItemState(Movie movie, MoviesList moviesList,
+  MovieListItemState(Movie movie, MoviesList? moviesList,
       bool shouldRequestReview, bool showShortDescription) {
     this.movie = movie;
     this.moviesList = moviesList;
@@ -63,7 +62,7 @@ class MovieListItemState extends State<MovieListItem> {
     if (response.statusCode == 404) {
       final serviceAgent = new ServiceAgent();
 
-      await serviceAgent.reloadMoviePoster(movie.id);
+      await serviceAgent.reloadMoviePoster(movie!.id);
     }
 
     imageChecked = true;
@@ -79,7 +78,7 @@ class MovieListItemState extends State<MovieListItem> {
 
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
-    IconData icon;
+    late IconData icon;
 
     if (imageChecked == false) {
       checkImage(imageUrl);
@@ -242,7 +241,7 @@ class MovieListItemState extends State<MovieListItem> {
                                             : movie.movieRate ==
                                                     MovieRate.notLiked
                                                 ? Colors.red
-                                                : Theme.of(context).accentColor,
+                                                : Theme.of(context).indicatorColor,
                                       ),
                                       onPressed: () async {
                                         showModalBottomSheet<void>(
@@ -303,7 +302,7 @@ class MovieListItemState extends State<MovieListItem> {
                           iconSize: 20,
                           icon: new Icon(Icons.keyboard_arrow_down),
                           onPressed: () => showFullMovie(context),
-                          color: Theme.of(context).accentColor,
+                          color: Theme.of(context).indicatorColor,
                         ),
                       )
                     ])),

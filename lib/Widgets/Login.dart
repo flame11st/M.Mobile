@@ -76,14 +76,14 @@ class LoginState extends State<Login> {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
 
-    final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
+    final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
 
     final GoogleSignInAuthentication googleSignInAuthentication =
-        await googleSignInAccount.authentication;
+        await googleSignInAccount!.authentication;
 
     var response = Platform.isIOS
-        ? await serviceAgent.googleLoginIOS(googleSignInAuthentication.idToken)
-        : await serviceAgent.googleLogin(googleSignInAuthentication.idToken);
+        ? await serviceAgent.googleLoginIOS(googleSignInAuthentication.idToken!)
+        : await serviceAgent.googleLogin(googleSignInAuthentication.idToken!);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, true);
@@ -113,7 +113,7 @@ class LoginState extends State<Login> {
     var email = '';
 
     if (credential.givenName != null) {
-      name += credential.givenName;
+      name += credential.givenName!;
     }
 
     if (credential.familyName != null) {
@@ -121,13 +121,13 @@ class LoginState extends State<Login> {
     }
 
     if (credential.email != null) {
-      email = credential.email;
+      email = credential.email!;
     }
 
     loaderState.setIsLoaderVisible(true);
 
     var response =
-        await serviceAgent.appleLogin(credential.userIdentifier, email, name);
+        await serviceAgent.appleLogin(credential.userIdentifier!, email, name);
 
     if (response.statusCode == 200) {
       processLoginResponse(response.body, true);
@@ -141,7 +141,7 @@ class LoginState extends State<Login> {
 
   setSignInButtonActive() {
     var signInButtonActive = _formKey.currentState != null &&
-        _formKey.currentState.validate() &&
+        _formKey.currentState!.validate() &&
         emailController.text.length > 0 &&
         passwordController.text.length > 0;
 
@@ -207,13 +207,13 @@ class LoginState extends State<Login> {
 
     GlobalKey globalKey = new GlobalKey();
 
-    if (ModalRoute.of(context).isCurrent) {
+    if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
     }
 
     final emailField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme.of(context).accentColor),
+            .copyWith(primaryColor: Theme.of(context).indicatorColor),
         child: TextFormField(
           validator: (value) => emailController.text.isNotEmpty
               ? Validators.emailValidator(emailController.text)
@@ -227,7 +227,7 @@ class LoginState extends State<Login> {
 
     final passwordField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme.of(context).accentColor),
+            .copyWith(primaryColor: Theme.of(context).indicatorColor),
         child: TextFormField(
           validator: (value) => passwordController.text.isNotEmpty
               ? Validators.passwordValidator(passwordController.text)
@@ -306,7 +306,7 @@ class LoginState extends State<Login> {
                       style: GoogleFonts.parisienne(
                           textStyle: TextStyle(
                               fontSize: 45,
-                              color: Theme.of(context).accentColor)),
+                              color: Theme.of(context).indicatorColor)),
                     ),
                     MCard(
                       child: Container(

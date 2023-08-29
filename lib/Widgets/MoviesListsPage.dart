@@ -18,9 +18,9 @@ import 'Providers/MoviesState.dart';
 import 'Shared/MButton.dart';
 
 class MoviesListsPage extends StatefulWidget {
-  final initialPageIndex;
+  final int initialPageIndex;
 
-  MoviesListsPage({this.initialPageIndex});
+  MoviesListsPage({required this.initialPageIndex});
 
   @override
   State<StatefulWidget> createState() {
@@ -30,7 +30,7 @@ class MoviesListsPage extends StatefulWidget {
 
 class MoviesListsPageState extends State<MoviesListsPage>
     with SingleTickerProviderStateMixin {
-  TabController tabController;
+  late TabController tabController;
   final serviceAgent = new ServiceAgent();
   final nameController = TextEditingController();
   bool submitButtonActive = false;
@@ -80,10 +80,10 @@ class MoviesListsPageState extends State<MoviesListsPage>
                       Colors.black.withOpacity(
                           moviesList.listMovies.isNotEmpty ? 0.3 : 0.0),
                       BlendMode.dstATop),
-                  image: moviesList.listMovies.isNotEmpty
+                  image: (moviesList.listMovies.isNotEmpty
                       ? NetworkImage(
                           imageBaseUrl + moviesList.listMovies.first.posterPath)
-                      : AssetImage("Assets/emptyList.jpg"),
+                      : AssetImage("Assets/emptyList.jpg")) as ImageProvider,
                   fit: BoxFit.cover,
                 ),
               ),
@@ -137,7 +137,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
                     key: _formKey,
                     child: Theme(
                         data: Theme.of(context).copyWith(
-                            primaryColor: Theme.of(context).accentColor),
+                            primaryColor: Theme.of(context).indicatorColor),
                         child: TextFormField(
                           validator: (value) => nameController.text.isEmpty
                               ? "Please enter name"
@@ -159,14 +159,14 @@ class MoviesListsPageState extends State<MoviesListsPage>
                   parentContext: context,
                   onPressedCallback: () async {
                     if (_formKey.currentState != null &&
-                        _formKey.currentState.validate()) {
+                        _formKey.currentState!.validate()) {
                       moviesState.addMoviesList(nameController.text, order);
 
                       if (!userState.isIncognitoMode) {
                         serviceAgent.state = userState;
 
                         await serviceAgent.createUserMoviesList(
-                            userState.userId, nameController.text, order);
+                            userState.userId!, nameController.text, order);
                       }
 
                       nameController.clear();
@@ -215,8 +215,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
     final headingRow = AppBar(
       title: TabBar(
         controller: tabController,
-        indicatorColor: Theme.of(context).accentColor,
-        labelColor: Theme.of(context).accentColor,
+        indicatorColor: Theme.of(context).indicatorColor,
+        labelColor: Theme.of(context).indicatorColor,
         unselectedLabelColor: Theme.of(context).hintColor,
         tabs: [
           Tab(
@@ -261,7 +261,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
-                  child: AdManager.getBannerWidget(AdManager.listsBannerAd),
+                  child: AdManager.getBannerWidget(AdManager.listsBannerAd!),
                 ),
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
@@ -352,7 +352,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
                                       size: 35,
                                     ),
                                     backgroundColor:
-                                        Theme.of(context).accentColor,
+                                        Theme.of(context).indicatorColor,
                                     foregroundColor:
                                         Theme.of(context).primaryColor,
                                   ),

@@ -20,7 +20,7 @@ import 'Shared/MMoviesAnimatedList.dart';
 class MoviesListPage extends StatefulWidget {
   final MoviesList moviesList;
 
-  const MoviesListPage({Key key, this.moviesList}) : super(key: key);
+  const MoviesListPage({super.key, required this.moviesList});
 
   @override
   State<StatefulWidget> createState() {
@@ -29,7 +29,7 @@ class MoviesListPage extends StatefulWidget {
 }
 
 class MovieListPageState extends State<MoviesListPage> {
-  MoviesList moviesList;
+  late MoviesList moviesList;
   final nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -39,8 +39,8 @@ class MovieListPageState extends State<MoviesListPage> {
 
   final serviceAgent = new ServiceAgent();
 
-  Widget buildItem(Movie movie, Animation animation,
-      {bool isPremium = false, BuildContext context}) {
+  Widget buildItem(Movie movie, Animation<double> animation,
+      {bool isPremium = false, required BuildContext context}) {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,
@@ -96,7 +96,7 @@ class MovieListPageState extends State<MoviesListPage> {
                     key: _formKey,
                     child: Theme(
                         data: Theme.of(context).copyWith(
-                            primaryColor: Theme.of(context).accentColor),
+                            primaryColor: Theme.of(context).indicatorColor),
                         child: TextFormField(
                           validator: (value) => nameController.text.isEmpty
                               ? "Please enter name"
@@ -119,7 +119,7 @@ class MovieListPageState extends State<MoviesListPage> {
                   parentContext: context,
                   onPressedCallback: () async {
                     if (_formKey.currentState != null &&
-                        _formKey.currentState.validate()) {
+                        _formKey.currentState!.validate()) {
                       moviesState.renameMoviesList(
                           moviesList.name, nameController.text);
 
@@ -132,7 +132,7 @@ class MovieListPageState extends State<MoviesListPage> {
                         serviceAgent.state = userState;
 
                         await serviceAgent.renameUserMoviesList(
-                            userState.userId,
+                            userState.userId!,
                             moviesList.name,
                             nameController.text);
                       }
@@ -163,7 +163,7 @@ class MovieListPageState extends State<MoviesListPage> {
     Navigator.of(context).pop();
 
     if (!userState.isIncognitoMode) {
-      serviceAgent.removeUserMoviesList(userState.userId, moviesList.name);
+      serviceAgent.removeUserMoviesList(userState.userId!, moviesList.name);
     }
   }
 
@@ -202,7 +202,7 @@ class MovieListPageState extends State<MoviesListPage> {
               MButton(
                 height: 40,
                 width: MediaQuery.of(context).size.width - 40,
-                backgroundColor: Theme.of(context).accentColor,
+                backgroundColor: Theme.of(context).indicatorColor,
                 borderRadius: 20,
                 prependIcon: Icons.electric_bolt,
                 prependIconColor: Theme.of(context).cardColor,
@@ -229,7 +229,7 @@ class MovieListPageState extends State<MoviesListPage> {
 
     GlobalKey globalKey = new GlobalKey();
 
-    if (ModalRoute.of(context).isCurrent && moviesList.listMovies.isNotEmpty) {
+    if (ModalRoute.of(context)!.isCurrent && moviesList.listMovies.isNotEmpty) {
       MyGlobals.activeKey = globalKey;
     }
 
@@ -254,7 +254,7 @@ class MovieListPageState extends State<MoviesListPage> {
                         leading: Icon(
                           Icons.delete_forever,
                           size: 25,
-                          color: Theme.of(context).accentColor,
+                          color: Theme.of(context).indicatorColor,
                         ),
                         title: Text("Remove List"),
                       ))),
@@ -268,7 +268,7 @@ class MovieListPageState extends State<MoviesListPage> {
                         leading: Icon(
                           Icons.edit,
                           size: 25,
-                          color: Theme.of(context).accentColor,
+                          color: Theme.of(context).indicatorColor,
                         ),
                         title: Text("Change List Name"),
                       ))),
@@ -281,7 +281,7 @@ class MovieListPageState extends State<MoviesListPage> {
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
-                  child: AdManager.getBannerWidget(AdManager.listBannerAd),
+                  child: AdManager.getBannerWidget(AdManager.listBannerAd!),
                 ),
                 elevation: 0.7,
                 automaticallyImplyLeading: false)

@@ -23,14 +23,14 @@ class MovieList extends StatefulWidget {
 
 class MovieListState extends State<MovieList>
     with SingleTickerProviderStateMixin {
-  TabController tabController;
+  TabController? tabController;
 
   @override
   void initState() {
     super.initState();
     tabController = new TabController(vsync: this, length: 2);
 
-    tabController.addListener(changeCurrentTabIndex);
+    tabController!.addListener(changeCurrentTabIndex);
 
     // _initAdMob();
   }
@@ -38,13 +38,13 @@ class MovieListState extends State<MovieList>
   changeCurrentTabIndex() {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
 
-    moviesState.setCurrentTabIndex(tabController.index);
+    moviesState.setCurrentTabIndex(tabController!.index);
   }
 
   @override
   void dispose() {
     AdManager.hideBanner();
-    tabController.dispose();
+    tabController!.dispose();
 
     super.dispose();
   }
@@ -76,7 +76,7 @@ class MovieListState extends State<MovieList>
                           'Enjoying MovieDiary?',
                           style: TextStyle(
                               fontSize: 23,
-                              color: Theme.of(context).accentColor),
+                              color: Theme.of(context).indicatorColor),
                         ),
                         SizedBox(
                           height: 10,
@@ -129,16 +129,16 @@ class MovieListState extends State<MovieList>
 
   @override
   Widget build(BuildContext context) {
-    if (tabController.animation.value != 1 &&
-        tabController.animation.value != 0) {
-      final targetIndex = tabController.animation.value.round();
+    if (tabController!.animation!.value != 1 &&
+        tabController!.animation!.value != 0) {
+      final targetIndex = tabController!.animation!.value.round();
 
-      tabController.animateTo(targetIndex);
+      tabController!.animateTo(targetIndex);
     }
 
     GlobalKey globalKey = new GlobalKey();
 
-    if (ModalRoute.of(context).isCurrent) {
+    if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
     }
 
@@ -152,9 +152,9 @@ class MovieListState extends State<MovieList>
     }
 
     if (!userState.premiumPurchasedIncognito &&
-        (userState.user == null || !userState.user.premiumPurchased)) {
+        (userState.user == null || !userState.user!.premiumPurchased)) {
 
-      if (ModalRoute.of(context).isCurrent) AdManager.showBanner();
+      if (ModalRoute.of(context)!.isCurrent) AdManager.showBanner();
     } else if (AdManager.bannerVisible) {
       AdManager.bannerVisible = false;
 
@@ -170,8 +170,8 @@ class MovieListState extends State<MovieList>
         backgroundColor: Theme.of(context).primaryColor,
         title: TabBar(
           controller: tabController,
-          indicatorColor: Theme.of(context).accentColor,
-          labelColor: Theme.of(context).accentColor,
+          indicatorColor: Theme.of(context).indicatorColor,
+          labelColor: Theme.of(context).indicatorColor,
           unselectedLabelColor: Theme.of(context).hintColor,
           tabs: [
             Tab(

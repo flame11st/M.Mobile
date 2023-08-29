@@ -23,24 +23,24 @@ class MoviesState with ChangeNotifier {
   final serviceAgent = new ServiceAgent();
   final storage = new FlutterSecureStorage();
 
-  List<Movie> cachedUserMovies = new List<Movie>();
-  List<Movie> userMovies = new List<Movie>();
-  List<Movie> watchlistMovies = new List<Movie>();
-  List<Movie> viewedMovies = new List<Movie>();
-  List<MoviesList> externalMoviesLists = new List<MoviesList>();
-  List<MoviesList> personalMoviesLists = new List<MoviesList>();
-  List<DropdownMenuItem<String>> genres = new List<DropdownMenuItem<String>>();
+  List<Movie> cachedUserMovies = [];
+  List<Movie> userMovies = [];
+  List<Movie> watchlistMovies = [];
+  List<Movie> viewedMovies = [];
+  List<MoviesList> externalMoviesLists = [];
+  List<MoviesList> personalMoviesLists = [];
+  List<DropdownMenuItem<String>> genres = [];
   bool moviesOnly = false;
   bool tvOnly = false;
   bool likedOnly = false;
   bool notLikedOnly = false;
-  DateTime dateFrom;
-  DateTime dateTo;
-  String selectedGenre;
+  DateTime? dateFrom;
+  DateTime? dateTo;
+  String? selectedGenre;
   int currentTabIndex = 0;
 
-  DateTime dateMin;
-  DateTime dateMax;
+  DateTime? dateMin;
+  DateTime? dateMax;
 
   var selectedRates = {MovieRate.liked, MovieRate.notLiked};
   var selectedTypes = {MovieType.movie, MovieType.tv};
@@ -110,7 +110,7 @@ class MoviesState with ChangeNotifier {
   }
 
   void updateUserMovies(List<Movie> userMovies, bool shouldSetRate) {
-    var updatedUserMovies = new List<Movie>();
+    List<Movie> updatedUserMovies = [];
 
     for (var i = 0; i < userMovies.length; i++) {
       var movie = userMovies[i];
@@ -159,7 +159,7 @@ class MoviesState with ChangeNotifier {
 
   getMoviesListFromJson(String jsonString) {
     Iterable iterableMoviesLists = json.decode(jsonString);
-    List<MoviesList> moviesLists;
+    List<MoviesList> moviesLists = [];
 
     if (iterableMoviesLists.length != 0) {
       moviesLists = iterableMoviesLists.map((model) {
@@ -277,9 +277,10 @@ class MoviesState with ChangeNotifier {
   }
 
   setGenres() {
-    genres.clear();
+    if (genres.isNotEmpty)
+      genres.clear();
 
-    var genresList = new List<String>();
+    var genresList = [];
 
     userMovies.forEach((element) {
       genresList.addAll(element.genres);
@@ -369,7 +370,7 @@ class MoviesState with ChangeNotifier {
     refreshMovies();
   }
 
-  changeGenreFilter(String genre) {
+  changeGenreFilter(String? genre) {
     selectedGenre = genre;
 
     refreshMovies();
@@ -400,14 +401,13 @@ class MoviesState with ChangeNotifier {
   }
 
   bool isDateToSelected() {
-    return dateTo != null && dateTo.difference(dateMax).inDays != 0;
+    return dateTo != null && dateTo?.difference(dateMax!).inDays != 0;
   }
 
   bool isDateFromSelected() {
     return dateFrom != null &&
-        dateFrom
-                .difference(
-                    dateMin.subtract(new Duration(hours: 23, minutes: 59)))
+        dateFrom!.difference(
+                    dateMin!.subtract(new Duration(hours: 23, minutes: 59)))
                 .inDays !=
             0;
   }
@@ -424,8 +424,8 @@ class MoviesState with ChangeNotifier {
 
   void refreshMoviesList(List<Movie> moviesList, List<Movie> actualMoviesList,
       GlobalKey<AnimatedListState> key) {
-    var moviesToAdd = new List<Movie>();
-    var moviesToRemove = new List<Movie>();
+    var moviesToAdd = [];
+    var moviesToRemove = [];
 
     actualMoviesList.forEach((movie) {
       if (!moviesList.any((m) => m.id == movie.id)) {
@@ -462,16 +462,16 @@ class MoviesState with ChangeNotifier {
   List<Movie> getViewedMovies() {
     List<Movie> allViewedMovies = getAllViewedMovies();
 
-    if (allViewedMovies.isEmpty) return new List<Movie>();
+    if (allViewedMovies.isEmpty) return [];
 
     var filteredMovies;
 
     if (isDateFromSelected() || isDateToSelected()) {
       filteredMovies = allViewedMovies
           .where((movie) =>
-              movie.updated
-                  .isAfter(dateFrom.subtract(new Duration(minutes: 1))) &&
-              movie.updated.isBefore(dateTo.add(new Duration(days: 1))))
+              movie.updated!
+                  .isAfter(dateFrom!.subtract(new Duration(minutes: 1))) &&
+              movie.updated!.isBefore(dateTo!.add(new Duration(days: 1))))
           .toList();
     } else {
       filteredMovies = allViewedMovies;
@@ -490,14 +490,14 @@ class MoviesState with ChangeNotifier {
     if (allViewedMovies.isNotEmpty) {
       if (dateMin == dateFrom ||
           dateFrom == null ||
-          dateFrom.isBefore(allViewedMovies.last.updated))
+          dateFrom!.isBefore(allViewedMovies.last.updated!))
         dateFrom = allViewedMovies.last.updated;
 
       dateMin = allViewedMovies.last.updated;
 
       if (dateMax == dateTo ||
           dateTo == null ||
-          dateTo.isAfter(allViewedMovies.first.updated))
+          dateTo!.isAfter(allViewedMovies.first.updated!))
         dateTo = allViewedMovies.first.updated;
 
       dateMax = allViewedMovies.first.updated;
@@ -614,24 +614,24 @@ class MoviesState with ChangeNotifier {
 
   void addMovieToList(Movie movieToAdd, List<Movie> moviesList,
       GlobalKey<AnimatedListState> key, int index) {
-    if (key.currentState != null) key.currentState.insertItem(index);
+    if (key.currentState != null) key.currentState?.insertItem(index);
 
     moviesList.insert(index, movieToAdd);
   }
 
   void removeMovieFromList(Movie movieToRemove, List<Movie> moviesList,
-      GlobalKey<AnimatedListState> key) {
+      GlobalKey<AnimatedListState>? key) {
     final index = moviesList.indexOf(movieToRemove);
 
     if (index == -1) return;
 
     moviesList.removeAt(index);
 
-    AnimatedListRemovedItemBuilder builder = (context, animation) {
-      return buildItem(movieToRemove, animation);
+    AnimatedRemovedItemBuilder builder = (context, animation) {
+      return buildItem(movieToRemove, animation, context: context);
     };
 
-    if (key.currentState != null) key.currentState.removeItem(index, builder);
+    if (key?.currentState != null) key?.currentState!.removeItem(index, builder);
   }
 
   recalculateMovieRating(Movie movie, int updatedRate) {
@@ -684,8 +684,8 @@ class MoviesState with ChangeNotifier {
   GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
   // GlobalKey<AnimatedListState> personalListKey;
 
-  Widget buildItem(Movie movie, Animation animation,
-      {bool isPremium = false, BuildContext context}) {
+  Widget buildItem(Movie movie, Animation<double> animation,
+      {bool isPremium = false, required BuildContext context}) {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,

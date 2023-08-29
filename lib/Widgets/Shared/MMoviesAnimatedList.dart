@@ -6,8 +6,7 @@ class MMoviesAnimatedList extends StatelessWidget {
   final buildItemFunction;
   final isPremium;
 
-  const MMoviesAnimatedList({Key key, this.listKey, this.movies, this.buildItemFunction, this.isPremium})
-      : super(key: key);
+  const MMoviesAnimatedList({super.key, this.listKey, this.movies, this.buildItemFunction, this.isPremium});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +17,7 @@ class MMoviesAnimatedList extends StatelessWidget {
         key: listKey,
         initialItemCount: movies.length,
         itemBuilder: (context, index, animation) {
-          if (movies.length <= index) return null;
+          // if (movies.length > index) return null;
 
           return buildItemFunction(
               movies[index], animation,

@@ -7,12 +7,12 @@ class User {
   bool isIncognito;
 
   User(
-      {this.name,
+      {required this.name,
       this.role,
-      this.email,
+      required this.email,
       this.id,
-      this.premiumPurchased,
-      this.isIncognito});
+      required this.premiumPurchased,
+      required this.isIncognito});
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(

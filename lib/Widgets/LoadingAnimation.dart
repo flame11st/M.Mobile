@@ -19,7 +19,7 @@ class LoadingAnimation extends StatelessWidget {
               'MovieDiary',
               style:  GoogleFonts.parisienne(textStyle: TextStyle(
                   fontSize: 45,
-                  color: Theme.of(context).accentColor
+                  color: Theme.of(context).indicatorColor
               )),
             ),
           ],

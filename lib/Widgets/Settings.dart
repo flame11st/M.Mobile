@@ -41,8 +41,8 @@ class SettingsState extends State<Settings> {
   final _formEmailKey = GlobalKey<FormState>();
   final _formChangePasswordKey = GlobalKey<FormState>();
 
-  String initialUserName;
-  String initialUserEmail;
+  String? initialUserName;
+  String? initialUserEmail;
 
   bool nameButtonActive = false;
   bool emailButtonActive = false;
@@ -54,7 +54,7 @@ class SettingsState extends State<Settings> {
 
   setNameButtonActive() {
     var nameButtonActive = _formNameKey.currentState != null &&
-        _formNameKey.currentState.validate() &&
+        _formNameKey.currentState!.validate() &&
         nameController.text != initialUserName;
 
     if (nameButtonActive == this.nameButtonActive) return;
@@ -66,7 +66,7 @@ class SettingsState extends State<Settings> {
 
   setEmailButtonActive() {
     var emailButtonActive = _formEmailKey.currentState != null &&
-        _formEmailKey.currentState.validate() &&
+        _formEmailKey.currentState!.validate() &&
         emailController.text != initialUserEmail;
 
     if (emailButtonActive == this.emailButtonActive) return;
@@ -78,7 +78,7 @@ class SettingsState extends State<Settings> {
 
   setChangePasswordButtonActive() {
     var changePasswordButtonActive =
-        _formChangePasswordKey.currentState.validate() &&
+        _formChangePasswordKey.currentState!.validate() &&
             newPasswordController.text.length > 0 &&
             oldPasswordController.text.length > 0 &&
             confirmPasswordController.text.length > 0;
@@ -185,7 +185,7 @@ class SettingsState extends State<Settings> {
   Widget build(BuildContext context) {
     GlobalKey globalKey = new GlobalKey();
 
-    if (ModalRoute.of(context).isCurrent) {
+    if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
     }
 
@@ -198,10 +198,10 @@ class SettingsState extends State<Settings> {
     if (serviceAgent.state == null) serviceAgent.state = userState;
 
     if (initialUserName == null && userState.user != null)
-      nameController.text = initialUserName = userState.user.name;
+      nameController.text = initialUserName = userState.user!.name;
 
     if (initialUserEmail == null && userState.user != null)
-      emailController.text = initialUserEmail = userState.user.email;
+      emailController.text = initialUserEmail = userState.user!.email;
 
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -289,7 +289,7 @@ class SettingsState extends State<Settings> {
         key: _formNameKey,
         child: Theme(
             data: Theme.of(context)
-                .copyWith(primaryColor: Theme.of(context).accentColor),
+                .copyWith(primaryColor: Theme.of(context).indicatorColor),
             child: TextFormField(
               style: Theme.of(context).textTheme.headline5,
               decoration: InputDecoration(
@@ -305,8 +305,8 @@ class SettingsState extends State<Settings> {
       ),
       button: MButton(
         text: 'Change name',
-        onPressedCallback: () => changeUserInfo(userState.userId,
-            nameController.text, initialUserEmail, userState.user, 'Name'),
+        onPressedCallback: () => changeUserInfo(userState.userId!,
+            nameController.text, initialUserEmail!, userState.user!, 'Name'),
         active: nameButtonActive,
       ),
     );
@@ -317,7 +317,7 @@ class SettingsState extends State<Settings> {
           key: _formEmailKey,
           child: Theme(
               data: Theme.of(context)
-                  .copyWith(primaryColor: Theme.of(context).accentColor),
+                  .copyWith(primaryColor: Theme.of(context).indicatorColor),
               child: TextFormField(
                 style: Theme.of(context).textTheme.headline5,
                 validator: (value) {
@@ -329,8 +329,8 @@ class SettingsState extends State<Settings> {
               ))),
       button: MButton(
         text: 'Change Email',
-        onPressedCallback: () => changeUserInfo(userState.userId,
-            initialUserName, emailController.text, userState.user, 'Email'),
+        onPressedCallback: () => changeUserInfo(userState.userId!,
+            initialUserName!, emailController.text, userState.user!, 'Email'),
         active: emailButtonActive,
       ),
     );
@@ -382,7 +382,7 @@ class SettingsState extends State<Settings> {
                 firstButtonText: 'Yes, clear all',
                 firstButtonCallback: () {
                   if (!userState.isIncognitoMode) {
-                    clearUserMovies(userState.userId);
+                    clearUserMovies(userState.userId!);
                   }
 
                   setState(() {
@@ -405,7 +405,7 @@ class SettingsState extends State<Settings> {
         text: 'Change Password',
         button: MButton(
           text: 'Change',
-          onPressedCallback: () => changePassword(userState.userId,
+          onPressedCallback: () => changePassword(userState.userId!,
               oldPasswordController.text, newPasswordController.text),
           active: changePasswordButtonActive,
         ),
@@ -423,7 +423,7 @@ class SettingsState extends State<Settings> {
               ),
               Theme(
                   data: Theme.of(context)
-                      .copyWith(primaryColor: Theme.of(context).accentColor),
+                      .copyWith(primaryColor: Theme.of(context).indicatorColor),
                   child: TextFormField(
                     style: Theme.of(context).textTheme.headline5,
                     validator: (value) => oldPasswordController.text.isNotEmpty
@@ -442,7 +442,7 @@ class SettingsState extends State<Settings> {
               ),
               Theme(
                   data: Theme.of(context)
-                      .copyWith(primaryColor: Theme.of(context).accentColor),
+                      .copyWith(primaryColor: Theme.of(context).indicatorColor),
                   child: TextFormField(
                     style: Theme.of(context).textTheme.headline5,
                     validator: (value) {
@@ -468,7 +468,7 @@ class SettingsState extends State<Settings> {
               ),
               Theme(
                   data: Theme.of(context)
-                      .copyWith(primaryColor: Theme.of(context).accentColor),
+                      .copyWith(primaryColor: Theme.of(context).indicatorColor),
                   child: TextFormField(
                     style: Theme.of(context).textTheme.headline5,
                     validator: (value) {
@@ -521,7 +521,7 @@ class SettingsState extends State<Settings> {
                   firstButtonText: 'Remove',
                   firstButtonCallback: () {
                     removeUser(
-                        userState.userId, userState, moviesState, themeState);
+                        userState.userId!, userState, moviesState, themeState);
                   },
                   secondButtonText: 'Cancel',
                   secondButtonCallback: () {});
@@ -538,7 +538,7 @@ class SettingsState extends State<Settings> {
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
-                  child: AdManager.getBannerWidget(AdManager.settingsBannerAd),
+                  child: AdManager.getBannerWidget(AdManager.settingsBannerAd!),
                 ),
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
@@ -560,12 +560,12 @@ class SettingsState extends State<Settings> {
                       children: <Widget>[
                         if (!userState.isIncognitoMode &&
                             userState.user != null &&
-                            userState.user.name.isNotEmpty)
+                            userState.user!.name.isNotEmpty)
                           nameField,
                         if (!userState.isIncognitoMode &&
                             userState.user != null &&
-                            userState.user.email.isNotEmpty &&
-                            !userState.user.isIncognito)
+                            userState.user!.email.isNotEmpty &&
+                            !userState.user!.isIncognito)
                           emailField,
                         SizedBox(
                           height: 20,
@@ -588,9 +588,9 @@ class SettingsState extends State<Settings> {
                         changeThemeField,
                         userMoviesCountField,
                         if (!userState.isSignedInWithGoogle &&
-                            !userState.isIncognitoMode && !userState.user.isIncognito)
+                            !userState.isIncognitoMode && !userState.user!.isIncognito)
                           changePasswordField,
-                        if (!userState.isIncognitoMode && !userState.user.isIncognito) removeUserField,
+                        if (!userState.isIncognitoMode && !userState.user!.isIncognito) removeUserField,
                         if (userState.isIncognitoMode) incognitoModeCard,
                         SizedBox(
                           height: 20,

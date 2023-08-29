@@ -3,15 +3,15 @@ import 'package:mmobile/Variables/Variables.dart';
 import 'MBoxShadow.dart';
 
 class FilterIcon extends StatelessWidget {
-  final IconData icon;
-  final String text;
+  final IconData? icon;
+  final String? text;
   final onPressedCallback;
-  final bool isActive;
-  final double textSize;
-  final Color iconColor;
-  final double width;
-  final double height;
-  final BorderRadius borderRadius;
+  final bool? isActive;
+  final double? textSize;
+  final Color? iconColor;
+  final double? width;
+  final double? height;
+  final BorderRadius? borderRadius;
 
   FilterIcon(
       {this.icon,
@@ -26,10 +26,12 @@ class FilterIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isActive ? Theme.of(context).accentColor : Theme.of(context).cardColor;
-    final fontColor =
-        isActive ? Theme.of(context).primaryColor : Theme.of(context).hintColor;
+    final color = isActive == true
+        ? Theme.of(context).indicatorColor
+        : Theme.of(context).cardColor;
+    final fontColor = isActive == true
+        ? Theme.of(context).primaryColor
+        : Theme.of(context).hintColor;
     return GestureDetector(
         onTap: () => onPressedCallback(),
         child: Container(
@@ -57,7 +59,7 @@ class FilterIcon extends StatelessWidget {
                     color: iconColor == null ? fontColor : iconColor,
                   ),
                 Text(
-                  text,
+                  text!,
                   style: TextStyle(
                       color: fontColor,
                       fontSize: textSize != null ? textSize : 15),

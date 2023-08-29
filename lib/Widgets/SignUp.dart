@@ -51,7 +51,7 @@ class SignUpState extends State<SignUp> {
 
   setSignUpButtonActive() {
     var signUpButtonActive = _formKey.currentState != null &&
-        _formKey.currentState.validate() &&
+        _formKey.currentState!.validate() &&
         nameController.text.length > 0 &&
         emailController.text.length > 0 &&
         confirmPasswordController.text.length > 0 &&
@@ -88,13 +88,13 @@ class SignUpState extends State<SignUp> {
   Widget build(BuildContext context) {
     GlobalKey globalKey = new GlobalKey();
 
-    if (ModalRoute.of(context).isCurrent) {
+    if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
     }
 
     final nameField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme.of(context).accentColor),
+            .copyWith(primaryColor: Theme.of(context).indicatorColor),
         child: TextField(
           controller: nameController,
           decoration: InputDecoration(
@@ -105,7 +105,7 @@ class SignUpState extends State<SignUp> {
 
     final emailField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme.of(context).accentColor),
+            .copyWith(primaryColor: Theme.of(context).indicatorColor),
         child: TextFormField(
           validator: (value) => emailController.text.isNotEmpty
               ? Validators.emailValidator(emailController.text)
@@ -119,7 +119,7 @@ class SignUpState extends State<SignUp> {
 
     final passwordField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme.of(context).accentColor),
+            .copyWith(primaryColor: Theme.of(context).indicatorColor),
         child: TextFormField(
           validator: (value) {
             if (passwordController.text.isEmpty) return null;
@@ -140,7 +140,7 @@ class SignUpState extends State<SignUp> {
 
     final confirmPasswordField = Theme(
         data: Theme.of(context)
-            .copyWith(primaryColor: Theme.of(context).accentColor),
+            .copyWith(primaryColor: Theme.of(context).indicatorColor),
         child: TextFormField(
           validator: (value) {
             if (confirmPasswordController.text.isEmpty) return null;

@@ -41,7 +41,7 @@ class Premium extends StatelessWidget {
   Widget build(BuildContext context) {
     GlobalKey globalKey = new GlobalKey();
 
-    if (ModalRoute.of(context).isCurrent) {
+    if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
     }
 
@@ -61,7 +61,7 @@ class Premium extends StatelessWidget {
       'Thanks for your interest in MovieDiary!',
       textAlign: TextAlign.center,
       style: TextStyle(
-          color: Theme.of(context).accentColor,
+          color: Theme.of(context).indicatorColor,
           fontSize: 20,
           fontWeight: FontWeight.bold),
     );
@@ -79,7 +79,7 @@ class Premium extends StatelessWidget {
       children: <Widget>[
         Icon(
           FontAwesome5.paint_brush,
-          color: Theme.of(context).accentColor,
+          color: Theme.of(context).indicatorColor,
           size: 40,
         ),
         SizedBox(
@@ -89,7 +89,7 @@ class Premium extends StatelessWidget {
           'Changing themes',
           textAlign: TextAlign.center,
           style: TextStyle(
-              color: Theme.of(context).accentColor,
+              color: Theme.of(context).indicatorColor,
               fontSize: 18,
               fontWeight: FontWeight.bold),
         )
@@ -100,7 +100,7 @@ class Premium extends StatelessWidget {
       children: <Widget>[
         Icon(
           FontAwesome5.hands_helping,
-          color: Theme.of(context).accentColor,
+          color: Theme.of(context).indicatorColor,
           size: 40,
         ),
         SizedBox(
@@ -110,7 +110,7 @@ class Premium extends StatelessWidget {
           'Support MovieDiary Team',
           textAlign: TextAlign.center,
           style: TextStyle(
-              color: Theme.of(context).accentColor,
+              color: Theme.of(context).indicatorColor,
               fontSize: 18,
               fontWeight: FontWeight.bold),
         )
@@ -121,7 +121,7 @@ class Premium extends StatelessWidget {
       children: <Widget>[
         Icon(
           FontAwesome5.ad,
-          color: Theme.of(context).accentColor,
+          color: Theme.of(context).indicatorColor,
           size: 40,
         ),
         SizedBox(
@@ -131,7 +131,7 @@ class Premium extends StatelessWidget {
           'Remove Ads',
           textAlign: TextAlign.center,
           style: TextStyle(
-              color: Theme.of(context).accentColor,
+              color: Theme.of(context).indicatorColor,
               fontSize: 18,
               fontWeight: FontWeight.bold),
         )
@@ -142,7 +142,7 @@ class Premium extends StatelessWidget {
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
-                  child: AdManager.getBannerWidget(AdManager.premiumBannerAd),
+                  child: AdManager.getBannerWidget(AdManager.premiumBannerAd!),
                 ),
                 automaticallyImplyLeading: false,
                 elevation: 0.7,

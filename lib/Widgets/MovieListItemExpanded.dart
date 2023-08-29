@@ -21,17 +21,16 @@ class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
   final bool fromSearch;
   final String imageUrl;
-  final MoviesList moviesList;
+  final MoviesList? moviesList;
   final bool shouldRequestReview;
 
   const MovieListItemExpanded(
-      {Key key,
-      this.movie,
+      {super.key,
+      required this.movie,
       this.fromSearch = false,
-      this.imageUrl,
+      required this.imageUrl,
       this.moviesList,
-      this.shouldRequestReview = false})
-      : super(key: key);
+      this.shouldRequestReview = false});
 
   @override
   State<StatefulWidget> createState() {
@@ -41,16 +40,16 @@ class MovieListItemExpanded extends StatefulWidget {
 }
 
 class MovieListItemExpandedState extends State<MovieListItemExpanded> {
-  Movie movie;
-  bool fromSearch;
-  MoviesList moviesList;
-  bool shouldRequestReview;
+  late Movie movie;
+  bool? fromSearch;
+  MoviesList? moviesList;
+  bool? shouldRequestReview;
 
   String imageBaseUrl =
       'https://moviediarystorage.blob.core.windows.net/movies';
 
   MovieListItemExpandedState(Movie movie, bool fromSearch, String url,
-      MoviesList moviesList, bool shouldRequestReview) {
+      MoviesList? moviesList, bool shouldRequestReview) {
     this.movie = movie;
     this.fromSearch = fromSearch;
     this.moviesList = moviesList;
@@ -193,7 +192,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        if (movie.tagline != null && movie.tagline.isNotEmpty)
+        if (movie.tagline != null && movie.tagline!.isNotEmpty)
           MTextField(subtitleText: 'Tagline', bodyText: movie.tagline),
         if (movie.directors.isNotEmpty) SizedBox(height: 10),
         if (movie.directors.isNotEmpty)
@@ -224,7 +223,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             ? AppBar(
                 title: Center(
                   child:
-                      AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
+                      AdManager.getBannerWidget(AdManager.itemExpandedBannerAd!),
                 ),
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
@@ -262,8 +261,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                 ))),
             bottomNavigationBar: MoviesBottomNavigationBarExpanded(
               movie: movie,
-              fromSearch: fromSearch,
-              shouldRequestReview: shouldRequestReview,
+              fromSearch: fromSearch!,
+              shouldRequestReview: shouldRequestReview!,
               moviesList: moviesList,
             )));
   }

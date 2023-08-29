@@ -1,13 +1,12 @@
 import 'dart:convert';
 
 import 'package:mmobile/Enums/MovieType.dart';
-import 'Person.dart';
 
 class Movie {
   final String id;
   String title;
   String overview;
-  String tagline;
+  String? tagline;
   String posterPath;
   int duration;
   int rating;
@@ -21,7 +20,7 @@ class Movie {
   int movieRate;
   MovieType movieType;
   DateTime releaseDate;
-  DateTime updated;
+  DateTime? updated;
   int averageTimeOfEpisode;
   bool inProduction;
   int seasonsCount;
@@ -56,29 +55,29 @@ class Movie {
   }
 
   Movie(
-      {this.id,
-      this.title,
-      this.overview,
-      this.tagline,
-      this.posterPath,
-      this.duration,
-      this.rating,
-      this.allVotes,
-      this.likedVotes,
-      this.dislikedVotes,
-      this.countries,
-      this.actors,
-      this.directors,
-      this.genres,
-      this.movieRate,
-      this.movieType,
-      this.releaseDate,
-      this.averageTimeOfEpisode,
-      this.inProduction,
-      this.seasonsCount,
-      this.imdbRate,
-      this.imdbVotes,
-      this.updated});
+      {required this.id,
+        required this.title,
+        required this.overview,
+        required this.tagline,
+        required this.posterPath,
+        required this.duration,
+        required this.rating,
+        required this.allVotes,
+        required this.likedVotes,
+        required this.dislikedVotes,
+        required this.countries,
+        required this.actors,
+        required this.directors,
+        required this.genres,
+        required this.movieRate,
+        required this.movieType,
+        required this.releaseDate,
+        required this.averageTimeOfEpisode,
+        required this.inProduction,
+        required this.seasonsCount,
+        required this.imdbRate,
+        required this.imdbVotes,
+        this.updated});
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     var actors = json['actors'] is Iterable

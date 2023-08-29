@@ -14,8 +14,8 @@ class MDialog {
       this.firstButtonCallback,
       this.secondButtonText,
       this.secondButtonCallback,
-      this.content,
-      this.context});
+      required this.content,
+      required this.context});
 
   openDialog() {
     showDialog<String>(

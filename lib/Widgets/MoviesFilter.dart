@@ -11,17 +11,18 @@ import 'package:fluttericon/font_awesome5_icons.dart';
 
 class MoviesFilter extends StatelessWidget {
   selectDateFrom(BuildContext context, MoviesState state) async {
-    final DateTime picked = await showDatePicker(
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: state.dateFrom,
-      firstDate: state.dateMin,
-      lastDate: state.dateMax,
+      initialDate: state.dateFrom!,
+      firstDate: state.dateMin!,
+      lastDate: state.dateMax!,
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).accentColorBrightness == Brightness.dark
-              ? ThemeData.dark()
-              : ThemeData.light(),
-          child: child,
+          // data: Theme.of(context).accentColorBrightness == Brightness.dark
+          //     ? ThemeData.dark()
+          //     : ThemeData.light(),
+          data: ThemeData.light(),
+          child: child!,
         );
       },
     );
@@ -30,17 +31,18 @@ class MoviesFilter extends StatelessWidget {
   }
 
   selectDateTo(BuildContext context, MoviesState state) async {
-    final DateTime picked = await showDatePicker(
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: state.dateTo,
-      firstDate: state.dateMin,
-      lastDate: state.dateMax,
+      initialDate: state.dateTo!,
+      firstDate: state.dateMin!,
+      lastDate: state.dateMax!,
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).accentColorBrightness == Brightness.dark
-              ? ThemeData.dark()
-              : ThemeData.light(),
-          child: child,
+          // data: Theme.of(context).accentColorBrightness == Brightness.dark
+          //     ? ThemeData.dark()
+          //     : ThemeData.light(),
+          data: ThemeData.light(),
+          child: child!,
         );
       },
     );
@@ -73,7 +75,7 @@ class MoviesFilter extends StatelessWidget {
               children: [
                 MCard(
                     shadowColor: moviesState.selectedGenre != null
-                        ? Theme.of(context).accentColor
+                        ? Theme.of(context).indicatorColor
                         : Theme.of(context).hintColor,
                     marginTop: 0,
                     padding: 0,
@@ -82,7 +84,7 @@ class MoviesFilter extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(40),
                           color: moviesState.selectedGenre != null
-                              ? Theme.of(context).accentColor
+                              ? Theme.of(context).indicatorColor
                               : Theme.of(context).cardColor,
                         ),
                         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
@@ -94,7 +96,7 @@ class MoviesFilter extends StatelessWidget {
                               child: DropdownButton(
                                 dropdownColor: moviesState.selectedGenre == null
                                     ? Theme.of(context).cardColor
-                                    : Theme.of(context).accentColor,
+                                    : Theme.of(context).indicatorColor,
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: moviesState.selectedGenre == null
@@ -104,7 +106,7 @@ class MoviesFilter extends StatelessWidget {
                                 isExpanded: true,
                                 value: moviesState.selectedGenre,
                                 hint: Text('Select Genre'),
-                                onChanged: ((String value) {
+                                onChanged: ((String? value) {
                                   moviesState.changeGenreFilter(value);
                                 }),
                                 items: moviesState.genres,
@@ -172,14 +174,14 @@ class MoviesFilter extends StatelessWidget {
                 children: [
                   FilterIcon(
                     text:
-                        "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom != null ? moviesState.dateFrom : DateTime.now())}",
+                        "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom != null ? moviesState.dateFrom! : DateTime.now())}",
                     isActive: moviesState.isDateFromSelected(),
                     onPressedCallback: () => selectDateFrom(context, moviesState),
                     textSize: 16,
                   ),
                   FilterIcon(
                     text:
-                        "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo != null ? moviesState.dateTo : DateTime.now())}",
+                        "To:    ${DateFormat('yyyy-MM-dd').format(moviesState.dateTo != null ? moviesState.dateTo! : DateTime.now())}",
                     isActive: moviesState.isDateToSelected(),
                     onPressedCallback: () => selectDateTo(context, moviesState),
                     textSize: 16,

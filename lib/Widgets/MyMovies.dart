@@ -47,7 +47,7 @@ class MyMoviesState extends State<MyMovies> {
       return;
     }
 
-    final moviesResponse = await serviceAgent.getUserMovies(userState.userId);
+    final moviesResponse = await serviceAgent.getUserMovies(userState.userId!);
 
     print("Movies loaded");
     Iterable iterableMovies = json.decode(moviesResponse.body);
@@ -59,7 +59,7 @@ class MyMoviesState extends State<MyMovies> {
 
       moviesState.setUserMovies(movies);
     } else {
-      moviesState.setUserMovies(new List<Movie>());
+      moviesState.setUserMovies([]);
     }
 
     if (loaderState.isLoaderVisible) {
@@ -90,7 +90,7 @@ class MyMoviesState extends State<MyMovies> {
     final userState = Provider.of<UserState>(context, listen: false);
 
     final moviesListsResponse =
-        await serviceAgent.getMoviesLists(userState.userId);
+        await serviceAgent.getMoviesLists(userState.userId!);
 
     Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
 
@@ -112,7 +112,7 @@ class MyMoviesState extends State<MyMovies> {
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
 
-    if (userState.userId != null && userState.userId.isNotEmpty) {
+    if (userState.userId != null && userState.userId!.isNotEmpty) {
       serviceAgent.state = userState;
 
       if (userState.isIncognitoMode) {
@@ -122,15 +122,15 @@ class MyMoviesState extends State<MyMovies> {
 
         movies.forEach((movie) async {
           await serviceAgent.rateMovie(
-              movie.id, userState.userId, movie.movieRate);
+              movie.id, userState.userId!, movie.movieRate);
         });
 
         if (userState.premiumPurchasedIncognito) {
-          await serviceAgent.setUserPremiumPurchased(userState.userId, true);
+          await serviceAgent.setUserPremiumPurchased(userState.userId!, true);
         }
       }
 
-      final userInfoResponse = await serviceAgent.getUserInfo(userState.userId);
+      final userInfoResponse = await serviceAgent.getUserInfo(userState.userId!);
       final user = User.fromJson(json.decode(userInfoResponse.body));
 
       userState.setUser(user);
@@ -166,7 +166,7 @@ class MyMoviesState extends State<MyMovies> {
       appBar: AdManager.bannerVisible && AdManager.bannersReady
           ? AppBar(
               title:
-                  Center(child: AdManager.getBannerWidget(AdManager.bannerAd)),
+                  Center(child: AdManager.getBannerWidget(AdManager.bannerAd!)),
               elevation: 0.7,
             )
           : PreferredSize(preferredSize: Size(0, 0), child: Container()),
@@ -191,7 +191,7 @@ class MyMoviesState extends State<MyMovies> {
                         Icons.electric_bolt_rounded,
                         size: 35,
                       ),
-                      backgroundColor: Theme.of(context).accentColor,
+                      backgroundColor: Theme.of(context).indicatorColor,
                       foregroundColor: Theme.of(context).primaryColor,
                     ),
                   ))),

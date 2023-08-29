@@ -30,9 +30,9 @@ class RecommendationsPage extends StatefulWidget {
 
 class RecommendationsPageState extends State<RecommendationsPage> {
   final serviceAgent = new ServiceAgent();
-  GlobalKey globalKey;
-  UserState userState;
-  MoviesState movieState;
+  GlobalKey? globalKey;
+  UserState? userState;
+  MoviesState? movieState;
   List<Movie> recommendedMovies = <Movie>[];
   bool isLoading = false;
   bool isButtonDisabled = false;
@@ -55,13 +55,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       movieState = Provider.of<MoviesState>(context, listen: false);
     }
 
-    if (!userState.isPremium && userState.aiRequestsCount % 3 == 0) {
+    if (!userState!.isPremium && userState!.aiRequestsCount % 3 == 0) {
       AdManager.showInterstitialAd();
     }
 
     var moviesResponse;
-    if (userState.isIncognitoMode) {
-      final moviesIds = movieState.userMovies
+    if (userState!.isIncognitoMode) {
+      final moviesIds = movieState!.userMovies
           .where((m) => m.movieRate == MovieRate.liked)
           .map((e) => e.title)
           .toList();
@@ -72,7 +72,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           encodedTitles, selectedType);
     } else {
       moviesResponse = await serviceAgent.getUserRecommendations(
-          userState.userId, selectedType);
+          userState!.userId!, selectedType);
     }
 
     if (moviesResponse.statusCode != 200) {
@@ -95,7 +95,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         isButtonDisabled = false;
       });
 
-      userState.increaseAiRequestsCount();
+      userState!.increaseAiRequestsCount();
     }
   }
 
@@ -116,15 +116,15 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       serviceAgent.state = userState;
     }
 
-    if (ModalRoute.of(context).isCurrent &&
+    if (ModalRoute.of(context)!.isCurrent &&
         (this.globalKey == null || this.globalKey != MyGlobals.activeKey)) {
       globalKey = new GlobalKey();
 
       MyGlobals.activeKey = globalKey;
     }
 
-    Widget buildItem(Movie movie, Animation animation,
-        {bool isPremium = false, BuildContext context}) {
+    Widget buildItem(Movie movie, Animation<double> animation,
+        {bool isPremium = false, required BuildContext context}) {
       return SizeTransition(
           key: ObjectKey(movie),
           sizeFactor: animation,
@@ -141,7 +141,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           "Recommendations",
           style: Theme.of(context).textTheme.headline2,
         )),
-        if (userState.user != null)
+        if (userState!.user != null)
           IconButton(
               onPressed: () => {
                     Navigator.of(context).push(RouteHelper.createRoute(
@@ -149,7 +149,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                   },
               icon: Icon(
                 Icons.history,
-                color: Theme.of(context).accentColor,
+                color: Theme.of(context).indicatorColor,
               ))
       ],
     );
@@ -161,7 +161,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             ? AppBar(
                 title: Center(
                   child: AdManager.getBannerWidget(
-                      AdManager.recommendationsBannerAd),
+                      AdManager.recommendationsBannerAd!),
                 ),
                 elevation: 0.7,
                 automaticallyImplyLeading: false)
@@ -189,14 +189,14 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                             RichText(
                               text: TextSpan(
                                 style: TextStyle(
-                                    color: Theme.of(context).accentColor,
+                                    color: Theme.of(context).indicatorColor,
                                     fontSize: 17,
                                     fontWeight: FontWeight.bold),
                                 children: <TextSpan>[
                                   new TextSpan(
                                       text:
                                           "Welcome to our movie recommendation system, powered by AI from the creators of ChatGPT!"),
-                                  if (movieState.userMovies.length < 10)
+                                  if (movieState!.userMovies.length < 10)
                                     new TextSpan(
                                         text:
                                             "\n\nTo make your recommendations more tailored to your tastes, we recommend you to rate at least 10 Movies or TV Shows.",
@@ -239,7 +239,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                     color: Theme.of(context).primaryColor,
                     child: MMoviesAnimatedList(
                       buildItemFunction: buildItem,
-                      isPremium: userState.isPremium,
+                      isPremium: userState!.isPremium,
                       movies: recommendedMovies,
                     )),
               Align(
@@ -297,7 +297,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                             MButton(
                               height: 50,
                               width: MediaQuery.of(context).size.width - 10,
-                              backgroundColor: Theme.of(context).accentColor,
+                              backgroundColor: Theme.of(context).indicatorColor,
                               prependIcon: Icons.bolt_sharp,
                               borderRadius: 25,
                               text: "Get Recommended "

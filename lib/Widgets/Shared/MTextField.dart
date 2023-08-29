@@ -4,8 +4,7 @@ class MTextField extends StatelessWidget {
   final subtitleText;
   final bodyText;
 
-  const MTextField({Key key, this.subtitleText, this.bodyText})
-      : super(key: key);
+  const MTextField({super.key, this.subtitleText, this.bodyText});
 
   @override
   Widget build(BuildContext context) {

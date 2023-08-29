@@ -52,7 +52,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                     : Theme.of(context).hintColor,
               ),
               color: moviesState.isAnyFilterSelected()
-                  ? Theme.of(context).accentColor.withOpacity(0.9)
+                  ? Theme.of(context).indicatorColor.withOpacity(0.9)
                   : Theme.of(context).primaryColor,
               fontColor: moviesState.isAnyFilterSelected()
                   ? Theme.of(context).primaryColor
@@ -102,7 +102,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               ),
               onPressedCallback: () {
                 Navigator.of(context)
-                    .push(RouteHelper.createRoute(() => MoviesListsPage()));
+                    .push(RouteHelper.createRoute(() => MoviesListsPage(initialPageIndex: 0,)));
               },
             ),
             MIconButton(

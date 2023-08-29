@@ -7,8 +7,8 @@ class MColorTheme {
   final Color fontsColor;
 
   MColorTheme(
-      {this.primaryColor,
-      this.secondaryColor,
-      this.additionalColor,
-      this.fontsColor});
+      {required this.primaryColor,
+      required this.secondaryColor,
+      required this.additionalColor,
+      required this.fontsColor});
 }

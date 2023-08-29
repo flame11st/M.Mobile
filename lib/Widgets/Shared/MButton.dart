@@ -7,21 +7,21 @@ class MButton extends StatelessWidget {
   final String text;
   final onPressedCallback;
   final bool active;
-  final double height;
-  final double width;
-  final double borderRadius;
+  final double? height;
+  final double? width;
+  final double? borderRadius;
   final prependIcon;
   final appendIcon;
   final prependImage;
-  final Color prependIconColor;
-  final BuildContext parentContext;
-  final Color backgroundColor;
+  final Color? prependIconColor;
+  final BuildContext? parentContext;
+  final Color? backgroundColor;
   final textColor;
 
   MButton(
-      {this.text,
+      {required this.text,
       this.onPressedCallback,
-      this.active,
+      required this.active,
       this.height,
       this.width,
       this.prependIcon,
@@ -35,9 +35,10 @@ class MButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final contextValue = parentContext != null ? parentContext : context;
-    final color = textColor != null ? textColor :
-        Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
+    final contextValue = parentContext != null ? parentContext! : context;
+    final color = textColor != null
+        ? textColor
+        : Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
     final defaultBorderRadius = 25.0;
 
     return Container(
@@ -52,7 +53,7 @@ class MButton extends StatelessWidget {
                 blurRadius: 0.4),
           ],
           borderRadius: BorderRadius.circular(
-              borderRadius != null ? borderRadius : defaultBorderRadius),
+              borderRadius != null ? borderRadius! : defaultBorderRadius),
           color: backgroundColor != null
               ? backgroundColor
               : Theme.of(contextValue).cardColor.withOpacity(0.95),
@@ -61,7 +62,7 @@ class MButton extends StatelessWidget {
           padding: EdgeInsets.all(0),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
-                  borderRadius != null ? borderRadius : 8.0)),
+                  borderRadius != null ? borderRadius! : 8.0)),
           minWidth: MediaQuery.of(contextValue).size.width,
           height: MediaQuery.of(contextValue).size.height,
           onPressed: () => active ? onPressedCallback() : {},
@@ -80,7 +81,7 @@ class MButton extends StatelessWidget {
                 SizedBox(
                   width: 10,
                 ),
-              Text(text, style: TextStyle(color: color, fontSize: 15)),
+              Text(text!, style: TextStyle(color: color, fontSize: 15)),
               if (appendIcon != null)
                 SizedBox(
                   width: 10,

@@ -4,7 +4,7 @@ import 'package:mmobile/Variables/Variables.dart';
 
 class MSnackBar {
   static showSnackBar(String text, bool isSuccess) {
-    var context = MyGlobals.activeKey.currentContext;
+    var context = MyGlobals.activeKey!.currentContext;
 
     if (context != null)
       show(context, text, isSuccess);
@@ -25,7 +25,7 @@ class MSnackBar {
               ))),
       duration: Duration(milliseconds: 600),
       backgroundColor: isSuccess
-          ? Theme.of(MyGlobals.activeKey.currentContext).accentColor
+          ? Theme.of(MyGlobals.activeKey!.currentContext!).indicatorColor
           : Colors.redAccent,
     ));
   }

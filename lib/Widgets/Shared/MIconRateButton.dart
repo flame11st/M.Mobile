@@ -16,7 +16,7 @@ class MIconRateButton extends StatelessWidget {
   final width;
   final color;
   final bool fromSearch;
-  final String hint;
+  final String? hint;
   final Movie movie;
   final int movieRate;
   final bool shouldRequestReview;
@@ -28,8 +28,8 @@ class MIconRateButton extends StatelessWidget {
       this.fromSearch = false,
       this.shouldRequestReview = false,
       this.hint,
-      this.movie,
-      this.movieRate});
+      required this.movie,
+      required this.movieRate});
 
   rateMovie(String movieId, int movieRate, MoviesState moviesState,
       UserState userState) async {
@@ -38,7 +38,7 @@ class MIconRateButton extends StatelessWidget {
     if (!userState.isIncognitoMode) {
       serviceAgent.state = userState;
 
-      await serviceAgent.rateMovie(movieId, userState.userId, movieRate);
+      await serviceAgent.rateMovie(movieId, userState.userId!, movieRate);
     }
   }
 

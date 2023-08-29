@@ -7,13 +7,13 @@ class MCard extends StatelessWidget {
   final text;
   final child;
   final button;
-  final double padding;
-  final double marginTop;
-  final double marginBottom;
-  final double marginLR;
-  final Color color;
-  final Color shadowColor;
-  final Color foregroundColor;
+  final double? padding;
+  final double? marginTop;
+  final double? marginBottom;
+  final double? marginLR;
+  final Color? color;
+  final Color? shadowColor;
+  final Color? foregroundColor;
 
   MCard(
       {this.text,
@@ -29,16 +29,16 @@ class MCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double marginLRValue = marginLR != null ? marginLR : 0;
+    final double marginLRValue = marginLR != null ? marginLR! : 0;
     final borderRadius = 25.0;
 
     return Container(
-        padding: EdgeInsets.all(padding != null ? padding : 20),
+        padding: EdgeInsets.all(padding != null ? padding! : 20),
         margin: EdgeInsets.only(
-            top: marginTop == null ? 20 : marginTop,
+            top: marginTop == null ? 20 : marginTop!,
             left: marginLRValue,
             right: marginLRValue,
-            bottom: marginBottom != null ? marginBottom : 0),
+            bottom: marginBottom != null ? marginBottom! : 0),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(color: Colors.black.withOpacity(0.8), blurRadius: 0.5

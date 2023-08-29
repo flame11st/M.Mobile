@@ -19,12 +19,12 @@ import 'MSnackBar.dart';
 class MAddToListButton extends StatelessWidget {
   final serviceAgent = new ServiceAgent();
   final Movie movie;
-  final MoviesList moviesList;
+  final MoviesList? moviesList;
   final bool fromMenu;
-  final double offset;
   final bannerVisible = AdManager.bannerVisible;
 
-  MAddToListButton({this.movie, this.moviesList, this.fromMenu = false, this.offset});
+  MAddToListButton(
+      {required this.movie, this.moviesList, this.fromMenu = false });
 
   Widget getMovieListWidget(
       MoviesList list, BuildContext context, BuildContext dialogContext) {
@@ -55,7 +55,7 @@ class MAddToListButton extends StatelessWidget {
 
           if (!userState.isIncognitoMode) {
             await serviceAgent.addMovieToList(
-                userState.userId, movie.id, list.name);
+                userState.userId!, movie.id, list.name);
           }
 
           moviesState.addMovieToPersonalList(list.name, this.movie);
@@ -180,7 +180,7 @@ class MAddToListButton extends StatelessWidget {
 
     if (!userState.isIncognitoMode) {
       await serviceAgent.removeMovieFromList(
-          userState.userId, movie.id, moviesList.name);
+          userState.userId!, movie.id, moviesList!.name);
     }
 
     Navigator.of(context).pop();
@@ -192,9 +192,9 @@ class MAddToListButton extends StatelessWidget {
     await new Future.delayed(const Duration(milliseconds: 300));
 
     MSnackBar.showSnackBar(
-        '"${movie.title}" removed from your list "${moviesList.name}"', true);
+        '"${movie.title}" removed from your list "${moviesList!.name}"', true);
 
-    moviesState.removeMovieFromPersonalList(moviesList.name, movie);
+    moviesState.removeMovieFromPersonalList(moviesList!.name, movie);
   }
 
   @override

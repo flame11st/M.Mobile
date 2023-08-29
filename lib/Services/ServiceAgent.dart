@@ -5,7 +5,7 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 
 class ServiceAgent {
-  UserState state;
+  UserState? state;
   String baseUrl = "";
   final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/Function1";
 
@@ -222,7 +222,7 @@ class ServiceAgent {
     Map<String, String> headers = {};
     if (state != null)
       headers.putIfAbsent(
-          HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+          HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
 
     var fullUri = Uri.parse(baseUri + uri);
     var response = await http.get(fullUri, headers: headers);
@@ -233,7 +233,7 @@ class ServiceAgent {
       if (isTokenRefreshed) {
         if (state != null)
           headers.putIfAbsent(
-              HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+              HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
 
         response = await http.get(Uri.parse(baseUri + uri), headers: headers);
       }
@@ -252,7 +252,7 @@ class ServiceAgent {
     var headers = {'Content-Type': 'application/json; charset=UTF-8'};
     if (state != null)
       headers.putIfAbsent(
-          HttpHeaders.authorizationHeader, () => "Bearer ${state.token}");
+          HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
 
     var response =
         await http.post(Uri.parse(baseUri + uri), body: postData, headers: headers);
@@ -263,7 +263,7 @@ class ServiceAgent {
         response = await http
             .post(Uri.parse(baseUri + uri), body: postData, headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
-          HttpHeaders.authorizationHeader: "Bearer ${state.token}"
+          HttpHeaders.authorizationHeader: "Bearer ${state?.token}"
         });
       }
     }
@@ -278,11 +278,11 @@ class ServiceAgent {
       baseUri = await getBaseUrl();
     }
 
-    var response = await http.get(Uri.parse(baseUri + 'Identity/RefreshTokenMobile?token=${state.refreshToken}'));
+    var response = await http.get(Uri.parse(baseUri + 'Identity/RefreshTokenMobile?token=${state?.refreshToken}'));
 
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);
-      state.setTokens(
+      state?.setTokens(
           responseData['access_token'], responseData['refresh_token']);
 
       return true;

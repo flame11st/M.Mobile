@@ -11,7 +11,7 @@ import 'Shared/MCard.dart';
 class EmptyMoviesCard extends StatelessWidget {
   final String tabName;
 
-  const EmptyMoviesCard({Key key, this.tabName}) : super(key: key);
+  const EmptyMoviesCard({super.key, required this.tabName});
 
   Route _createRoute(Function page) {
     return PageRouteBuilder(
@@ -42,7 +42,7 @@ class EmptyMoviesCard extends StatelessWidget {
             Text(
               "Welcome to MovieDiary!",
               style: TextStyle(
-                  color: Theme.of(context).accentColor,
+                  color: Theme.of(context).indicatorColor,
                   fontSize: 20,
                   fontWeight: FontWeight.bold),
             ),
@@ -69,7 +69,7 @@ class EmptyMoviesCard extends StatelessWidget {
             MButton(
               height: 40,
               width: MediaQuery.of(context).size.width - 40,
-              backgroundColor: Theme.of(context).accentColor,
+              backgroundColor: Theme.of(context).indicatorColor,
               borderRadius: 20,
               prependIcon: Icons.electric_bolt,
               prependIconColor: Theme.of(context).cardColor,
@@ -99,7 +99,7 @@ class EmptyMoviesCard extends StatelessWidget {
               prependIcon: Entypo.menu,
               width: MediaQuery.of(context).size.width - 40,
               onPressedCallback: () => Navigator.of(context)
-                  .push(_createRoute(() => MoviesListsPage())),
+                  .push(_createRoute(() => MoviesListsPage(initialPageIndex: 0,))),
             ),
             SizedBox(
               height: 30,
@@ -107,7 +107,7 @@ class EmptyMoviesCard extends StatelessWidget {
             Text(
               "P.S. With this app you can't watch tv shows or movies!",
               style: TextStyle(
-                  color: Theme.of(context).accentColor,
+                  color: Theme.of(context).indicatorColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold),
             )

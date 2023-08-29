@@ -44,7 +44,7 @@ android {
 
     defaultConfig {
         applicationId "com.flame.moviediary"
-        minSdkVersion 20
+        minSdkVersion 24
         targetSdkVersion 33
         multiDexEnabled true
         versionCode flutterVersionCode.toInteger()

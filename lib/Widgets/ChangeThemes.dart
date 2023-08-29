@@ -19,7 +19,7 @@ class ChangeThemes extends StatefulWidget {
 class ChangeThemesState extends State<ChangeThemes>
     with SingleTickerProviderStateMixin {
   selectTheme(BuildContext context, TabController controller) {
-    var index = controller.animation.value.round();
+    var index = controller.animation!.value.round();
 
     final userState = Provider.of<UserState>(context, listen: false);
     final themeState = Provider.of<ThemeState>(context, listen: false);
@@ -33,7 +33,7 @@ class ChangeThemesState extends State<ChangeThemes>
   }
 
   int currentTabIndex = 0;
-  TabController _tabController;
+  TabController? _tabController;
   bool scrolledToCurrent = false;
 
   @override
@@ -42,30 +42,30 @@ class ChangeThemesState extends State<ChangeThemes>
     _tabController =
         new TabController(vsync: this, length: Themes.allThemes.length);
 
-    _tabController.addListener(setCurrentTabIndex);
+    _tabController!.addListener(setCurrentTabIndex);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController!.dispose();
 
     super.dispose();
   }
 
   void setCurrentTabIndex() {
     setState(() {
-      currentTabIndex = _tabController.index;
+      currentTabIndex = _tabController!.index;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final themes = new List<Widget>();
+    final List<Widget> themes = [];
     final themeState = Provider.of<ThemeState>(context);
     final userState = Provider.of<UserState>(context);
 
     if (!scrolledToCurrent) {
-      _tabController.animateTo(Themes.allThemes.indexOf(themeState.selectedTheme));
+      _tabController!.animateTo(Themes.allThemes.indexOf(themeState.selectedTheme));
 
       scrolledToCurrent = true;
     }
@@ -121,7 +121,7 @@ class ChangeThemesState extends State<ChangeThemes>
                     ? Theme.of(context).hintColor
                     : Colors.green,
                 onPressedCallback: () =>
-                    selectTheme(context, _tabController),
+                    selectTheme(context, _tabController!),
                 borderRadius: 25,
                 height: 50,
                 text:

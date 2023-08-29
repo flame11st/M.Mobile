@@ -30,9 +30,9 @@ class RecommendationsHistoryPage extends StatefulWidget {
 class RecommendationsHistoryPageState
     extends State<RecommendationsHistoryPage> {
   final serviceAgent = new ServiceAgent();
-  GlobalKey globalKey;
-  UserState userState;
-  MoviesState movieState;
+  GlobalKey? globalKey;
+  UserState? userState;
+  MoviesState? movieState;
   List<Movie> history = <Movie>[];
   bool requested = false;
   bool isLoading = false;
@@ -47,7 +47,7 @@ class RecommendationsHistoryPageState
     }
 
     var moviesResponse =
-        await serviceAgent.getUserRecommendationsHistory(userState.userId);
+        await serviceAgent.getUserRecommendationsHistory(userState!.userId!);
 
     if (moviesResponse.statusCode == 200) {
       Iterable iterableMovies = json.decode(moviesResponse.body);
@@ -82,19 +82,19 @@ class RecommendationsHistoryPageState
       serviceAgent.state = userState;
     }
 
-    if (userState.user != null && history.isEmpty && !requested) {
+    if (userState!.user != null && history.isEmpty && !requested) {
       getHistory();
     }
 
-    if (ModalRoute.of(context).isCurrent &&
+    if (ModalRoute.of(context)!.isCurrent &&
         (this.globalKey == null || this.globalKey != MyGlobals.activeKey)) {
       globalKey = new GlobalKey();
 
       MyGlobals.activeKey = globalKey;
     }
 
-    Widget buildItem(Movie movie, Animation animation,
-        {bool isPremium = false, BuildContext context}) {
+    Widget buildItem(Movie movie, Animation<double> animation,
+        {bool isPremium = false, required BuildContext context}) {
       return SizeTransition(
           key: ObjectKey(movie),
           sizeFactor: animation,
@@ -113,7 +113,7 @@ class RecommendationsHistoryPageState
         color: Theme.of(context).primaryColor,
         child: MMoviesAnimatedList(
           buildItemFunction: buildItem,
-          isPremium: userState.isPremium,
+          isPremium: userState!.isPremium,
           movies: history,
         ));
 
@@ -135,7 +135,7 @@ class RecommendationsHistoryPageState
             ? AppBar(
                 title: Center(
                   child: AdManager.getBannerWidget(
-                      AdManager.recommendationsHistoryBannerAd),
+                      AdManager.recommendationsHistoryBannerAd!),
                 ),
                 elevation: 0.7,
                 automaticallyImplyLeading: false)

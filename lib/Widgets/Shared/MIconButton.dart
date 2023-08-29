@@ -5,7 +5,7 @@ class MIconButton extends StatelessWidget {
   final icon;
   final width;
   final color;
-  final String hint;
+  final String? hint;
   final bool withBorder;
   final fontColor;
 
@@ -50,13 +50,13 @@ class MIconButton extends StatelessWidget {
                         splashColor: Colors.transparent,
                         onPressed: () => onPressedCallback(),
                       )),
-                  if (hint != null && hint.isNotEmpty)
+                  if (hint != null && hint!.isNotEmpty)
                     SizedBox(
                       height: 4,
                     ),
-                  if (hint != null && hint.isNotEmpty)
+                  if (hint != null && hint!.isNotEmpty)
                     Text(
-                      hint,
+                      hint!,
                       style: TextStyle(fontSize: 14, color: itemsColor),
                     )
                 ],
@@ -73,13 +73,13 @@ class MIconButton extends StatelessWidget {
                     child: Column(
                       children: [
                         icon,
-                        if (hint != null && hint.isNotEmpty)
+                        if (hint != null && hint!.isNotEmpty)
                           SizedBox(
                             height: 4,
                           ),
-                        if (hint != null && hint.isNotEmpty)
+                        if (hint != null && hint!.isNotEmpty)
                           Text(
-                            hint,
+                            hint!,
                             style: TextStyle(fontSize: 15, color: itemsColor),
                           )
                       ],

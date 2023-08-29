@@ -10,7 +10,7 @@ class MoviesList {
   final MovieListType movieListType;
   List<Movie> listMovies;
 
-  MoviesList({this.name, this.order, this.listMovies, this.movieListType});
+  MoviesList({required this.name, required this.order, required this.listMovies, required this.movieListType});
 
   factory MoviesList.fromJson(Map<String, dynamic> json) {
     Iterable iterableMovies = json['listMovies'] is Iterable

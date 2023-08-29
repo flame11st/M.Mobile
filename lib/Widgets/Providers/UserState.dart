@@ -1,7 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Objects/User.dart';
@@ -18,11 +15,11 @@ class UserState with ChangeNotifier {
   bool isUserAuthorizedOrInIncognitoMode = false;
   bool isAppLoaded = false;
   bool isSignedInWithGoogle = false;
-  String userName = '';
-  String userId = '';
-  String token = '';
-  String refreshToken = '';
-  User user;
+  String? userName = '';
+  String? userId = '';
+  String? token = '';
+  String? refreshToken = '';
+  User? user;
   bool userRequested = false;
   bool showTutorial = false;
   bool isIncognitoMode = false;
@@ -97,7 +94,7 @@ class UserState with ChangeNotifier {
 
   get isPremium {
     var result = user != null
-        ? user.premiumPurchased != null && user.premiumPurchased
+        ? user?.premiumPurchased != null && user?.premiumPurchased == true
         : premiumPurchasedIncognito;
 
     return result;
@@ -122,7 +119,7 @@ class UserState with ChangeNotifier {
 
       await storage.write(key: "premiumPurchasedIncognito", value: premiumPurchasedIncognito.toString());
     } else {
-      user.premiumPurchased = value;
+      user?.premiumPurchased = value;
 
       await storage.write(key: "user", value: jsonEncode(user));
     }

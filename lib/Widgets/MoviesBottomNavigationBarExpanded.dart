@@ -7,15 +7,14 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   final Movie movie;
   final bool fromSearch;
   final bool shouldRequestReview;
-  final MoviesList moviesList;
+  final MoviesList? moviesList;
 
   const MoviesBottomNavigationBarExpanded(
-      {Key key,
+      {super.key,
       this.fromSearch = false,
-      this.movie,
+      required this.movie,
       this.shouldRequestReview = false,
-      this.moviesList})
-      : super(key: key);
+      this.moviesList});
 
   @override
   Widget build(BuildContext context) {

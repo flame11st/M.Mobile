@@ -6,24 +6,24 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdManager {
   static bool bannerVisible = false;
-  static BannerAd _bannerAd;
-  static BannerAd _settingsBannerAd;
-  static BannerAd _itemExpandedBannerAd;
-  static BannerAd _listsBannerAd;
-  static BannerAd _listBannerAd;
-  static BannerAd _premiumBannerAd;
-  static BannerAd _recommendationsBannerAd;
-  static BannerAd _recommendationsHistoryBannerAd;
-  static BannerAd _searchBannerAd;
-  static BannerAd _searchBanner2Ad;
-  static InterstitialAd _recommendationsInterstitialAd;
+  static BannerAd? _bannerAd;
+  static BannerAd? _settingsBannerAd;
+  static BannerAd? _itemExpandedBannerAd;
+  static BannerAd? _listsBannerAd;
+  static BannerAd? _listBannerAd;
+  static BannerAd? _premiumBannerAd;
+  static BannerAd? _recommendationsBannerAd;
+  static BannerAd? _recommendationsHistoryBannerAd;
+  static BannerAd? _searchBannerAd;
+  static BannerAd? _searchBanner2Ad;
+  static InterstitialAd? _recommendationsInterstitialAd;
   static bool bannersReady = false;
   static bool recommendationsInterstitialAdLoaded = false;
 
   static Future<void> hideBanner() async {
     try {
-      await _bannerAd.dispose();
-      await _recommendationsInterstitialAd.dispose();
+      await _bannerAd?.dispose();
+      await _recommendationsInterstitialAd?.dispose();
     } catch (on){}
 
     _bannerAd = null;
@@ -44,7 +44,7 @@ class AdManager {
   }
 
   static Future<void> disposeInterstitialAd() async {
-    await _recommendationsInterstitialAd.dispose();
+    await _recommendationsInterstitialAd?.dispose();
   }
 
   static Future<void> showBanner() async {
@@ -53,17 +53,17 @@ class AdManager {
 
       if (Platform.isIOS) await AppTrackingTransparency.requestTrackingAuthorization();
 
-      await bannerAd.load();
+      await bannerAd?.load();
       await loadInterstitialAd();
-      await settingsBannerAd.load();
-      await itemExpandedBannerAd.load();
-      await listsBannerAd.load();
-      await listBannerAd.load();
-      await premiumBannerAd.load();
-      await recommendationsBannerAd.load();
-      await recommendationsHistoryBannerAd.load();
-      await searchBannerAd.load();
-      await searchBanner2Ad.load();
+      await settingsBannerAd?.load();
+      await itemExpandedBannerAd?.load();
+      await listsBannerAd?.load();
+      await listBannerAd?.load();
+      await premiumBannerAd?.load();
+      await recommendationsBannerAd?.load();
+      await recommendationsHistoryBannerAd?.load();
+      await searchBannerAd?.load();
+      await searchBanner2Ad?.load();
 
       bannersReady = true;
     }
@@ -80,7 +80,7 @@ class AdManager {
     );
   }
 
-  static BannerAd get bannerAd {
+  static BannerAd? get bannerAd {
     if (_bannerAd == null ) {
       _bannerAd = BannerAd(
         size: AdSize.banner,
@@ -93,7 +93,7 @@ class AdManager {
     return _bannerAd;
   }
 
-  static BannerAd get itemExpandedBannerAd {
+  static BannerAd? get itemExpandedBannerAd {
     if (_itemExpandedBannerAd == null ) {
       _itemExpandedBannerAd = BannerAd(
         size: AdSize.banner,
@@ -106,7 +106,7 @@ class AdManager {
     return _itemExpandedBannerAd;
   }
 
-  static BannerAd get settingsBannerAd {
+  static BannerAd? get settingsBannerAd {
     if (_settingsBannerAd == null ) {
       _settingsBannerAd = BannerAd(
         size: AdSize.banner,
@@ -119,7 +119,7 @@ class AdManager {
     return _settingsBannerAd;
   }
 
-  static BannerAd get listsBannerAd {
+  static BannerAd? get listsBannerAd {
     if (_listsBannerAd == null ) {
       _listsBannerAd = BannerAd(
         size: AdSize.banner,
@@ -132,7 +132,7 @@ class AdManager {
     return _listsBannerAd;
   }
 
-  static BannerAd get listBannerAd {
+  static BannerAd? get listBannerAd {
     if (_listBannerAd == null ) {
       _listBannerAd = BannerAd(
         size: AdSize.banner,
@@ -145,7 +145,7 @@ class AdManager {
     return _listBannerAd;
   }
 
-  static BannerAd get premiumBannerAd {
+  static BannerAd? get premiumBannerAd {
     if (_premiumBannerAd == null ) {
       _premiumBannerAd = BannerAd(
         size: AdSize.banner,
@@ -158,7 +158,7 @@ class AdManager {
     return _premiumBannerAd;
   }
 
-  static BannerAd get recommendationsBannerAd {
+  static BannerAd? get recommendationsBannerAd {
     if (_recommendationsBannerAd == null ) {
       _recommendationsBannerAd = BannerAd(
         size: AdSize.banner,
@@ -170,7 +170,7 @@ class AdManager {
 
     return _recommendationsBannerAd;
   }
-  static BannerAd get recommendationsHistoryBannerAd {
+  static BannerAd? get recommendationsHistoryBannerAd {
     if (_recommendationsHistoryBannerAd == null ) {
       _recommendationsHistoryBannerAd = BannerAd(
         size: AdSize.banner,
@@ -183,7 +183,7 @@ class AdManager {
     return _recommendationsHistoryBannerAd;
   }
 
-  static BannerAd get searchBannerAd {
+  static BannerAd? get searchBannerAd {
     if (_searchBannerAd == null ) {
       _searchBannerAd = BannerAd(
         size: AdSize.banner,
@@ -196,7 +196,7 @@ class AdManager {
     return _searchBannerAd;
   }
 
-  static BannerAd get searchBanner2Ad {
+  static BannerAd? get searchBanner2Ad {
     if (_searchBanner2Ad == null ) {
       _searchBanner2Ad = BannerAd(
         size: AdSize.banner,
@@ -211,7 +211,7 @@ class AdManager {
 
   static void showInterstitialAd() {
     if (recommendationsInterstitialAdLoaded) {
-      _recommendationsInterstitialAd.show();
+      _recommendationsInterstitialAd?.show();
     }
   }
 
