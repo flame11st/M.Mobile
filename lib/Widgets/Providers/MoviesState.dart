@@ -264,6 +264,8 @@ class MoviesState with ChangeNotifier {
     final listsStringValue = jsonEncode(this.personalMoviesLists);
 
     storage.write(key: 'personalMoviesLists', value: listsStringValue);
+
+    notifyListeners();
   }
 
   removeMovieFromPersonalList(String listName, Movie movie) {
@@ -274,6 +276,8 @@ class MoviesState with ChangeNotifier {
     final listsStringValue = jsonEncode(this.personalMoviesLists);
 
     storage.write(key: 'personalMoviesLists', value: listsStringValue);
+
+    notifyListeners();
   }
 
   setGenres() {

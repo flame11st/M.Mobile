@@ -68,7 +68,7 @@ class MIconButton extends StatelessWidget {
                     width: width != null ? width : 55,
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                      borderRadius: BorderRadius.all(Radius.circular(30)),
                     ),
                     child: Column(
                       children: [

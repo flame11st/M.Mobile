@@ -31,8 +31,6 @@ class MAddToListButton extends StatelessWidget {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    serviceAgent.state = userState;
-
     bool movieInList =
         list.listMovies.any((element) => element.id == this.movie.id);
 
@@ -203,8 +201,6 @@ class MAddToListButton extends StatelessWidget {
 
     bool isRemove = moviesList != null;
     var text = isRemove ? 'Remove from this List' : 'Add to Personal List';
-
-    if (serviceAgent.state == null) serviceAgent.state = userState;
 
     return MButton(
       prependIcon: isRemove ? Icons.clear : Icons.add,

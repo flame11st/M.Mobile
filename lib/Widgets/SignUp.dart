@@ -172,7 +172,7 @@ class SignUpState extends State<SignUp> {
     return Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
         appBar: AppBar(
-          title: Text('Create User'),
+          title: Text('Create User', style: Theme.of(context).textTheme.headline2,),
         ),
         body: Container(
           key: globalKey,

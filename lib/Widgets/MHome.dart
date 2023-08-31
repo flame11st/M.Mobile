@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/MoviesListPage.dart';
@@ -37,7 +38,6 @@ class MHomeState extends State<MHome> {
       userState.setPremium(true);
 
       if (!userState.isIncognitoMode) {
-        serviceAgent.state = userState;
         serviceAgent.setUserPremiumPurchased(userState.userId!, true);
       }
 
@@ -50,7 +50,6 @@ class MHomeState extends State<MHome> {
       userState.setPremium(true);
 
       if (!userState.isIncognitoMode) {
-        serviceAgent.state = userState;
         serviceAgent.setUserPremiumPurchased(userState.userId!, true);
       }
 
@@ -84,7 +83,7 @@ class MHomeState extends State<MHome> {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
     MTheme theme = themeState.selectedTheme;
-
+    AdManager.loadBanners();
     //  final primaryColor = Color(0xff206a5d);
     //  final secondaryColor = Color(0xff307a6d);
     //  final additionalColor = Color(0xfff1f1e8);

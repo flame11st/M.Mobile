@@ -34,86 +34,74 @@ class EmptyMoviesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      MCard(
-        marginLR: 20,
-        child: Column(
-          children: [
-            Text(
-              "Welcome to MovieDiary!",
-              style: TextStyle(
-                  color: Theme.of(context).indicatorColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
-            ),
-            SizedBox(
-              height: 15,
-            ),
-            Text(
-              "This powerful app lets you keep track on movies you want to watch and movies you've already seen.",
-              style:
-                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
-            ),
-            SizedBox(
-              height: 5,
-            ),
-            Text(
-              "With our AI recommendation engine powered by creators of ChatGPT"
-              " you can get personalized movie suggestions tailored to your taste, making your movie-watching experience even more enjoyable!",
-              style:
-                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
-            ),
-            SizedBox(
-              height: 15,
-            ),
-            MButton(
-              height: 40,
-              width: MediaQuery.of(context).size.width - 40,
-              backgroundColor: Theme.of(context).indicatorColor,
-              borderRadius: 20,
-              prependIcon: Icons.electric_bolt,
-              prependIconColor: Theme.of(context).cardColor,
-              text: "Get Recommendations",
-              onPressedCallback: () {
-                Navigator.of(context)
-                    .push(RouteHelper.createRoute(() => RecommendationsPage()));
-              },
-              active: true,
-              textColor: Theme.of(context).cardColor,
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Text(
-              "Check Lists with popular Movies or TV Series, top rated, etc.",
-              style:
-                  TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            MButton(height: 40,
-              borderRadius: 30,
-              active: true,
-              text: 'Open Lists',
-              prependIcon: Entypo.menu,
-              width: MediaQuery.of(context).size.width - 40,
-              onPressedCallback: () => Navigator.of(context)
-                  .push(_createRoute(() => MoviesListsPage(initialPageIndex: 0,))),
-            ),
-            SizedBox(
-              height: 30,
-            ),
-            Text(
-              "P.S. With this app you can't watch tv shows or movies!",
-              style: TextStyle(
-                  color: Theme.of(context).indicatorColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
-            )
-          ],
-        ),
-      )
-    ]);
+    return SingleChildScrollView(child: MCard(
+      marginLR: 20,
+      child: Column(
+        children: [
+          Text(
+            "Welcome to MovieDiary!",
+            style: TextStyle(
+                color: Theme.of(context).indicatorColor,
+                fontSize: 20,
+                fontWeight: FontWeight.bold),
+          ),
+          SizedBox(
+            height: 15,
+          ),
+          Text(
+            "This powerful app lets you keep track on movies you want to watch and movies you've already seen.",
+            style:
+            TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
+          ),
+          SizedBox(
+            height: 5,
+          ),
+          Text(
+            "With our AI recommendation engine powered by creators of ChatGPT"
+                " you can get personalized movie suggestions tailored to your taste, making your movie-watching experience even more enjoyable!",
+            style:
+            TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
+          ),
+          SizedBox(
+            height: 15,
+          ),
+          MButton(
+            height: 40,
+            width: MediaQuery.of(context).size.width - 40,
+            backgroundColor: Theme.of(context).indicatorColor,
+            borderRadius: 20,
+            prependIcon: Icons.electric_bolt,
+            prependIconColor: Theme.of(context).cardColor,
+            text: "Get Recommendations",
+            onPressedCallback: () {
+              Navigator.of(context)
+                  .push(RouteHelper.createRoute(() => RecommendationsPage()));
+            },
+            active: true,
+            textColor: Theme.of(context).cardColor,
+          ),
+          SizedBox(
+            height: 20,
+          ),
+          Text(
+            "Check Lists with popular Movies or TV Series, top rated, etc.",
+            style:
+            TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          MButton(height: 40,
+            borderRadius: 30,
+            active: true,
+            text: 'Open Lists',
+            prependIcon: Entypo.menu,
+            width: MediaQuery.of(context).size.width - 40,
+            onPressedCallback: () => Navigator.of(context)
+                .push(_createRoute(() => MoviesListsPage(initialPageIndex: 0,))),
+          ),
+        ],
+      ),
+    ));
   }
 }

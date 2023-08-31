@@ -33,7 +33,7 @@ class MSearchDelegate extends SearchDelegate {
         isLoading = false;
         setState(() => notFound = false);
         setState(() => foundMovies.clear());
-      } else if (query != oldQuery) {
+      } else if (query != oldQuery || isLoading) {
         oldQuery = query;
         searchMovies(context, setState);
       }
@@ -74,6 +74,16 @@ class MSearchDelegate extends SearchDelegate {
                             style: Theme.of(context).textTheme.headline5,
                           ),
                         )),
+                  if (foundMovies.isEmpty && notFound)
+                    MCard(
+                        marginTop: 15,
+                        marginLR: 10,
+                        child: Container(
+                          child: Text(
+                            "Nothing found by the query. Try to find something else.",
+                            style: Theme.of(context).textTheme.headline5,
+                          ),
+                        )),
                   for (final movie in foundMovies) MovieListItem(movie: movie),
                 ],
               )));
@@ -86,7 +96,6 @@ class MSearchDelegate extends SearchDelegate {
 
     if (userState == null) {
       userState = Provider.of<UserState>(context);
-      serviceAgent.state = userState;
     }
 
     // Debounce

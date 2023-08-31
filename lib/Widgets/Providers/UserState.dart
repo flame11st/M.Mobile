@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Objects/User.dart';
+import '../../Helpers/ad_manager.dart';
 import '../../Services/ServiceAgent.dart';
 
 class UserState with ChangeNotifier {
@@ -81,7 +82,7 @@ class UserState with ChangeNotifier {
       this.user = User.fromJson(userJson);
     }
 
-    serviceAgent.state = this;
+    ServiceAgent.state = this;
     var authorizationResponse = await serviceAgent.checkAuthorization();
     if (authorizationResponse.statusCode == 200) {
       isUserAuthorizedOrInIncognitoMode = true;
@@ -159,6 +160,10 @@ class UserState with ChangeNotifier {
 
     setInitialUserData(accessToken, refreshToken, userId, userName,
         isSignedInWithThirdPartyServices, showTutorial);
+
+    if(ServiceAgent.showLoadingAd) {
+      AdManager.showInterstitialAd();
+    }
   }
 
   logout() async {

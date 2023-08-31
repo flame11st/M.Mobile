@@ -5,28 +5,29 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 
 class ServiceAgent {
-  UserState? state;
-  String baseUrl = "";
-  final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/Function1";
-
+  static UserState? state;
+  static String baseUrl = "";
+  final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/GetMovieDiaryVariables";
+  static bool showLoadingAd = false;
   //var baseUrlLocal = "http://192.168.1.50/";
   //var baseUrlLocal = "https://localhost:5001/";
   var baseUrlLocal = "http://51.81.79.14/";
 
   ServiceAgent() {
-    setBaseUrl();
+    if(baseUrl.isEmpty) setBaseUrl();
   }
 
   setBaseUrl() async {
     var url = await getBaseUrl();
 
-    this.baseUrl = url;
+    baseUrl = url;
   }
 
   getBaseUrl() async {
     var responseAWS = await http.get(Uri.parse(functionUriAWS));
-
-    var uri = responseAWS.statusCode == 200 ? responseAWS.body : "http://51.81.79.14";
+    var variables = jsonDecode(responseAWS.body);
+    var uri = responseAWS.statusCode == 200 ? variables["apiUrl"] : "http://51.81.79.14";
+    showLoadingAd = variables["showLoadingAd"];
 
     return uri + "/api/";
     //return baseUrlLocal + "api/";

@@ -78,10 +78,6 @@ class RecommendationsHistoryPageState
       movieState = Provider.of<MoviesState>(context, listen: false);
     }
 
-    if (serviceAgent.state == null) {
-      serviceAgent.state = userState;
-    }
-
     if (userState!.user != null && history.isEmpty && !requested) {
       getHistory();
     }

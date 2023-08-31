@@ -195,8 +195,6 @@ class SettingsState extends State<Settings> {
 
     userMoviesCount = moviesState.userMovies.length;
 
-    if (serviceAgent.state == null) serviceAgent.state = userState;
-
     if (initialUserName == null && userState.user != null)
       nameController.text = initialUserName = userState.user!.name;
 

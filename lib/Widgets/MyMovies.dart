@@ -34,8 +34,6 @@ class MyMoviesState extends State<MyMovies> {
     final userState = Provider.of<UserState>(context, listen: false);
     final loaderState = Provider.of<LoaderState>(context, listen: false);
 
-    serviceAgent.state = userState;
-
     if (userState.isIncognitoMode) {
       if (loaderState.isLoaderVisible) {
         loaderState.setIsLoaderVisible(false);
@@ -113,8 +111,6 @@ class MyMoviesState extends State<MyMovies> {
     final moviesState = Provider.of<MoviesState>(context);
 
     if (userState.userId != null && userState.userId!.isNotEmpty) {
-      serviceAgent.state = userState;
-
       if (userState.isIncognitoMode) {
         userState.isIncognitoMode = false;
 

@@ -152,7 +152,7 @@ class MovieRateButtons extends StatelessWidget {
                                 ),
                                 MAddToListButton(
                                   movie: movie,
-                                  moviesList: moviesList!,
+                                  moviesList: moviesList,
                                   fromMenu: true,
                                 ),
                               ],

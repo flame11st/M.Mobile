@@ -112,10 +112,6 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       RatingHelper.refreshMoviesRating(recommendedMovies, context);
     }
 
-    if (serviceAgent.state == null) {
-      serviceAgent.state = userState;
-    }
-
     if (ModalRoute.of(context)!.isCurrent &&
         (this.globalKey == null || this.globalKey != MyGlobals.activeKey)) {
       globalKey = new GlobalKey();

@@ -129,8 +129,6 @@ class MovieListPageState extends State<MoviesListPage> {
                       Navigator.of(context1).pop();
 
                       if (!userState.isIncognitoMode) {
-                        serviceAgent.state = userState;
-
                         await serviceAgent.renameUserMoviesList(
                             userState.userId!,
                             moviesList.name,
@@ -222,10 +220,7 @@ class MovieListPageState extends State<MoviesListPage> {
   @override
   Widget build(BuildContext context) {
     final userState = Provider.of<UserState>(context);
-
-    if (serviceAgent.state == null) {
-      serviceAgent.state = userState;
-    }
+    final moviesState = Provider.of<MoviesState>(context);
 
     GlobalKey globalKey = new GlobalKey();
 

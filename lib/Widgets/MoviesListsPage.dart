@@ -163,8 +163,6 @@ class MoviesListsPageState extends State<MoviesListsPage>
                       moviesState.addMoviesList(nameController.text, order);
 
                       if (!userState.isIncognitoMode) {
-                        serviceAgent.state = userState;
-
                         await serviceAgent.createUserMoviesList(
                             userState.userId!, nameController.text, order);
                       }
