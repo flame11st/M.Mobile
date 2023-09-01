@@ -103,6 +103,10 @@ class MSearchDelegate extends SearchDelegate {
     await Future.delayed(Duration(milliseconds: 2000));
     if (queryToDebounce != query) return;
 
+    if (!userState!.isPremium && userState!.aiRequestsCount % 5 == 0) {
+      AdManager.showInterstitialAd();
+    }
+
     var timestamp = DateTime.now().millisecondsSinceEpoch;
 
     var moviesResponse;
@@ -129,6 +133,8 @@ class MSearchDelegate extends SearchDelegate {
 
       setStateFunction(() => foundMovies = foundMoviesNew);
       globalKey = new GlobalKey();
+
+      userState!.increaseAiRequestsCount();
 
       notFound = foundMovies.isEmpty;
     }

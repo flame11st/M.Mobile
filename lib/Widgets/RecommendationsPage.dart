@@ -191,7 +191,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                 children: <TextSpan>[
                                   new TextSpan(
                                       text:
-                                          "Welcome to our movie recommendation system, powered by AI from the creators of ChatGPT!"),
+                                          "Welcome to our movie recommendation system, powered by AI"),
                                   if (movieState!.userMovies.length < 10)
                                     new TextSpan(
                                         text:

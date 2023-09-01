@@ -160,10 +160,6 @@ class UserState with ChangeNotifier {
 
     setInitialUserData(accessToken, refreshToken, userId, userName,
         isSignedInWithThirdPartyServices, showTutorial);
-
-    if(ServiceAgent.showLoadingAd) {
-      AdManager.showInterstitialAd();
-    }
   }
 
   logout() async {
