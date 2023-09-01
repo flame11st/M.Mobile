@@ -39,7 +39,6 @@ class UserState with ChangeNotifier {
     var storedIsIncognitoMode;
     var storedPremiumPurchasedIncognito;
     var storedAppReviewRequested;
-    var storedAiRequestsCount;
 
     try {
       storedToken = await storage.read(key: 'token');
@@ -52,7 +51,6 @@ class UserState with ChangeNotifier {
       storedPremiumPurchasedIncognito = await storage.read(key: 'premiumPurchasedIncognito');
       storedAppReviewRequested = await storage.read(key: "appReviewRequested");
       storedUser = await storage.read(key: 'user');
-      storedAiRequestsCount = await storage.read(key: 'aiRequestsCount');
     } catch (on, ex) {
       await clearStorage();
     }
@@ -75,7 +73,6 @@ class UserState with ChangeNotifier {
     this.userId = storedUserId;
     this.userName = storedUserName;
     this.isSignedInWithGoogle = storedSignedInWithGoogle == "true";
-    this.aiRequestsCount = storedAiRequestsCount != null ? int.parse(storedAiRequestsCount) : 0;
 
     if (storedUser != null) {
       final userJson = jsonDecode(storedUser);

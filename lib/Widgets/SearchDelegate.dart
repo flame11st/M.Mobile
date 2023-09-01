@@ -103,7 +103,7 @@ class MSearchDelegate extends SearchDelegate {
     await Future.delayed(Duration(milliseconds: 2000));
     if (queryToDebounce != query) return;
 
-    if (!userState!.isPremium && userState!.aiRequestsCount % 5 == 0) {
+    if (!userState!.isPremium && userState!.aiRequestsCount % 4 == 0) {
       AdManager.showInterstitialAd();
     }
 
