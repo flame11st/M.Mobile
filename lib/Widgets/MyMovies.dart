@@ -126,7 +126,8 @@ class MyMoviesState extends State<MyMovies> {
         }
       }
 
-      final userInfoResponse = await serviceAgent.getUserInfo(userState.userId!);
+      final userInfoResponse =
+          await serviceAgent.getUserInfo(userState.userId!);
       final user = User.fromJson(json.decode(userInfoResponse.body));
 
       userState.setUser(user);
@@ -155,7 +156,11 @@ class MyMoviesState extends State<MyMovies> {
       loaderState.setIsLoaderVisible(false);
     }
 
-    var additionalPadding = Platform.isIOS ? 0.08 : 0;
+    var additionalPadding = Platform.isIOS
+        ? userState.isPremium
+            ? 0.06
+            : 0.08
+        : 0;
 
     final myMoviesWidget = Scaffold(
       resizeToAvoidBottomInset: false,
@@ -180,8 +185,8 @@ class MyMoviesState extends State<MyMovies> {
                   child: FittedBox(
                     child: FloatingActionButton(
                       onPressed: () {
-                        Navigator.of(context)
-                            .push(RouteHelper.createRoute(() => RecommendationsPage()));
+                        Navigator.of(context).push(RouteHelper.createRoute(
+                            () => RecommendationsPage()));
                       },
                       child: const Icon(
                         Icons.electric_bolt_rounded,
