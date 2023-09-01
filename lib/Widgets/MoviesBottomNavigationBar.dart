@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
@@ -7,7 +6,6 @@ import 'package:mmobile/Widgets/MoviesListsPage.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/RecommendationsPage.dart';
 import 'package:provider/provider.dart';
-
 import 'MoviesFilter.dart';
 import 'Providers/MoviesState.dart';
 import 'SearchDelegate.dart';
@@ -16,17 +14,20 @@ import 'Shared/MIconButton.dart';
 import 'package:mmobile/Helpers/RouteHelper.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
-   @override
+  var additionalPadding = 0;
+
+  @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
     var additionalPadding = Platform.isIOS ? 20 : 0;
     var middleButtonWidth = 90.0;
-    var buttonWidth = (MediaQuery.of(context).size.width - middleButtonWidth) / 4;
+    var buttonWidth =
+        (MediaQuery.of(context).size.width - middleButtonWidth) / 4;
 
     return Container(
-      padding: EdgeInsets.only(bottom: 0.0 + additionalPadding),
+        padding: EdgeInsets.only(bottom: 0.0 + additionalPadding),
         height: 60.0 + additionalPadding,
         width: double.infinity,
         decoration: BoxDecoration(
@@ -102,7 +103,9 @@ class MoviesBottomNavigationBar extends StatelessWidget {
               ),
               onPressedCallback: () {
                 Navigator.of(context)
-                    .push(RouteHelper.createRoute(() => MoviesListsPage(initialPageIndex: 0,)));
+                    .push(RouteHelper.createRoute(() => MoviesListsPage(
+                          initialPageIndex: 0,
+                        )));
               },
             ),
             MIconButton(

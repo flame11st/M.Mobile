@@ -155,7 +155,7 @@ class MyMoviesState extends State<MyMovies> {
       loaderState.setIsLoaderVisible(false);
     }
 
-    var additionalPadding = Platform.isIOS ? 0.06 : 0;
+    var additionalPadding = Platform.isIOS ? 0.08 : 0;
 
     final myMoviesWidget = Scaffold(
       resizeToAvoidBottomInset: false,

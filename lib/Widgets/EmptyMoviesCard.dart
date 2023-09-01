@@ -57,7 +57,7 @@ class EmptyMoviesCard extends StatelessWidget {
             height: 5,
           ),
           Text(
-            "With our AI recommendation engine powered by creators of ChatGPT"
+            "With our AI recommendation engine"
                 " you can get personalized movie suggestions tailored to your taste, making your movie-watching experience even more enjoyable!",
             style:
             TextStyle(color: Theme.of(context).hintColor, fontSize: 16),
