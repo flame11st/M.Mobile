@@ -83,7 +83,6 @@ class MHomeState extends State<MHome> {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
     MTheme theme = themeState.selectedTheme;
-    AdManager.loadBanners();
     //  final primaryColor = Color(0xff206a5d);
     //  final secondaryColor = Color(0xff307a6d);
     //  final additionalColor = Color(0xfff1f1e8);
