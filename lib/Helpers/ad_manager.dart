@@ -101,7 +101,7 @@ class AdManager {
     if (_itemExpandedBannerAd == null ) {
       _itemExpandedBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: bannerAdUnitId,
+        adUnitId: bannerAdUnitId2,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -114,7 +114,7 @@ class AdManager {
     if (_settingsBannerAd == null ) {
       _settingsBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: bannerAdUnitId,
+        adUnitId: bannerAdUnitId3,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -153,7 +153,7 @@ class AdManager {
     if (_premiumBannerAd == null ) {
       _premiumBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: bannerAdUnitId,
+        adUnitId: bannerAdUnitId3,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -166,7 +166,7 @@ class AdManager {
     if (_recommendationsBannerAd == null ) {
       _recommendationsBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: bannerAdUnitId,
+        adUnitId: bannerAdUnitId2,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -178,7 +178,7 @@ class AdManager {
     if (_recommendationsHistoryBannerAd == null ) {
       _recommendationsHistoryBannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: bannerAdUnitId,
+        adUnitId: bannerAdUnitId3,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -204,7 +204,7 @@ class AdManager {
     if (_searchBanner2Ad == null ) {
       _searchBanner2Ad = BannerAd(
         size: AdSize.banner,
-        adUnitId: bannerAdUnitId,
+        adUnitId: bannerAdUnitId2,
         listener: AdManagerBannerAdListener(),
         request: AdRequest(),
       );
@@ -272,6 +272,28 @@ class AdManager {
       return "ca-app-pub-5540129750283532/9763657807";//real
     } else if (Platform.isIOS) {
       return "ca-app-pub-5540129750283532/4970568843";
+    } else {
+      throw new UnsupportedError("Unsupported platform");
+    }
+  }
+
+  static String get bannerAdUnitId2 {
+    if (Platform.isAndroid) {
+      //return 'ca-app-pub-3940256099942544/6300978111'; //test
+      return "ca-app-pub-5540129750283532/9763657807";//real
+    } else if (Platform.isIOS) {
+      return "ca-app-pub-5540129750283532/7843835650";
+    } else {
+      throw new UnsupportedError("Unsupported platform");
+    }
+  }
+
+  static String get bannerAdUnitId3 {
+    if (Platform.isAndroid) {
+      //return 'ca-app-pub-3940256099942544/6300978111'; //test
+      return "ca-app-pub-5540129750283532/9763657807";//real
+    } else if (Platform.isIOS) {
+      return "ca-app-pub-5540129750283532/5286240481";
     } else {
       throw new UnsupportedError("Unsupported platform");
     }
