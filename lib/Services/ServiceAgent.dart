@@ -26,7 +26,7 @@ class ServiceAgent {
   getBaseUrl() async {
     var responseAWS = await http.get(Uri.parse(functionUriAWS));
     var variables = jsonDecode(responseAWS.body);
-    var uri = responseAWS.statusCode == 200 ? variables["apiUrl"] : "http://51.81.79.14";
+    var uri = variables["apiUrl"];
     showLoadingAd = variables["showLoadingAd"];
 
     return uri + "/api/";
