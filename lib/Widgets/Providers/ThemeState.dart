@@ -15,7 +15,7 @@ class ThemeState with ChangeNotifier {
       var storedThemeId;
       try{
         storedThemeId = await storage.read(key: 'themeId');
-      } catch(on, ex) {
+      } catch(on) {
         await clearStorage();
       }
 

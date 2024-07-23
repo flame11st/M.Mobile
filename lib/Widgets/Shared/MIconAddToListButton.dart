@@ -1,19 +1,14 @@
-import 'package:app_review/app_review.dart';
 import 'package:flutter/material.dart';
-import 'package:mmobile/Enums/MovieListType.dart';
-import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Widgets/Providers/MoviesState.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
-import 'package:mmobile/Widgets/Shared/MIconButton.dart';
 import 'package:provider/provider.dart';
 import '../MoviesListsPage.dart';
 import 'MButton.dart';
 import 'MCard.dart';
-import 'MDialog.dart';
 import 'MSnackBar.dart';
 
 class MAddToListButton extends StatelessWidget {
@@ -76,7 +71,7 @@ class MAddToListButton extends StatelessWidget {
                   children: [
                     Text(
                       list.name,
-                      style: Theme.of(context).textTheme.headline5,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     SizedBox(
                       height: 5,
@@ -103,7 +98,7 @@ class MAddToListButton extends StatelessWidget {
         builder: (BuildContext context1) => AlertDialog(
               insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               backgroundColor: Theme.of(context).primaryColor,
-              contentTextStyle: Theme.of(context).textTheme.headline5,
+              contentTextStyle: Theme.of(context).textTheme.headlineSmall,
               content: Container(
                 height: userLists.isEmpty
                     ? 100
@@ -115,7 +110,7 @@ class MAddToListButton extends StatelessWidget {
                     if (userLists.isNotEmpty)
                       Text(
                         'Select your personal list',
-                        style: Theme.of(context).textTheme.headline2,
+                        style: Theme.of(context).textTheme.displayMedium,
                       ),
                     SizedBox(
                       height: 10,

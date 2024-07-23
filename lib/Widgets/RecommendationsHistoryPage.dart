@@ -1,23 +1,14 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fluttericon/font_awesome_icons.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
 import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:provider/provider.dart';
-import '../Enums/MovieRate.dart';
-import '../Enums/MovieType.dart';
 import '../Helpers/RatingHelper.dart';
-import '../Helpers/RouteHelper.dart';
 import 'MovieListItem.dart';
 import 'Providers/MoviesState.dart';
-import 'Shared/FilterButton.dart';
-import 'Shared/MButton.dart';
-import 'Shared/MCard.dart';
-import 'Shared/MIconButton.dart';
 import 'Shared/MMoviesAnimatedList.dart';
 
 class RecommendationsHistoryPage extends StatefulWidget {
@@ -101,7 +92,7 @@ class RecommendationsHistoryPageState
 
     final headingField = Text(
       "Recommendations History",
-      style: Theme.of(context).textTheme.headline2,
+      style: Theme.of(context).textTheme.displayMedium,
     );
 
     final moviesListWidget = Container(
@@ -117,7 +108,7 @@ class RecommendationsHistoryPageState
       padding: EdgeInsets.all(20),
       child: Text(
         "Recommendations History is empty",
-        style: Theme.of(context).textTheme.headline2,
+        style: Theme.of(context).textTheme.displayMedium,
       ),
     );
 

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mmobile/Variables/Variables.dart';
-import 'MBoxShadow.dart';
 
 class FilterIcon extends StatelessWidget {
   final IconData? icon;

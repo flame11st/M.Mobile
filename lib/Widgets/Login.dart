@@ -222,7 +222,7 @@ class LoginState extends State<Login> {
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Email",
-              hintStyle: Theme.of(context).textTheme.headline5),
+              hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
 
     final passwordField = Theme(
@@ -237,7 +237,7 @@ class LoginState extends State<Login> {
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Password",
-              hintStyle: Theme.of(context).textTheme.headline5),
+              hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
 
     final loginButton = MButton(

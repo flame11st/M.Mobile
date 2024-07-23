@@ -100,7 +100,7 @@ class SignUpState extends State<SignUp> {
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Name",
-              hintStyle: Theme.of(context).textTheme.headline5),
+              hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
 
     final emailField = Theme(
@@ -114,7 +114,7 @@ class SignUpState extends State<SignUp> {
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Email",
-              hintStyle: Theme.of(context).textTheme.headline5),
+              hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
 
     final passwordField = Theme(
@@ -135,7 +135,7 @@ class SignUpState extends State<SignUp> {
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Password",
-              hintStyle: Theme.of(context).textTheme.headline5),
+              hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
 
     final confirmPasswordField = Theme(
@@ -157,7 +157,7 @@ class SignUpState extends State<SignUp> {
           decoration: InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Confirm Password",
-              hintStyle: Theme.of(context).textTheme.headline5),
+              hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
 
     final signUpButton = MButton(
@@ -172,7 +172,7 @@ class SignUpState extends State<SignUp> {
     return Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
         appBar: AppBar(
-          title: Text('Create User', style: Theme.of(context).textTheme.headline2,),
+          title: Text('Create User', style: Theme.of(context).textTheme.displayMedium,),
         ),
         body: Container(
           key: globalKey,

@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/MTheme.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
-import 'package:mmobile/Widgets/MoviesListPage.dart';
 import 'package:mmobile/Widgets/Providers/LoaderState.dart';
 import 'package:provider/provider.dart';
 import 'LoadingAnimation.dart';
@@ -73,7 +71,7 @@ class MHomeState extends State<MHome> {
 
   @override
   void dispose() {
-    _subscription!.cancel();
+    _subscription.cancel();
     super.dispose();
   }
 
@@ -147,11 +145,11 @@ class MHomeState extends State<MHome> {
 
           textTheme: TextTheme(
 //            headline1: themeState.selectedTheme.textStyleTheme.bodyText,
-            headline2: theme.textStyleTheme.expandedTitle,
-            headline3: theme.textStyleTheme.title,
-            headline4: theme.textStyleTheme.subtitleText,
-            headline5: theme.textStyleTheme.bodyText,
-            headline6: theme.textStyleTheme.expandedTitle,
+            displayMedium: theme.textStyleTheme.expandedTitle,
+            displaySmall: theme.textStyleTheme.title,
+            headlineMedium: theme.textStyleTheme.subtitleText,
+            headlineSmall: theme.textStyleTheme.bodyText,
+            titleLarge: theme.textStyleTheme.expandedTitle,
           ),
 
           pageTransitionsTheme: PageTransitionsTheme(

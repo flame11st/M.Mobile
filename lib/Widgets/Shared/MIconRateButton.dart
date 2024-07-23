@@ -1,4 +1,3 @@
-import 'package:app_review/app_review.dart';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/Movie.dart';
@@ -7,7 +6,6 @@ import 'package:mmobile/Widgets/Providers/MoviesState.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MIconButton.dart';
 import 'package:provider/provider.dart';
-import 'MButton.dart';
 import 'MSnackBar.dart';
 
 class MIconRateButton extends StatelessWidget {

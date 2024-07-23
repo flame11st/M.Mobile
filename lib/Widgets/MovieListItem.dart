@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +61,7 @@ class MovieListItemState extends State<MovieListItem> {
     if (response.statusCode == 404) {
       final serviceAgent = new ServiceAgent();
 
-      await serviceAgent.reloadMoviePoster(movie!.id);
+      await serviceAgent.reloadMoviePoster(movie.id);
     }
 
     imageChecked = true;
@@ -166,7 +165,7 @@ class MovieListItemState extends State<MovieListItem> {
                                   Text(movie.title,
                                       style: Theme.of(context)
                                           .textTheme
-                                          .headline3),
+                                          .displaySmall),
                                   Row(
                                     children: <Widget>[
                                       Text(
@@ -174,7 +173,7 @@ class MovieListItemState extends State<MovieListItem> {
                                               .format(movie.releaseDate),
                                           style: Theme.of(context)
                                               .textTheme
-                                              .headline5),
+                                              .headlineSmall),
                                       SizedBox(
                                         width: 30,
                                       ),
@@ -188,7 +187,7 @@ class MovieListItemState extends State<MovieListItem> {
                                                 ' min',
                                             style: Theme.of(context)
                                                 .textTheme
-                                                .headline5),
+                                                .headlineSmall),
                                       SizedBox(
                                         width: 30,
                                       ),
@@ -196,14 +195,14 @@ class MovieListItemState extends State<MovieListItem> {
                                         Text("Seasons: ${movie.seasonsCount}",
                                             style: Theme.of(context)
                                                 .textTheme
-                                                .headline5),
+                                                .headlineSmall),
                                     ],
                                   ),
                                   if (movie.genres.isNotEmpty)
                                     Text(movie.genres.join(', '),
                                         style: Theme.of(context)
                                             .textTheme
-                                            .headline5),
+                                            .headlineSmall),
                                   if (movie.genres.isEmpty)
                                     Text(
                                         movie.imdbVotes > 0
@@ -211,7 +210,7 @@ class MovieListItemState extends State<MovieListItem> {
                                             : 'Imdb: Not rated',
                                         style: Theme.of(context)
                                             .textTheme
-                                            .headline5),
+                                            .headlineSmall),
                                 ],
                               ),
                             ),
@@ -271,7 +270,7 @@ class MovieListItemState extends State<MovieListItem> {
                                   child: Text(
                                     movie.overview,
                                     style:
-                                        Theme.of(context).textTheme.headline5,
+                                        Theme.of(context).textTheme.headlineSmall,
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: movie.overview.length > 200 ? 5 : 4,
                                   )
@@ -286,11 +285,11 @@ class MovieListItemState extends State<MovieListItem> {
                             children: [
                               Text(
                                 "Imdb: ${movie.imdbVotes > 0 ? '${movie.imdbRate} (${formatter.format(movie.imdbVotes)})' : 'Not rated'}",
-                                style: Theme.of(context).textTheme.headline4,
+                                style: Theme.of(context).textTheme.headlineMedium,
                               ),
                               Text(
                                 "MovieDIary: ${movie.rating > 0 ? '${movie.rating}% (${formatter.format(movie.allVotes)})' : 'Not rated'}",
-                                style: Theme.of(context).textTheme.headline4,
+                                style: Theme.of(context).textTheme.headlineMedium,
                               )
                             ],
                           ),

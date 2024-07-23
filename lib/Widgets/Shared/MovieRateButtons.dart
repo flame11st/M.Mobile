@@ -3,7 +3,6 @@ import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/MovieRate.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
-import 'package:mmobile/Widgets/Shared/MButton.dart';
 
 import 'MIconAddToListButton.dart';
 import 'MIconRateButton.dart';
@@ -55,12 +54,12 @@ class MovieRateButtons extends StatelessWidget {
               RichText(
                   textAlign: TextAlign.center,
                   text: TextSpan(
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                     children: <TextSpan>[
                       new TextSpan(text: text),
                       new TextSpan(
                           text: '"${movie.title}"?',
-                          style: Theme.of(context).textTheme.headline4),
+                          style: Theme.of(context).textTheme.headlineMedium),
                     ],
                   )),
             Row(
@@ -141,7 +140,7 @@ class MovieRateButtons extends StatelessWidget {
                               children: [
                                 Text(
                                   'Other actions',
-                                  style: Theme.of(context).textTheme.headline2,
+                                  style: Theme.of(context).textTheme.displayMedium,
                                 ),
                                 Divider(
                                   height: 5,

@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 import '../Helpers/RatingHelper.dart';
 import '../Helpers/ad_manager.dart';
 import 'MovieListItem.dart';
-import 'Providers/MoviesState.dart';
 
 class MSearchDelegate extends SearchDelegate {
   List<Movie> foundMovies = [];
@@ -71,7 +70,7 @@ class MSearchDelegate extends SearchDelegate {
                         child: Container(
                           child: Text(
                             "You can search in English and German languages.",
-                            style: Theme.of(context).textTheme.headline5,
+                            style: Theme.of(context).textTheme.headlineSmall,
                           ),
                         )),
                   if (foundMovies.isEmpty && notFound)
@@ -81,7 +80,7 @@ class MSearchDelegate extends SearchDelegate {
                         child: Container(
                           child: Text(
                             "Nothing found by the query. Try to find something else.",
-                            style: Theme.of(context).textTheme.headline5,
+                            style: Theme.of(context).textTheme.headlineSmall,
                           ),
                         )),
                   for (final movie in foundMovies) MovieListItem(movie: movie),
@@ -191,9 +190,7 @@ class MSearchDelegate extends SearchDelegate {
 
   @override
   ThemeData appBarTheme(BuildContext context) {
-    assert(context != null);
     final ThemeData theme = Theme.of(context);
-    assert(theme != null);
     return theme;
   }
 }

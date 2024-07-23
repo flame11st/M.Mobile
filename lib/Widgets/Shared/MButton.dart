@@ -1,7 +1,5 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mmobile/Variables/Variables.dart';
 
 class MButton extends StatelessWidget {
   final String text;
@@ -81,7 +79,7 @@ class MButton extends StatelessWidget {
                 SizedBox(
                   width: 10,
                 ),
-              Text(text!, style: TextStyle(color: color, fontSize: 15)),
+              Text(text, style: TextStyle(color: color, fontSize: 15)),
               if (appendIcon != null)
                 SizedBox(
                   width: 10,

@@ -22,7 +22,7 @@ class MDialog {
         context: context,
         builder: (BuildContext context1) => AlertDialog(
               backgroundColor: Theme.of(context).primaryColor,
-              contentTextStyle: Theme.of(context).textTheme.headline5,
+              contentTextStyle: Theme.of(context).textTheme.headlineSmall,
               content: content,
               actions: [
                 MButton(

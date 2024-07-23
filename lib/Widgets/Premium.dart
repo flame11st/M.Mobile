@@ -1,8 +1,6 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
-import 'package:fluttericon/octicons_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Variables/Variables.dart';
@@ -52,7 +50,7 @@ class Premium extends StatelessWidget {
       children: <Widget>[
         Text(
           'Premium',
-          style: Theme.of(context).textTheme.headline5,
+          style: Theme.of(context).textTheme.headlineSmall,
         )
       ],
     );

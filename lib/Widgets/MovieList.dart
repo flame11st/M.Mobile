@@ -1,5 +1,4 @@
 import 'package:app_review/app_review.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/web_symbols_icons.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
@@ -64,7 +63,7 @@ class MovieListState extends State<MovieList>
         context: context,
         builder: (BuildContext context1) => AlertDialog(
               backgroundColor: Theme.of(context).primaryColor,
-              contentTextStyle: Theme.of(context).textTheme.headline5,
+              contentTextStyle: Theme.of(context).textTheme.headlineSmall,
               content: Container(
                 height: 400,
                 child: Column(
@@ -240,7 +239,7 @@ class MovieListState extends State<MovieList>
                         padding: EdgeInsets.all(20),
                         child: Text(
                           'Your Watchlist is empty.',
-                          style: Theme.of(context).textTheme.headline2,
+                          style: Theme.of(context).textTheme.displayMedium,
                         ),
                       ),
                     if (movieState.userMovies.length == 0)
@@ -261,7 +260,7 @@ class MovieListState extends State<MovieList>
                         padding: EdgeInsets.all(20),
                         child: Text(
                           'Your Viewed list is empty.',
-                          style: Theme.of(context).textTheme.headline2,
+                          style: Theme.of(context).textTheme.displayMedium,
                         ),
                       )
                   ],

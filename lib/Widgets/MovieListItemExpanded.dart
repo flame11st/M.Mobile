@@ -1,20 +1,14 @@
-import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
-import 'package:mmobile/Widgets/Shared/MBoxShadow.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:mmobile/Widgets/Shared/MTextField.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'MoviesBottomNavigationBarExpanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
@@ -78,7 +72,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
-          Text(movie.title, style: Theme.of(context).textTheme.headline2),
+          Text(movie.title, style: Theme.of(context).textTheme.displayMedium),
           SizedBox(
             height: 5,
           ),
@@ -87,7 +81,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               Text(
                   DateFormat(movie.seasonsCount > 0 ? 'yyyy' : 'yyyy-MM-dd')
                       .format(movie.releaseDate),
-                  style: Theme.of(context).textTheme.headline5),
+                  style: Theme.of(context).textTheme.headlineSmall),
               SizedBox(
                 width: 15,
               ),
@@ -97,19 +91,19 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                             ? movie.duration.toString()
                             : movie.averageTimeOfEpisode.toString()) +
                         ' min',
-                    style: Theme.of(context).textTheme.headline5),
+                    style: Theme.of(context).textTheme.headlineSmall),
               SizedBox(
                 width: 15,
               ),
               if (movie.seasonsCount > 0)
                 Text("Seasons: ${movie.seasonsCount}",
-                    style: Theme.of(context).textTheme.headline5),
+                    style: Theme.of(context).textTheme.headlineSmall),
               SizedBox(
                 width: 15,
               ),
               if (movie.seasonsCount > 0)
                 Text("${movie.inProduction ? 'In production' : 'Finished'}",
-                    style: Theme.of(context).textTheme.headline5)
+                    style: Theme.of(context).textTheme.headlineSmall)
             ],
           ),
           if (movie.genres.isNotEmpty)
@@ -118,7 +112,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             ),
           if (movie.genres.isNotEmpty)
             Text(movie.genres.join(', '),
-                style: Theme.of(context).textTheme.headline5)
+                style: Theme.of(context).textTheme.headlineSmall)
         ],
       ),
     );
@@ -165,14 +159,14 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
                           Text("${movie.rating}%",
-                              style: Theme.of(context).textTheme.headline5),
+                              style: Theme.of(context).textTheme.headlineSmall),
                           SizedBox(height: 5),
                           Text("Votes: ${formatter.format(movie.allVotes)}",
-                              style: Theme.of(context).textTheme.headline5)
+                              style: Theme.of(context).textTheme.headlineSmall)
                         ],
                       )
                     : Text("Not rated",
-                        style: Theme.of(context).textTheme.headline5),
+                        style: Theme.of(context).textTheme.headlineSmall),
                 progressColor: getProgressColor(),
               ),
             ),
@@ -181,7 +175,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             ),
             Text(
               "Imdb: ${movie.imdbVotes > 0 ? '${movie.imdbRate} (${formatter.format(movie.imdbVotes)})' : 'Not rated'}",
-              style: Theme.of(context).textTheme.headline5,
+              style: Theme.of(context).textTheme.headlineSmall,
             )
           ],
         )
@@ -233,7 +227,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             appBar: AppBar(
               title: Text(
                 "Details",
-                style: Theme.of(context).textTheme.headline2,
+                style: Theme.of(context).textTheme.displayMedium,
               ),
             ),
             backgroundColor: Theme.of(context).primaryColor,

@@ -1,18 +1,13 @@
-import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mmobile/Enums/MovieListType.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Services/ServiceAgent.dart';
-import 'package:mmobile/Variables/Variables.dart';
 import 'package:mmobile/Widgets/MoviesListPage.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
-import 'package:mmobile/Widgets/Shared/MIconButton.dart';
 import 'package:provider/provider.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/MButton.dart';
@@ -128,7 +123,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
         builder: (BuildContext context1) => AlertDialog(
               contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
               backgroundColor: Theme.of(context).primaryColor,
-              contentTextStyle: Theme.of(context).textTheme.headline5,
+              contentTextStyle: Theme.of(context).textTheme.headlineSmall,
               content: Container(
                   height: 90,
                   padding: EdgeInsets.all(10),
@@ -149,7 +144,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
                           decoration: InputDecoration(
                               contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                               labelText: "Enter movies list name",
-                              hintStyle: Theme.of(context).textTheme.headline5),
+                              hintStyle: Theme.of(context).textTheme.headlineSmall),
                         )),
                   )),
               actions: [
@@ -198,7 +193,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
 
   @override
   Widget build(BuildContext context) {
-    if (initialPageIndex != null && initialPageIndex != 0) {
+    if (initialPageIndex != 0) {
       tabController.animateTo(initialPageIndex);
 
       initialPageIndex = 0;

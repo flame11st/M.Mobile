@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Variables/Themes.dart';
 import 'package:provider/provider.dart';
 import 'Premium.dart';
@@ -83,7 +82,7 @@ class ChangeThemesState extends State<ChangeThemes>
       children: <Widget>[
         Text(
           'Change Theme',
-          style: Theme.of(context).textTheme.headline5,
+          style: Theme.of(context).textTheme.headlineSmall,
         )
       ],
     );

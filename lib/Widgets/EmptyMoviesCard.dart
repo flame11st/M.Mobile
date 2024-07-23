@@ -4,7 +4,6 @@ import 'package:fluttericon/entypo_icons.dart';
 import '../Helpers/RouteHelper.dart';
 import 'MoviesListsPage.dart';
 import 'RecommendationsPage.dart';
-import 'SearchDelegate.dart';
 import 'Shared/MButton.dart';
 import 'Shared/MCard.dart';
 

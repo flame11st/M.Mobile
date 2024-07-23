@@ -8,11 +8,9 @@ import 'package:mmobile/Enums/MovieType.dart';
 import 'package:mmobile/Objects/Movie.dart';
 import 'package:mmobile/Objects/MoviesList.dart';
 import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/Shared/MButton.dart';
 import '../../Services/ServiceAgent.dart';
 import '../MovieListItem.dart';
 
-import '../Premium.dart';
 
 class MoviesState with ChangeNotifier {
   MoviesState() {
@@ -53,7 +51,7 @@ class MoviesState with ChangeNotifier {
     var storedMovies;
     try {
       storedMovies = await storage.read(key: 'movies');
-    } catch (on, ex) {
+    } catch (on) {
       await clearStorage();
     }
 
@@ -138,7 +136,7 @@ class MoviesState with ChangeNotifier {
     try {
       storedExternalMoviesLists = await storage.read(key: 'externalMoviesLists');
       storedPersonalMoviesLists = await storage.read(key: 'personalMoviesLists');
-    } catch (on, ex) {
+    } catch (on) {
       await clearStorage();
     }
 
@@ -528,12 +526,10 @@ class MoviesState with ChangeNotifier {
   }
 
   changeMovieRate(String movieId, int movieRate, bool isIncognitoMode, Movie movie) async {
-    if (movieId == null) return;
-
     Movie movieToRate;
     var foundMovies = userMovies.where((m) => m.id == movieId);
 
-    if (movie != null && (movie.actors.isNotEmpty || movie.directors.isNotEmpty || movie.genres.isNotEmpty))
+    if ((movie.actors.isNotEmpty || movie.directors.isNotEmpty || movie.genres.isNotEmpty))
     {
       movieToRate = movie;
     } else if (foundMovies.length == 0) {

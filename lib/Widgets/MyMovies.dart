@@ -16,7 +16,6 @@ import 'Providers/LoaderState.dart';
 import 'Providers/MoviesState.dart';
 import 'Providers/UserState.dart';
 import 'RecommendationsPage.dart';
-import 'SearchDelegate.dart';
 
 class MyMovies extends StatefulWidget {
   @override

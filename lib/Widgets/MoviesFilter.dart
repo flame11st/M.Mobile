@@ -68,7 +68,7 @@ class MoviesFilter extends StatelessWidget {
           children: <Widget>[
             Text(
               'Filter Your Movies',
-              style: Theme.of(context).textTheme.headline2,
+              style: Theme.of(context).textTheme.displayMedium,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

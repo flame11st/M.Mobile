@@ -1,6 +1,4 @@
-import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class MCard extends StatelessWidget {
@@ -61,7 +59,7 @@ class MCard extends StatelessWidget {
                 if (text != null)
                   Text(
                     text,
-                    style: Theme.of(context).textTheme.headline3,
+                    style: Theme.of(context).textTheme.displaySmall,
                   ),
                 if (button != null) button
               ],

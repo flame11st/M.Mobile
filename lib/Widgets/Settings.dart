@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/RouteHelper.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
@@ -216,7 +214,7 @@ class SettingsState extends State<Settings> {
             ),
             Text(
               'Settings',
-              style: Theme.of(context).textTheme.headline5,
+              style: Theme.of(context).textTheme.headlineSmall,
             )
           ],
         ),
@@ -228,7 +226,7 @@ class SettingsState extends State<Settings> {
                   children: <Widget>[
                     Text(
                       'Sign out',
-                      style: Theme.of(context).textTheme.headline5,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     SizedBox(
                       width: 10,
@@ -259,7 +257,7 @@ class SettingsState extends State<Settings> {
       children: [
         Text(
           "You are not signed in. Your scores don't affect the rating of movies",
-          style: Theme.of(context).textTheme.headline3,
+          style: Theme.of(context).textTheme.displaySmall,
         ),
         SizedBox(
           height: 20,
@@ -289,7 +287,7 @@ class SettingsState extends State<Settings> {
             data: Theme.of(context)
                 .copyWith(primaryColor: Theme.of(context).indicatorColor),
             child: TextFormField(
-              style: Theme.of(context).textTheme.headline5,
+              style: Theme.of(context).textTheme.headlineSmall,
               decoration: InputDecoration(
                 fillColor: Colors.redAccent,
               ),
@@ -317,7 +315,7 @@ class SettingsState extends State<Settings> {
               data: Theme.of(context)
                   .copyWith(primaryColor: Theme.of(context).indicatorColor),
               child: TextFormField(
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme.of(context).textTheme.headlineSmall,
                 validator: (value) {
                   return emailController.text.isEmpty
                       ? 'Email can\'t be empty'
@@ -339,13 +337,13 @@ class SettingsState extends State<Settings> {
       children: <Widget>[
         RichText(
             text: TextSpan(
-          style: Theme.of(context).textTheme.headline5,
+          style: Theme.of(context).textTheme.headlineSmall,
           children: <TextSpan>[
             new TextSpan(
-                text: 'Theme:  ', style: Theme.of(context).textTheme.headline3),
+                text: 'Theme:  ', style: Theme.of(context).textTheme.displaySmall),
             new TextSpan(
                 text: themeState.selectedTheme.name,
-                style: Theme.of(context).textTheme.headline5)
+                style: Theme.of(context).textTheme.headlineSmall)
           ],
         )),
         MButton(
@@ -363,11 +361,11 @@ class SettingsState extends State<Settings> {
       children: <Widget>[
         RichText(
             text: TextSpan(
-          style: Theme.of(context).textTheme.headline5,
+          style: Theme.of(context).textTheme.headlineSmall,
           children: <TextSpan>[
             new TextSpan(
                 text: 'Your movies count:   ',
-                style: Theme.of(context).textTheme.headline3),
+                style: Theme.of(context).textTheme.displaySmall),
             new TextSpan(text: userMoviesCount.toString())
           ],
         )),
@@ -417,13 +415,13 @@ class SettingsState extends State<Settings> {
               ),
               Text(
                 'Old Password',
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
               Theme(
                   data: Theme.of(context)
                       .copyWith(primaryColor: Theme.of(context).indicatorColor),
                   child: TextFormField(
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                     validator: (value) => oldPasswordController.text.isNotEmpty
                         ? Validators.passwordValidator(
                             oldPasswordController.text)
@@ -436,13 +434,13 @@ class SettingsState extends State<Settings> {
               ),
               Text(
                 'New Password',
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
               Theme(
                   data: Theme.of(context)
                       .copyWith(primaryColor: Theme.of(context).indicatorColor),
                   child: TextFormField(
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                     validator: (value) {
                       if (newPasswordController.text.isEmpty) return null;
 
@@ -462,13 +460,13 @@ class SettingsState extends State<Settings> {
               ),
               Text(
                 'Confirm Password',
-                style: Theme.of(context).textTheme.headline5,
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
               Theme(
                   data: Theme.of(context)
                       .copyWith(primaryColor: Theme.of(context).indicatorColor),
                   child: TextFormField(
-                    style: Theme.of(context).textTheme.headline5,
+                    style: Theme.of(context).textTheme.headlineSmall,
                     validator: (value) {
                       if (confirmPasswordController.text.isEmpty) return null;
 

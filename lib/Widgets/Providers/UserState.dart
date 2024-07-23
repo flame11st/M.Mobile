@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Objects/User.dart';
-import '../../Helpers/ad_manager.dart';
 import '../../Services/ServiceAgent.dart';
 
 class UserState with ChangeNotifier {
@@ -51,7 +50,7 @@ class UserState with ChangeNotifier {
       storedPremiumPurchasedIncognito = await storage.read(key: 'premiumPurchasedIncognito');
       storedAppReviewRequested = await storage.read(key: "appReviewRequested");
       storedUser = await storage.read(key: 'user');
-    } catch (on, ex) {
+    } catch (on) {
       await clearStorage();
     }
 

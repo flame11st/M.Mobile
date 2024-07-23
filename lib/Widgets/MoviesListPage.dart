@@ -87,7 +87,7 @@ class MovieListPageState extends State<MoviesListPage> {
         builder: (BuildContext context1) => AlertDialog(
               contentPadding: EdgeInsets.fromLTRB(10, 0, 10, 0),
               backgroundColor: Theme.of(context).primaryColor,
-              contentTextStyle: Theme.of(context).textTheme.headline5,
+              contentTextStyle: Theme.of(context).textTheme.headlineSmall,
               content: Container(
                   height: 90,
                   padding: EdgeInsets.all(10),
@@ -109,7 +109,7 @@ class MovieListPageState extends State<MoviesListPage> {
                           decoration: InputDecoration(
                               contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                               labelText: "Enter new list name",
-                              hintStyle: Theme.of(context).textTheme.headline5),
+                              hintStyle: Theme.of(context).textTheme.headlineSmall),
                         )),
                   )),
               actions: [
@@ -236,7 +236,7 @@ class MovieListPageState extends State<MoviesListPage> {
         Expanded(
             child: Text(
           moviesList.name,
-          style: Theme.of(context).textTheme.headline5,
+          style: Theme.of(context).textTheme.headlineSmall,
         )),
         if (moviesList.movieListType == MovieListType.personal)
           PopupMenuButton(

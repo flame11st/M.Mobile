@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome_icons.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
@@ -18,7 +17,6 @@ import 'RecommendationsHistoryPage.dart';
 import 'Shared/FilterButton.dart';
 import 'Shared/MButton.dart';
 import 'Shared/MCard.dart';
-import 'Shared/MIconButton.dart';
 import 'Shared/MMoviesAnimatedList.dart';
 
 class RecommendationsPage extends StatefulWidget {
@@ -135,7 +133,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         Expanded(
             child: Text(
           "Recommendations",
-          style: Theme.of(context).textTheme.headline2,
+          style: Theme.of(context).textTheme.displayMedium,
         )),
         if (userState!.user != null)
           IconButton(
@@ -198,14 +196,14 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                             "\n\nTo make your recommendations more tailored to your tastes, we recommend you to rate at least 10 Movies or TV Shows.",
                                         style: Theme.of(context)
                                             .textTheme
-                                            .headline5),
+                                            .headlineSmall),
                                   new TextSpan(
                                       text:
                                           "\n\nDiscover new movies personalized just for you."
                                           "\nBy analyzing your movie preferences and utilizing state-of-the-art machine learning algorithms, we can provide you with highly personalized movie recommendations that will blow your mind. "
                                           "\n\nGet ready to explore a world of cinematic wonders with just one click",
                                       style:
-                                          Theme.of(context).textTheme.headline5)
+                                          Theme.of(context).textTheme.headlineSmall)
                                 ],
                               ),
                             ),
@@ -253,7 +251,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                                   Text("Type:",
                                       style: Theme.of(context)
                                           .textTheme
-                                          .headline5),
+                                          .headlineSmall),
                                   Row(children: [
                                     FilterIcon(
                                       height: 30,
