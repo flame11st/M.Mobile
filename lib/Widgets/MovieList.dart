@@ -148,7 +148,7 @@ class MovieListState extends State<MovieList>
 
     if (userState.shouldRequestReview &&
         !userState.appReviewRequested &&
-        movieState.userMovies.length > 6) {
+        movieState.userMovies.length > 16) {
       requestReview();
     }
 

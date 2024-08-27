@@ -49,10 +49,10 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     this.shouldRequestReview = shouldRequestReview;
   }
 
-  getProgressColor() {
-    if (movie.rating < 30)
+  getProgressColor(rating) {
+    if (rating < 30)
       return Colors.red;
-    else if (movie.rating < 70)
+    else if (rating < 70)
       return Colors.amberAccent;
     else
       return Colors.green;
@@ -66,23 +66,24 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     final imageUrl =
         movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
 
-    final genreChips = Align(alignment: Alignment.topLeft, child: Wrap(
-      spacing: 8.0, // Space between chips
-      runSpacing: 4.0, // Space between rows of chips
-      children: movie.genres.map((genre) {
-        return Chip(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-                20), // More rounded corners
-          ),
-          padding: EdgeInsets.all(2),
-          label: Text(
-            genre,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-        );
-      }).toList(),
-    ));
+    final genreChips = Align(
+        alignment: Alignment.topLeft,
+        child: Wrap(
+          spacing: 8.0, // Space between chips
+          runSpacing: 4.0, // Space between rows of chips
+          children: movie.genres.map((genre) {
+            return Chip(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20), // More rounded corners
+              ),
+              padding: EdgeInsets.all(2),
+              label: Text(
+                genre,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            );
+          }).toList(),
+        ));
 
     final topCard = MCard(
       marginTop: 10,
@@ -111,20 +112,24 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: <Widget>[
                     Container(
-                      width: MediaQuery.of(context).size.width - 160,
-                      child: RichText(
-                          text: TextSpan(
-                        style: Theme.of(context).textTheme.displayMedium,
-                        children: <TextSpan>[
-                          new TextSpan(text: movie.title),
-                          new TextSpan(
-                              text: ' (' +
-                                  DateFormat('yyyy').format(movie.releaseDate) +
-                                  ')',
-                              style: Theme.of(context).textTheme.headlineSmall),
-                        ],
-                      )),
-                    ),
+                        width: MediaQuery.of(context).size.width - 160,
+                        child: Align(
+                            alignment: Alignment.center,
+                            child: RichText(
+                                text: TextSpan(
+                              style: Theme.of(context).textTheme.displayMedium,
+                              children: <TextSpan>[
+                                new TextSpan(text: movie.title),
+                                new TextSpan(
+                                    text: ' (' +
+                                        DateFormat('yyyy')
+                                            .format(movie.releaseDate) +
+                                        ')',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall),
+                              ],
+                            )))),
                     Row(
                       children: <Widget>[
                         if (movie.seasonsCount > 0)
@@ -190,7 +195,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                           width: 20,
                                         )
                                       ]),
-                                  progressColor: getProgressColor(),
+                                  progressColor: getProgressColor(movie.rating),
                                 ),
                               ),
                               Container(
@@ -237,7 +242,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                           style: Theme.of(context)
                                               .textTheme
                                               .headlineSmall),
-                                  progressColor: getProgressColor(),
+                                  progressColor:
+                                      getProgressColor(movie.imdbRate * 10),
                                 ),
                               )
                             ]))
@@ -252,7 +258,10 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       children: <Widget>[
         if (movie.overview.isNotEmpty) SizedBox(height: 10),
         if (movie.overview.isNotEmpty)
-          Text(movie.overview, style: Theme.of(context).textTheme.bodyLarge,),
+          Text(
+            movie.overview,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
         if (movie.overview.isNotEmpty) SizedBox(height: 10),
         if (movie.directors.isNotEmpty) SizedBox(height: 10),
         if (movie.directors.isNotEmpty)
@@ -300,10 +309,15 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     color: Theme.of(context).primaryColor,
                     child: Column(
                       children: <Widget>[
-                        if (movie.tagline != null && movie.tagline!.isNotEmpty) SizedBox(height: 10,),
                         if (movie.tagline != null && movie.tagline!.isNotEmpty)
-                        Text(movie.tagline!, style: Theme.of(context)
-                            .textTheme.titleMedium,),
+                          SizedBox(
+                            height: 10,
+                          ),
+                        if (movie.tagline != null && movie.tagline!.isNotEmpty)
+                          Text(
+                            movie.tagline!,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                         topCard,
                         SizedBox(height: 5),
                         genreChips,
