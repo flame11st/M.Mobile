@@ -85,7 +85,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     ));
 
     final topCard = MCard(
-      marginTop: 1,
+      marginTop: 10,
+      marginBottom: 5,
       padding: 10,
       child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -182,7 +183,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                               "(${formatter.format(movie.allVotes)})",
                                               style: Theme.of(context)
                                                   .textTheme
-                                                  .labelSmall),
+                                                  .headlineSmall),
                                         Image(
                                           image: AssetImage(
                                               "Assets/mdIcon_V_with_effect.png"),
@@ -225,7 +226,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                                                   "(${formatter.format(movie.imdbVotes)})",
                                                   style: Theme.of(context)
                                                       .textTheme
-                                                      .labelSmall),
+                                                      .headlineSmall),
                                               Image(
                                                 image: AssetImage(
                                                     "Assets/imdb_logo.png"),
@@ -251,7 +252,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       children: <Widget>[
         if (movie.overview.isNotEmpty) SizedBox(height: 10),
         if (movie.overview.isNotEmpty)
-          Text(movie.overview, style: Theme.of(context).textTheme.headlineSmall,),
+          Text(movie.overview, style: Theme.of(context).textTheme.bodyLarge,),
         if (movie.overview.isNotEmpty) SizedBox(height: 10),
         if (movie.directors.isNotEmpty) SizedBox(height: 10),
         if (movie.directors.isNotEmpty)
@@ -299,6 +300,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                     color: Theme.of(context).primaryColor,
                     child: Column(
                       children: <Widget>[
+                        if (movie.tagline != null && movie.tagline!.isNotEmpty) SizedBox(height: 10,),
                         if (movie.tagline != null && movie.tagline!.isNotEmpty)
                         Text(movie.tagline!, style: Theme.of(context)
                             .textTheme.titleMedium,),

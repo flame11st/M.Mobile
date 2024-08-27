@@ -48,7 +48,7 @@ class ThemePresentation extends StatelessWidget {
                                 fontWeight: FontWeight.w500),
                           ),
                           Text(
-                            'Action, Adventure, Science Fiction',
+                            'Action, Adventure, Drama',
                             style: TextStyle(
                                 color: theme?.colorTheme.fontsColor,
                                 fontWeight: FontWeight.w500),
