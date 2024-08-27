@@ -108,7 +108,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             Container(
                 height: 160,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: <Widget>[
                     Container(
