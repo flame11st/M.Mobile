@@ -9,6 +9,7 @@ import 'package:mmobile/Widgets/MoviesListPage.dart';
 import 'package:mmobile/Widgets/Providers/UserState.dart';
 import 'package:mmobile/Widgets/Shared/MCard.dart';
 import 'package:provider/provider.dart';
+import '../Variables/Variables.dart';
 import 'Providers/MoviesState.dart';
 import 'Shared/MButton.dart';
 

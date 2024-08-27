@@ -31,5 +31,5 @@ class MTextStyles {
 class MyGlobals {
   static GlobalKey? activeKey;
 
-  static GlobalKey<AnimatedListState>? personalListsKey;
+  static GlobalKey<AnimatedListState>? personalListsKey = GlobalKey<AnimatedListState>();
 }

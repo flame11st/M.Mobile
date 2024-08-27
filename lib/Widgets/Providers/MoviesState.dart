@@ -682,6 +682,7 @@ class MoviesState with ChangeNotifier {
   //Animated List area
   GlobalKey<AnimatedListState> watchlistKey = GlobalKey<AnimatedListState>();
   GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
+  GlobalKey<AnimatedListState> personalListKey = GlobalKey<AnimatedListState>();
   // GlobalKey<AnimatedListState> personalListKey;
 
   Widget buildItem(Movie movie, Animation<double> animation,

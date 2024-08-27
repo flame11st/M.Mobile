@@ -5,14 +5,16 @@ class MMoviesAnimatedList extends StatelessWidget {
   final movies;
   final buildItemFunction;
   final isPremium;
+  final scrollController;
 
-  const MMoviesAnimatedList({super.key, this.listKey, this.movies, this.buildItemFunction, this.isPremium});
+  const MMoviesAnimatedList({super.key, this.listKey, this.movies, this.buildItemFunction, this.isPremium, this.scrollController});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       child: AnimatedList(
         shrinkWrap: true,
+        controller: scrollController,
         padding: EdgeInsets.only(bottom: 90),
         key: listKey,
         initialItemCount: movies.length,

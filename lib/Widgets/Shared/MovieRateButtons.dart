@@ -26,7 +26,7 @@ class MovieRateButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = ((MediaQuery.of(context).size.width - 50) / 3) - 15;
+    final width = ((MediaQuery.of(context).size.width - 50) / 3) - 20;
     final text = movie.movieRate == MovieRate.notRated
         ? "Add to your movies "
         : "Change score of ";

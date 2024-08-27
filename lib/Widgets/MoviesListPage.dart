@@ -44,17 +44,13 @@ class MovieListPageState extends State<MoviesListPage> {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,
-        child: Column(
-          children: [
-            MovieListItem(
-                shouldRequestReview: false,
-                movie: movie,
-                moviesList:
-                    this.moviesList.movieListType == MovieListType.personal
-                        ? this.moviesList
-                        : null)
-          ],
-        ));
+        child: MovieListItem(
+            shouldRequestReview: false,
+            movie: movie,
+            moviesList:
+            this.moviesList.movieListType == MovieListType.personal
+                ? this.moviesList
+                : null));
   }
 
   void removeListButtonClicked() {
@@ -219,16 +215,18 @@ class MovieListPageState extends State<MoviesListPage> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('rebuilding MovieListPage');
+    debugPrint(MyGlobals.personalListsKey.toString());
+
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
+    debugPrint(moviesState.viewedListKey.toString());
 
     GlobalKey globalKey = new GlobalKey();
 
     if (ModalRoute.of(context)!.isCurrent && moviesList.listMovies.isNotEmpty) {
       MyGlobals.activeKey = globalKey;
     }
-
-    MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
 
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

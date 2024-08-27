@@ -128,6 +128,8 @@ class MovieListState extends State<MovieList>
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('rebuilding MovieList');
+
     if (tabController!.animation!.value != 1 &&
         tabController!.animation!.value != 0) {
       final targetIndex = tabController!.animation!.value.round();

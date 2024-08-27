@@ -148,8 +148,6 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       ],
     );
 
-    MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
-
     return Scaffold(
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
