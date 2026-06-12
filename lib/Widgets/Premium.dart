@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
-import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/Shared/MButton.dart';
+import 'package:mmobile/Variables/variables.dart';
+import 'package:mmobile/Widgets/Shared/m_button.dart';
 import 'package:provider/provider.dart';
-import 'Providers/UserState.dart';
-import 'Shared/MSnackBar.dart';
+import 'Providers/user_state.dart';
+import 'Shared/m_snack_bar.dart';
 
 class Premium extends StatelessWidget {
   purchaseButtonClick() async {
@@ -19,9 +19,9 @@ class Premium extends StatelessWidget {
       return;
     }
 
-    const Set<String> _kIds = {'premium_purchase'};
+    const Set<String> kIds = {'premium_purchase'};
     final ProductDetailsResponse response =
-        await InAppPurchase.instance.queryProductDetails(_kIds);
+        await InAppPurchase.instance.queryProductDetails(kIds);
     if (response.notFoundIDs.isNotEmpty) {
       MSnackBar.showSnackBar("Not available now. Please try later.", false);
 
@@ -37,7 +37,7 @@ class Premium extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    GlobalKey globalKey = new GlobalKey();
+    GlobalKey globalKey = GlobalKey();
 
     if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
@@ -64,7 +64,7 @@ class Premium extends StatelessWidget {
           fontWeight: FontWeight.bold),
     );
 
-    final subTitleText = Text(
+    final subtitleText = Text(
       'If you like MovieDiary you can support the project by unlocking the Premium features:',
       textAlign: TextAlign.center,
       style: TextStyle(
@@ -80,7 +80,7 @@ class Premium extends StatelessWidget {
           color: Theme.of(context).indicatorColor,
           size: 40,
         ),
-        SizedBox(
+        const SizedBox(
           height: 10,
         ),
         Text(
@@ -101,7 +101,7 @@ class Premium extends StatelessWidget {
           color: Theme.of(context).indicatorColor,
           size: 40,
         ),
-        SizedBox(
+        const SizedBox(
           height: 10,
         ),
         Text(
@@ -122,7 +122,7 @@ class Premium extends StatelessWidget {
           color: Theme.of(context).indicatorColor,
           size: 40,
         ),
-        SizedBox(
+        const SizedBox(
           height: 10,
         ),
         Text(
@@ -145,7 +145,7 @@ class Premium extends StatelessWidget {
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
               )
-            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
           backgroundColor: Theme.of(context).primaryColor,
           appBar: AppBar(
@@ -155,26 +155,26 @@ class Premium extends StatelessWidget {
             key: globalKey,
             child: SingleChildScrollView(
               child: Container(
-                  margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  margin: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   color: Theme.of(context).primaryColor,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: <Widget>[
                       titleText,
-                      SizedBox(
+                      const SizedBox(
                         height: 20,
                       ),
-                      subTitleText,
-                      SizedBox(
+                      subtitleText,
+                      const SizedBox(
                         height: 20,
                       ),
                       removeAdFeature,
-                      SizedBox(
+                      const SizedBox(
                         height: 20,
                       ),
                       themeFeature,
-                      SizedBox(
+                      const SizedBox(
                         height: 20,
                       ),
                       supportFeature,
@@ -185,7 +185,7 @@ class Premium extends StatelessWidget {
           bottomNavigationBar: BottomAppBar(
               color: Theme.of(context).primaryColor,
               child: Container(
-                margin: EdgeInsets.fromLTRB(10, 0, 10, 20),
+                margin: const EdgeInsets.fromLTRB(10, 0, 10, 20),
                 child: MButton(
                   onPressedCallback: () => purchaseButtonClick(),
                   prependIconColor: userState.isPremium
@@ -202,3 +202,4 @@ class Premium extends StatelessWidget {
         ));
   }
 }
+

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:mmobile/Enums/MovieType.dart';
+import 'package:mmobile/Enums/movie_type.dart';
 
 class Movie {
   final String id;
@@ -28,30 +28,30 @@ class Movie {
   int imdbVotes;
 
   updateMovie(Movie updatedMovie) {
-    if (updatedMovie.id != this.id) return;
+    if (updatedMovie.id != id) return;
 
-    this.title = updatedMovie.title;
-    this.overview = updatedMovie.overview;
-    this.tagline = updatedMovie.tagline;
-    this.posterPath = updatedMovie.posterPath;
-    this.duration = updatedMovie.duration;
-    this.rating = updatedMovie.rating;
-    this.allVotes = updatedMovie.allVotes;
-    this.likedVotes = updatedMovie.likedVotes;
-    this.dislikedVotes = updatedMovie.dislikedVotes;
-    this.countries = updatedMovie.countries;
-    this.actors = updatedMovie.actors;
-    this.directors = updatedMovie.directors;
-    this.genres = updatedMovie.genres;
-    this.movieRate = updatedMovie.movieRate;
-    this.movieType = updatedMovie.movieType;
-    this.releaseDate = updatedMovie.releaseDate;
-    this.averageTimeOfEpisode = updatedMovie.averageTimeOfEpisode;
-    this.inProduction = updatedMovie.inProduction;
-    this.seasonsCount = updatedMovie.seasonsCount;
-    this.imdbRate = updatedMovie.imdbRate;
-    this.imdbVotes = updatedMovie.imdbVotes;
-    this.updated = updatedMovie.updated;
+    title = updatedMovie.title;
+    overview = updatedMovie.overview;
+    tagline = updatedMovie.tagline;
+    posterPath = updatedMovie.posterPath;
+    duration = updatedMovie.duration;
+    rating = updatedMovie.rating;
+    allVotes = updatedMovie.allVotes;
+    likedVotes = updatedMovie.likedVotes;
+    dislikedVotes = updatedMovie.dislikedVotes;
+    countries = updatedMovie.countries;
+    actors = updatedMovie.actors;
+    directors = updatedMovie.directors;
+    genres = updatedMovie.genres;
+    movieRate = updatedMovie.movieRate;
+    movieType = updatedMovie.movieType;
+    releaseDate = updatedMovie.releaseDate;
+    averageTimeOfEpisode = updatedMovie.averageTimeOfEpisode;
+    inProduction = updatedMovie.inProduction;
+    seasonsCount = updatedMovie.seasonsCount;
+    imdbRate = updatedMovie.imdbRate;
+    imdbVotes = updatedMovie.imdbVotes;
+    updated = updatedMovie.updated;
   }
 
   Movie(
@@ -160,3 +160,4 @@ class Movie {
     return result.toInt();
   }
 }
+

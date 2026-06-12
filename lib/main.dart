@@ -1,37 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:in_app_purchase_android/in_app_purchase_android.dart';
-import 'package:mmobile/Widgets/Providers/LoaderState.dart';
-import 'package:mmobile/Widgets/Providers/ThemeState.dart';
+import 'package:mmobile/Widgets/Providers/loader_state.dart';
+import 'package:mmobile/Widgets/Providers/theme_state.dart';
 import 'package:provider/provider.dart';
-import 'Widgets/MHome.dart';
-import 'Widgets/Providers/MoviesState.dart';
-import 'Widgets/Providers/UserState.dart';
+import 'Widgets/m_home.dart';
+import 'Widgets/Providers/movies_state.dart';
+import 'Widgets/Providers/user_state.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() {
-  InAppPurchaseAndroidPlatformAddition.enablePendingPurchases();
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
 
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations
-    ([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
-  runApp(ChangeNotifierProvider(
-    create: (context) => UserState(),
-    child: ChangeNotifierProvider(
-      create: (context) => MoviesState(),
-      child: ChangeNotifierProvider(
-        create: (context) => LoaderState(),
-        child: ChangeNotifierProvider(
-          create: (context) => ThemeState(),
-          child: MaterialApp(
-            title: 'MovieDiary',
-            home: MHome(),
-          ),
-        ),
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => UserState()),
+        ChangeNotifierProvider(create: (context) => MoviesState()),
+        ChangeNotifierProvider(create: (context) => LoaderState()),
+        ChangeNotifierProvider(create: (context) => ThemeState()),
+      ],
+      child: MaterialApp(
+        title: 'MovieDiary',
+        home: MHome(),
       ),
     ),
-  ));
+  );
 }

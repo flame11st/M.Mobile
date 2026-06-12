@@ -14,53 +14,44 @@ description: M.Mobile application.
 version: 1.7.4+92
 
 environment:
-   sdk: '^3.4.4'
-#  sdk: '>=2.6.0 <3.0.0'
+  sdk: '>=3.4.4 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
-  http: ^0.13.6
-  provider: ^6.0.5
+  http: ^1.2.2
+  provider: ^6.1.2
   flutter_secure_storage: ^9.2.2
-  cached_network_image: ^3.0.0
-  percent_indicator: ^4.2.3
+  cached_network_image: ^3.4.1
+  percent_indicator: ^4.2.5
   fluttericon: ^2.0.0
-  google_sign_in: ^6.0.2
+  google_sign_in: ^6.2.2
   flutter_launcher_icons: ^0.13.1
-  device_info: ^2.0.3
-  in_app_purchase: ^3.1.5
-  intl: ^0.18.0
-  app_review: ^2.1.1+1
+  device_info_plus: ^10.1.2
+  in_app_purchase: ^3.2.0
+  intl: ^0.19.0
 #  in_app_review: ^2.0.2
 #  firebase_admob: ^0.11.2
-  google_mobile_ads: ^5.1.0
-  sign_in_with_apple: ^6.1.1
-  google_fonts: ^4.0.4
-  app_tracking_transparency: ^2.0.2+1
+  google_mobile_ads: ^5.2.0
+  sign_in_with_apple: ^6.1.4
+  google_fonts: ^6.2.1
+  app_tracking_transparency: ^2.0.6
 
-  in_app_purchase_android: any
+  in_app_purchase_android: ^0.3.6+5
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
 flutter_icons:
   image_path: "Assets/mdIcon_V_with_effect.png"
   android: true
   ios: true
   image_path_ios: "Assets/mdIcon_V_new_white.png"
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.3
   remove_alpha_ios: true
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
-dependency_overrides:
-  package_info_plus: ^4.1.0
-  wakelock_windows: any
-  win32: any
-
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

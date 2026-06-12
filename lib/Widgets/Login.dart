@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mmobile/Objects/MoviesList.dart';
-import 'package:mmobile/Variables/Validators.dart';
-import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/Providers/LoaderState.dart';
-import 'package:mmobile/Widgets/Shared/MCard.dart';
-import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
-import 'package:mmobile/Widgets/SignUp.dart';
+import 'package:mmobile/Objects/movies_list.dart';
+import 'package:mmobile/Variables/validators.dart';
+import 'package:mmobile/Variables/variables.dart';
+import 'package:mmobile/Widgets/Providers/loader_state.dart';
+import 'package:mmobile/Widgets/Shared/m_card.dart';
+import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
+import 'package:mmobile/Widgets/sign_up.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../Services/ServiceAgent.dart';
-import 'Providers/MoviesState.dart';
-import 'Providers/UserState.dart';
-import 'Shared/MButton.dart';
+import '../Services/service_agent.dart';
+import 'Providers/movies_state.dart';
+import 'Providers/user_state.dart';
+import 'Shared/m_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -32,7 +32,7 @@ class LoginState extends State<Login> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final serviceAgent = ServiceAgent();
-  final storage = new FlutterSecureStorage();
+  final storage = const FlutterSecureStorage();
   final GoogleSignIn googleSignIn = GoogleSignIn();
   final _formKey = GlobalKey<FormState>();
 
@@ -142,8 +142,8 @@ class LoginState extends State<Login> {
   setSignInButtonActive() {
     var signInButtonActive = _formKey.currentState != null &&
         _formKey.currentState!.validate() &&
-        emailController.text.length > 0 &&
-        passwordController.text.length > 0;
+        emailController.text.isNotEmpty &&
+        passwordController.text.isNotEmpty;
 
     if (signInButtonActive == this.signInButtonActive) return;
 
@@ -181,7 +181,7 @@ class LoginState extends State<Login> {
 
     Iterable iterableMoviesLists = json.decode(moviesListsResponse.body);
 
-    if (iterableMoviesLists.length != 0) {
+    if (iterableMoviesLists.isNotEmpty) {
       List<MoviesList> moviesLists = iterableMoviesLists.map((model) {
         var list = json.decode(model);
         return MoviesList.fromJson(list);
@@ -205,7 +205,7 @@ class LoginState extends State<Login> {
       isLoaderHided = true;
     }
 
-    GlobalKey globalKey = new GlobalKey();
+    GlobalKey globalKey = GlobalKey();
 
     if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
@@ -220,7 +220,7 @@ class LoginState extends State<Login> {
               : null,
           controller: emailController,
           decoration: InputDecoration(
-              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              contentPadding: const EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Email",
               hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
@@ -235,7 +235,7 @@ class LoginState extends State<Login> {
           controller: passwordController,
           obscureText: true,
           decoration: InputDecoration(
-              contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+              contentPadding: const EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
               hintText: "Password",
               hintStyle: Theme.of(context).textTheme.headlineSmall),
         ));
@@ -255,7 +255,7 @@ class LoginState extends State<Login> {
       active: true,
       width: MediaQuery.of(context).size.width,
       height: 50,
-      prependImage: AssetImage("Assets/google_logo.png"),
+      prependImage: const AssetImage("Assets/google_logo.png"),
     );
 
     final signInWithAppleButton = SignInWithAppleButton(
@@ -288,16 +288,16 @@ class LoginState extends State<Login> {
     return Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
         body: Container(
-          margin: EdgeInsets.only(top: 40),
+          margin: const EdgeInsets.only(top: 40),
           key: globalKey,
           child: SingleChildScrollView(
             child: Container(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                 color: Theme.of(context).primaryColor,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Image(
+                    const Image(
                       image: AssetImage("Assets/mdIcon_V_with_effect.png"),
                       width: 130,
                     ),
@@ -315,29 +315,29 @@ class LoginState extends State<Login> {
                         child: Column(
                           children: <Widget>[
                             emailField,
-                            SizedBox(height: 25.0),
+                            const SizedBox(height: 25.0),
                             passwordField,
-                            SizedBox(height: 35.0),
+                            const SizedBox(height: 35.0),
                             loginButton,
                           ],
                         ),
                       )),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 30,
                     ),
                     if (Platform.isIOS) signInWithAppleButton,
                     if (Platform.isIOS)
-                      SizedBox(
+                      const SizedBox(
                         height: 20,
                       ),
                     googleLoginButton,
-                    SizedBox(
+                    const SizedBox(
                       height: 20,
                     ),
                     signUpButton,
                     // Text(email),
-                    SizedBox(
+                    const SizedBox(
                       height: 20,
                     ),
                     incognitoButton,
@@ -347,3 +347,4 @@ class LoginState extends State<Login> {
         ));
   }
 }
+

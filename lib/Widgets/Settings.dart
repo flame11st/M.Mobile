@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:mmobile/Helpers/RouteHelper.dart';
+import 'package:mmobile/Helpers/route_helper.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
-import 'package:mmobile/Objects/User.dart';
-import 'package:mmobile/Services/ServiceAgent.dart';
-import 'package:mmobile/Variables/Validators.dart';
-import 'package:mmobile/Variables/Variables.dart';
-import 'package:mmobile/Widgets/ChangeThemes.dart';
-import 'package:mmobile/Widgets/Providers/ThemeState.dart';
-import 'package:mmobile/Widgets/Shared/MButton.dart';
-import 'package:mmobile/Widgets/Shared/MDialog.dart';
-import 'package:mmobile/Widgets/Shared/MSnackBar.dart';
+import 'package:mmobile/Objects/user.dart';
+import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Variables/validators.dart';
+import 'package:mmobile/Variables/variables.dart';
+import 'package:mmobile/Widgets/change_themes.dart';
+import 'package:mmobile/Widgets/Providers/theme_state.dart';
+import 'package:mmobile/Widgets/Shared/m_button.dart';
+import 'package:mmobile/Widgets/Shared/m_dialog.dart';
+import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:provider/provider.dart';
-import 'Premium.dart';
-import 'Providers/MoviesState.dart';
-import 'Providers/UserState.dart';
-import 'Shared/MCard.dart';
+import 'premium.dart';
+import 'Providers/movies_state.dart';
+import 'Providers/user_state.dart';
+import 'Shared/m_card.dart';
 import 'package:fluttericon/entypo_icons.dart';
 
 class Settings extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    return new SettingsState();
+    return SettingsState();
   }
 }
 
 class SettingsState extends State<Settings> {
-  final serviceAgent = new ServiceAgent();
+  final serviceAgent = ServiceAgent();
 
   final oldPasswordController = TextEditingController();
   final newPasswordController = TextEditingController();
@@ -77,9 +77,9 @@ class SettingsState extends State<Settings> {
   setChangePasswordButtonActive() {
     var changePasswordButtonActive =
         _formChangePasswordKey.currentState!.validate() &&
-            newPasswordController.text.length > 0 &&
-            oldPasswordController.text.length > 0 &&
-            confirmPasswordController.text.length > 0;
+            newPasswordController.text.isNotEmpty &&
+            oldPasswordController.text.isNotEmpty &&
+            confirmPasswordController.text.isNotEmpty;
 
     if (this.changePasswordButtonActive != changePasswordButtonActive) {
       setState(() {
@@ -181,7 +181,7 @@ class SettingsState extends State<Settings> {
 
   @override
   Widget build(BuildContext context) {
-    GlobalKey globalKey = new GlobalKey();
+    GlobalKey globalKey = GlobalKey();
 
     if (ModalRoute.of(context)!.isCurrent) {
       MyGlobals.activeKey = globalKey;
@@ -193,11 +193,13 @@ class SettingsState extends State<Settings> {
 
     userMoviesCount = moviesState.userMovies.length;
 
-    if (initialUserName == null && userState.user != null)
+    if (initialUserName == null && userState.user != null) {
       nameController.text = initialUserName = userState.user!.name;
+    }
 
-    if (initialUserEmail == null && userState.user != null)
+    if (initialUserEmail == null && userState.user != null) {
       emailController.text = initialUserEmail = userState.user!.email;
+    }
 
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -209,7 +211,7 @@ class SettingsState extends State<Settings> {
               size: 25,
               color: Theme.of(context).hintColor,
             ),
-            SizedBox(
+            const SizedBox(
               width: 10,
             ),
             Text(
@@ -228,10 +230,10 @@ class SettingsState extends State<Settings> {
                       'Sign out',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 10,
                     ),
-                    new Icon(
+                    Icon(
                       Entypo.logout,
                       size: 25,
                       color: Theme.of(context).hintColor,
@@ -259,7 +261,7 @@ class SettingsState extends State<Settings> {
           "You are not signed in. Your scores don't affect the rating of movies",
           style: Theme.of(context).textTheme.displaySmall,
         ),
-        SizedBox(
+        const SizedBox(
           height: 20,
         ),
         MButton(
@@ -281,6 +283,12 @@ class SettingsState extends State<Settings> {
 
     final nameField = MCard(
       text: "Name",
+      button: MButton(
+        text: 'Change name',
+        onPressedCallback: () => changeUserInfo(userState.userId!,
+            nameController.text, initialUserEmail!, userState.user!, 'Name'),
+        active: nameButtonActive,
+      ),
       child: Form(
         key: _formNameKey,
         child: Theme(
@@ -288,7 +296,7 @@ class SettingsState extends State<Settings> {
                 .copyWith(primaryColor: Theme.of(context).indicatorColor),
             child: TextFormField(
               style: Theme.of(context).textTheme.headlineSmall,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 fillColor: Colors.redAccent,
               ),
               validator: (value) {
@@ -299,16 +307,16 @@ class SettingsState extends State<Settings> {
               controller: nameController,
             )),
       ),
-      button: MButton(
-        text: 'Change name',
-        onPressedCallback: () => changeUserInfo(userState.userId!,
-            nameController.text, initialUserEmail!, userState.user!, 'Name'),
-        active: nameButtonActive,
-      ),
     );
 
     final emailField = MCard(
       text: "Email",
+      button: MButton(
+        text: 'Change Email',
+        onPressedCallback: () => changeUserInfo(userState.userId!,
+            initialUserName!, emailController.text, userState.user!, 'Email'),
+        active: emailButtonActive,
+      ),
       child: Form(
           key: _formEmailKey,
           child: Theme(
@@ -323,12 +331,6 @@ class SettingsState extends State<Settings> {
                 },
                 controller: emailController,
               ))),
-      button: MButton(
-        text: 'Change Email',
-        onPressedCallback: () => changeUserInfo(userState.userId!,
-            initialUserName!, emailController.text, userState.user!, 'Email'),
-        active: emailButtonActive,
-      ),
     );
 
     final changeThemeField = MCard(
@@ -339,9 +341,9 @@ class SettingsState extends State<Settings> {
             text: TextSpan(
           style: Theme.of(context).textTheme.headlineSmall,
           children: <TextSpan>[
-            new TextSpan(
+            TextSpan(
                 text: 'Theme:  ', style: Theme.of(context).textTheme.displaySmall),
-            new TextSpan(
+            TextSpan(
                 text: themeState.selectedTheme.name,
                 style: Theme.of(context).textTheme.headlineSmall)
           ],
@@ -363,18 +365,18 @@ class SettingsState extends State<Settings> {
             text: TextSpan(
           style: Theme.of(context).textTheme.headlineSmall,
           children: <TextSpan>[
-            new TextSpan(
+            TextSpan(
                 text: 'Your movies count:   ',
                 style: Theme.of(context).textTheme.displaySmall),
-            new TextSpan(text: userMoviesCount.toString())
+            TextSpan(text: userMoviesCount.toString())
           ],
         )),
         MButton(
           text: 'Clear all',
           onPressedCallback: () {
-            var mDialog = new MDialog(
+            var mDialog = MDialog(
                 context: context,
-                content: Text('Are You really want to clear your movies?'),
+                content: const Text('Are You really want to clear your movies?'),
                 firstButtonText: 'Yes, clear all',
                 firstButtonCallback: () {
                   if (!userState.isIncognitoMode) {
@@ -407,10 +409,10 @@ class SettingsState extends State<Settings> {
         ),
         child: Form(
           key: _formChangePasswordKey,
-          child: new Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              SizedBox(
+              const SizedBox(
                 height: 10,
               ),
               Text(
@@ -429,7 +431,7 @@ class SettingsState extends State<Settings> {
                     controller: oldPasswordController,
                     obscureText: true,
                   )),
-              SizedBox(
+              const SizedBox(
                 height: 5,
               ),
               Text(
@@ -446,8 +448,7 @@ class SettingsState extends State<Settings> {
 
                       var result = Validators.passwordValidator(
                           newPasswordController.text);
-                      if (result == null)
-                        result = Validators.passwordsMatchValidator(
+                      result ??= Validators.passwordsMatchValidator(
                             newPasswordController.text,
                             confirmPasswordController.text);
                       return result;
@@ -455,7 +456,7 @@ class SettingsState extends State<Settings> {
                     controller: newPasswordController,
                     obscureText: true,
                   )),
-              SizedBox(
+              const SizedBox(
                 height: 5,
               ),
               Text(
@@ -472,8 +473,7 @@ class SettingsState extends State<Settings> {
 
                       var result = Validators.passwordValidator(
                           confirmPasswordController.text);
-                      if (result == null)
-                        result = Validators.passwordsMatchValidator(
+                      result ??= Validators.passwordsMatchValidator(
                             newPasswordController.text,
                             confirmPasswordController.text);
                       return result;
@@ -493,23 +493,23 @@ class SettingsState extends State<Settings> {
             text: 'Remove user',
             active: true,
             onPressedCallback: () {
-              var mDialog = new MDialog(
+              var mDialog = MDialog(
                   context: context,
-                  content: Container(
+                  content: SizedBox(
                     height: 143,
                     child: Column(
                       children: [
-                        Text('Are you sure you want to remove your user?'),
-                        SizedBox(
+                        const Text('Are you sure you want to remove your user?'),
+                        const SizedBox(
                           height: 10,
                         ),
                         TextField(
                           controller: removeController,
                           maxLines: 3,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                               hintText:
                                   'Please tell us why are you going to remove your user.\n',
-                              border: const OutlineInputBorder()),
+                              border: OutlineInputBorder()),
                         ),
                       ],
                     ),
@@ -539,7 +539,7 @@ class SettingsState extends State<Settings> {
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
               )
-            : PreferredSize(preferredSize: Size(0, 0), child: Container()),
+            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
             backgroundColor: Theme.of(context).primaryColor,
             appBar: AppBar(
@@ -549,7 +549,7 @@ class SettingsState extends State<Settings> {
               key: globalKey,
               child: SingleChildScrollView(
                 child: Container(
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     color: Theme.of(context).primaryColor,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -563,7 +563,7 @@ class SettingsState extends State<Settings> {
                             userState.user!.email.isNotEmpty &&
                             !userState.user!.isIncognito)
                           emailField,
-                        SizedBox(
+                        const SizedBox(
                           height: 20,
                         ),
                         MButton(
@@ -588,7 +588,7 @@ class SettingsState extends State<Settings> {
                           changePasswordField,
                         if (!userState.isIncognitoMode && !userState.user!.isIncognito) removeUserField,
                         if (userState.isIncognitoMode) incognitoModeCard,
-                        SizedBox(
+                        const SizedBox(
                           height: 20,
                         ),
                         MButton(
@@ -605,3 +605,4 @@ class SettingsState extends State<Settings> {
             )));
   }
 }
+
