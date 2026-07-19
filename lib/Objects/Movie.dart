@@ -26,6 +26,8 @@ class Movie {
   int seasonsCount;
   double imdbRate;
   int imdbVotes;
+  int recommendationMatchPercent;
+  String? recommendationReason;
 
   updateMovie(Movie updatedMovie) {
     if (updatedMovie.id != id) return;
@@ -51,33 +53,37 @@ class Movie {
     seasonsCount = updatedMovie.seasonsCount;
     imdbRate = updatedMovie.imdbRate;
     imdbVotes = updatedMovie.imdbVotes;
+    recommendationMatchPercent = updatedMovie.recommendationMatchPercent;
+    recommendationReason = updatedMovie.recommendationReason;
     updated = updatedMovie.updated;
   }
 
   Movie(
       {required this.id,
-        required this.title,
-        required this.overview,
-        required this.tagline,
-        required this.posterPath,
-        required this.duration,
-        required this.rating,
-        required this.allVotes,
-        required this.likedVotes,
-        required this.dislikedVotes,
-        required this.countries,
-        required this.actors,
-        required this.directors,
-        required this.genres,
-        required this.movieRate,
-        required this.movieType,
-        required this.releaseDate,
-        required this.averageTimeOfEpisode,
-        required this.inProduction,
-        required this.seasonsCount,
-        required this.imdbRate,
-        required this.imdbVotes,
-        this.updated});
+      required this.title,
+      required this.overview,
+      required this.tagline,
+      required this.posterPath,
+      required this.duration,
+      required this.rating,
+      required this.allVotes,
+      required this.likedVotes,
+      required this.dislikedVotes,
+      required this.countries,
+      required this.actors,
+      required this.directors,
+      required this.genres,
+      required this.movieRate,
+      required this.movieType,
+      required this.releaseDate,
+      required this.averageTimeOfEpisode,
+      required this.inProduction,
+      required this.seasonsCount,
+      required this.imdbRate,
+      required this.imdbVotes,
+      this.recommendationMatchPercent = 0,
+      this.recommendationReason,
+      this.updated});
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     var actors = json['actors'] is Iterable
@@ -92,7 +98,8 @@ class Movie {
     var updated =
         json['updated'] == null ? null : DateTime.parse(json['updated']);
 
-    var imdbRate = json['imdbRate'] > 10 ? json['imdbRate'] / 10 : json['imdbRate'] / 1;
+    var imdbRate =
+        json['imdbRate'] > 10 ? json['imdbRate'] / 10 : json['imdbRate'] / 1;
 
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];
@@ -125,6 +132,8 @@ class Movie {
         inProduction: json['inProduction'],
         imdbRate: imdbRate,
         imdbVotes: json['imdbVotes'],
+        recommendationMatchPercent: json['recommendationMatchPercent'] ?? 0,
+        recommendationReason: json['recommendationReason'],
         updated: updated);
   }
 
@@ -149,6 +158,8 @@ class Movie {
         'inProduction': inProduction,
         'imdbRate': imdbRate,
         'imdbVotes': imdbVotes,
+        'recommendationMatchPercent': recommendationMatchPercent,
+        'recommendationReason': recommendationReason,
         'updated': updated.toString()
       };
 
@@ -160,4 +171,3 @@ class Movie {
     return result.toInt();
   }
 }
-

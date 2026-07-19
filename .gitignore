@@ -29,6 +29,12 @@
 .pub-cache/
 .pub/
 /build/
+/android/build/
+/ios/Flutter/ephemeral/
+
+# Local QA artifacts
+/qa-screenshots/
+/smoke-screenshots/
 
 # Web related
 lib/generated_plugin_registrant.dart

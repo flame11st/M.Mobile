@@ -1,32 +1,39 @@
 import 'package:flutter/material.dart';
 
 class MMoviesAnimatedList extends StatelessWidget {
-  final listKey;
-  final movies;
-  final buildItemFunction;
-  final isPremium;
-  final scrollController;
+  final GlobalKey<AnimatedListState>? listKey;
+  final List<dynamic> movies;
+  final dynamic buildItemFunction;
+  final bool isPremium;
+  final ScrollController? scrollController;
+  final EdgeInsets padding;
 
-  const MMoviesAnimatedList({super.key, this.listKey, this.movies, this.buildItemFunction, this.isPremium, this.scrollController});
+  const MMoviesAnimatedList({
+    super.key,
+    this.listKey,
+    required this.movies,
+    required this.buildItemFunction,
+    required this.isPremium,
+    this.scrollController,
+    this.padding = const EdgeInsets.only(bottom: 16),
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: AnimatedList(
-        shrinkWrap: true,
-        controller: scrollController,
-        padding: const EdgeInsets.only(bottom: 90),
-        key: listKey,
-        initialItemCount: movies.length,
-        itemBuilder: (context, index, animation) {
-          // if (movies.length > index) return null;
-
-          return buildItemFunction(
-              movies[index], animation,
-              isPremium: isPremium,
-              context: context);
-        },
-      ),
+    return AnimatedList(
+      shrinkWrap: true,
+      controller: scrollController,
+      padding: padding,
+      key: listKey,
+      initialItemCount: movies.length,
+      itemBuilder: (context, index, animation) {
+        return buildItemFunction(
+          movies[index],
+          animation,
+          isPremium: isPremium,
+          context: context,
+        );
+      },
     );
   }
 }

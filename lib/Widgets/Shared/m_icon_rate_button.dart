@@ -14,6 +14,7 @@ class MIconRateButton extends StatelessWidget {
   final width;
   final color;
   final bool fromSearch;
+  final bool closeParentOnRate;
   final String? hint;
   final Movie movie;
   final int movieRate;
@@ -24,6 +25,7 @@ class MIconRateButton extends StatelessWidget {
       this.width,
       this.color,
       this.fromSearch = false,
+      this.closeParentOnRate = true,
       this.shouldRequestReview = false,
       this.hint,
       required this.movie,
@@ -31,7 +33,8 @@ class MIconRateButton extends StatelessWidget {
 
   rateMovie(String movieId, int movieRate, MoviesState moviesState,
       UserState userState) async {
-    moviesState.changeMovieRate(movieId, movieRate, userState.isIncognitoMode, movie);
+    moviesState.changeMovieRate(
+        movieId, movieRate, userState.isIncognitoMode, movie);
 
     if (!userState.isIncognitoMode) {
       if (ServiceAgent.state != null) {
@@ -44,32 +47,11 @@ class MIconRateButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
-    var action = 'added';
-    var isViewedMovie = false;
-
     final movies =
         moviesState.userMovies.where((element) => element.id == movie.id);
-
-    if (movies.isNotEmpty) {
-      action = 'moved';
-
-      if (movies.first.movieRate == MovieRate.liked ||
-          movies.first.movieRate == MovieRate.notLiked) isViewedMovie = true;
-    }
-
-    var text = '"${movie.title}" $action to your Watchlist!';
-
-    if (movieRate == MovieRate.notRated) {
-      text = '"${movie.title}" removed from your movies!';
-    }
-
-    if (movieRate == MovieRate.liked || movieRate == MovieRate.notLiked) {
-      if (isViewedMovie) {
-        text = '"${movie.title}" rate changed!';
-      } else {
-        text = '"${movie.title}" $action to your viewed movies!';
-      }
-    }
+    final previousMovieRate =
+        movies.isNotEmpty ? movies.first.movieRate : MovieRate.notRated;
+    final text = _buildStatusMessage(previousMovieRate, movieRate);
 
     return MIconButton(
       width: width,
@@ -77,10 +59,16 @@ class MIconRateButton extends StatelessWidget {
       color: color,
       hint: hint,
       onPressedCallback: () async {
-        Navigator.of(context).pop();
+        final navigator = Navigator.of(context);
 
-        if (fromSearch) {
-          Navigator.of(context).pop();
+        await rateMovie(movie.id, movieRate, moviesState, userState);
+
+        if (closeParentOnRate && navigator.canPop()) {
+          navigator.pop();
+        }
+
+        if (fromSearch && navigator.canPop()) {
+          navigator.pop();
         }
 
         if (shouldRequestReview || fromSearch) {
@@ -90,12 +78,51 @@ class MIconRateButton extends StatelessWidget {
         await Future.delayed(const Duration(milliseconds: 300));
 
         MSnackBar.showSnackBar(text, true);
-
-        await Future.delayed(const Duration(milliseconds: 300));
-
-        rateMovie(movie.id, movieRate, moviesState, userState);
       },
     );
   }
-}
 
+  String _buildStatusMessage(int previousMovieRate, int nextMovieRate) {
+    final movieTitle = '"${movie.title}"';
+
+    if (nextMovieRate == MovieRate.addedToWatchlist) {
+      if (previousMovieRate == MovieRate.addedToWatchlist) {
+        return '$movieTitle is already in Watchlist.';
+      }
+
+      if (MovieRate.isViewed(previousMovieRate)) {
+        return '$movieTitle moved to Watchlist.';
+      }
+
+      return '$movieTitle added to Watchlist.';
+    }
+
+    if (nextMovieRate == MovieRate.notRated) {
+      if (previousMovieRate == MovieRate.addedToWatchlist) {
+        return '$movieTitle removed from Watchlist.';
+      }
+
+      if (MovieRate.isViewed(previousMovieRate)) {
+        return '$movieTitle removed from Viewed.';
+      }
+
+      return '$movieTitle removed from My Movies.';
+    }
+
+    if (MovieRate.isViewed(nextMovieRate)) {
+      final label = MovieRate.opinionLabel(nextMovieRate);
+
+      if (MovieRate.isViewed(previousMovieRate)) {
+        return '$movieTitle saved as $label.';
+      }
+
+      if (previousMovieRate == MovieRate.addedToWatchlist) {
+        return '$movieTitle moved to Viewed. Saved as $label.';
+      }
+
+      return '$movieTitle saved as $label.';
+    }
+
+    return '$movieTitle status updated.';
+  }
+}

@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/movie_list_type.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
@@ -7,15 +7,14 @@ import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Widgets/movies_list_page.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
-import 'package:mmobile/Widgets/Shared/m_card.dart';
+import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:provider/provider.dart';
 import 'Providers/movies_state.dart';
-import 'Shared/m_button.dart';
 
 class MoviesListsPage extends StatefulWidget {
   final int initialPageIndex;
 
-  const MoviesListsPage({required this.initialPageIndex});
+  const MoviesListsPage({super.key, required this.initialPageIndex});
 
   @override
   State<StatefulWidget> createState() {
@@ -29,6 +28,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
   final serviceAgent = ServiceAgent();
   final nameController = TextEditingController();
   bool submitButtonActive = false;
+  bool showGeneralGuidance = true;
+  final storage = const FlutterSecureStorage();
   final _formKey = GlobalKey<FormState>();
   int initialPageIndex = 0;
 
@@ -40,10 +41,12 @@ class MoviesListsPageState extends State<MoviesListsPage>
     tabController = TabController(vsync: this, length: 2);
 
     nameController.addListener(setSubmitButtonActive);
+    loadGuidanceState();
   }
 
   @override
   void dispose() {
+    nameController.dispose();
     tabController.dispose();
 
     super.dispose();
@@ -55,58 +58,236 @@ class MoviesListsPageState extends State<MoviesListsPage>
     });
   }
 
-  getMovieListWidget(MoviesList moviesList, MovieListType type) {
-    String imageBaseUrl =
-        "https://moviediarystorage.blob.core.windows.net/movies";
-    const borderRadius = 25.0;
+  Future<void> loadGuidanceState() async {
+    final dismissed =
+        await storage.read(key: 'movieListsGeneralGuidanceDismissed');
 
-    return GestureDetector(
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      showGeneralGuidance = dismissed != 'true';
+    });
+  }
+
+  Future<void> dismissGeneralGuidance() async {
+    await storage.write(
+        key: 'movieListsGeneralGuidanceDismissed', value: 'true');
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      showGeneralGuidance = false;
+    });
+  }
+
+  Widget getMovieListWidget(MoviesList moviesList, MovieListType type) {
+    final preview = moviesList.listMovies.take(3).toList();
+
+    return Md3Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
           builder: (ctx) => MoviesListPage(moviesList: moviesList))),
-      child: MCard(
-          padding: 0,
-          child: Container(
-              height: 80,
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(borderRadius),
-                image: DecorationImage(
-                  colorFilter: ColorFilter.mode(
-                      Colors.black.withOpacity(
-                          moviesList.listMovies.isNotEmpty ? 0.3 : 0.0),
-                      BlendMode.dstATop),
-                  image: (moviesList.listMovies.isNotEmpty
-                      ? NetworkImage(
-                          imageBaseUrl + moviesList.listMovies.first.posterPath)
-                      : const AssetImage("Assets/emptyList.jpg")) as ImageProvider,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                      child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                        Text(
-                          moviesList.name,
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          "${moviesList.listMovies.length} item${moviesList.listMovies.length == 1 ? "" : "s"}",
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        )
-                      ])),
-                  Icon(
-                    Icons.arrow_forward,
-                    color: Theme.of(context).hintColor,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 86,
+            height: 72,
+            child: Stack(
+              children: [
+                if (preview.isEmpty)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Md3Colors.background,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Md3Colors.border),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.playlist_add_rounded,
+                          color: Md3Colors.muted),
+                    ),
                   ),
+                for (var i = 0; i < preview.length; i++)
+                  Positioned(
+                    left: i * 22,
+                    child: Md3MoviePoster(
+                      movie: preview[i],
+                      width: 44,
+                      height: 72,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  moviesList.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "${moviesList.listMovies.length} item${moviesList.listMovies.length == 1 ? "" : "s"}",
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: Md3Colors.muted),
+        ],
+      ),
+    );
+  }
+
+  Widget buildSectionIntro({
+    required String eyebrow,
+    required String title,
+    required String description,
+    IconData? icon,
+    VoidCallback? onDismiss,
+    List<Widget> actions = const [],
+  }) {
+    return Md3Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0xffe8f0fb),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: Md3Colors.primary, size: 24),
+            ),
+            const SizedBox(width: 14),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eyebrow,
+                  style: const TextStyle(
+                    color: Md3Colors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 14,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (actions.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  ...actions,
                 ],
-              ))),
+              ],
+            ),
+          ),
+          if (onDismiss != null)
+            IconButton(
+              tooltip: 'Dismiss',
+              onPressed: onDismiss,
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Md3Colors.muted,
+                size: 20,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildPersonalEmptyState() {
+    return buildSectionIntro(
+      eyebrow: 'START HERE',
+      title: 'Create your first personal list',
+      description:
+          'Save your own themed collections for movie nights, favorites, and future plans.',
+      icon: Icons.playlist_add_check_circle_rounded,
+      actions: [
+        const Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Md3Chip(text: 'Favorites', icon: Icons.favorite_outline),
+            Md3Chip(text: 'Best Sci-Fi', icon: Icons.rocket_launch_outlined),
+            Md3Chip(text: 'Weekend Picks', icon: Icons.event_outlined),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Md3PrimaryButton(
+          text: 'Create List',
+          icon: Icons.playlist_add_rounded,
+          onPressed: addNewList,
+        ),
+      ],
+    );
+  }
+
+  Widget buildLoadingState(String message) {
+    return Md3Card(
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              color: Md3Colors.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 15,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -115,68 +296,219 @@ class MoviesListsPageState extends State<MoviesListsPage>
     final userState = Provider.of<UserState>(context, listen: false);
 
     final order = getMaxListOrder(moviesState.personalMoviesLists) + 1;
+    nameController.clear();
 
-    showDialog<String>(
-        context: context,
-        builder: (BuildContext context1) => AlertDialog(
-              contentPadding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              backgroundColor: Theme.of(context).primaryColor,
-              contentTextStyle: Theme.of(context).textTheme.headlineSmall,
-              content: Container(
-                  height: 90,
-                  padding: const EdgeInsets.all(10),
-                  margin: const EdgeInsets.all(0),
-                  child: Form(
-                    key: _formKey,
-                    child: Theme(
-                        data: Theme.of(context).copyWith(
-                            primaryColor: Theme.of(context).indicatorColor),
-                        child: TextFormField(
-                          validator: (value) => nameController.text.isEmpty
-                              ? "Please enter name"
-                              : moviesState.personalMoviesLists.any((element) =>
-                                      element.name == nameController.text)
-                                  ? "List with the same name already exists"
-                                  : null,
-                          controller: nameController,
-                          decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                              labelText: "Enter movies list name",
-                              hintStyle: Theme.of(context).textTheme.headlineSmall),
-                        )),
-                  )),
-              actions: [
-                MButton(
-                  active: true,
-                  text: 'Add',
-                  parentContext: context,
-                  onPressedCallback: () async {
-                    if (_formKey.currentState != null &&
-                        _formKey.currentState!.validate()) {
-                      moviesState.addMoviesList(nameController.text, order);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(builder: (context, setSheetState) {
+          final name = nameController.text.trim();
+          final canCreate = name.isNotEmpty;
+          const suggestions = [
+            'Favorites',
+            'Best Sci-Fi',
+            'Weekend Picks',
+          ];
 
-                      if (!userState.isIncognitoMode) {
-                        await serviceAgent.createUserMoviesList(
-                            userState.userId!, nameController.text, order);
-                      }
+          Future<void> createList() async {
+            if (_formKey.currentState == null ||
+                !_formKey.currentState!.validate()) {
+              return;
+            }
 
-                      nameController.clear();
+            final listName = nameController.text.trim();
+            moviesState.addMoviesList(listName, order);
+            nameController.clear();
+            Navigator.of(sheetContext).pop();
 
-                      Navigator.of(context1).pop();
-                    }
-                  },
+            if (userState.userId != null && userState.userId!.isNotEmpty) {
+              await serviceAgent.createUserMoviesList(
+                  userState.userId!, listName, order);
+            }
+          }
+
+          final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+          final bottomSafeArea = MediaQuery.viewPaddingOf(context).bottom;
+
+          return AnimatedPadding(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+              ),
+              decoration: const BoxDecoration(
+                color: Md3Colors.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  12,
+                  24,
+                  24 + bottomSafeArea,
                 ),
-                const SizedBox(
-                  width: 10,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Md3Colors.border,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Create personal list',
+                                  style: TextStyle(
+                                    color: Md3Colors.text,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Name a collection you will actually use.',
+                                  style: TextStyle(
+                                    color: Md3Colors.muted,
+                                    fontSize: 14,
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Close',
+                            onPressed: () {
+                              nameController.clear();
+                              Navigator.of(sheetContext).pop();
+                            },
+                            icon: const Icon(Icons.close_rounded,
+                                color: Md3Colors.muted),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      TextFormField(
+                        autofocus: true,
+                        controller: nameController,
+                        textInputAction: TextInputAction.done,
+                        onChanged: (_) => setSheetState(() {}),
+                        onFieldSubmitted: (_) => createList(),
+                        validator: (value) {
+                          final trimmed = value?.trim() ?? '';
+
+                          if (trimmed.isEmpty) {
+                            return 'Enter a list name';
+                          }
+
+                          final normalized = trimmed.toLowerCase();
+                          final duplicate =
+                              moviesState.personalMoviesLists.any((element) {
+                            return element.name.trim().toLowerCase() ==
+                                normalized;
+                          });
+
+                          return duplicate
+                              ? 'A list with this name already exists'
+                              : null;
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'List name',
+                          hintText: 'Best Sci-Fi',
+                          filled: true,
+                          fillColor: Md3Colors.background,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide:
+                                const BorderSide(color: Md3Colors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide:
+                                const BorderSide(color: Md3Colors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: const BorderSide(
+                                color: Md3Colors.primary, width: 1.4),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final suggestion in suggestions)
+                            Md3Chip(
+                              text: suggestion,
+                              onTap: () {
+                                nameController.text = suggestion;
+                                setSheetState(() {});
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Md3PrimaryButton(
+                        text: 'Create List',
+                        icon: Icons.playlist_add_rounded,
+                        onPressed: canCreate ? createList : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size.fromHeight(44),
+                          foregroundColor: Md3Colors.muted,
+                        ),
+                        onPressed: () {
+                          nameController.clear();
+                          Navigator.of(sheetContext).pop();
+                        },
+                        child: const Text('Cancel'),
+                      ),
+                    ],
+                  ),
                 ),
-                MButton(
-                  active: true,
-                  text: 'Cancel',
-                  parentContext: context,
-                  onPressedCallback: () => Navigator.of(context1).pop(),
-                )
-              ],
-            ));
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Widget buildListsScrollView({
+    required List<Widget> children,
+    required EdgeInsets padding,
+  }) {
+    return ListView(
+      padding: padding,
+      children: children,
+    );
   }
 
   int getMaxListOrder(List<MoviesList> lists) {
@@ -198,17 +530,25 @@ class MoviesListsPageState extends State<MoviesListsPage>
     }
 
     final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
-
-    moviesState.externalMoviesLists.sort((a, b) => a.order > b.order ? 1 : 0);
-    moviesState.personalMoviesLists.sort((a, b) => a.order > b.order ? 1 : 0);
+    moviesState.externalMoviesLists.sort((a, b) => a.order.compareTo(b.order));
+    moviesState.personalMoviesLists.sort((a, b) => a.order.compareTo(b.order));
+    final bottomSafeArea = Md3NavigationMetrics.bottomMargin(context);
+    final personalBottomPadding = bottomSafeArea + 88;
 
     final headingRow = AppBar(
+      backgroundColor: Colors.transparent,
+      foregroundColor: Md3Colors.text,
+      elevation: 0,
+      flexibleSpace: const Md3LiquidGlass(
+        borderRadius: BorderRadius.zero,
+        shadows: [],
+        child: SizedBox.expand(),
+      ),
       title: TabBar(
         controller: tabController,
-        indicatorColor: Theme.of(context).indicatorColor,
-        labelColor: Theme.of(context).indicatorColor,
-        unselectedLabelColor: Theme.of(context).hintColor,
+        indicatorColor: Md3Colors.primary,
+        labelColor: Md3Colors.primary,
+        unselectedLabelColor: Md3Colors.muted,
         tabs: const [
           Tab(
               child: Row(
@@ -249,108 +589,93 @@ class MoviesListsPageState extends State<MoviesListsPage>
     );
 
     return Scaffold(
+        backgroundColor: Md3Colors.background,
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
-                  child: AdManager.getBannerWidget(AdManager.listsBannerAd!),
+                  child: AdManager.getBannerWidget(AdManager.listsBannerAd),
                 ),
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
               )
-            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
+            : PreferredSize(
+                preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: Md3Colors.background,
             appBar: headingRow,
             body: Container(
-                color: Theme.of(context).primaryColor,
+                color: Md3Colors.background,
                 child: TabBarView(
                   controller: tabController,
                   children: [
-                    SingleChildScrollView(
-                        child: Container(
-                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
-                            color: Theme.of(context).primaryColor,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                if (moviesState.externalMoviesLists.isEmpty)
-                                  const SizedBox(
-                                    height: 40,
-                                  ),
-                                if (moviesState.externalMoviesLists.isEmpty)
-                                  const Center(child: CircularProgressIndicator()),
-                                if (moviesState.externalMoviesLists.isNotEmpty)
-                                  for (int i = 0;
-                                      i <
-                                          moviesState
-                                              .externalMoviesLists.length;
-                                      i++)
-                                    getMovieListWidget(
-                                        moviesState.externalMoviesLists[i],
-                                        MovieListType.external),
-                              ],
-                            ))),
+                    buildListsScrollView(
+                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+                      children: [
+                        if (showGeneralGuidance)
+                          buildSectionIntro(
+                            eyebrow: 'GENERAL',
+                            title: 'Curated collections for every mood',
+                            description:
+                                'Browse MovieDiary team picks, popular titles, and top-rated collections without mixing them into your recommendations.',
+                            icon: Icons.grid_view_rounded,
+                            onDismiss: dismissGeneralGuidance,
+                          ),
+                        if (moviesState.externalMoviesLists.isEmpty)
+                          buildLoadingState('Loading curated lists...'),
+                        if (moviesState.externalMoviesLists.isNotEmpty)
+                          for (int i = 0;
+                              i < moviesState.externalMoviesLists.length;
+                              i++)
+                            getMovieListWidget(
+                                moviesState.externalMoviesLists[i],
+                                MovieListType.external),
+                      ],
+                    ),
                     Stack(
                       children: [
-                        SingleChildScrollView(
-                            child: Container(
-                                padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
-                                color: Theme.of(context).primaryColor,
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: <Widget>[
-                                    if (moviesState.externalMoviesLists.isEmpty)
-                                      const SizedBox(
-                                        height: 40,
-                                      ),
-                                    if (moviesState.externalMoviesLists.isEmpty)
-                                      const Center(
-                                          child: CircularProgressIndicator()),
-                                    if (moviesState
-                                            .externalMoviesLists.isNotEmpty &&
-                                        moviesState.personalMoviesLists.isEmpty)
-                                      const Text(
-                                        "You haven't created any personal list.\n"
-                                        "Please tap the 'Add' button to create a new one.",
-                                        style:
-                                            TextStyle(fontSize: 17, height: 2),
-                                      ),
-                                    if (moviesState.personalMoviesLists.isNotEmpty)
-                                      for (int i = 0;
-                                          i <
-                                              moviesState
-                                                  .personalMoviesLists.length;
-                                          i++)
-                                        getMovieListWidget(
-                                            moviesState.personalMoviesLists[i],
-                                            MovieListType.personal),
-                                  ],
-                                ))),
-                        Align(
-                            alignment: const Alignment(0.83, 0.92),
-                            child: SizedBox(
-                                height: 55.0,
-                                width: 55.0,
-                                child: FittedBox(
-                                  child: FloatingActionButton(
-                                    onPressed: () {
-                                      addNewList();
-                                    },
-                                    backgroundColor:
-                                        Theme.of(context).indicatorColor,
-                                    foregroundColor:
-                                        Theme.of(context).primaryColor,
-                                    child: const Icon(
-                                      Icons.add,
-                                      size: 35,
-                                    ),
-                                  ),
-                                )))
+                        buildListsScrollView(
+                          padding: EdgeInsets.fromLTRB(
+                            18,
+                            12,
+                            18,
+                            personalBottomPadding,
+                          ),
+                          children: [
+                            if (moviesState.externalMoviesLists.isEmpty)
+                              buildLoadingState('Loading your lists...'),
+                            if (moviesState.externalMoviesLists.isNotEmpty &&
+                                moviesState.personalMoviesLists.isEmpty)
+                              buildPersonalEmptyState(),
+                            if (moviesState.personalMoviesLists.isNotEmpty)
+                              for (int i = 0;
+                                  i < moviesState.personalMoviesLists.length;
+                                  i++)
+                                getMovieListWidget(
+                                    moviesState.personalMoviesLists[i],
+                                    MovieListType.personal),
+                          ],
+                        ),
+                        Positioned(
+                          right: 18,
+                          bottom: bottomSafeArea + 16,
+                          child: SizedBox(
+                            height: 56,
+                            width: 56,
+                            child: FloatingActionButton(
+                              onPressed: addNewList,
+                              backgroundColor: Md3Colors.primary,
+                              foregroundColor: Colors.white,
+                              tooltip: 'Create List',
+                              child: const Icon(
+                                Icons.add,
+                                size: 32,
+                              ),
+                            ),
+                          ),
+                        )
                       ],
                     )
                   ],
                 ))));
   }
 }
-

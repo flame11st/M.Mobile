@@ -3,168 +3,312 @@ import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
-
-import 'm_icon_add_to_list_button.dart';
-import 'm_icon_rate_button.dart';
+import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Widgets/Providers/movies_state.dart';
+import 'package:mmobile/Widgets/Providers/user_state.dart';
+import 'package:mmobile/Widgets/Shared/md3_ui.dart';
+import 'package:mmobile/Widgets/Shared/m_icon_add_to_list_button.dart';
+import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
+import 'package:provider/provider.dart';
 
 class MovieRateButtons extends StatelessWidget {
   final bool? showTitle;
   final bool? addMargin;
   final bool? fromSearch;
+  final bool closeParentOnRate;
   final Movie movie;
   final bool shouldRequestReview;
   final MoviesList? moviesList;
 
-  const MovieRateButtons(
-      {super.key,
-      this.showTitle,
-      this.addMargin,
-      this.fromSearch = false,
-      required this.movie,
-      this.shouldRequestReview = false,
-      this.moviesList});
+  const MovieRateButtons({
+    super.key,
+    this.showTitle,
+    this.addMargin,
+    this.fromSearch = false,
+    this.closeParentOnRate = true,
+    required this.movie,
+    this.shouldRequestReview = false,
+    this.moviesList,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final width = ((MediaQuery.of(context).size.width - 50) / 3) - 20;
-    final text = movie.movieRate == MovieRate.notRated
-        ? "Add to your movies "
-        : "Change score of ";
+    final isTitledSheet = showTitle != null && showTitle!;
+    final moviesState = Provider.of<MoviesState>(context);
+    final matchingMovies =
+        moviesState.userMovies.where((element) => element.id == movie.id);
+    final currentMovie =
+        matchingMovies.isNotEmpty ? matchingMovies.first : movie;
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (isTitledSheet) ...[
+          Text(
+            currentMovie.movieRate == MovieRate.notRated
+                ? 'Set your status'
+                : 'Change your status',
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            currentMovie.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 14,
+              height: 1.3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: _RateAction(
+                label: 'Liked',
+                icon: Icons.favorite_rounded,
+                color: Md3Colors.success,
+                active: currentMovie.movieRate == MovieRate.liked,
+                onTap: () => _rate(context, currentMovie, MovieRate.liked),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _RateAction(
+                label: 'Okay',
+                icon: Icons.sentiment_satisfied_alt_rounded,
+                color: Md3Colors.warning,
+                active: currentMovie.movieRate == MovieRate.okay,
+                onTap: () => _rate(context, currentMovie, MovieRate.okay),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _RateAction(
+                label: 'Disliked',
+                icon: FontAwesome5.ban,
+                color: Md3Colors.danger,
+                active: currentMovie.movieRate == MovieRate.notLiked,
+                onTap: () => _rate(context, currentMovie, MovieRate.notLiked),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _RateAction(
+                label: 'Watchlist',
+                icon: Icons.bookmark_rounded,
+                color: Md3Colors.primary,
+                active: currentMovie.movieRate == MovieRate.addedToWatchlist,
+                onTap: () => _rate(
+                  context,
+                  currentMovie,
+                  MovieRate.addedToWatchlist,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (isTitledSheet) ...[
+          const SizedBox(height: 12),
+          MAddToListButton(
+            movie: currentMovie,
+            moviesList: moviesList,
+          ),
+        ],
+      ],
+    );
+
+    if (!isTitledSheet) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+        child: content,
+      );
+    }
 
     return Container(
-        height: showTitle != null && showTitle! ? 200 : 60,
-        margin: const EdgeInsets.fromLTRB(10, 5, 10, 15),
-        padding: const EdgeInsets.fromLTRB(10, 0, 10, 5),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.8),
-                offset: const Offset(0.0, 0.05),
-                blurRadius: 0.5),
-          ],
-          color: showTitle != null && showTitle!
-              ? Theme.of(context).primaryColor
-              : Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.all(Radius.circular(30)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
-            if (showTitle != null && showTitle!)
-              RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    children: <TextSpan>[
-                      TextSpan(text: text),
-                      TextSpan(
-                          text: '"${movie.title}"?',
-                          style: Theme.of(context).textTheme.headlineMedium),
-                    ],
-                  )),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                MIconRateButton(
-                  shouldRequestReview: shouldRequestReview,
-                  hint: showTitle == null || !showTitle!
-                      ? ""
-                      : "Like${movie.movieRate == MovieRate.liked ? "d" : ""}",
-                  color: movie.movieRate == MovieRate.liked
-                      ? Colors.green
-                      : Theme.of(context).cardColor.withOpacity(0.95),
-                  icon: Icon(Icons.favorite_border,
-                      color: movie.movieRate == MovieRate.liked
-                          ? Theme.of(context).cardColor
-                          : Theme.of(context).hintColor),
-                  movie: movie,
-                  movieRate: movie.movieRate == MovieRate.liked
-                      ? MovieRate.notRated
-                      : MovieRate.liked,
-                  width: width,
-                  fromSearch: fromSearch!,
-                ),
-                MIconRateButton(
-                  shouldRequestReview: shouldRequestReview,
-                  hint: showTitle == null || !showTitle!
-                      ? ""
-                      : "Dislike${movie.movieRate == MovieRate.notLiked ? "d" : ""}",
-                  color: movie.movieRate == MovieRate.notLiked
-                      ? Colors.redAccent
-                      : Theme.of(context).cardColor.withOpacity(0.95),
-                  icon: Icon(FontAwesome5.ban,
-                      color: movie.movieRate == MovieRate.notLiked
-                          ? Theme.of(context).cardColor
-                          : Theme.of(context).hintColor),
-                  movie: movie,
-                  movieRate: movie.movieRate == MovieRate.notLiked
-                      ? MovieRate.notRated
-                      : MovieRate.notLiked,
-                  width: width,
-                  fromSearch: fromSearch!,
-                ),
-                MIconRateButton(
-                  shouldRequestReview: shouldRequestReview,
-                  hint: showTitle == null || !showTitle!
-                      ? ""
-                      : "${movie.movieRate == MovieRate.addedToWatchlist
-                              ? "In"
-                              : "To"} watchlist",
-                  color: movie.movieRate == MovieRate.addedToWatchlist
-                      ? Theme.of(context).indicatorColor
-                      : Theme.of(context).cardColor.withOpacity(0.95),
-                  icon: Icon(Icons.bookmark_border,
-                      color: movie.movieRate == MovieRate.addedToWatchlist
-                          ? Theme.of(context).cardColor
-                          : Theme.of(context).hintColor),
-                  movie: movie,
-                  movieRate: movie.movieRate == MovieRate.addedToWatchlist
-                      ? MovieRate.notRated
-                      : MovieRate.addedToWatchlist,
-                  width: width,
-                  fromSearch: fromSearch!,
-                ),
-                if (showTitle == null || !showTitle!)
-                  SizedBox(
-                    width: 30,
-                    child: PopupMenuButton(
-                      padding: EdgeInsets.zero,
-                      itemBuilder: (context) => <PopupMenuItem<String>>[
-                        PopupMenuItem<String>(
-                            height: 80,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Other actions',
-                                  style: Theme.of(context).textTheme.displayMedium,
-                                ),
-                                const Divider(
-                                  height: 5,
-                                  thickness: 2,
-                                ),
-                                const SizedBox(
-                                  height: 15,
-                                ),
-                                MAddToListButton(
-                                  movie: movie,
-                                  moviesList: moviesList,
-                                  fromMenu: true,
-                                ),
-                              ],
-                            )),
-                      ],
-                    ),
-                  )
-              ],
-            ),
-            if (showTitle != null && showTitle!)
-              MAddToListButton(
-                movie: movie,
-                moviesList: moviesList,
-              ),
-          ],
-        ));
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 18),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Md3Colors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: content,
+      ),
+    );
+  }
+
+  Future<void> _rate(
+    BuildContext context,
+    Movie currentMovie,
+    int selectedRate,
+  ) async {
+    final navigator = Navigator.of(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
+    final previousMovieRate = currentMovie.movieRate;
+    final nextMovieRate =
+        previousMovieRate == selectedRate ? MovieRate.notRated : selectedRate;
+
+    await moviesState.changeMovieRate(
+      currentMovie.id,
+      nextMovieRate,
+      userState.isIncognitoMode,
+      currentMovie,
+    );
+
+    if (!userState.isIncognitoMode && ServiceAgent.state != null) {
+      await ServiceAgent().rateMovie(
+        currentMovie.id,
+        userState.userId!,
+        nextMovieRate,
+      );
+    }
+
+    if (closeParentOnRate && navigator.canPop()) {
+      navigator.pop();
+    }
+
+    if (fromSearch == true && navigator.canPop()) {
+      navigator.pop();
+    }
+
+    if (shouldRequestReview || fromSearch == true) {
+      userState.shouldRequestReview = true;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 250));
+    MSnackBar.showSnackBar(
+      _buildStatusMessage(previousMovieRate, nextMovieRate),
+      true,
+    );
+  }
+
+  String _buildStatusMessage(int previousMovieRate, int nextMovieRate) {
+    final movieTitle = '"${movie.title}"';
+
+    if (nextMovieRate == MovieRate.addedToWatchlist) {
+      if (previousMovieRate == MovieRate.addedToWatchlist) {
+        return '$movieTitle is already in Watchlist.';
+      }
+
+      if (MovieRate.isViewed(previousMovieRate)) {
+        return '$movieTitle moved to Watchlist.';
+      }
+
+      return '$movieTitle added to Watchlist.';
+    }
+
+    if (nextMovieRate == MovieRate.notRated) {
+      if (previousMovieRate == MovieRate.addedToWatchlist) {
+        return '$movieTitle removed from Watchlist.';
+      }
+
+      if (MovieRate.isViewed(previousMovieRate)) {
+        return '$movieTitle removed from Viewed.';
+      }
+
+      return '$movieTitle removed from My Movies.';
+    }
+
+    if (MovieRate.isViewed(nextMovieRate)) {
+      final label = MovieRate.opinionLabel(nextMovieRate);
+
+      if (MovieRate.isViewed(previousMovieRate)) {
+        return '$movieTitle saved as $label.';
+      }
+
+      if (previousMovieRate == MovieRate.addedToWatchlist) {
+        return '$movieTitle moved to Viewed. Saved as $label.';
+      }
+
+      return '$movieTitle saved as $label.';
+    }
+
+    return '$movieTitle status updated.';
   }
 }
 
+class _RateAction extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _RateAction({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = active ? Colors.white : Md3Colors.muted;
+    final background = active ? color : Colors.white.withOpacity(0.78);
+    final borderColor = active ? color : Md3Colors.border;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          height: 62,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor, width: active ? 1.5 : 1),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.22),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: foreground, size: 19),
+              const SizedBox(height: 5),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

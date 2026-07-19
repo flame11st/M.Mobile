@@ -1,16 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/route_helper.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
+import 'package:mmobile/Enums/movie_rate.dart';
+import 'package:mmobile/Objects/movie.dart';
+import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Objects/user.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Variables/validators.dart';
 import 'package:mmobile/Variables/variables.dart';
-import 'package:mmobile/Widgets/change_themes.dart';
-import 'package:mmobile/Widgets/Providers/theme_state.dart';
+import 'package:mmobile/Widgets/Login.dart';
 import 'package:mmobile/Widgets/Shared/m_button.dart';
 import 'package:mmobile/Widgets/Shared/m_dialog.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
+import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:provider/provider.dart';
 import 'premium.dart';
 import 'Providers/movies_state.dart';
@@ -49,6 +54,74 @@ class SettingsState extends State<Settings> {
   bool showClearMoviesButtons = false;
 
   int userMoviesCount = 0;
+
+  Widget _buildSectionTitle(String title, {String? subtitle}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 24, 4, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryMetric(
+      String label, String value, Color accent, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Md3Colors.background,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Md3Colors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: accent, size: 18),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Md3Colors.text,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   setNameButtonActive() {
     var nameButtonActive = _formNameKey.currentState != null &&
@@ -138,24 +211,100 @@ class SettingsState extends State<Settings> {
     }
   }
 
-  removeUser(String userId, UserState userState, MoviesState moviesState,
-      ThemeState themeState) async {
+  removeUser(
+      String userId, UserState userState, MoviesState moviesState) async {
     var text = removeController.text;
     var removeUserResponse = await serviceAgent.deleteUser(userId, text);
 
     if (removeUserResponse.statusCode == 200) {
+      if (!mounted) return;
       userState.logout();
       moviesState.logout();
-      themeState.logout();
       Navigator.of(context).pop();
     } else {
       MSnackBar.showSnackBar('Something went wrong', false);
     }
   }
 
-  changeTheme() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (ctx) => ChangeThemes()));
+  Future<void> _openSignIn() async {
+    final authenticated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (context) => const Login()),
+    );
+
+    if (!mounted || authenticated != true) {
+      return;
+    }
+
+    final userState = Provider.of<UserState>(context, listen: false);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    var libraryRefreshed = true;
+
+    try {
+      await _reloadMergedLibrary(userState, moviesState);
+
+      final userId = userState.userId;
+      if (userId != null && userId.isNotEmpty && userState.user == null) {
+        final response = await serviceAgent.getUserInfo(userId);
+        if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+          await userState.setUser(User.fromJson(json.decode(response.body)));
+        }
+      }
+    } catch (error) {
+      libraryRefreshed = false;
+      debugPrint('Post-sign-in library refresh failed: $error');
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      initialUserName = null;
+      initialUserEmail = null;
+    });
+    MSnackBar.showSnackBar(
+      libraryRefreshed
+          ? 'Account connected. Your movies are synced.'
+          : 'Account connected. Your library will refresh shortly.',
+      true,
+    );
+  }
+
+  Future<void> _reloadMergedLibrary(
+    UserState userState,
+    MoviesState moviesState,
+  ) async {
+    final userId = userState.userId;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+
+    final moviesResponse = await serviceAgent.getUserMovies(userId);
+    if (moviesResponse.statusCode == 200 &&
+        moviesResponse.body.trim().isNotEmpty) {
+      final decodedMovies = json.decode(moviesResponse.body);
+      if (decodedMovies is Iterable) {
+        await moviesState.setUserMovies(
+          decodedMovies.map((model) => Movie.fromJson(model)).toList(),
+        );
+      }
+    }
+
+    final listsResponse = await serviceAgent.getMoviesLists(userId);
+    if (listsResponse.statusCode == 200 &&
+        listsResponse.body.trim().isNotEmpty) {
+      final decodedLists = json.decode(listsResponse.body);
+      if (decodedLists is Iterable) {
+        final lists = <MoviesList>[];
+        for (final model in decodedLists) {
+          final listModel = model is String ? json.decode(model) : model;
+          if (listModel is Map<String, dynamic>) {
+            lists.add(MoviesList.fromJson(listModel));
+          }
+        }
+        await moviesState.setInitialMoviesLists(lists);
+      }
+    }
   }
 
   @override
@@ -189,9 +338,16 @@ class SettingsState extends State<Settings> {
 
     final userState = Provider.of<UserState>(context);
     final moviesState = Provider.of<MoviesState>(context);
-    final themeState = Provider.of<ThemeState>(context);
-
     userMoviesCount = moviesState.userMovies.length;
+    final watchlistCount = moviesState.userMovies
+        .where((movie) => movie.movieRate == MovieRate.addedToWatchlist)
+        .length;
+    final viewedCount = moviesState.userMovies
+        .where((movie) => MovieRate.isViewed(movie.movieRate))
+        .length;
+    final likedCount = moviesState.userMovies
+        .where((movie) => movie.movieRate == MovieRate.liked)
+        .length;
 
     if (initialUserName == null && userState.user != null) {
       nameController.text = initialUserName = userState.user!.name;
@@ -204,19 +360,19 @@ class SettingsState extends State<Settings> {
     final headingField = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        Row(
+        const Row(
           children: <Widget>[
-            Icon(
-              Icons.settings,
-              size: 25,
-              color: Theme.of(context).hintColor,
-            ),
-            const SizedBox(
+            Icon(Icons.settings, size: 25, color: Md3Colors.primary),
+            SizedBox(
               width: 10,
             ),
             Text(
               'Settings',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: TextStyle(
+                color: Md3Colors.text,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
             )
           ],
         ),
@@ -243,7 +399,6 @@ class SettingsState extends State<Settings> {
                 onPressed: () {
                   userState.logout();
                   moviesState.logout();
-                  themeState.logout();
 
                   AdManager.hideBanner();
                   Navigator.of(context).pop();
@@ -254,34 +409,78 @@ class SettingsState extends State<Settings> {
       ],
     );
 
-    final incognitoModeCard = MCard(
-        child: Column(
-      children: [
-        Text(
-          "You are not signed in. Your scores don't affect the rating of movies",
-          style: Theme.of(context).textTheme.displaySmall,
-        ),
-        const SizedBox(
-          height: 20,
-        ),
-        MButton(
-          width: MediaQuery.of(context).size.width,
-          prependIcon: Entypo.login,
-          active: true,
-          text: 'Sign in',
-          onPressedCallback: () {
-            userState.logout();
-            moviesState.isMoviesRequested = false;
-
-            AdManager.hideBanner();
-
-            Navigator.of(context).pop();
-          },
-        )
-      ],
-    ));
+    final accountStatusCard = Md3Card(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: userState.isIncognitoMode
+                      ? const Color(0xffe8f0fb)
+                      : const Color(0xffe9f7ef),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  userState.isIncognitoMode
+                      ? Icons.person_outline_rounded
+                      : Icons.verified_rounded,
+                  color: userState.isIncognitoMode
+                      ? Md3Colors.primary
+                      : Md3Colors.success,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userState.isIncognitoMode
+                          ? 'Trying MovieDiary first'
+                          : 'Signed in${userState.user != null && userState.user!.name.isNotEmpty ? ' as ${userState.user!.name}' : ''}',
+                      style: const TextStyle(
+                        color: Md3Colors.text,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      userState.isIncognitoMode
+                          ? 'You can keep rating movies without an account. Sign in when you want your Watchlist and Viewed history synced.'
+                          : (userState.user?.email.isNotEmpty ?? false)
+                              ? userState.user!.email
+                              : 'Your MovieDiary account is active on this device.',
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (userState.isIncognitoMode) ...[
+            const SizedBox(height: 16),
+            Md3PrimaryButton(
+              text: 'Sign in or create account',
+              icon: Icons.login_rounded,
+              onPressed: _openSignIn,
+            ),
+          ],
+        ],
+      ),
+    );
 
     final nameField = MCard(
+      color: Md3Colors.surface,
       text: "Name",
       button: MButton(
         text: 'Change name',
@@ -310,6 +509,7 @@ class SettingsState extends State<Settings> {
     );
 
     final emailField = MCard(
+      color: Md3Colors.surface,
       text: "Email",
       button: MButton(
         text: 'Change Email',
@@ -333,73 +533,151 @@ class SettingsState extends State<Settings> {
               ))),
     );
 
-    final changeThemeField = MCard(
-        child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        RichText(
-            text: TextSpan(
-          style: Theme.of(context).textTheme.headlineSmall,
-          children: <TextSpan>[
-            TextSpan(
-                text: 'Theme:  ', style: Theme.of(context).textTheme.displaySmall),
-            TextSpan(
-                text: themeState.selectedTheme.name,
-                style: Theme.of(context).textTheme.headlineSmall)
-          ],
-        )),
-        MButton(
-          onPressedCallback: () => changeTheme(),
-          text: 'Change',
-          active: true,
-        )
-      ],
-    ));
+    final premiumField = Md3Card(
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: userState.isPremium
+                  ? const Color(0xffe9f7ef)
+                  : const Color(0xfffff4dc),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              userState.isPremium
+                  ? Icons.check_circle_rounded
+                  : Icons.workspace_premium_rounded,
+              color:
+                  userState.isPremium ? Md3Colors.success : Md3Colors.warning,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Premium',
+                  style: TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  userState.isPremium
+                      ? 'Premium is active on this device.'
+                      : 'Support MovieDiary and remove ads.',
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 124,
+            child: MButton(
+              text: userState.isPremium ? 'Included' : 'View plans',
+              onPressedCallback: () {
+                Navigator.of(context)
+                    .push(RouteHelper.createRoute(() => Premium()));
+              },
+              active: true,
+              backgroundColor: Theme.of(context).cardColor,
+            ),
+          ),
+        ],
+      ),
+    );
 
-    final userMoviesCountField = MCard(
-        child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        RichText(
-            text: TextSpan(
-          style: Theme.of(context).textTheme.headlineSmall,
-          children: <TextSpan>[
-            TextSpan(
-                text: 'Your movies count:   ',
-                style: Theme.of(context).textTheme.displaySmall),
-            TextSpan(text: userMoviesCount.toString())
-          ],
-        )),
-        MButton(
-          text: 'Clear all',
-          onPressedCallback: () {
-            var mDialog = MDialog(
-                context: context,
-                content: const Text('Are You really want to clear your movies?'),
-                firstButtonText: 'Yes, clear all',
-                firstButtonCallback: () {
-                  if (!userState.isIncognitoMode) {
-                    clearUserMovies(userState.userId!);
-                  }
+    final userMoviesCountField = Md3Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your library',
+            style: TextStyle(
+              color: Md3Colors.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            userMoviesCount == 0
+                ? 'Start building your MovieDiary by saving titles to Watchlist or rating movies you have seen.'
+                : 'A quick snapshot of your MovieDiary progress.',
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildSummaryMetric('Watchlist', '$watchlistCount',
+                  Md3Colors.primary, Icons.bookmark_rounded),
+              const SizedBox(width: 10),
+              _buildSummaryMetric('Viewed', '$viewedCount', Md3Colors.success,
+                  Icons.visibility_rounded),
+              const SizedBox(width: 10),
+              _buildSummaryMetric(
+                  'Liked', '$likedCount', Md3Colors.warning, Icons.favorite),
+            ],
+          ),
+          if (userMoviesCount > 0) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                label: const Text('Clear library'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Md3Colors.danger,
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                onPressed: () {
+                  var mDialog = MDialog(
+                      context: context,
+                      content: const Text(
+                          'Clear every rating and Watchlist item from this device? This cannot be undone.'),
+                      firstButtonText: 'Yes, clear library',
+                      firstButtonCallback: () {
+                        if (!userState.isIncognitoMode) {
+                          clearUserMovies(userState.userId!);
+                        }
 
-                  setState(() {
-                    userMoviesCount = 0;
-                  });
+                        setState(() {
+                          userMoviesCount = 0;
+                        });
 
-                  moviesState.clear();
+                        moviesState.clear();
+                      },
+                      secondButtonText: 'Cancel',
+                      secondButtonCallback: () {});
+
+                  mDialog.openDialog();
                 },
-                secondButtonText: 'Cancel',
-                secondButtonCallback: () {});
-
-            mDialog.openDialog();
-          },
-          active: true,
-        )
-      ],
-    ));
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
 
     final changePasswordField = MCard(
+        color: Md3Colors.surface,
         text: 'Change Password',
         button: MButton(
           text: 'Change',
@@ -449,8 +727,8 @@ class SettingsState extends State<Settings> {
                       var result = Validators.passwordValidator(
                           newPasswordController.text);
                       result ??= Validators.passwordsMatchValidator(
-                            newPasswordController.text,
-                            confirmPasswordController.text);
+                          newPasswordController.text,
+                          confirmPasswordController.text);
                       return result;
                     },
                     controller: newPasswordController,
@@ -474,8 +752,8 @@ class SettingsState extends State<Settings> {
                       var result = Validators.passwordValidator(
                           confirmPasswordController.text);
                       result ??= Validators.passwordsMatchValidator(
-                            newPasswordController.text,
-                            confirmPasswordController.text);
+                          newPasswordController.text,
+                          confirmPasswordController.text);
                       return result;
                     },
                     controller: confirmPasswordController,
@@ -486,6 +764,7 @@ class SettingsState extends State<Settings> {
         ));
 
     final removeUserField = MCard(
+      color: Md3Colors.surface,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
@@ -499,7 +778,8 @@ class SettingsState extends State<Settings> {
                     height: 143,
                     child: Column(
                       children: [
-                        const Text('Are you sure you want to remove your user?'),
+                        const Text(
+                            'Are you sure you want to remove your user?'),
                         const SizedBox(
                           height: 10,
                         ),
@@ -516,8 +796,7 @@ class SettingsState extends State<Settings> {
                   ),
                   firstButtonText: 'Remove',
                   firstButtonCallback: () {
-                    removeUser(
-                        userState.userId!, userState, moviesState, themeState);
+                    removeUser(userState.userId!, userState, moviesState);
                   },
                   secondButtonText: 'Cancel',
                   secondButtonCallback: () {});
@@ -531,29 +810,35 @@ class SettingsState extends State<Settings> {
     );
 
     return Scaffold(
+        backgroundColor: Md3Colors.background,
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
-                  child: AdManager.getBannerWidget(AdManager.settingsBannerAd!),
+                  child: AdManager.getBannerWidget(AdManager.settingsBannerAd),
                 ),
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
               )
-            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
+            : PreferredSize(
+                preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: Md3Colors.background,
             appBar: AppBar(
+              backgroundColor: Md3Colors.background,
+              foregroundColor: Md3Colors.text,
+              elevation: 0,
               title: headingField,
             ),
             body: Container(
               key: globalKey,
               child: SingleChildScrollView(
                 child: Container(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                    color: Theme.of(context).primaryColor,
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 104),
+                    color: Md3Colors.background,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
+                        accountStatusCard,
                         if (!userState.isIncognitoMode &&
                             userState.user != null &&
                             userState.user!.name.isNotEmpty)
@@ -563,41 +848,82 @@ class SettingsState extends State<Settings> {
                             userState.user!.email.isNotEmpty &&
                             !userState.user!.isIncognito)
                           emailField,
-                        const SizedBox(
-                          height: 20,
+                        if (!userState.isIncognitoMode &&
+                            userState.user != null) ...[
+                          _buildSectionTitle('Account'),
+                          if (!userState.isSignedInWithGoogle &&
+                              !userState.user!.isIncognito)
+                            changePasswordField,
+                          if (!userState.user!.isIncognito) removeUserField,
+                        ],
+                        _buildSectionTitle(
+                          'Preferences',
+                          subtitle:
+                              'Keep these tools lightweight so Discover and My Movies stay central.',
                         ),
-                        MButton(
-                          text: 'Explore Premium Features',
-                          onPressedCallback: () => {
-                            Navigator.of(context)
-                                .push(RouteHelper.createRoute(() => Premium()))
-                          },
-                          active: true,
-                          height: 50,
-                          width: MediaQuery.of(context).size.width,
-                          prependIconColor: Colors.green,
-                          prependIcon: userState.isPremium
-                              ? Icons.check
-                              : Icons.monetization_on,
-                          backgroundColor: Theme.of(context).cardColor,
+                        premiumField,
+                        _buildSectionTitle(
+                          'Movie activity',
+                          subtitle:
+                              'Watchlist, Viewed, and Liked stay visible here without taking over the app.',
                         ),
-                        changeThemeField,
                         userMoviesCountField,
-                        if (!userState.isSignedInWithGoogle &&
-                            !userState.isIncognitoMode && !userState.user!.isIncognito)
-                          changePasswordField,
-                        if (!userState.isIncognitoMode && !userState.user!.isIncognito) removeUserField,
-                        if (userState.isIncognitoMode) incognitoModeCard,
                         const SizedBox(
                           height: 20,
                         ),
-                        MButton(
-                          text: 'Restore purchases',
-                          onPressedCallback: () => restorePurchases(),
-                          active: true,
-                          height: 50,
-                          width: MediaQuery.of(context).size.width,
-                          backgroundColor: Theme.of(context).cardColor,
+                        Md3Card(
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffe8f0fb),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: Md3Colors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Restore purchases',
+                                      style: TextStyle(
+                                        color: Md3Colors.text,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Reconnect premium purchases on this device if they do not appear automatically.',
+                                      style: TextStyle(
+                                        color: Md3Colors.muted,
+                                        fontSize: 13,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                width: 104,
+                                child: MButton(
+                                  text: 'Restore',
+                                  onPressedCallback: () => restorePurchases(),
+                                  active: true,
+                                  height: 40,
+                                  backgroundColor: Theme.of(context).cardColor,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     )),
@@ -605,4 +931,3 @@ class SettingsState extends State<Settings> {
             )));
   }
 }
-

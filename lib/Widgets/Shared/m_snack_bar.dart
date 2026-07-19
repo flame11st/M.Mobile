@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Variables/Variables.dart';
 
 class MSnackBar {
-  static showSnackBar(String text, bool isSuccess) {
-    var context = MyGlobals.activeKey!.currentContext;
+  static showSnackBar(String text, bool isSuccess, {BuildContext? context}) {
+    context ??= MyGlobals.activeKey?.currentContext;
 
     if (context != null) {
       show(context, text, isSuccess);
@@ -24,9 +24,8 @@ class MSnackBar {
                     color: Theme.of(context).primaryColor, fontSize: 16),
               ))),
       duration: const Duration(milliseconds: 600),
-      backgroundColor: isSuccess
-          ? Theme.of(MyGlobals.activeKey!.currentContext!).indicatorColor
-          : Colors.redAccent,
+      backgroundColor:
+          isSuccess ? Theme.of(context).indicatorColor : Colors.redAccent,
     ));
   }
 }

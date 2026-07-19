@@ -8,11 +8,10 @@ import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:provider/provider.dart';
-import '../Helpers/route_helper.dart';
 import 'movie_list_item.dart';
 import 'Providers/movies_state.dart';
-import 'recommendations_page.dart';
 import 'search_delegate.dart';
+import 'Shared/md3_ui.dart';
 import 'Shared/m_button.dart';
 import 'Shared/m_dialog.dart';
 import 'Shared/m_movies_animated_list.dart';
@@ -47,10 +46,12 @@ class MovieListPageState extends State<MoviesListPage> {
         child: MovieListItem(
             shouldRequestReview: false,
             movie: movie,
-            moviesList:
-            moviesList.movieListType == MovieListType.personal
+            moviesList: moviesList.movieListType == MovieListType.personal
                 ? moviesList
-                : null));
+                : null,
+            mode: moviesList.movieListType == MovieListType.personal
+                ? MovieCardMode.personalList
+                : MovieCardMode.browse));
   }
 
   void removeListButtonClicked() {
@@ -59,7 +60,7 @@ class MovieListPageState extends State<MoviesListPage> {
     var mDialog = MDialog(
         context: context,
         content: Text(
-            'Are You really want to remove your list "${moviesList.name}"?'),
+            'Remove "${moviesList.name}"? This deletes the list, but keeps the movies in your watch history.'),
         firstButtonText: 'Yes, remove',
         firstButtonCallback: () {
           removeList();
@@ -103,9 +104,11 @@ class MovieListPageState extends State<MoviesListPage> {
                                   : null,
                           controller: nameController,
                           decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                              contentPadding:
+                                  const EdgeInsets.fromLTRB(0, 0, 0, 0),
                               labelText: "Enter new list name",
-                              hintStyle: Theme.of(context).textTheme.headlineSmall),
+                              hintStyle:
+                                  Theme.of(context).textTheme.headlineSmall),
                         )),
                   )),
               actions: [
@@ -116,19 +119,19 @@ class MovieListPageState extends State<MoviesListPage> {
                   onPressedCallback: () async {
                     if (_formKey.currentState != null &&
                         _formKey.currentState!.validate()) {
-                      moviesState.renameMoviesList(
-                          moviesList.name, nameController.text);
+                      final oldName = moviesList.name;
+                      final newName = nameController.text;
+                      moviesState.renameMoviesList(oldName, newName);
 
                       MSnackBar.showSnackBar(
-                          'The List renamed to "${nameController.text}"', true);
+                          'The List renamed to "$newName"', true);
 
                       Navigator.of(context1).pop();
 
-                      if (!userState.isIncognitoMode) {
+                      if (userState.userId != null &&
+                          userState.userId!.isNotEmpty) {
                         await serviceAgent.renameUserMoviesList(
-                            userState.userId!,
-                            moviesList.name,
-                            nameController.text);
+                            userState.userId!, oldName, newName);
                       }
 
                       nameController.clear();
@@ -156,72 +159,75 @@ class MovieListPageState extends State<MoviesListPage> {
 
     Navigator.of(context).pop();
 
-    if (!userState.isIncognitoMode) {
+    if (userState.userId != null && userState.userId!.isNotEmpty) {
       serviceAgent.removeUserMoviesList(userState.userId!, moviesList.name);
     }
   }
 
   Widget getBody() {
+    final bottomPadding = Md3NavigationMetrics.bottomMargin(context) + 24;
+
     Widget widgetToReturn = moviesList.listMovies.isNotEmpty
-        ? MMoviesAnimatedList(
-            buildItemFunction: buildItem,
-            isPremium: false,
-            listKey: MyGlobals.personalListsKey,
-            movies: moviesList.listMovies,
+        ? Container(
+            color: Md3Colors.background,
+            padding: const EdgeInsets.only(top: 8),
+            child: MMoviesAnimatedList(
+              buildItemFunction: buildItem,
+              isPremium: false,
+              listKey: MyGlobals.personalListsKey,
+              movies: moviesList.listMovies,
+              padding: EdgeInsets.only(bottom: bottomPadding),
+            ),
           )
-        : Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(children: [
-              const Text(
-                "You haven't added any items to this list.\n"
-                "Please use Search or Check General Movies Lists to find items which you want to add.",
-                style: TextStyle(fontSize: 17, height: 2),
+        : Md3Page(
+            padding: EdgeInsets.fromLTRB(18, 18, 18, bottomPadding),
+            child: Md3Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.playlist_add_rounded,
+                    color: Md3Colors.primary,
+                    size: 28,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'This list is empty',
+                    style: TextStyle(
+                      color: Md3Colors.text,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Use Search to add movies and TV shows to this list.',
+                    style: TextStyle(
+                      color: Md3Colors.muted,
+                      fontSize: 14,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Md3PrimaryButton(
+                    text: 'Search Movies or TV Shows',
+                    icon: Icons.search_rounded,
+                    onPressed: () => showSearch(
+                      context: context,
+                      delegate: MSearchDelegate(),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(
-                height: 40,
-              ),
-              MButton(
-                  active: true,
-                  text: 'Find Movie or TV Series',
-                  prependIcon: Icons.search,
-                  height: 40,
-                  width: MediaQuery.of(context).size.width - 50,
-                  onPressedCallback: () => showSearch(
-                        context: context,
-                        delegate: MSearchDelegate(),
-                      )),
-              const SizedBox(
-                height: 30,
-              ),
-              MButton(
-                height: 40,
-                width: MediaQuery.of(context).size.width - 40,
-                backgroundColor: Theme.of(context).indicatorColor,
-                borderRadius: 20,
-                prependIcon: Icons.electric_bolt,
-                prependIconColor: Theme.of(context).cardColor,
-                text: "Get Recommendations",
-                onPressedCallback: () {
-                  Navigator.of(context).push(
-                      RouteHelper.createRoute(() => RecommendationsPage()));
-                },
-                active: true,
-                textColor: Theme.of(context).cardColor,
-              ),
-            ]));
+            ),
+          );
 
     return widgetToReturn;
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('rebuilding MovieListPage');
-    debugPrint(MyGlobals.personalListsKey.toString());
-
-    final userState = Provider.of<UserState>(context);
-    final moviesState = Provider.of<MoviesState>(context);
-    debugPrint(moviesState.viewedListKey.toString());
-
     GlobalKey globalKey = GlobalKey();
 
     if (ModalRoute.of(context)!.isCurrent && moviesList.listMovies.isNotEmpty) {
@@ -234,7 +240,11 @@ class MovieListPageState extends State<MoviesListPage> {
         Expanded(
             child: Text(
           moviesList.name,
-          style: Theme.of(context).textTheme.headlineSmall,
+          style: const TextStyle(
+            color: Md3Colors.text,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
         )),
         if (moviesList.movieListType == MovieListType.personal)
           PopupMenuButton(
@@ -271,20 +281,24 @@ class MovieListPageState extends State<MoviesListPage> {
     );
 
     return Scaffold(
+        backgroundColor: Md3Colors.background,
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
-                  child: AdManager.getBannerWidget(AdManager.listBannerAd!),
+                  child: AdManager.getBannerWidget(AdManager.listBannerAd),
                 ),
                 elevation: 0.7,
                 automaticallyImplyLeading: false)
-            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
+            : PreferredSize(
+                preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: Md3Colors.background,
             appBar: AppBar(
+              backgroundColor: Md3Colors.background,
+              foregroundColor: Md3Colors.text,
+              elevation: 0,
               title: headingField,
             ),
             body: Container(key: globalKey, child: getBody())));
   }
 }
-

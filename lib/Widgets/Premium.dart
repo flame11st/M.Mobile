@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Shared/m_button.dart';
+import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:provider/provider.dart';
 import 'Providers/user_state.dart';
 import 'Shared/m_snack_bar.dart';
@@ -65,33 +65,12 @@ class Premium extends StatelessWidget {
     );
 
     final subtitleText = Text(
-      'If you like MovieDiary you can support the project by unlocking the Premium features:',
+      'If you like MovieDiary you can support the project by unlocking Premium:',
       textAlign: TextAlign.center,
       style: TextStyle(
           color: Theme.of(context).hintColor,
           fontSize: 18,
           fontWeight: FontWeight.bold),
-    );
-
-    final themeFeature = Column(
-      children: <Widget>[
-        Icon(
-          FontAwesome5.paint_brush,
-          color: Theme.of(context).indicatorColor,
-          size: 40,
-        ),
-        const SizedBox(
-          height: 10,
-        ),
-        Text(
-          'Changing themes',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Theme.of(context).indicatorColor,
-              fontSize: 18,
-              fontWeight: FontWeight.bold),
-        )
-      ],
     );
 
     final supportFeature = Column(
@@ -145,7 +124,8 @@ class Premium extends StatelessWidget {
                 automaticallyImplyLeading: false,
                 elevation: 0.7,
               )
-            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
+            : PreferredSize(
+                preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
           backgroundColor: Theme.of(context).primaryColor,
           appBar: AppBar(
@@ -173,19 +153,16 @@ class Premium extends StatelessWidget {
                       const SizedBox(
                         height: 20,
                       ),
-                      themeFeature,
-                      const SizedBox(
-                        height: 20,
-                      ),
                       supportFeature,
                     ],
                   )),
             ),
           ),
-          bottomNavigationBar: BottomAppBar(
-              color: Theme.of(context).primaryColor,
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+          bottomNavigationBar: Md3LiquidGlass(
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 20),
+              borderRadius: BorderRadius.circular(24),
+              child: SizedBox(
                 child: MButton(
                   onPressedCallback: () => purchaseButtonClick(),
                   prependIconColor: userState.isPremium
@@ -202,4 +179,3 @@ class Premium extends StatelessWidget {
         ));
   }
 }
-

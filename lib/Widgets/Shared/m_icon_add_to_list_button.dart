@@ -19,15 +19,14 @@ class MAddToListButton extends StatelessWidget {
   final bannerVisible = AdManager.bannerVisible;
 
   MAddToListButton(
-      {required this.movie, this.moviesList, this.fromMenu = false });
+      {required this.movie, this.moviesList, this.fromMenu = false});
 
   Widget getMovieListWidget(
       MoviesList list, BuildContext context, BuildContext dialogContext) {
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
 
-    bool movieInList =
-        list.listMovies.any((element) => element.id == movie.id);
+    bool movieInList = list.listMovies.any((element) => element.id == movie.id);
 
     return GestureDetector(
         onTap: () async {
@@ -46,7 +45,7 @@ class MAddToListButton extends StatelessWidget {
           MSnackBar.showSnackBar(
               '"${movie.title}" added to your list "${list.name}"', true);
 
-          if (!userState.isIncognitoMode) {
+          if (userState.userId != null && userState.userId!.isNotEmpty) {
             await serviceAgent.addMovieToList(
                 userState.userId!, movie.id, list.name);
           }
@@ -76,7 +75,8 @@ class MAddToListButton extends StatelessWidget {
                     const SizedBox(
                       height: 5,
                     ),
-                    Text("${list.listMovies.length} item${list.listMovies.length == 1 ? "" : "s"}")
+                    Text(
+                        "${list.listMovies.length} item${list.listMovies.length == 1 ? "" : "s"}")
                   ],
                 )),
                 if (movieInList) const Icon(Icons.check)
@@ -89,12 +89,13 @@ class MAddToListButton extends StatelessWidget {
 
     var userLists = moviesState.personalMoviesLists;
 
-    userLists.sort((a, b) => a.order > b.order ? 1 : 0);
+    userLists.sort((a, b) => a.order.compareTo(b.order));
 
     showDialog<String>(
         context: context,
         builder: (BuildContext context1) => AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               backgroundColor: Theme.of(context).primaryColor,
               contentTextStyle: Theme.of(context).textTheme.headlineSmall,
               content: SizedBox(
@@ -107,7 +108,7 @@ class MAddToListButton extends StatelessWidget {
                   children: [
                     if (userLists.isNotEmpty)
                       Text(
-                        'Select your personal list',
+                        'Add to a personal list',
                         style: Theme.of(context).textTheme.displayMedium,
                       ),
                     const SizedBox(
@@ -118,8 +119,8 @@ class MAddToListButton extends StatelessWidget {
                       children: [
                         if (userLists.isEmpty)
                           const Text(
-                            "You haven't created any personal list yet.\n\n"
-                            "You can go to the 'Personal Lists' page and create a new one.",
+                            "You haven't created a personal list yet.\n\n"
+                            "Open Lists > Personal to create one.",
                             style: TextStyle(fontSize: 16),
                           ),
                         if (userLists.isEmpty)
@@ -137,7 +138,7 @@ class MAddToListButton extends StatelessWidget {
                 MButton(
                   width: (MediaQuery.of(context).size.width / 2) - 55,
                   active: true,
-                  text: 'Personal Lists',
+                  text: 'Open Lists',
                   onPressedCallback: () {
                     Navigator.of(context).pop();
 
@@ -168,11 +169,8 @@ class MAddToListButton extends StatelessWidget {
   removeMovieFromList(BuildContext context) async {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
-
-    if (!userState.isIncognitoMode) {
-      await serviceAgent.removeMovieFromList(
-          userState.userId!, movie.id, moviesList!.name);
-    }
+    final userId = userState.userId;
+    final listName = moviesList!.name;
 
     Navigator.of(context).pop();
 
@@ -183,17 +181,19 @@ class MAddToListButton extends StatelessWidget {
     await Future.delayed(const Duration(milliseconds: 300));
 
     MSnackBar.showSnackBar(
-        '"${movie.title}" removed from your list "${moviesList!.name}"', true);
+        '"${movie.title}" removed from your list "$listName"', true);
 
-    moviesState.removeMovieFromPersonalList(moviesList!.name, movie);
+    moviesState.removeMovieFromPersonalList(listName, movie);
+
+    if (userId != null && userId.isNotEmpty) {
+      await serviceAgent.removeMovieFromList(userId, movie.id, listName);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userState = Provider.of<UserState>(context);
-
     bool isRemove = moviesList != null;
-    var text = isRemove ? 'Remove from this List' : 'Add to Personal List';
+    var text = isRemove ? 'Remove from this List' : 'Add to List';
 
     return MButton(
       prependIcon: isRemove ? Icons.clear : Icons.add,
@@ -207,4 +207,3 @@ class MAddToListButton extends StatelessWidget {
     );
   }
 }
-

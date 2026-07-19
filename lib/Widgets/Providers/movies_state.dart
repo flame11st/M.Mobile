@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -11,20 +12,25 @@ import 'package:mmobile/Variables/variables.dart';
 import '../../Services/service_agent.dart';
 import '../movie_list_item.dart';
 
-
 class MoviesState with ChangeNotifier {
   MoviesState() {
     setCachedUserMovies();
+    unawaited(_discardLegacyExternalListCache());
     setCachedMoviesLists();
   }
 
   final serviceAgent = ServiceAgent();
   final storage = const FlutterSecureStorage();
+  static const _cacheReadTimeout = Duration(seconds: 2);
+  static const _movieCacheWriteDebounce = Duration(milliseconds: 700);
+  Timer? _movieCacheWriteTimer;
+  Timer? _personalListsCacheWriteTimer;
 
   List<Movie> cachedUserMovies = [];
   List<Movie> userMovies = [];
   List<Movie> watchlistMovies = [];
   List<Movie> viewedMovies = [];
+  List<Movie> starterDeckMovies = [];
   List<MoviesList> externalMoviesLists = [];
   List<MoviesList> personalMoviesLists = [];
   List<DropdownMenuItem<String>> genres = [];
@@ -32,6 +38,7 @@ class MoviesState with ChangeNotifier {
   bool tvOnly = false;
   bool likedOnly = false;
   bool notLikedOnly = false;
+  bool okayOnly = false;
   DateTime? dateFrom;
   DateTime? dateTo;
   String? selectedGenre;
@@ -40,24 +47,32 @@ class MoviesState with ChangeNotifier {
   DateTime? dateMin;
   DateTime? dateMax;
 
-  var selectedRates = {MovieRate.liked, MovieRate.notLiked};
+  var selectedRates = {MovieRate.liked, MovieRate.notLiked, MovieRate.okay};
   var selectedTypes = {MovieType.movie, MovieType.tv};
 
   bool isMoviesRequested = false;
   bool isMoviesListsRequested = false;
+  bool isStarterDeckRequested = false;
   bool isCachedMoviesLoaded = false;
 
   setCachedUserMovies() async {
     String? storedMovies;
     try {
-      storedMovies = await storage.read(key: 'movies');
-    } catch (on) {
-      await clearStorage();
+      storedMovies =
+          await storage.read(key: 'movies').timeout(_cacheReadTimeout);
+    } catch (error) {
+      debugPrint('Movie cache read skipped: $error');
     }
 
     if (storedMovies == null) return;
 
-    Iterable iterableMovies = json.decode(storedMovies);
+    Iterable iterableMovies;
+    try {
+      iterableMovies = json.decode(storedMovies);
+    } catch (error) {
+      debugPrint('Movie cache decode skipped: $error');
+      return;
+    }
 
     if (iterableMovies.isNotEmpty) {
       List<Movie> movies = iterableMovies.map((model) {
@@ -96,10 +111,10 @@ class MoviesState with ChangeNotifier {
     refreshMovies();
     refreshDates();
 
-    await storage.write(key: 'movies', value: jsonEncode(userMovies));
+    _scheduleUserMoviesCacheWrite();
   }
 
-  void updateUserMoviesIncognito(List<Movie> movies){
+  void updateUserMoviesIncognito(List<Movie> movies) {
     updateUserMovies(movies, true);
 
     setGenres();
@@ -132,25 +147,18 @@ class MoviesState with ChangeNotifier {
   }
 
   setCachedMoviesLists() async {
-    String? storedExternalMoviesLists;
     String? storedPersonalMoviesLists;
     try {
-      storedExternalMoviesLists = await storage.read(key: 'externalMoviesLists');
-      storedPersonalMoviesLists = await storage.read(key: 'personalMoviesLists');
-    } catch (on) {
-      await clearStorage();
-    }
-
-    if (storedExternalMoviesLists != null) {
-      var externalMoviesListValue = getMoviesListFromJson(storedExternalMoviesLists);
-
-      if (externalMoviesListValue != null) {
-        setExternalMoviesLists(externalMoviesListValue);
-      }
+      storedPersonalMoviesLists = await storage
+          .read(key: 'personalMoviesLists')
+          .timeout(_cacheReadTimeout);
+    } catch (error) {
+      debugPrint('Personal movies list cache read skipped: $error');
     }
 
     if (storedPersonalMoviesLists != null) {
-      var personalMoviesListValue = getMoviesListFromJson(storedPersonalMoviesLists);
+      var personalMoviesListValue =
+          getMoviesListFromJson(storedPersonalMoviesLists);
 
       if (personalMoviesListValue != null) {
         setPersonalMoviesLists(personalMoviesListValue);
@@ -159,7 +167,13 @@ class MoviesState with ChangeNotifier {
   }
 
   getMoviesListFromJson(String jsonString) {
-    Iterable iterableMoviesLists = json.decode(jsonString);
+    Iterable iterableMoviesLists;
+    try {
+      iterableMoviesLists = json.decode(jsonString);
+    } catch (error) {
+      debugPrint('Movies list cache decode skipped: $error');
+      return null;
+    }
     List<MoviesList> moviesLists = [];
 
     if (iterableMoviesLists.isNotEmpty) {
@@ -171,7 +185,52 @@ class MoviesState with ChangeNotifier {
     return moviesLists;
   }
 
+  Future<void> _discardLegacyExternalListCache() async {
+    try {
+      await storage.delete(key: 'externalMoviesLists');
+    } catch (error) {
+      debugPrint('Legacy external list cache cleanup skipped: $error');
+    }
+  }
+
+  void _scheduleUserMoviesCacheWrite() {
+    _movieCacheWriteTimer?.cancel();
+    _movieCacheWriteTimer = Timer(_movieCacheWriteDebounce, () {
+      final moviesSnapshot = List<Movie>.of(userMovies);
+      unawaited(_writeUserMoviesCache(moviesSnapshot));
+    });
+  }
+
+  Future<void> _writeUserMoviesCache(List<Movie> movies) async {
+    try {
+      await storage.write(key: 'movies', value: jsonEncode(movies));
+    } catch (error) {
+      debugPrint('Movie cache write skipped: $error');
+    }
+  }
+
+  void _schedulePersonalMoviesListsCacheWrite(List<MoviesList> lists) {
+    _personalListsCacheWriteTimer?.cancel();
+    _personalListsCacheWriteTimer = Timer(_movieCacheWriteDebounce, () {
+      final listsSnapshot = List<MoviesList>.of(lists);
+      unawaited(_writePersonalMoviesListsCache(listsSnapshot));
+    });
+  }
+
+  Future<void> _writePersonalMoviesListsCache(List<MoviesList> lists) async {
+    try {
+      await storage.write(
+        key: 'personalMoviesLists',
+        value: jsonEncode(lists),
+      );
+    } catch (error) {
+      debugPrint('Personal movies list cache write skipped: $error');
+    }
+  }
+
   setInitialMoviesLists(List<MoviesList> moviesLists) async {
+    isMoviesListsRequested = true;
+
     final externalLists = moviesLists
         .where((list) => list.movieListType == MovieListType.external)
         .toList();
@@ -179,21 +238,30 @@ class MoviesState with ChangeNotifier {
         .where((list) => list.movieListType == MovieListType.personal)
         .toList();
 
-    await storage.write(key: 'externalMoviesLists', value: jsonEncode(externalLists));
-    await storage.write(key: 'personalMoviesLists', value: jsonEncode(personalLists));
-
     setExternalMoviesLists(externalLists);
     setPersonalMoviesLists(personalLists);
+
+    unawaited(_discardLegacyExternalListCache());
+    _schedulePersonalMoviesListsCacheWrite(personalLists);
   }
 
   setInitialMoviesListsIncognito(List<MoviesList> moviesLists) async {
+    isMoviesListsRequested = true;
+
     final externalLists = moviesLists
         .where((list) => list.movieListType == MovieListType.external)
         .toList();
 
-    await storage.write(key: 'externalMoviesLists', value: jsonEncode(externalLists));
-
     setExternalMoviesLists(externalLists);
+
+    unawaited(_discardLegacyExternalListCache());
+
+    notifyListeners();
+  }
+
+  void setStarterDeckMovies(List<Movie> movies) {
+    starterDeckMovies = movies;
+    isStarterDeckRequested = true;
 
     notifyListeners();
   }
@@ -237,46 +305,50 @@ class MoviesState with ChangeNotifier {
         order: order,
         listMovies: []));
 
-    storage.write(key: 'personalMoviesLists', value: jsonEncode(personalMoviesLists));
+    _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
+
+    notifyListeners();
   }
 
   renameMoviesList(String oldName, String newName) async {
-    final list = personalMoviesLists.singleWhere((element) => element.name == oldName);
+    final list =
+        personalMoviesLists.singleWhere((element) => element.name == oldName);
 
     list.name = newName;
 
-    storage.write(key: 'personalMoviesLists', value: jsonEncode(personalMoviesLists));
+    _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
+
+    notifyListeners();
   }
 
   removeMoviesList(String listName) {
-    personalMoviesLists =
-        personalMoviesLists.where((element) => element.name != listName).toList();
+    personalMoviesLists = personalMoviesLists
+        .where((element) => element.name != listName)
+        .toList();
 
-    storage.write(key: 'personalMoviesLists', value: jsonEncode(personalMoviesLists));
+    _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
 
     notifyListeners();
   }
 
   addMovieToPersonalList(String listName, Movie movie) {
-    final list = personalMoviesLists.singleWhere((element) => element.name == listName);
+    final list =
+        personalMoviesLists.singleWhere((element) => element.name == listName);
 
     list.listMovies.add(movie);
 
-    final listsStringValue = jsonEncode(personalMoviesLists);
-
-    storage.write(key: 'personalMoviesLists', value: listsStringValue);
+    _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
 
     notifyListeners();
   }
 
   removeMovieFromPersonalList(String listName, Movie movie) {
-    final list = personalMoviesLists.singleWhere((element) => element.name == listName);
+    final list =
+        personalMoviesLists.singleWhere((element) => element.name == listName);
 
     removeMovieFromList(movie, list.listMovies, MyGlobals.personalListsKey);
 
-    final listsStringValue = jsonEncode(personalMoviesLists);
-
-    storage.write(key: 'personalMoviesLists', value: listsStringValue);
+    _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
 
     notifyListeners();
   }
@@ -341,25 +413,50 @@ class MoviesState with ChangeNotifier {
   }
 
   changeLikedOnlyFilter() {
-    likedOnly = !likedOnly;
+    selectViewedRate(MovieRate.liked);
+  }
 
-    if (likedOnly) {
-      selectedRates.remove(MovieRate.notLiked);
-    } else {
-      selectedRates.add(MovieRate.notLiked);
-    }
+  changeOkayOnlyFilter() {
+    selectViewedRate(MovieRate.okay);
+  }
+
+  changeNotLikedOnlyFilter() {
+    selectViewedRate(MovieRate.notLiked);
+  }
+
+  selectAllViewedRates() {
+    selectedRates = {MovieRate.liked, MovieRate.notLiked, MovieRate.okay};
+    likedOnly = false;
+    okayOnly = false;
+    notLikedOnly = false;
 
     refreshMovies();
   }
 
-  changeNotLikedOnlyFilter() {
-    notLikedOnly = !notLikedOnly;
+  selectViewedRate(int movieRate) {
+    selectedRates = {movieRate};
+    likedOnly = movieRate == MovieRate.liked;
+    okayOnly = movieRate == MovieRate.okay;
+    notLikedOnly = movieRate == MovieRate.notLiked;
 
-    if (notLikedOnly) {
-      selectedRates.remove(MovieRate.liked);
+    refreshMovies();
+  }
+
+  changeRateFilter(int movieRate) {
+    if (selectedRates.contains(movieRate)) {
+      if (selectedRates.length > 1) {
+        selectedRates.remove(movieRate);
+      }
     } else {
-      selectedRates.add(MovieRate.liked);
+      selectedRates.add(movieRate);
     }
+
+    likedOnly =
+        selectedRates.length != 3 && selectedRates.contains(MovieRate.liked);
+    okayOnly =
+        selectedRates.length != 3 && selectedRates.contains(MovieRate.okay);
+    notLikedOnly =
+        selectedRates.length != 3 && selectedRates.contains(MovieRate.notLiked);
 
     refreshMovies();
   }
@@ -385,7 +482,7 @@ class MoviesState with ChangeNotifier {
   isAnyFilterSelected() {
     return moviesOnly ||
         tvOnly ||
-        (!isWatchlist() && (likedOnly || notLikedOnly)) ||
+        (!isWatchlist() && selectedRates.length != 3) ||
         isDateToSelected() ||
         isDateFromSelected() ||
         selectedGenre != null;
@@ -398,9 +495,10 @@ class MoviesState with ChangeNotifier {
     tvOnly = false;
     likedOnly = false;
     notLikedOnly = false;
+    okayOnly = false;
     selectedGenre = null;
 
-    selectedRates = {MovieRate.liked, MovieRate.notLiked};
+    selectedRates = {MovieRate.liked, MovieRate.notLiked, MovieRate.okay};
     selectedTypes = {MovieType.movie, MovieType.tv};
 
     refreshMovies();
@@ -412,7 +510,8 @@ class MoviesState with ChangeNotifier {
 
   bool isDateFromSelected() {
     return dateFrom != null &&
-        dateFrom!.difference(
+        dateFrom!
+                .difference(
                     dateMin!.subtract(const Duration(hours: 23, minutes: 59)))
                 .inDays !=
             0;
@@ -489,9 +588,7 @@ class MoviesState with ChangeNotifier {
 
   void refreshDates() {
     List<Movie> allViewedMovies = userMovies
-        .where((movie) =>
-            movie.movieRate == MovieRate.liked ||
-            movie.movieRate == MovieRate.notLiked)
+        .where((movie) => MovieRate.isViewed(movie.movieRate))
         .toList();
 
     if (allViewedMovies.isNotEmpty) {
@@ -519,7 +616,7 @@ class MoviesState with ChangeNotifier {
     var selectedRates = this.selectedRates;
 
     if (selectedRates.isEmpty) {
-      selectedRates = {MovieRate.liked, MovieRate.notLiked};
+      selectedRates = {MovieRate.liked, MovieRate.notLiked, MovieRate.okay};
     }
 
     var result = userMovies
@@ -533,12 +630,15 @@ class MoviesState with ChangeNotifier {
     return result;
   }
 
-  changeMovieRate(String movieId, int movieRate, bool isIncognitoMode, Movie movie) async {
+  changeMovieRate(
+      String movieId, int movieRate, bool isIncognitoMode, Movie movie,
+      {bool updateListRatings = true}) async {
     Movie movieToRate;
     var foundMovies = userMovies.where((m) => m.id == movieId);
 
-    if ((movie.actors.isNotEmpty || movie.directors.isNotEmpty || movie.genres.isNotEmpty))
-    {
+    if ((movie.actors.isNotEmpty ||
+        movie.directors.isNotEmpty ||
+        movie.genres.isNotEmpty)) {
       movieToRate = movie;
     } else if (foundMovies.isEmpty) {
       final moviesResponse = await serviceAgent.getMovie(movieId);
@@ -553,7 +653,7 @@ class MoviesState with ChangeNotifier {
 
     if (!isIncognitoMode) recalculateMovieRating(movieToRate, movieRate);
 
-    if (movieRate == MovieRate.liked || movieRate == MovieRate.notLiked) {
+    if (MovieRate.isViewed(movieRate)) {
       addMovieToViewed(movieToRate, movieRate);
     } else if (movieRate == MovieRate.addedToWatchlist) {
       addMovieToWatchlist(movieToRate, movieRate);
@@ -561,13 +661,32 @@ class MoviesState with ChangeNotifier {
       removeMovieRate(movieToRate);
     }
 
-    setRateToMovieInLists(movieId, movieRate);
+    if (updateListRatings) {
+      setRateToMovieInLists(movieId, movieRate);
+    }
 
     refreshMovies();
     refreshDates();
     setGenres();
 
-    await storage.write(key: 'movies', value: jsonEncode(userMovies));
+    _scheduleUserMoviesCacheWrite();
+
+    final userState = ServiceAgent.state;
+    if (isIncognitoMode &&
+        userState?.userId != null &&
+        userState!.userId!.isNotEmpty) {
+      unawaited(serviceAgent
+          .rateMovie(movieId, userState.userId!, movieRate)
+          .catchError(
+              (error) => debugPrint('Guest rating sync failed: $error')));
+    }
+  }
+
+  @override
+  void dispose() {
+    _movieCacheWriteTimer?.cancel();
+    _personalListsCacheWriteTimer?.cancel();
+    super.dispose();
   }
 
   // Future<void> updateMoviePosterPath(Movie movie, String posterPath) async {
@@ -589,8 +708,7 @@ class MoviesState with ChangeNotifier {
   }
 
   void removeMovieRate(Movie movieToRate) {
-    if (movieToRate.movieRate == MovieRate.notLiked ||
-        movieToRate.movieRate == MovieRate.liked) {
+    if (MovieRate.isViewed(movieToRate.movieRate)) {
       removeMovieFromList(movieToRate, viewedMovies, viewedListKey);
     } else if (movieToRate.movieRate == MovieRate.addedToWatchlist) {
       removeMovieFromList(movieToRate, watchlistMovies, watchlistKey);
@@ -639,15 +757,17 @@ class MoviesState with ChangeNotifier {
       return buildItem(movieToRemove, animation, context: context);
     }
 
-    if (key?.currentState != null) key?.currentState!.removeItem(index, builder);
+    if (key?.currentState != null) {
+      key?.currentState!.removeItem(index, builder);
+    }
   }
 
   recalculateMovieRating(Movie movie, int updatedRate) {
-    if (movie.movieRate == MovieRate.liked) movie.likedVotes -= 1;
-    if (movie.movieRate == MovieRate.notLiked) movie.dislikedVotes -= 1;
+    if (MovieRate.isPositiveVote(movie.movieRate)) movie.likedVotes -= 1;
+    if (MovieRate.isNegativeVote(movie.movieRate)) movie.dislikedVotes -= 1;
 
-    if (updatedRate == MovieRate.liked) movie.likedVotes += 1;
-    if (updatedRate == MovieRate.notLiked) movie.dislikedVotes += 1;
+    if (MovieRate.isPositiveVote(updatedRate)) movie.likedVotes += 1;
+    if (MovieRate.isNegativeVote(updatedRate)) movie.dislikedVotes += 1;
 
     movie.allVotes = movie.likedVotes + movie.dislikedVotes;
     movie.rating = Movie.getMovieRating(movie.likedVotes, movie.dislikedVotes);
@@ -698,7 +818,12 @@ class MoviesState with ChangeNotifier {
     return SizeTransition(
         key: ObjectKey(movie),
         sizeFactor: animation,
-        child: MovieListItem(movie: movie, shouldRequestReview: true,));
+        child: MovieListItem(
+          movie: movie,
+          shouldRequestReview: true,
+          mode: currentTabIndex == 0
+              ? MovieCardMode.watchlist
+              : MovieCardMode.viewed,
+        ));
   }
 }
-

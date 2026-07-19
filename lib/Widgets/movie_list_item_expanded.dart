@@ -1,12 +1,14 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/movie.dart';
+import 'package:mmobile/Objects/movie_watch_provider_group.dart';
 import 'package:mmobile/Objects/movies_list.dart';
-import 'package:mmobile/Widgets/Shared/m_card.dart';
-import 'package:mmobile/Widgets/Shared/m_text_field.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Widgets/Providers/movies_state.dart';
+import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'movies_bottom_navigation_bar_expanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
@@ -26,309 +28,536 @@ class MovieListItemExpanded extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    return MovieListItemExpandedState(
-        movie, fromSearch, imageUrl, moviesList, shouldRequestReview);
+    return MovieListItemExpandedState();
   }
 }
 
 class MovieListItemExpandedState extends State<MovieListItemExpanded> {
-  late Movie movie;
-  bool? fromSearch;
-  MoviesList? moviesList;
-  bool? shouldRequestReview;
+  late Future<MovieWatchProviderGroup> whereToWatchFuture;
+  final serviceAgent = ServiceAgent();
+  bool showAllWatchProviders = false;
 
-  String imageBaseUrl =
-      'https://moviediarystorage.blob.core.windows.net/movies';
-
-  MovieListItemExpandedState(Movie movie, bool fromSearch, String url,
-      MoviesList? moviesList, bool shouldRequestReview) {
-    this.movie = movie;
-    this.fromSearch = fromSearch;
-    this.moviesList = moviesList;
-    this.shouldRequestReview = shouldRequestReview;
-  }
-
-  getProgressColor(rating) {
-    if (rating < 30) {
-      return Colors.red;
-    } else if (rating < 70)
-      return Colors.amberAccent;
-    else
-      return Colors.green;
+  @override
+  void initState() {
+    super.initState();
+    whereToWatchFuture =
+        serviceAgent.getWhereToWatchGrouped(widget.movie.id, 'US');
   }
 
   @override
   Widget build(BuildContext context) {
+    final moviesState = Provider.of<MoviesState>(context);
+    final matchingMovies = moviesState.userMovies
+        .where((element) => element.id == widget.movie.id);
+    final movie =
+        matchingMovies.isNotEmpty ? matchingMovies.first : widget.movie;
     final formatter = NumberFormat("#,###");
-    const borderRadius = 15.0;
-
-    final imageUrl =
-        movie.posterPath != '' ? movie.posterPath : '/movie_placeholder.png';
-
-    final genreChips = Align(
-        alignment: Alignment.topLeft,
-        child: Wrap(
-          spacing: 8.0, // Space between chips
-          runSpacing: 4.0, // Space between rows of chips
-          children: movie.genres.map((genre) {
-            return Chip(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20), // More rounded corners
-              ),
-              padding: const EdgeInsets.all(2),
-              label: Text(
-                genre,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-            );
-          }).toList(),
-        ));
-
-    final topCard = MCard(
-      marginTop: 10,
-      marginBottom: 5,
-      padding: 10,
-      child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius),
-              child: CachedNetworkImage(
-                imageUrl: imageBaseUrl + imageUrl,
-                height: 160,
-                fit: BoxFit.fill,
-                width: 110,
-              ),
-            ),
-            const SizedBox(
-              width: 10,
-            ),
-            SizedBox(
-                height: 160,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    SizedBox(
-                        width: MediaQuery.of(context).size.width - 160,
-                        child: Align(
-                            alignment: Alignment.center,
-                            child: RichText(
-                                text: TextSpan(
-                              style: Theme.of(context).textTheme.displayMedium,
-                              children: <TextSpan>[
-                                TextSpan(text: movie.title),
-                                TextSpan(
-                                    text: ' (${DateFormat('yyyy')
-                                            .format(movie.releaseDate)})',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall),
-                              ],
-                            )))),
-                    Row(
-                      children: <Widget>[
-                        if (movie.seasonsCount > 0)
-                          Text("Seasons: ${movie.seasonsCount}",
-                              style: Theme.of(context).textTheme.headlineSmall),
-                        const SizedBox(
-                          width: 25,
-                        ),
-                        if (movie.seasonsCount > 0)
-                          Text(
-                              movie.inProduction ? 'In production' : 'Finished',
-                              style: Theme.of(context).textTheme.headlineSmall),
-                      ],
-                    ),
-                    SizedBox(
-                        width: MediaQuery.of(context).size.width - 160,
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Container(
-                                height: 95,
-                                width: 95,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: Colors.black.withOpacity(0.8),
-                                        offset: const Offset(0.0, 0.1),
-                                        blurRadius: 0.5),
-                                  ],
-                                ),
-                                child: CircularPercentIndicator(
-                                  radius: 45.0,
-                                  lineWidth: 6.0,
-                                  percent:
-                                      movie.allVotes > 0 && movie.rating == 0
-                                          ? 1
-                                          : movie.rating / 100,
-                                  center: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        if (movie.allVotes == 0)
-                                          Text("Not rated",
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .headlineSmall),
-                                        if (movie.allVotes > 0)
-                                          Text("${movie.rating}%",
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .headlineSmall),
-                                        if (movie.allVotes > 0)
-                                          Text(
-                                              "(${formatter.format(movie.allVotes)})",
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .headlineSmall),
-                                        const Image(
-                                          image: AssetImage(
-                                              "Assets/mdIcon_V_with_effect.png"),
-                                          width: 20,
-                                        )
-                                      ]),
-                                  progressColor: getProgressColor(movie.rating),
-                                ),
-                              ),
-                              Container(
-                                height: 95,
-                                width: 95,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: Colors.black.withOpacity(0.8),
-                                        offset: const Offset(0.0, 0.1),
-                                        blurRadius: 0.5),
-                                  ],
-                                ),
-                                child: CircularPercentIndicator(
-                                  radius: 45.0,
-                                  lineWidth: 6.0,
-                                  percent:
-                                      movie.imdbVotes > 0 && movie.imdbRate == 0
-                                          ? 1
-                                          : movie.imdbRate / 10,
-                                  center: movie.imdbVotes > 0
-                                      ? Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                              Text("${movie.imdbRate}",
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .headlineSmall),
-                                              Text(
-                                                  "(${formatter.format(movie.imdbVotes)})",
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .headlineSmall),
-                                              const Image(
-                                                image: AssetImage(
-                                                    "Assets/imdb_logo.png"),
-                                                width: 35,
-                                              )
-                                            ])
-                                      : Text("Not rated",
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineSmall),
-                                  progressColor:
-                                      getProgressColor(movie.imdbRate * 10),
-                                ),
-                              )
-                            ]))
-                  ],
-                ))
-          ]),
-    );
-
-    final textFields = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        if (movie.overview.isNotEmpty) const SizedBox(height: 10),
-        if (movie.overview.isNotEmpty)
-          Text(
-            movie.overview,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        if (movie.overview.isNotEmpty) const SizedBox(height: 10),
-        if (movie.directors.isNotEmpty) const SizedBox(height: 10),
-        if (movie.directors.isNotEmpty)
-          MTextField(
-              subtitleText: 'Directed by',
-              bodyText: movie.directors.map((director) => director).join(', ')),
-        if (movie.actors.isNotEmpty) const SizedBox(height: 10),
-        if (movie.actors.isNotEmpty)
-          MTextField(
-              subtitleText: 'Starring',
-              bodyText: movie.actors.map((actor) => actor).join(', ')),
-        if (movie.countries.isNotEmpty) const SizedBox(height: 10),
-        if (movie.countries.isNotEmpty)
-          MTextField(
-              subtitleText: 'Countries',
-              bodyText: movie.countries.replaceAll(',', ', ')),
-        if (movie.overview.isNotEmpty)
-          const SizedBox(
-            height: 200,
-          ),
-      ],
-    );
+    final year = DateFormat('yyyy').format(movie.releaseDate);
+    final runtime = movie.seasonsCount > 0
+        ? '${movie.seasonsCount} season${movie.seasonsCount == 1 ? '' : 's'}'
+        : movie.duration > 0
+            ? '${movie.duration} min'
+            : null;
+    final countries = _cleanCommaText(movie.countries);
+    final hasDirectors = movie.directors.isNotEmpty;
+    final hasActors = movie.actors.isNotEmpty;
+    final hasCountries = countries.isNotEmpty;
 
     return Scaffold(
-        appBar: AdManager.bannerVisible && AdManager.bannersReady
-            ? AppBar(
-                title: Center(
-                  child: AdManager.getBannerWidget(
-                      AdManager.itemExpandedBannerAd!),
+        backgroundColor: Md3Colors.background,
+        appBar: AppBar(
+          backgroundColor: Md3Colors.background,
+          foregroundColor: Md3Colors.text,
+          elevation: 0,
+          title: Text(
+            movie.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          actions: [
+            if (AdManager.bannerVisible && AdManager.bannersReady)
+              SizedBox(
+                width: 320,
+                child: Center(
+                  child:
+                      AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
                 ),
-                automaticallyImplyLeading: false,
-                elevation: 0.7,
-              )
-            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
-        body: GestureDetector(
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            child: SingleChildScrollView(
-                child: Container(
-              padding: const EdgeInsets.fromLTRB(10, 5, 10, 20),
-              child: Material(
-                  type: MaterialType.transparency,
-                  child: Container(
-                    color: Theme.of(context).primaryColor,
-                    child: Column(
-                      children: <Widget>[
-                        if (movie.tagline != null && movie.tagline!.isNotEmpty)
-                          const SizedBox(
-                            height: 10,
-                          ),
-                        if (movie.tagline != null && movie.tagline!.isNotEmpty)
+              ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Md3Card(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Md3MoviePoster(movie: movie, width: 122, height: 184),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            movie.tagline!,
-                            style: Theme.of(context).textTheme.titleMedium,
+                            movie.title,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Md3Colors.text,
+                              fontSize: 22,
+                              height: 1.08,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        topCard,
-                        const SizedBox(height: 5),
-                        genreChips,
-                        textFields,
-                      ],
+                          const SizedBox(height: 10),
+                          Text(
+                            [
+                              year,
+                              if (runtime != null) runtime,
+                              if (movie.seasonsCount > 0)
+                                movie.inProduction ? 'In production' : 'Ended',
+                            ].join('  /  '),
+                            style: const TextStyle(
+                              color: Md3Colors.muted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (movie.tagline != null &&
+                              movie.tagline!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              movie.tagline!,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Md3Colors.primary,
+                                fontSize: 14,
+                                height: 1.3,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                          if (movie.movieRate != MovieRate.notRated) ...[
+                            const SizedBox(height: 14),
+                            Md3OpinionBadge(movieRate: movie.movieRate),
+                          ],
+                        ],
+                      ),
                     ),
-                  )),
-            ))),
+                  ],
+                ),
+              ),
+              if (movie.genres.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: movie.genres
+                      .map((genre) => Md3Chip(text: genre, active: false))
+                      .toList(),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildRatingCard(
+                      label: 'MovieDiary',
+                      value: movie.allVotes > 0 ? '${movie.rating}%' : 'New',
+                      detail: movie.allVotes > 0
+                          ? '${formatter.format(movie.allVotes)} votes'
+                          : 'No votes yet',
+                      icon: Icons.favorite_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildRatingCard(
+                      label: 'IMDb',
+                      value: movie.imdbVotes > 0 ? '${movie.imdbRate}' : 'New',
+                      detail: movie.imdbVotes > 0
+                          ? '${formatter.format(movie.imdbVotes)} votes'
+                          : 'No votes yet',
+                      icon: Icons.star_rounded,
+                    ),
+                  ),
+                ],
+              ),
+              if (movie.overview.isNotEmpty) ...[
+                const Md3SectionHeader(title: 'Story'),
+                Md3Card(
+                  child: Text(
+                    movie.overview,
+                    style: const TextStyle(
+                      color: Md3Colors.text,
+                      fontSize: 15,
+                      height: 1.45,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+              if (hasDirectors || hasActors || hasCountries) ...[
+                const Md3SectionHeader(title: 'Details'),
+                Md3Card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (hasDirectors)
+                        _buildDetailRow(
+                          'Directed by',
+                          movie.directors.join(', '),
+                          isLast: !hasActors && !hasCountries,
+                        ),
+                      if (hasActors)
+                        _buildDetailRow(
+                          'Starring',
+                          movie.actors.join(', '),
+                          isLast: !hasCountries,
+                        ),
+                      if (hasCountries)
+                        _buildDetailRow(
+                          'Countries',
+                          countries,
+                          isLast: true,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              buildWhereToWatch(context),
+            ],
+          ),
+        ),
         bottomNavigationBar: MoviesBottomNavigationBarExpanded(
           movie: movie,
-          fromSearch: fromSearch!,
-          shouldRequestReview: shouldRequestReview!,
-          moviesList: moviesList,
+          fromSearch: widget.fromSearch,
+          shouldRequestReview: widget.shouldRequestReview,
+          moviesList: widget.moviesList,
         ));
+  }
+
+  Widget _buildRatingCard({
+    required String label,
+    required String value,
+    required String detail,
+    required IconData icon,
+  }) {
+    return Md3Card(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: Md3Colors.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            detail,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProviderToggle(int totalCount) {
+    if (totalCount <= 4) {
+      return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          foregroundColor: Md3Colors.primary,
+          padding: const EdgeInsets.only(top: 8, right: 10),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onPressed: () {
+          setState(() {
+            showAllWatchProviders = !showAllWatchProviders;
+          });
+        },
+        icon: Icon(
+          showAllWatchProviders
+              ? Icons.expand_less_rounded
+              : Icons.expand_more_rounded,
+          size: 20,
+        ),
+        label: Text(
+          showAllWatchProviders ? 'Show less' : 'Show all $totalCount',
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+
+  List<_WatchProviderEntry> _providerEntries(MovieWatchProviderGroup group) {
+    return [
+      ...group.stream.map(
+        (provider) => _WatchProviderEntry('Stream', provider),
+      ),
+      ...group.rent.map(
+        (provider) => _WatchProviderEntry('Rent', provider),
+      ),
+      ...group.buy.map(
+        (provider) => _WatchProviderEntry('Buy', provider),
+      ),
+    ];
+  }
+
+  Widget _buildProviderRows(List<_WatchProviderEntry> entries) {
+    final groupedEntries = <String, List<MovieWatchProvider>>{};
+
+    for (final entry in entries) {
+      groupedEntries.putIfAbsent(entry.type, () => []).add(entry.provider);
+    }
+
+    return Column(
+      children: groupedEntries.entries
+          .map(
+            (entry) => buildProviderRow(
+              context,
+              entry.key,
+              entry.value,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget buildWhereToWatch(BuildContext context) {
+    return FutureBuilder<MovieWatchProviderGroup>(
+      future: whereToWatchFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final group = snapshot.data!;
+        final entries = _providerEntries(group);
+
+        if (entries.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final visibleEntries =
+            showAllWatchProviders ? entries : entries.take(4).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Md3SectionHeader(title: 'Where to Watch'),
+            Md3Card(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.play_circle_fill_rounded,
+                        color: Md3Colors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${entries.length} source${entries.length == 1 ? '' : 's'} available',
+                          style: const TextStyle(
+                            color: Md3Colors.text,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        group.country,
+                        style: const TextStyle(
+                          color: Md3Colors.muted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _buildProviderRows(visibleEntries),
+                  _buildProviderToggle(entries.length),
+                  if (group.sourceLink != null &&
+                      group.sourceLink!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Availability from ${group.source ?? 'provider data'}',
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {bool isLast = false}) {
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Md3Colors.primary,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Md3Colors.text,
+                fontSize: 14,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (!isLast)
+              const Padding(
+                padding: EdgeInsets.only(top: 14),
+                child: Divider(height: 1, color: Md3Colors.border),
+              )
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _cleanCommaText(String value) {
+    return value
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .join(', ');
+  }
+
+  Widget buildProviderRow(
+      BuildContext context, String title, List<MovieWatchProvider> providers) {
+    if (providers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: providers
+                .map((provider) => buildProviderChip(context, provider))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildProviderChip(BuildContext context, MovieWatchProvider provider) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Md3Colors.background,
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+        border: Border.all(color: Md3Colors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (provider.logoPath != null && provider.logoPath!.isNotEmpty)
+            ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(5)),
+              child: Image.network(
+                'https://image.tmdb.org/t/p/w45${provider.logoPath}',
+                height: 22,
+                width: 22,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+          if (provider.logoPath != null && provider.logoPath!.isNotEmpty)
+            const SizedBox(width: 6),
+          Text(
+            provider.providerName,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
+class _WatchProviderEntry {
+  final String type;
+  final MovieWatchProvider provider;
+
+  const _WatchProviderEntry(this.type, this.provider);
+}

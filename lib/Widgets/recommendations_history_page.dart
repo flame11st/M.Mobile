@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../Helpers/rating_helper.dart';
 import 'movie_list_item.dart';
 import 'Providers/movies_state.dart';
+import 'Shared/md3_ui.dart';
 import 'Shared/m_movies_animated_list.dart';
 
 class RecommendationsHistoryPage extends StatefulWidget {
@@ -88,46 +89,72 @@ class RecommendationsHistoryPageState
           ));
     }
 
-    final headingField = Text(
-      "Recommendations History",
-      style: Theme.of(context).textTheme.displayMedium,
-    );
+    const headingField = Text("Recommendations History");
 
     final moviesListWidget = Container(
         key: globalKey,
-        color: Theme.of(context).primaryColor,
+        color: Md3Colors.background,
+        padding: const EdgeInsets.only(top: 8),
         child: MMoviesAnimatedList(
           buildItemFunction: buildItem,
           isPremium: userState!.isPremium,
           movies: history,
+          padding: const EdgeInsets.only(bottom: 16),
         ));
 
-    final emptyHistoryWidget = Container(
-      padding: const EdgeInsets.all(20),
-      child: Text(
-        "Recommendations History is empty",
-        style: Theme.of(context).textTheme.displayMedium,
+    const emptyHistoryWidget = Md3Page(
+      padding: EdgeInsets.fromLTRB(18, 18, 18, 24),
+      child: Md3Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'No recommendation history yet',
+              style: TextStyle(
+                color: Md3Colors.text,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Start Discovery from Discover to save recommendation batches here.',
+              style: TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 14,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
 
-    final loaderWidget =
-        Container(child: const Center(child: CircularProgressIndicator()));
+    const loaderWidget = Center(child: CircularProgressIndicator());
 
     MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
 
     return Scaffold(
+        backgroundColor: Md3Colors.background,
         appBar: AdManager.bannerVisible && AdManager.bannersReady
             ? AppBar(
                 title: Center(
                   child: AdManager.getBannerWidget(
-                      AdManager.recommendationsHistoryBannerAd!),
+                      AdManager.recommendationsHistoryBannerAd),
                 ),
                 elevation: 0.7,
                 automaticallyImplyLeading: false)
-            : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
+            : PreferredSize(
+                preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
-            backgroundColor: Theme.of(context).primaryColor,
-            appBar: AppBar(title: headingField),
+            backgroundColor: Md3Colors.background,
+            appBar: AppBar(
+              title: headingField,
+              backgroundColor: Md3Colors.background,
+              foregroundColor: Md3Colors.text,
+              elevation: 0,
+            ),
             body: isLoading
                 ? loaderWidget
                 : history.isEmpty
@@ -135,4 +162,3 @@ class RecommendationsHistoryPageState
                     : moviesListWidget));
   }
 }
-

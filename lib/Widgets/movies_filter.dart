@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mmobile/Widgets/Shared/m_button.dart';
 import 'package:mmobile/Widgets/Shared/m_card.dart';
+import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:provider/provider.dart';
 import 'Providers/movies_state.dart';
-import 'Providers/user_state.dart';
 import 'Shared/filter_button.dart';
+import 'Shared/md3_ui.dart';
 import 'package:fluttericon/font_awesome_icons.dart';
-import 'package:fluttericon/font_awesome5_icons.dart';
 
 class MoviesFilter extends StatelessWidget {
   selectDateFrom(BuildContext context, MoviesState state) async {
@@ -56,10 +56,9 @@ class MoviesFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
     final isWatchlist = moviesState.isWatchlist();
-    final userState = Provider.of<UserState>(context);
-
+    final heading = isWatchlist ? 'Filter Watchlist' : 'Filter Viewed';
     return Container(
-        height: isWatchlist ? 280 : 450,
+        height: isWatchlist ? 300 : 500,
         margin: const EdgeInsets.fromLTRB(10, 0, 10, 20),
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
@@ -69,7 +68,7 @@ class MoviesFilter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
             Text(
-              'Filter Your Movies',
+              heading,
               style: Theme.of(context).textTheme.displayMedium,
             ),
             Row(
@@ -100,11 +99,10 @@ class MoviesFilter extends StatelessWidget {
                                     ? Theme.of(context).cardColor
                                     : Theme.of(context).indicatorColor,
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  color: moviesState.selectedGenre == null
-                                      ? Theme.of(context).hintColor
-                                      : Theme.of(context).cardColor
-                                ),
+                                    fontSize: 16,
+                                    color: moviesState.selectedGenre == null
+                                        ? Theme.of(context).hintColor
+                                        : Theme.of(context).cardColor),
                                 isExpanded: true,
                                 value: moviesState.selectedGenre,
                                 hint: const Text('Select Genre'),
@@ -118,7 +116,9 @@ class MoviesFilter extends StatelessWidget {
                               icon: Icon(
                                 Icons.clear,
                                 color: moviesState.selectedGenre == null
-                                    ? Theme.of(context).hintColor.withOpacity(0.6)
+                                    ? Theme.of(context)
+                                        .hintColor
+                                        .withOpacity(0.6)
                                     : Theme.of(context).primaryColor,
                               ),
                               onPressed: moviesState.selectedGenre == null
@@ -151,24 +151,72 @@ class MoviesFilter extends StatelessWidget {
               ],
             ),
             if (!isWatchlist)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  FilterIcon(
-                      icon: Icons.favorite_border,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Opinion',
+                    style: TextStyle(
+                      color: Theme.of(context).hintColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            if (!isWatchlist)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: <Widget>[
+                    Md3Chip(
+                      text: 'All',
+                      icon: Icons.done_all_rounded,
+                      active: moviesState.selectedRates.length == 3,
+                      onTap: () => moviesState.selectAllViewedRates(),
+                    ),
+                    Md3Chip(
                       text: 'Liked',
-                      isActive: moviesState.likedOnly,
-                      onPressedCallback: () {
-                        moviesState.changeLikedOnlyFilter();
-                      }),
-                  FilterIcon(
-                      icon: FontAwesome5.ban,
+                      icon: Icons.favorite_rounded,
+                      active:
+                          moviesState.selectedRates.contains(MovieRate.liked),
+                      onTap: () => moviesState.changeLikedOnlyFilter(),
+                    ),
+                    Md3Chip(
+                      text: 'Okay',
+                      icon: Icons.sentiment_satisfied_alt_rounded,
+                      active:
+                          moviesState.selectedRates.contains(MovieRate.okay),
+                      onTap: () => moviesState.changeOkayOnlyFilter(),
+                    ),
+                    Md3Chip(
                       text: 'Disliked',
-                      isActive: moviesState.notLikedOnly,
-                      onPressedCallback: () {
-                        moviesState.changeNotLikedOnlyFilter();
-                      }),
-                ],
+                      icon: Icons.block_rounded,
+                      active: moviesState.selectedRates
+                          .contains(MovieRate.notLiked),
+                      onTap: () => moviesState.changeNotLikedOnlyFilter(),
+                    ),
+                  ],
+                ),
+              ),
+            if (!isWatchlist)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Date range',
+                    style: TextStyle(
+                      color: Theme.of(context).hintColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
               ),
             if (!isWatchlist)
               Row(
@@ -178,7 +226,8 @@ class MoviesFilter extends StatelessWidget {
                     text:
                         "From:  ${DateFormat('yyyy-MM-dd').format(moviesState.dateFrom != null ? moviesState.dateFrom! : DateTime.now())}",
                     isActive: moviesState.isDateFromSelected(),
-                    onPressedCallback: () => selectDateFrom(context, moviesState),
+                    onPressedCallback: () =>
+                        selectDateFrom(context, moviesState),
                     textSize: 16,
                   ),
                   FilterIcon(
@@ -228,4 +277,3 @@ class MoviesFilter extends StatelessWidget {
         ));
   }
 }
-

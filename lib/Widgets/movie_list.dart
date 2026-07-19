@@ -11,6 +11,7 @@ import 'Providers/user_state.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'Shared/m_movies_animated_list.dart';
+import 'Shared/md3_ui.dart';
 
 class MovieList extends StatefulWidget {
   @override
@@ -122,7 +123,65 @@ class MovieListState extends State<MovieList>
   // }
 
   getEmptyMoviesCardWidget(String tabName) {
-    return EmptyMoviesCard(tabName: tabName);
+    return buildTopAnchoredEmptyState(
+      child: EmptyMoviesCard(tabName: tabName),
+      horizontalPadding: 0,
+    );
+  }
+
+  Widget buildTopAnchoredEmptyState({
+    required Widget child,
+    double horizontalPadding = 20,
+  }) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          16,
+          horizontalPadding,
+          Md3NavigationMetrics.contentBottomInset(context) + 24,
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget buildTabEmptyState({
+    required String title,
+    required String message,
+    required IconData icon,
+  }) {
+    return buildTopAnchoredEmptyState(
+      child: Md3Card(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Md3Colors.primary, size: 28),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Md3Colors.text,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 14,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -151,9 +210,9 @@ class MovieListState extends State<MovieList>
     //   requestReview();
     // }
 
-    if (!userState.premiumPurchasedIncognito &&
+    if (!userState.isIncognitoMode &&
+        !userState.premiumPurchasedIncognito &&
         (userState.user == null || !userState.user!.premiumPurchased)) {
-
       if (ModalRoute.of(context)!.isCurrent) AdManager.showBanner();
     } else if (AdManager.bannerVisible) {
       AdManager.bannerVisible = false;
@@ -167,12 +226,18 @@ class MovieListState extends State<MovieList>
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: const Md3LiquidGlass(
+          borderRadius: BorderRadius.zero,
+          shadows: [],
+          child: SizedBox.expand(),
+        ),
         title: TabBar(
           controller: tabController,
-          indicatorColor: Theme.of(context).indicatorColor,
-          labelColor: Theme.of(context).indicatorColor,
-          unselectedLabelColor: Theme.of(context).hintColor,
+          indicatorColor: Md3Colors.primary,
+          labelColor: Md3Colors.primary,
+          unselectedLabelColor: Md3Colors.muted,
           tabs: const [
             Tab(
                 child: Row(
@@ -206,7 +271,7 @@ class MovieListState extends State<MovieList>
                   width: 5,
                 ),
                 Text(
-                  '  Viewed',
+                  'Viewed',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
@@ -233,20 +298,24 @@ class MovieListState extends State<MovieList>
                         isPremium: userState.isPremium,
                         listKey: movieState.watchlistKey,
                         movies: watchlistMovies,
+                        padding: EdgeInsets.only(
+                          bottom: Md3NavigationMetrics.contentBottomInset(
+                            context,
+                          ),
+                        ),
                       ),
                     if (movieState.userMovies.isNotEmpty &&
                         watchlistMovies.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'Your Watchlist is empty.',
-                          style: Theme.of(context).textTheme.displayMedium,
-                        ),
+                      buildTabEmptyState(
+                        title: 'Your Watchlist is empty',
+                        message:
+                            'Save movies from Search, Discover, or Lists to keep them ready here.',
+                        icon: Icons.bookmark_border_rounded,
                       ),
                     if (movieState.userMovies.isEmpty)
                       getEmptyMoviesCardWidget("Watchlist"),
                     if (movieState.userMovies.isEmpty)
-                      getEmptyMoviesCardWidget("Viewed list"),
+                      getEmptyMoviesCardWidget("Viewed"),
                     if (movieState.userMovies.isNotEmpty &&
                         viewedMovies.isNotEmpty)
                       MMoviesAnimatedList(
@@ -254,15 +323,19 @@ class MovieListState extends State<MovieList>
                         isPremium: userState.isPremium,
                         listKey: movieState.viewedListKey,
                         movies: viewedMovies,
+                        padding: EdgeInsets.only(
+                          bottom: Md3NavigationMetrics.contentBottomInset(
+                            context,
+                          ),
+                        ),
                       ),
                     if (movieState.userMovies.isNotEmpty &&
                         viewedMovies.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'Your Viewed list is empty.',
-                          style: Theme.of(context).textTheme.displayMedium,
-                        ),
+                      buildTabEmptyState(
+                        title: 'Nothing in Viewed yet',
+                        message:
+                            'Use Mark Watched from Watchlist to move movies here and save whether you Liked, Okay, or Disliked them.',
+                        icon: Icons.check_circle_outline_rounded,
                       )
                   ],
                 ),
@@ -273,4 +346,3 @@ class MovieListState extends State<MovieList>
     );
   }
 }
-

@@ -3,19 +3,29 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:mmobile/Enums/movie_type.dart';
-import 'package:mmobile/Widgets/Providers/user_state.dart';
+import 'package:mmobile/Enums/recommendation_discovery_level.dart';
+import 'package:mmobile/Objects/movie_watch_provider_group.dart';
+import 'package:mmobile/Objects/recommendation_discovery_session.dart';
+import 'package:mmobile/Objects/user_taste_profile.dart';
 
 class ServiceAgent {
-  static UserState? state;
+  static dynamic state;
   static String baseUrl = "";
-  final functionUriAWS = "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/GetMovieDiaryVariables";
+  static const configuredBaseUrl =
+      String.fromEnvironment('MOVIEDIARY_API_BASE_URL');
+  static const baseUrlTimeout = Duration(seconds: 5);
+  static const requestTimeout = Duration(seconds: 12);
+  final functionUriAWS =
+      "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/GetMovieDiaryVariables";
   static bool showLoadingAd = false;
-  //var baseUrlLocal = "http://192.168.1.50/";
-  //var baseUrlLocal = "https://localhost:5001/";
-  var baseUrlLocal = "http://51.81.79.14/";
+  final String baseUrlLocal = kDebugMode
+      ? (Platform.isAndroid
+          ? "http://10.0.2.2:5000/"
+          : "http://localhost:5000/")
+      : "http://51.81.79.14/";
 
   ServiceAgent() {
-    if(baseUrl.isEmpty) setBaseUrl();
+    if (baseUrl.isEmpty) setBaseUrl();
   }
 
   setBaseUrl() async {
@@ -25,8 +35,17 @@ class ServiceAgent {
   }
 
   getBaseUrl() async {
+    if (configuredBaseUrl.isNotEmpty) {
+      return _normalizeBaseUrl(configuredBaseUrl);
+    }
+
+    if (kDebugMode) {
+      return _normalizeBaseUrl(baseUrlLocal);
+    }
+
     try {
-      var responseAWS = await http.get(Uri.parse(functionUriAWS));
+      var responseAWS =
+          await http.get(Uri.parse(functionUriAWS)).timeout(baseUrlTimeout);
       if (responseAWS.statusCode == 200) {
         var variables = jsonDecode(responseAWS.body);
         var uri = variables["apiUrl"];
@@ -36,47 +55,77 @@ class ServiceAgent {
     } catch (e) {
       debugPrint("Error fetching base URL from AWS: $e");
     }
-    return "${baseUrlLocal}api/";
+    return _normalizeBaseUrl(baseUrlLocal);
+  }
+
+  String _normalizeBaseUrl(String url) {
+    final parsedUrl = Uri.parse(url);
+    final emulatorSafeUrl =
+        Platform.isAndroid && parsedUrl.host.toLowerCase() == 'localhost'
+            ? parsedUrl.replace(host: '10.0.2.2').toString()
+            : url;
+
+    return emulatorSafeUrl.endsWith("/")
+        ? emulatorSafeUrl
+        : "$emulatorSafeUrl/";
   }
 
   checkAuthorization() {
     return get('Identity/CheckAuthorization');
   }
 
-  login(String email, String password) {
+  login(String email, String password, {String? incognitoUserId}) {
     return post(
         'Identity/login',
-        jsonEncode(<String, String>{
+        jsonEncode({
           'Email': email,
           'Password': password,
+          if (incognitoUserId != null) 'IncognitoUserId': incognitoUserId,
         }));
   }
 
   signInIncognito() {
-    return post(
-        'Identity/SignUpIncognito','');
+    return post('Identity/SignUpIncognito', '');
   }
 
-  signUp(String name, String email, String password) {
+  signUp(String name, String email, String password,
+      {String? incognitoUserId}) {
     return post(
         'Identity/SignUp',
-        jsonEncode(<String, String>{
+        jsonEncode({
           'Email': email,
           'Name': name,
           'Password': password,
+          if (incognitoUserId != null) 'IncognitoUserId': incognitoUserId,
         }));
   }
 
-  googleLogin(String idToken) {
-    return get('Identity/GoogleLoginAndroid?idToken=$idToken');
+  googleLogin(String idToken, {String? incognitoUserId}) {
+    return get(_authUri('Identity/GoogleLoginAndroid', {
+      'idToken': idToken,
+      if (incognitoUserId != null) 'incognitoUserId': incognitoUserId,
+    }));
   }
 
-  googleLoginIOS(String idToken) {
-    return get('Identity/GoogleLoginIOS?idToken=$idToken');
+  googleLoginIOS(String idToken, {String? incognitoUserId}) {
+    return get(_authUri('Identity/GoogleLoginIOS', {
+      'idToken': idToken,
+      if (incognitoUserId != null) 'incognitoUserId': incognitoUserId,
+    }));
   }
 
-  appleLogin(String appleId, String email, String name) {
-    return get('Identity/AppleLogin?appleId=$appleId&email=$email&name=$name');
+  appleLogin(String appleId, String email, String name,
+      {String? incognitoUserId}) {
+    return get(_authUri('Identity/AppleLogin', {
+      'appleId': appleId,
+      'email': email,
+      'name': name,
+      if (incognitoUserId != null) 'incognitoUserId': incognitoUserId,
+    }));
+  }
+
+  String _authUri(String path, Map<String, String> params) {
+    return Uri(path: path, queryParameters: params).toString();
   }
 
   getUserMovies(String userId) {
@@ -84,15 +133,75 @@ class ServiceAgent {
   }
 
   getUserRecommendations(String userId, MovieType type) {
-    return get('Recommendations/GetUserMoviesRecommendations?userId=$userId&movieType=${type.index}');
+    return get(
+        'Recommendations/GetUserMoviesRecommendations?userId=$userId&movieType=${type.index}');
   }
 
   getUserRecommendationsHistory(String userId) {
-    return get('Recommendations/GetUserMoviesRecommendationsHistory?userId=$userId');
+    return get(
+        'Recommendations/GetUserMoviesRecommendationsHistory?userId=$userId');
+  }
+
+  Future<UserTasteProfile> getUserTasteProfile(String userId) async {
+    final response =
+        await get('Recommendations/GetUserTasteProfile?userId=$userId');
+
+    if (response.statusCode != 200) {
+      throw HttpException(
+          'Taste profile request failed with ${response.statusCode}');
+    }
+
+    return UserTasteProfile.fromJson(jsonDecode(response.body));
+  }
+
+  Future<UserTasteProfile> regenerateUserTasteProfile(String userId) async {
+    final response = await post(
+        'Recommendations/RegenerateUserTasteProfile?userId=$userId', '');
+
+    if (response.statusCode != 200) {
+      throw HttpException(
+          'Taste profile regeneration failed with ${response.statusCode}');
+    }
+
+    return UserTasteProfile.fromJson(jsonDecode(response.body));
+  }
+
+  Future<RecommendationDiscoverySession?> createDiscoverySession(
+      String userId,
+      MovieType movieType,
+      RecommendationDiscoveryLevel discoveryLevel,
+      int pageSize) async {
+    final response = await post(
+        'Recommendations/CreateDiscoverySession',
+        jsonEncode({
+          'UserId': userId,
+          'MovieType': movieType.index,
+          'DiscoveryLevel': discoveryLevel.index,
+          'PageSize': pageSize,
+        }));
+
+    if (response.statusCode != 200) {
+      return null;
+    }
+
+    return RecommendationDiscoverySession.fromJson(jsonDecode(response.body));
+  }
+
+  Future<RecommendationDiscoverySession?> getDiscoverySessionPage(
+      String sessionId, int cursor, int pageSize) async {
+    final response = await get(
+        'Recommendations/GetDiscoverySessionPage?sessionId=$sessionId&cursor=$cursor&pageSize=$pageSize');
+
+    if (response.statusCode != 200) {
+      return null;
+    }
+
+    return RecommendationDiscoverySession.fromJson(jsonDecode(response.body));
   }
 
   getMovieRecommendationsByTitles(String titles, MovieType type) {
-    return get('Recommendations/GetMoviesRecommendationsByTitles?titles=$titles&movieType=${type.index}');
+    return get(
+        'Recommendations/GetMoviesRecommendationsByTitles?titles=$titles&movieType=${type.index}');
   }
 
   getUserInfo(String userId) {
@@ -140,6 +249,18 @@ class ServiceAgent {
     return get('movies/GetMovie?id=$movieId');
   }
 
+  Future<MovieWatchProviderGroup> getWhereToWatchGrouped(
+      String movieId, String country) async {
+    final response = await get(
+        'movies/GetWhereToWatchGrouped?movieId=$movieId&country=$country');
+
+    if (response.statusCode != 200) {
+      return MovieWatchProviderGroup.empty(movieId, country);
+    }
+
+    return MovieWatchProviderGroup.fromJson(jsonDecode(response.body));
+  }
+
   getMoviesByIds(String ids) {
     return get('movies/GetMoviesByIds?ids=$ids');
   }
@@ -152,12 +273,20 @@ class ServiceAgent {
     return get('movies/GetMoviesListsStringValue?userId=$userId');
   }
 
+  getStarterDeck({int perBucket = 20}) {
+    return get('movies/GetStarterDeck?perBucket=$perBucket');
+  }
+
   search(String query) {
     return get('movies/SearchByIndexedColumn?query=$query');
   }
 
   advancedSearch(String query) {
     return get('movies/AdvancedSearch?query=$query');
+  }
+
+  getPopularSearches({int limit = 6, int days = 30}) {
+    return get('movies/GetPopularSearches?limit=$limit&days=$days');
   }
 
   rateMovie(String movieId, String userId, int movieRate) {
@@ -233,7 +362,9 @@ class ServiceAgent {
     }
 
     var fullUri = Uri.parse(baseUri + uri);
-    var response = await http.get(fullUri, headers: headers);
+    var response = await http.get(fullUri, headers: headers).timeout(
+          requestTimeout,
+        );
 
     if (response.statusCode == 401) {
       headers.clear();
@@ -244,7 +375,10 @@ class ServiceAgent {
               HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
         }
 
-        response = await http.get(Uri.parse(baseUri + uri), headers: headers);
+        response =
+            await http.get(Uri.parse(baseUri + uri), headers: headers).timeout(
+                  requestTimeout,
+                );
       }
     }
 
@@ -264,17 +398,23 @@ class ServiceAgent {
           HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
     }
 
-    var response =
-        await http.post(Uri.parse(baseUri + uri), body: postData, headers: headers);
+    var response = await http
+        .post(Uri.parse(baseUri + uri), body: postData, headers: headers)
+        .timeout(
+          requestTimeout,
+        );
 
     if (response.statusCode == 401) {
       bool isTokenRefreshed = await refreshAccessToken();
       if (isTokenRefreshed) {
-        response = await http
-            .post(Uri.parse(baseUri + uri), body: postData, headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-          HttpHeaders.authorizationHeader: "Bearer ${state?.token}"
-        });
+        response = await http.post(Uri.parse(baseUri + uri),
+            body: postData,
+            headers: <String, String>{
+              'Content-Type': 'application/json; charset=UTF-8',
+              HttpHeaders.authorizationHeader: "Bearer ${state?.token}"
+            }).timeout(
+          requestTimeout,
+        );
       }
     }
 
@@ -288,7 +428,12 @@ class ServiceAgent {
       baseUri = await getBaseUrl();
     }
 
-    var response = await http.get(Uri.parse('${baseUri}Identity/RefreshTokenMobile?token=${state?.refreshToken}'));
+    var response = await http
+        .get(Uri.parse(
+            '${baseUri}Identity/RefreshTokenMobile?token=${state?.refreshToken}'))
+        .timeout(
+          requestTimeout,
+        );
 
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);
@@ -301,4 +446,3 @@ class ServiceAgent {
     return false;
   }
 }
-

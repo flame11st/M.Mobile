@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 class LoaderState with ChangeNotifier {
-    bool isLoaderVisible = true;
+  bool isLoaderVisible = false;
 
-    setIsLoaderVisible(bool value) async {
-      if (isLoaderVisible == value) return;
+  setIsLoaderVisible(bool value) async {
+    if (isLoaderVisible == value) return;
 
-      await Future.delayed(const Duration(milliseconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1));
 
-      isLoaderVisible = value;
+    isLoaderVisible = value;
 
-      notifyListeners();
-    }
+    notifyListeners();
+  }
 }

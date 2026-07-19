@@ -6,28 +6,28 @@ import 'package:mmobile/Objects/m_theme.dart';
 class Themes {
   static final family = MTheme(
       id: 0,
-      name: 'Family',
+      name: 'MovieDiary 3.0',
       brightness: Brightness.light,
       colorTheme: MColorTheme(
-        primaryColor: const Color(0xfff8f8f8),
+        primaryColor: const Color(0xfff6f7fb),
         secondaryColor: const Color(0xffffffff),
-        additionalColor: const Color(0xff112d4e),
-        fontsColor: const Color(0xff222831),
+        additionalColor: const Color(0xff315c8f),
+        fontsColor: const Color(0xff1f2937),
       ),
       textStyleTheme: MTextStyleTheme(
         title: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: Color(0xff112d4e)),
+            color: Color(0xff1f2937)),
         subtitleText: const TextStyle(
             fontSize: 15.0,
-            color: Color(0xff112d4e),
+            color: Color(0xff315c8f),
             fontWeight: FontWeight.bold),
-        bodyText: const TextStyle(fontSize: 15.0, color: Color(0xff222831)),
+        bodyText: const TextStyle(fontSize: 15.0, color: Color(0xff4b5563)),
         expandedTitle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xff112d4e)),
+            color: Color(0xff1f2937)),
       ));
 
   static final MTheme scienceFiction = MTheme(
@@ -199,4 +199,3 @@ class Themes {
     comedy,
   ];
 }
-
