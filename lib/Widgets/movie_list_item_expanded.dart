@@ -7,9 +7,9 @@ import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
+import 'package:mmobile/Widgets/Shared/movie_rate_buttons.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'movies_bottom_navigation_bar_expanded.dart';
 
 class MovieListItemExpanded extends StatefulWidget {
   final Movie movie;
@@ -86,7 +86,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 120),
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -131,8 +131,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                             const SizedBox(height: 12),
                             Text(
                               movie.tagline!,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Md3Colors.primary,
                                 fontSize: 14,
@@ -141,16 +139,14 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                               ),
                             ),
                           ],
-                          if (movie.movieRate != MovieRate.notRated) ...[
-                            const SizedBox(height: 14),
-                            Md3OpinionBadge(movieRate: movie.movieRate),
-                          ],
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              _buildStatusActionCard(movie),
               if (movie.genres.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Wrap(
@@ -232,13 +228,66 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               buildWhereToWatch(context),
             ],
           ),
-        ),
-        bottomNavigationBar: MoviesBottomNavigationBarExpanded(
-          movie: movie,
-          fromSearch: widget.fromSearch,
-          shouldRequestReview: widget.shouldRequestReview,
-          moviesList: widget.moviesList,
         ));
+  }
+
+  Widget _buildStatusActionCard(Movie movie) {
+    final hasStatus = movie.movieRate != MovieRate.notRated;
+    final title = hasStatus
+        ? 'Saved as ${MovieRate.opinionLabel(movie.movieRate)}'
+        : 'Set your movie status';
+    final detail = movie.movieRate == MovieRate.addedToWatchlist
+        ? 'Mark watched when you finish it, or change your rating here.'
+        : MovieRate.isViewed(movie.movieRate)
+            ? 'Change your opinion or move it back to Watchlist.'
+            : 'Rate it if you have seen it, or save it to Watchlist.';
+
+    return Md3Card(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (hasStatus) ...[
+                Md3OpinionBadge(movieRate: movie.movieRate),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            detail,
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 13,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          MovieRateButtons(
+            movie: movie,
+            fromSearch: widget.fromSearch,
+            closeParentOnRate: false,
+            shouldRequestReview: widget.shouldRequestReview,
+            moviesList: widget.moviesList,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildRatingCard({
@@ -492,25 +541,33 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Md3Colors.text,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
+          SizedBox(
+            width: 58,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Md3Colors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: providers
-                .map((provider) => buildProviderChip(context, provider))
-                .toList(),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: providers
+                  .map((provider) => buildProviderChip(context, provider))
+                  .toList(),
+            ),
           ),
         ],
       ),
@@ -535,8 +592,26 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                 'https://image.tmdb.org/t/p/w45${provider.logoPath}',
                 height: 22,
                 width: 22,
-                errorBuilder: (context, error, stackTrace) =>
-                    const SizedBox.shrink(),
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) =>
+                    loadingProgress == null
+                        ? child
+                        : const Md3SkeletonBox(
+                            width: 22,
+                            height: 22,
+                            radius: 5,
+                          ),
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 22,
+                  height: 22,
+                  color: Md3Colors.surfaceMuted,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.live_tv_outlined,
+                    color: Md3Colors.muted,
+                    size: 14,
+                  ),
+                ),
               ),
             ),
           if (provider.logoPath != null && provider.logoPath!.isNotEmpty)

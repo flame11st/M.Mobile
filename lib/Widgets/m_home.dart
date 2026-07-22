@@ -143,7 +143,7 @@ class MHomeState extends State<MHome> {
         home: Stack(
           children: <Widget>[
             widgetToReturn,
-            if (loaderState.isLoaderVisible) LoadingAnimation(),
+            if (loaderState.isLoaderVisible) const LoadingAnimation(),
           ],
         ),
         // routes: {
@@ -152,6 +152,7 @@ class MHomeState extends State<MHome> {
         theme: ThemeData(
             // Define the default brightness and colors.
             brightness: theme.brightness,
+            splashFactory: InkRipple.splashFactory,
             primaryColor: theme.colorTheme.primaryColor,
             indicatorColor: theme.colorTheme.additionalColor,
             hintColor: theme.colorTheme.fontsColor,

@@ -144,7 +144,7 @@ class MyMoviesState extends State<MyMovies> {
       }
 
       await setIncognitoUserMovies(moviesState);
-      await _syncCachedAnonymousRatings(moviesState, userState);
+      _syncCachedAnonymousRatings(moviesState, userState);
     } catch (error, stackTrace) {
       debugPrint('Incognito movies background refresh failed: $error');
       debugPrint('$stackTrace');
@@ -189,21 +189,30 @@ class MyMoviesState extends State<MyMovies> {
     }
   }
 
-  Future<void> _syncCachedAnonymousRatings(
+  void _syncCachedAnonymousRatings(
     MoviesState moviesState,
     UserState userState,
-  ) async {
+  ) {
     final userId = userState.userId;
     if (userId == null || userId.isEmpty) {
       return;
     }
 
+    var queuedCount = 0;
     for (final movie in moviesState.userMovies) {
       if (movie.movieRate == MovieRate.notRated) {
         continue;
       }
 
-      await serviceAgent.rateMovie(movie.id, userId, movie.movieRate);
+      moviesState.queueAnonymousRatingSync(movie.id, movie.movieRate);
+      queuedCount += 1;
+    }
+
+    if (queuedCount > 0) {
+      debugPrint(
+        'Queued $queuedCount cached anonymous rating(s) for background sync.',
+      );
+      unawaited(moviesState.retryPendingAnonymousRatingSyncs());
     }
   }
 
@@ -544,30 +553,9 @@ class MyMoviesState extends State<MyMovies> {
                   },
                 ),
               ] else
-                Center(
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xffe5e7eb)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xff315c8f),
-                      ),
-                    ),
-                  ),
+                const Md3ListSkeletonCard(
+                  rows: 2,
+                  showTrailing: false,
                 ),
               const Spacer(),
             ],

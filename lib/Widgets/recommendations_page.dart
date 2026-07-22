@@ -427,6 +427,46 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        const Md3Card(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Md3SkeletonBox(width: 122, height: 182, radius: 16),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Md3SkeletonBox(width: 92, height: 26, radius: 13),
+                        SizedBox(height: 14),
+                        Md3SkeletonBox(height: 22, radius: 10),
+                        SizedBox(height: 10),
+                        FractionallySizedBox(
+                          widthFactor: 0.72,
+                          child: Md3SkeletonBox(height: 22, radius: 10),
+                        ),
+                        SizedBox(height: 18),
+                        Md3SkeletonBox(width: 108, height: 34, radius: 17),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              Md3SkeletonBox(height: 15, radius: 8),
+              SizedBox(height: 10),
+              FractionallySizedBox(
+                widthFactor: 0.82,
+                child: Md3SkeletonBox(height: 15, radius: 8),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

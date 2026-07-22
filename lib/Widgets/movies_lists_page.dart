@@ -17,9 +17,7 @@ class MoviesListsPage extends StatefulWidget {
   const MoviesListsPage({super.key, required this.initialPageIndex});
 
   @override
-  State<StatefulWidget> createState() {
-    return MoviesListsPageState(initialPageIndex);
-  }
+  State<MoviesListsPage> createState() => MoviesListsPageState();
 }
 
 class MoviesListsPageState extends State<MoviesListsPage>
@@ -31,14 +29,14 @@ class MoviesListsPageState extends State<MoviesListsPage>
   bool showGeneralGuidance = true;
   final storage = const FlutterSecureStorage();
   final _formKey = GlobalKey<FormState>();
-  int initialPageIndex = 0;
-
-  MoviesListsPageState(this.initialPageIndex);
-
   @override
   void initState() {
     super.initState();
-    tabController = TabController(vsync: this, length: 2);
+    tabController = TabController(
+      vsync: this,
+      length: 2,
+      initialIndex: widget.initialPageIndex.clamp(0, 1).toInt(),
+    );
 
     nameController.addListener(setSubmitButtonActive);
     loadGuidanceState();
@@ -263,31 +261,52 @@ class MoviesListsPageState extends State<MoviesListsPage>
   }
 
   Widget buildLoadingState(String message) {
-    return Md3Card(
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              color: Md3Colors.primary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Md3Colors.muted,
-                fontSize: 15,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(2, 2, 2, 12),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome_motion_outlined,
+                color: Md3Colors.primary,
+                size: 20,
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 14,
+                    height: 1.3,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const Md3ListSkeletonCard(
+          rows: 3,
+          posterWidth: 86,
+          posterHeight: 72,
+          cardPadding: 12,
+          itemSpacing: 12,
+          trailingSize: 24,
+        ),
+      ],
+    );
+  }
+
+  Widget buildGeneralEmptyState() {
+    return buildSectionIntro(
+      eyebrow: 'GENERAL',
+      title: 'Curated lists are unavailable',
+      description:
+          'MovieDiary could not load its curated collections. Your personal lists are unaffected; reopen Lists when the connection returns.',
+      icon: Icons.cloud_off_outlined,
     );
   }
 
@@ -523,12 +542,6 @@ class MoviesListsPageState extends State<MoviesListsPage>
 
   @override
   Widget build(BuildContext context) {
-    if (initialPageIndex != 0) {
-      tabController.animateTo(initialPageIndex);
-
-      initialPageIndex = 0;
-    }
-
     final moviesState = Provider.of<MoviesState>(context);
     moviesState.externalMoviesLists.sort((a, b) => a.order.compareTo(b.order));
     moviesState.personalMoviesLists.sort((a, b) => a.order.compareTo(b.order));
@@ -620,8 +633,11 @@ class MoviesListsPageState extends State<MoviesListsPage>
                             icon: Icons.grid_view_rounded,
                             onDismiss: dismissGeneralGuidance,
                           ),
-                        if (moviesState.externalMoviesLists.isEmpty)
+                        if (!moviesState.isMoviesListsRequested)
                           buildLoadingState('Loading curated lists...'),
+                        if (moviesState.isMoviesListsRequested &&
+                            moviesState.externalMoviesLists.isEmpty)
+                          buildGeneralEmptyState(),
                         if (moviesState.externalMoviesLists.isNotEmpty)
                           for (int i = 0;
                               i < moviesState.externalMoviesLists.length;
@@ -641,9 +657,9 @@ class MoviesListsPageState extends State<MoviesListsPage>
                             personalBottomPadding,
                           ),
                           children: [
-                            if (moviesState.externalMoviesLists.isEmpty)
+                            if (!moviesState.isMoviesListsRequested)
                               buildLoadingState('Loading your lists...'),
-                            if (moviesState.externalMoviesLists.isNotEmpty &&
+                            if (moviesState.isMoviesListsRequested &&
                                 moviesState.personalMoviesLists.isEmpty)
                               buildPersonalEmptyState(),
                             if (moviesState.personalMoviesLists.isNotEmpty)

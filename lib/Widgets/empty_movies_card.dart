@@ -163,17 +163,22 @@ class EmptyMoviesCard extends StatelessWidget {
     double progress, {
     bool hasProfileError = false,
   }) {
+    final genres = profile.favoriteGenres
+        .map((genre) => genre.trim())
+        .where((genre) => genre.isNotEmpty)
+        .take(2)
+        .toList();
     final title = hasProfileError
         ? 'Taste profile unavailable'
-        : profile.isGenerated
-            ? profile.personalityLabel ?? 'Taste profile'
-            : profile.isReady
-                ? 'Ready for Recommendations'
-                : 'Taste profile';
+        : profile.isReady
+            ? 'Your taste profile'
+            : 'Build your taste profile';
     final body = hasProfileError
         ? 'MovieDiary could not load your taste profile from the API. Your ratings are still saved.'
-        : profile.isGenerated
-            ? profile.summaryText ?? 'Your MovieDNA is ready.'
+        : profile.isReady
+            ? genres.isNotEmpty
+                ? 'Based on ${profile.ratingsCount} ratings, you often rate ${genres.join(' and ')} highly.'
+                : 'Based on ${profile.ratingsCount} ratings. Rate more to keep sharpening your recommendations.'
             : '${profile.ratingsCount}/10 ratings toward better recommendations.';
 
     return Container(
@@ -188,7 +193,8 @@ class EmptyMoviesCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, color: Theme.of(context).indicatorColor),
+              Icon(Icons.insights_rounded,
+                  color: Theme.of(context).indicatorColor),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -198,8 +204,10 @@ class EmptyMoviesCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(value: progress),
+          if (!profile.isReady) ...[
+            const SizedBox(height: 10),
+            LinearProgressIndicator(value: progress),
+          ],
           const SizedBox(height: 10),
           Text(body, style: Theme.of(context).textTheme.headlineSmall),
         ],

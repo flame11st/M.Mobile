@@ -128,6 +128,7 @@ class MovieListItem extends StatelessWidget {
   }
 
   void _openMarkWatchedSheet(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
     showModalBottomSheet<void>(
       backgroundColor: Colors.transparent,
       context: context,
@@ -136,6 +137,7 @@ class MovieListItem extends StatelessWidget {
   }
 
   void _openActionsSheet(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
     showModalBottomSheet<void>(
       backgroundColor: Colors.transparent,
       context: context,

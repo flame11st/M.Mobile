@@ -78,12 +78,9 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   }
 
   Widget _buildStarterDeckUnavailable(bool listsRequested, int profileCount) {
-    final title = listsRequested
-        ? 'Starter movies unavailable'
-        : 'Loading starter movies';
-    final message = listsRequested
-        ? 'MovieDiary could not load enough starter movies for the first rating flow. Try loading the deck again before continuing.'
-        : 'MovieDiary is still loading the starter rating deck. This keeps your first taste profile from starting on an empty list.';
+    if (!listsRequested) {
+      return _buildStarterDeckLoading(profileCount);
+    }
 
     return Scaffold(
       backgroundColor: Md3Colors.background,
@@ -95,31 +92,29 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Md3Card(
+                  const Md3Card(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
-                          listsRequested
-                              ? Icons.refresh_rounded
-                              : Icons.hourglass_top_rounded,
+                          Icons.refresh_rounded,
                           color: Md3Colors.primary,
                           size: 48,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         Text(
-                          title,
-                          style: const TextStyle(
+                          'Starter movies unavailable',
+                          style: TextStyle(
                             color: Md3Colors.text,
                             fontSize: 28,
                             height: 1.08,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         Text(
-                          message,
-                          style: const TextStyle(
+                          'MovieDiary could not load enough starter movies for the first rating flow. Try loading the deck again before continuing.',
+                          style: TextStyle(
                             color: Md3Colors.muted,
                             fontSize: 15,
                             height: 1.35,
@@ -141,12 +136,95 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                     ? 'Loading Starter Movies'
                     : 'Retry Starter Movies',
                 primaryIcon: Icons.refresh_rounded,
-                onPrimary: isRetryingStarterDeck ? () {} : _retryStarterDeck,
+                onPrimary: isRetryingStarterDeck ? null : _retryStarterDeck,
                 secondaryText: 'Go to Discover',
                 onSecondary: _finishOnboarding,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStarterDeckLoading(int profileCount) {
+    return Scaffold(
+      backgroundColor: Md3Colors.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildRatingHeader(profileCount),
+              const SizedBox(height: 16),
+              const Md3Card(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Md3SkeletonBox(width: 112, height: 168, radius: 16),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Md3SkeletonBox(width: 92, height: 28, radius: 14),
+                              SizedBox(height: 14),
+                              Md3SkeletonBox(height: 24, radius: 10),
+                              SizedBox(height: 10),
+                              FractionallySizedBox(
+                                widthFactor: 0.72,
+                                child: Md3SkeletonBox(height: 24, radius: 10),
+                              ),
+                              SizedBox(height: 18),
+                              Md3SkeletonBox(
+                                  width: 118, height: 34, radius: 17),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 18),
+                    FractionallySizedBox(
+                      widthFactor: 0.66,
+                      child: Md3SkeletonBox(height: 16, radius: 8),
+                    ),
+                    SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(child: Md3SkeletonBox(height: 54, radius: 18)),
+                        SizedBox(width: 10),
+                        Expanded(child: Md3SkeletonBox(height: 54, radius: 18)),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(child: Md3SkeletonBox(height: 54, radius: 18)),
+                        SizedBox(width: 10),
+                        Expanded(child: Md3SkeletonBox(height: 54, radius: 18)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Center(
+                child: Text(
+                  'Loading a balanced mix of movies and TV',
+                  style: TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -629,7 +707,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   Widget _buildBottomBar({
     required String primaryText,
     required IconData primaryIcon,
-    required VoidCallback onPrimary,
+    required VoidCallback? onPrimary,
     required String secondaryText,
     required VoidCallback onSecondary,
   }) {

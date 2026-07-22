@@ -58,7 +58,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
       includeBottomSafeArea: false,
       padding: EdgeInsets.fromLTRB(
         18,
-        18,
+        14,
         18,
         Md3NavigationMetrics.contentBottomInset(context),
       ),
@@ -82,7 +82,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     effectiveRatedCount,
                     snapshot.data,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   _buildTasteProfileCard(
                     context,
                     effectiveRatedCount,
@@ -97,9 +97,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
               );
             },
           ),
-          Md3SectionHeader(
+          _buildDiscoverSectionHeader(
             title: 'Popular Movies',
-            actionText: 'Browse Lists',
+            actionText: 'Open General Lists',
             onAction: () => Navigator.of(context).push(
               RouteHelper.createRoute(
                 () => const MoviesListsPage(initialPageIndex: 0),
@@ -111,10 +111,18 @@ class _DiscoverPageState extends State<DiscoverPage> {
               CuratedMovieListPurpose.popularMovies,
             ),
           ),
-          if (popularMovies.isEmpty)
+          if (popularMovies.isEmpty && !moviesState.isMoviesListsRequested)
+            const Md3ListSkeletonCard(
+              rows: 2,
+              posterWidth: 58,
+              posterHeight: 86,
+              cardPadding: 12,
+              itemSpacing: 12,
+            )
+          else if (popularMovies.isEmpty)
             _buildEmptyListCard(
-              'Popular movies are loading',
-              'This section uses released titles with recent MovieDiary activity.',
+              'Popular movies unavailable',
+              'MovieDiary could not load this section from the API. Try General Lists or Search while it reconnects.',
               Icons.local_movies_outlined,
             )
           else
@@ -126,9 +134,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     color: Md3Colors.muted,
                   ),
                 )),
-          Md3SectionHeader(
+          _buildDiscoverSectionHeader(
             title: 'Popular TV',
-            actionText: 'Browse Lists',
+            actionText: 'Open General Lists',
             onAction: () => Navigator.of(context).push(
               RouteHelper.createRoute(
                 () => const MoviesListsPage(initialPageIndex: 0),
@@ -140,10 +148,18 @@ class _DiscoverPageState extends State<DiscoverPage> {
               CuratedMovieListPurpose.popularTv,
             ),
           ),
-          if (popularTv.isEmpty)
+          if (popularTv.isEmpty && !moviesState.isMoviesListsRequested)
+            const Md3ListSkeletonCard(
+              rows: 2,
+              posterWidth: 58,
+              posterHeight: 86,
+              cardPadding: 12,
+              itemSpacing: 12,
+            )
+          else if (popularTv.isEmpty)
             _buildEmptyListCard(
-              'Popular TV is loading',
-              'This section uses released shows with recent MovieDiary activity.',
+              'Popular TV unavailable',
+              'MovieDiary could not load this section from the API. Try General Lists or Search while it reconnects.',
               Icons.live_tv_outlined,
             )
           else
@@ -155,10 +171,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     color: Md3Colors.muted,
                   ),
                 )),
-          Md3SectionHeader(
+          _buildDiscoverSectionHeader(
             title: 'Your Watchlist',
-            actionText: 'My Movies',
-            onAction: () {},
+            actionText: null,
+            onAction: null,
           ),
           if (watchlistMovies.isEmpty)
             _buildEmptyListCard(
@@ -197,20 +213,20 @@ class _DiscoverPageState extends State<DiscoverPage> {
             isReady ? 'Discover' : "Find movies you'll love",
             style: const TextStyle(
               color: Md3Colors.text,
-              fontSize: 34,
-              height: 1.08,
+              fontSize: 28,
+              height: 1.05,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 5),
           Text(
             isReady
-                ? 'Start from your taste profile, popular picks, or saved watchlist.'
-                : 'Rate movies to teach MovieDiary what fits your taste.',
+                ? 'Start a deck, browse real picks, or revisit your saved movies.'
+                : 'Rate a few titles, then browse real picks while MovieDiary learns.',
             style: const TextStyle(
               color: Md3Colors.muted,
-              fontSize: 16,
-              height: 1.35,
+              fontSize: 14,
+              height: 1.3,
             ),
           ),
         ],
@@ -231,18 +247,18 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final remaining = (10 - ratedCount).clamp(0, 10);
     final isReady = profile?.isReady == true || ratedCount >= 10;
     final canRate = isReady || hasStarterMovies;
+    final hasDetails =
+        isReady && profile != null && _hasTasteProfileDetails(profile);
     final title = hasProfileError
         ? 'Taste profile unavailable'
         : isReady
-            ? 'Taste profile ready'
+            ? 'Your taste profile'
             : 'Build your taste profile';
     final body = hasProfileError
         ? 'MovieDiary could not load your taste profile from the API. Your ratings are still saved; retry when the service is reachable.'
-        : profile?.summaryText?.trim().isNotEmpty == true
-            ? profile!.summaryText!
-            : isReady
-                ? 'MovieDiary has enough ratings to build a recommendation deck.'
-                : 'Rate $remaining more movies to unlock sharper recommendations.';
+        : isReady
+            ? _profileSummary(profile, ratedCount)
+            : 'Rate $remaining more ${remaining == 1 ? 'title' : 'titles'} to unlock sharper recommendations.';
     final ctaText = isReady
         ? 'Get Recommendations'
         : hasStarterMovies
@@ -252,91 +268,123 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 : 'Loading Starter Movies';
 
     return Md3Card(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.psychology_alt_rounded,
-                  color: Md3Colors.primary),
-              const SizedBox(width: 8),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Md3Colors.primarySoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.insights_rounded,
+                  color: Md3Colors.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
                     color: Md3Colors.text,
-                    fontSize: 20,
+                    fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              Text(
+              _buildRatedCountPill(
                 isReady ? '$ratedCount rated' : '$ratedCount/10',
-                style: const TextStyle(
-                  color: Md3Colors.primary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 9,
-              value: progress,
-              backgroundColor: const Color(0xffe5e7eb),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Md3Colors.primary),
+          const SizedBox(height: 10),
+          Text(
+            body,
+            maxLines: hasProfileError ? 4 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 14,
+              height: 1.3,
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            body,
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 16,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Md3PrimaryButton(
-            text: _isRetryingLists ? 'Loading Starter Movies' : ctaText,
-            icon: isReady
-                ? Icons.bolt_rounded
-                : hasStarterMovies
-                    ? Icons.swipe_rounded
-                    : Icons.refresh_rounded,
-            onPressed: _isRetryingLists
-                ? null
-                : () {
-                    if (!canRate) {
-                      _retryStarterMovies(context);
-                      return;
-                    }
+          if (isReady)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (profile != null)
+                  Expanded(
+                    child: Text(
+                      _confidenceLabel(profile),
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 12,
+                        height: 1.25,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
+                else
+                  const Spacer(),
+                const SizedBox(width: 10),
+                _buildTasteProfileActionButton(
+                  text: _isRetryingLists ? 'Loading' : ctaText,
+                  icon: Icons.bolt_rounded,
+                  tonal: false,
+                  onPressed: _isRetryingLists
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            RouteHelper.createRoute(
+                              () => const RecommendationsPage(autoStart: true),
+                            ),
+                          );
+                        },
+                ),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _buildCompactProgress(progress, remaining)),
+                const SizedBox(width: 12),
+                _buildTasteProfileActionButton(
+                  text: _isRetryingLists ? 'Loading' : ctaText,
+                  icon: hasStarterMovies
+                      ? Icons.swipe_rounded
+                      : Icons.refresh_rounded,
+                  tonal: true,
+                  onPressed: _isRetryingLists
+                      ? null
+                      : () {
+                          if (!canRate) {
+                            _retryStarterMovies(context);
+                            return;
+                          }
 
-                    if (isReady) {
-                      Navigator.of(context).push(
-                        RouteHelper.createRoute(
-                            () => const RecommendationsPage(autoStart: true)),
-                      );
-                    } else {
-                      _openRatingFlow(context);
-                    }
-                  },
-          ),
+                          _openRatingFlow(context);
+                        },
+                ),
+              ],
+            ),
           if (!canRate) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               listsRequested
                   ? 'MovieDiary could not load the starter rating deck. Try again before rating.'
                   : 'MovieDiary is loading the starter rating deck before you begin.',
               style: const TextStyle(
                 color: Md3Colors.muted,
-                fontSize: 13,
-                height: 1.35,
+                fontSize: 12,
+                height: 1.3,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -346,7 +394,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
             const LinearProgressIndicator(minHeight: 3),
           ],
           if (hasProfileError) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Md3PrimaryButton(
               text: 'Retry Taste Profile',
               icon: Icons.refresh_rounded,
@@ -358,130 +406,326 @@ class _DiscoverPageState extends State<DiscoverPage> {
               },
             ),
           ],
-          if (profile != null && _hasTasteProfileDetails(profile)) ...[
-            const SizedBox(height: 16),
-            if (profile.personalityLabel?.trim().isNotEmpty == true)
-              Text(
-                profile.personalityLabel!,
-                style: const TextStyle(
-                  color: Md3Colors.primary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+          if (hasDetails) ...[
+            const SizedBox(height: 8),
+            const Divider(height: 1, color: Md3Colors.border),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Md3Colors.primary,
+                  padding: EdgeInsets.zero,
+                  alignment: Alignment.centerLeft,
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            if (_profilePillars(profile).isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _profilePillars(profile)
-                    .take(4)
-                    .map((pillar) => Md3Chip(text: pillar))
-                    .toList(),
-              ),
-            ],
-            const SizedBox(height: 12),
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: Md3Colors.primary,
-                padding: EdgeInsets.zero,
-                textStyle: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-              onPressed: () {
-                setState(() {
-                  _isTasteProfileExpanded = !_isTasteProfileExpanded;
-                });
-              },
-              icon: Icon(
-                _isTasteProfileExpanded
-                    ? Icons.expand_less_rounded
-                    : Icons.expand_more_rounded,
-              ),
-              label: Text(
-                _isTasteProfileExpanded ? 'Hide details' : 'Show details',
+                onPressed: () {
+                  setState(() {
+                    _isTasteProfileExpanded = !_isTasteProfileExpanded;
+                  });
+                },
+                child: Row(
+                  children: [
+                    const Expanded(child: Text('Taste details')),
+                    Icon(
+                      _isTasteProfileExpanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
-            if (_isTasteProfileExpanded) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildProfileMetric(
-                      'Confidence',
-                      '${profile.profileConfidencePercent}%',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildProfileMetric(
-                      'Ratings basis',
-                      '${profile.movieRatingsCount} movies / ${profile.tvRatingsCount} TV',
-                    ),
-                  ),
-                ],
-              ),
-              if (profile.favoriteGenres.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildProfileInsight(
-                  Icons.theaters_rounded,
-                  'Favorite genres',
-                  profile.favoriteGenres.take(4).join(', '),
-                ),
-              ],
-              if (profile.preferredDecades.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildProfileInsight(
-                  Icons.history_rounded,
-                  'Favorite eras',
-                  profile.preferredDecades.take(3).join(', '),
-                ),
-              ],
-              if (profile.favoriteThemes.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildProfileInsight(
-                  Icons.palette_outlined,
-                  'Common themes',
-                  profile.favoriteThemes.take(4).join(', '),
-                ),
-              ],
-            ],
+            if (_isTasteProfileExpanded) _buildExpandedProfileDetails(profile),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildProfileInsight(IconData icon, String label, String value) {
-    return Row(
+  Widget _buildDiscoverSectionHeader({
+    required String title,
+    required String? actionText,
+    required VoidCallback? onAction,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 18, 2, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Md3Colors.text,
+                fontSize: 21,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          if (actionText != null && onAction != null)
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                foregroundColor: Md3Colors.primary,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: Text(actionText),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatedCountPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: Md3Colors.primarySoft,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Md3Colors.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactProgress(double progress, int remaining) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Md3Colors.primary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            '$label: $value',
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 14,
-              height: 1.35,
-              fontWeight: FontWeight.w700,
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            minHeight: 6,
+            value: progress,
+            backgroundColor: const Color(0xffe5e7eb),
+            valueColor: const AlwaysStoppedAnimation<Color>(Md3Colors.primary),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          remaining == 0 ? 'Ready for a deck' : '$remaining more to unlock',
+          style: const TextStyle(
+            color: Md3Colors.muted,
+            fontSize: 12,
+            height: 1.2,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
     );
   }
 
-  List<String> _profilePillars(UserTasteProfile profile) {
-    if (profile.tastePillars.isNotEmpty) {
-      return profile.tastePillars;
+  Widget _buildTasteProfileActionButton({
+    required String text,
+    required IconData icon,
+    required bool tonal,
+    required VoidCallback? onPressed,
+  }) {
+    final background = tonal ? Md3Colors.primarySoft : Md3Colors.primary;
+    final foreground = tonal ? Md3Colors.primary : Colors.white;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 112, maxWidth: 172),
+      child: SizedBox(
+        height: 42,
+        child: FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: background,
+            foregroundColor: foreground,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+          onPressed: onPressed,
+          icon: Icon(icon, size: 18),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              text,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedProfileDetails(UserTasteProfile profile) {
+    final genres = _cleanProfileLabels(profile.favoriteGenres).take(5).toList();
+    final themes = _cleanProfileLabels(
+      profile.favoriteThemes,
+      maxWords: 5,
+      allowNumbers: false,
+    ).take(3).toList();
+    final decades = _cleanProfileLabels(
+      profile.preferredDecades,
+      maxWords: 2,
+    ).where((value) => RegExp(r'^\d{4}s$').hasMatch(value)).take(3).toList();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (genres.isNotEmpty) _buildProfileDetailGroup('Top genres', genres),
+          if (themes.isNotEmpty) ...[
+            if (genres.isNotEmpty) const SizedBox(height: 12),
+            _buildProfileDetailGroup('Story and mood', themes),
+          ],
+          if (decades.isNotEmpty) ...[
+            if (genres.isNotEmpty || themes.isNotEmpty)
+              const SizedBox(height: 12),
+            _buildProfileDetailGroup('Eras you rate highly', decades),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.data_usage_rounded,
+                size: 17,
+                color: Md3Colors.muted,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _ratingsBasis(profile),
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 12,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Md3Colors.primary,
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                onPressed: () => _openRatingFlow(context),
+                child: const Text('Rate more'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileDetailGroup(String label, List<String> values) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Md3Colors.text,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: values.map((value) => Md3Chip(text: value)).toList(),
+        ),
+      ],
+    );
+  }
+
+  String _confidenceLabel(UserTasteProfile profile) {
+    if (profile.profileConfidencePercent >= 85 || profile.ratingsCount >= 25) {
+      return 'Well-defined';
     }
 
-    if (profile.favoriteThemes.isNotEmpty) {
-      return profile.favoriteThemes;
+    if (profile.profileConfidencePercent >= 70 || profile.ratingsCount >= 15) {
+      return 'Taking shape';
     }
 
-    return profile.favoriteGenres;
+    return 'Early read';
+  }
+
+  String _ratingsBasis(UserTasteProfile profile) {
+    final parts = <String>[];
+    if (profile.movieRatingsCount > 0) {
+      parts.add(
+        '${profile.movieRatingsCount} ${profile.movieRatingsCount == 1 ? 'movie' : 'movies'}',
+      );
+    }
+    if (profile.tvRatingsCount > 0) {
+      parts.add(
+        '${profile.tvRatingsCount} TV ${profile.tvRatingsCount == 1 ? 'show' : 'shows'}',
+      );
+    }
+
+    final basis = parts.isEmpty
+        ? '${profile.ratingsCount} rated ${profile.ratingsCount == 1 ? 'title' : 'titles'}'
+        : parts.join(' and ');
+    return 'Based on $basis. More varied ratings make this read sharper.';
+  }
+
+  String _profileSummary(UserTasteProfile? profile, int ratedCount) {
+    final providedSummary = profile?.summaryText == null
+        ? ''
+        : _cleanLocalTasteText(profile!.summaryText!);
+    if (providedSummary.isNotEmpty && providedSummary.length <= 130) {
+      return providedSummary;
+    }
+
+    final genres = profile == null
+        ? const <String>[]
+        : _cleanProfileLabels(profile.favoriteGenres).take(2).toList();
+    if (genres.isNotEmpty) {
+      return 'Your ratings point to ${genres.join(' and ')}. This profile will keep refining as you rate more.';
+    }
+
+    return 'Built from $ratedCount ratings. Rate a wider mix to make your recommendations more precise.';
+  }
+
+  List<String> _cleanProfileLabels(
+    Iterable<String> values, {
+    int maxWords = 4,
+    bool allowNumbers = true,
+  }) {
+    return values
+        .map(_cleanLocalTasteText)
+        .where((value) => value.isNotEmpty)
+        .where((value) => value.length <= 40)
+        .where((value) =>
+            value
+                .split(RegExp(r'\s+'))
+                .where((word) => word.isNotEmpty)
+                .length <=
+            maxWords)
+        .where((value) => allowNumbers || !RegExp(r'\d').hasMatch(value))
+        .toSet()
+        .toList();
   }
 
   int _effectiveRatedCount(int localRatedCount, UserTasteProfile? profile) {
@@ -496,38 +740,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
     return profileRatedCount > localRatedCount
         ? profileRatedCount
         : localRatedCount;
-  }
-
-  Widget _buildProfileMetric(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xfff4f6f9),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: Md3Colors.text,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<UserTasteProfile>? _getProfileFuture(
@@ -582,16 +794,17 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
     return !profile.isGenerated ||
         profile.summaryText?.trim().isNotEmpty != true ||
-        !_hasTasteProfileDetails(profile);
+        (profile.favoriteGenres.isEmpty &&
+            profile.favoriteThemes.isEmpty &&
+            profile.preferredDecades.isEmpty);
   }
 
   bool _hasTasteProfileDetails(UserTasteProfile profile) {
-    return profile.personalityLabel?.trim().isNotEmpty == true ||
-        profile.favoriteGenres.isNotEmpty ||
+    return profile.favoriteGenres.isNotEmpty ||
         profile.favoriteThemes.isNotEmpty ||
-        profile.tastePillars.isNotEmpty ||
         profile.preferredDecades.isNotEmpty ||
-        profile.recommendationAdvice.isNotEmpty;
+        profile.movieRatingsCount > 0 ||
+        profile.tvRatingsCount > 0;
   }
 
   UserTasteProfile _cleanTasteProfileForDisplay(UserTasteProfile profile) {
@@ -599,12 +812,19 @@ class _DiscoverPageState extends State<DiscoverPage> {
       isReady: profile.isReady,
       isGenerated: profile.isGenerated,
       ratingsCount: profile.ratingsCount,
-      favoriteGenres: profile.favoriteGenres,
-      dislikedGenres: profile.dislikedGenres,
-      favoriteThemes: _cleanLocalTasteList(profile.favoriteThemes),
-      tastePillars: _cleanLocalTasteList(profile.tastePillars),
-      recommendationAdvice: _cleanLocalTasteList(profile.recommendationAdvice),
-      preferredDecades: profile.preferredDecades,
+      favoriteGenres: _cleanProfileLabels(profile.favoriteGenres),
+      dislikedGenres: _cleanProfileLabels(profile.dislikedGenres),
+      favoriteThemes: _cleanProfileLabels(
+        profile.favoriteThemes,
+        maxWords: 5,
+        allowNumbers: false,
+      ),
+      tastePillars: const [],
+      recommendationAdvice: const [],
+      preferredDecades: _cleanProfileLabels(
+        profile.preferredDecades,
+        maxWords: 2,
+      ).where((value) => RegExp(r'^\d{4}s$').hasMatch(value)).toList(),
       favoriteDirectors: profile.favoriteDirectors,
       movieRatingsCount: profile.movieRatingsCount,
       tvRatingsCount: profile.tvRatingsCount,
@@ -613,9 +833,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
       summaryText: profile.summaryText == null
           ? null
           : _cleanLocalTasteText(profile.summaryText!),
-      personalityLabel: profile.personalityLabel == null
-          ? null
-          : _cleanLocalTasteText(profile.personalityLabel!),
+      personalityLabel: null,
       generatedAt: profile.generatedAt,
     );
   }
@@ -640,17 +858,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
         ratedMovies.where((movie) => movie.movieType == MovieType.movie).length;
     final tvRatingsCount =
         ratedMovies.where((movie) => movie.movieType == MovieType.tv).length;
-    final personalityLabel = _localPersonalityLabel(favoriteGenres);
-    final pillars = _localTastePillars(
-      favoriteGenres,
-      preferredDecades,
-      movieRatingsCount,
-      tvRatingsCount,
-    );
     final summaryText = _localTasteSummary(
       favoriteGenres,
       preferredDecades,
-      ratedMovies.length,
     );
 
     return UserTasteProfile(
@@ -663,13 +873,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
       dislikedGenres: dislikedGenres.isNotEmpty
           ? dislikedGenres
           : apiProfile?.dislikedGenres ?? const [],
-      favoriteThemes: pillars,
-      tastePillars: pillars,
-      recommendationAdvice: _localRecommendationNotes(
-        favoriteGenres,
-        dislikedGenres,
-        preferredDecades,
-      ),
+      favoriteThemes: apiProfile?.favoriteThemes ?? const [],
+      tastePillars: const [],
+      recommendationAdvice: const [],
       preferredDecades: preferredDecades.isNotEmpty
           ? preferredDecades
           : apiProfile?.preferredDecades ?? const [],
@@ -680,11 +886,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
           apiProfile?.profileConfidencePercent ?? _localConfidence(ratedMovies),
       isStale: apiProfile?.isStale ?? false,
       summaryText: apiProfile?.summaryText?.trim().isNotEmpty == true
-          ? apiProfile!.summaryText
+          ? _cleanLocalTasteText(apiProfile!.summaryText!)
           : summaryText,
-      personalityLabel: apiProfile?.personalityLabel?.trim().isNotEmpty == true
-          ? _cleanLocalTasteText(apiProfile!.personalityLabel!)
-          : personalityLabel,
+      personalityLabel: null,
       generatedAt: apiProfile?.generatedAt,
     );
   }
@@ -765,42 +969,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
     return ranked.take(count).map((entry) => entry.key).toList();
   }
 
-  List<String> _localTastePillars(
-    List<String> favoriteGenres,
-    List<String> preferredDecades,
-    int movieRatingsCount,
-    int tvRatingsCount,
-  ) {
-    final pillars = <String>[];
-
-    if (favoriteGenres.isNotEmpty) {
-      pillars.add('Often likes ${favoriteGenres.take(2).join(' + ')}');
-    }
-
-    if (preferredDecades.isNotEmpty) {
-      pillars
-          .add('Rates ${preferredDecades.take(2).join(' and ')} titles well');
-    }
-
-    if (movieRatingsCount > 0 && tvRatingsCount > 0) {
-      pillars.add('Open to movies and TV');
-    } else if (movieRatingsCount > 0) {
-      pillars.add('Mostly movie-based so far');
-    } else if (tvRatingsCount > 0) {
-      pillars.add('Mostly TV-based so far');
-    }
-
-    if (pillars.isEmpty) {
-      pillars.add('Still learning your range');
-    }
-
-    return pillars.take(3).toList();
-  }
-
   String _localTasteSummary(
     List<String> favoriteGenres,
     List<String> preferredDecades,
-    int ratingsCount,
   ) {
     final genreText = favoriteGenres.isNotEmpty
         ? favoriteGenres.take(2).join(' and ')
@@ -809,69 +980,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
         ? ', with ${preferredDecades.take(2).join(' and ')} titles rating well'
         : '';
 
-    return 'MovieDiary has a first read from $ratingsCount ratings: you lean toward $genreText$decadeText.';
-  }
-
-  String _localPersonalityLabel(List<String> favoriteGenres) {
-    final normalized =
-        favoriteGenres.map((genre) => genre.toLowerCase()).toSet();
-
-    if (normalized.contains('drama')) {
-      return 'Character-driven taste';
-    }
-
-    if (normalized.any((genre) =>
-        genre.contains('thriller') ||
-        genre.contains('mystery') ||
-        genre.contains('crime') ||
-        genre.contains('horror'))) {
-      return 'Tension-friendly taste';
-    }
-
-    if (normalized.any((genre) =>
-        genre.contains('science fiction') ||
-        genre.contains('sci-fi') ||
-        genre.contains('fantasy'))) {
-      return 'Imaginative explorer';
-    }
-
-    if (normalized.any((genre) =>
-        genre.contains('comedy') ||
-        genre.contains('romance') ||
-        genre.contains('animation'))) {
-      return 'Feel-good explorer';
-    }
-
-    return 'Taste profile';
-  }
-
-  List<String> _localRecommendationNotes(
-    List<String> favoriteGenres,
-    List<String> dislikedGenres,
-    List<String> preferredDecades,
-  ) {
-    final notes = <String>[];
-
-    if (favoriteGenres.isNotEmpty) {
-      notes.add(
-          'Recommendations will start close to ${favoriteGenres.take(2).join(' and ')}.');
-    }
-
-    if (preferredDecades.isNotEmpty) {
-      notes.add(
-          'MovieDiary will mix ${preferredDecades.take(2).join(' and ')} with newer options.');
-    }
-
-    if (dislikedGenres.isNotEmpty) {
-      notes.add(
-          'Your dislikes help filter out heavy ${dislikedGenres.take(2).join(' and ')} overlap.');
-    }
-
-    if (notes.isEmpty) {
-      notes.add('More ratings will make recommendations sharper.');
-    }
-
-    return notes.take(3).map(_cleanLocalTasteText).toList();
+    return 'Your ratings point to $genreText$decadeText.';
   }
 
   int _localConfidence(List<Movie> ratedMovies) {
@@ -888,23 +997,17 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
   String _cleanLocalTasteText(String value) {
     final trimmed = value.trim();
-    final signalMatch = RegExp(
-      r'^use (.+) as a signal, not a rule\.?$',
-      caseSensitive: false,
-    ).firstMatch(trimmed);
-    if (signalMatch != null) {
-      return 'MovieDiary will treat ${signalMatch.group(1)} as a light preference.';
-    }
-
-    final eraPullMatch = RegExp(
-      r'^(.+)\s+era pull$',
-      caseSensitive: false,
-    ).firstMatch(trimmed);
-    if (eraPullMatch != null) {
-      return 'Rates ${eraPullMatch.group(1)!.replaceAll('/', 'and')} titles well';
-    }
-
-    if (RegExp('adjacent voices', caseSensitive: false).hasMatch(trimmed)) {
+    final internalPhrases = [
+      'adjacent voices',
+      'era pull',
+      'future seeker',
+      'signal, not a rule',
+      'as a signal',
+      'prompt',
+    ];
+    if (internalPhrases.any(
+      (phrase) => trimmed.toLowerCase().contains(phrase),
+    )) {
       return '';
     }
 
@@ -915,23 +1018,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
     }
 
     return cleaned
-        .replaceAll(RegExp('future seeker', caseSensitive: false),
-            'Imaginative explorer')
         .replaceAll(RegExp('comfort zone', caseSensitive: false), 'favorites')
-        .replaceAll(RegExp('era pull', caseSensitive: false), 'era preference')
-        .replaceAll(
-            RegExp('adjacent voices', caseSensitive: false), 'similar creators')
-        .replaceAll(RegExp('signal, not a rule', caseSensitive: false),
-            'light preference')
         .trim();
-  }
-
-  List<String> _cleanLocalTasteList(List<String> values) {
-    return values
-        .map(_cleanLocalTasteText)
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .toList();
   }
 
   Widget _buildEmptyListCard(String title, String body, IconData icon) {

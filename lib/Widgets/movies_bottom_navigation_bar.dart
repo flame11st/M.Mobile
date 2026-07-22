@@ -27,11 +27,11 @@ class MoviesBottomNavigationBar extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(12, 0, 12, bottomMargin),
       child: Md3LiquidGlass(
         borderRadius: BorderRadius.circular(28),
-        tint: Colors.white.withValues(alpha: 0.78),
-        borderColor: Colors.white.withValues(alpha: 0.72),
+        tint: Colors.white.withOpacity(0.78),
+        borderColor: Colors.white.withOpacity(0.72),
         shadows: [
           BoxShadow(
-            color: const Color(0xff102a43).withValues(alpha: 0.14),
+            color: const Color(0xff102a43).withOpacity(0.14),
             blurRadius: 28,
             offset: const Offset(0, 14),
           ),
@@ -138,16 +138,16 @@ class _NavItem extends StatelessWidget {
                 constraints: const BoxConstraints(minHeight: 56),
                 decoration: BoxDecoration(
                   color: selected
-                      ? Md3Colors.primarySoft.withValues(alpha: 0.96)
+                      ? Md3Colors.primarySoft.withOpacity(0.96)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(22),
                   border: selected
-                      ? Border.all(color: Colors.white.withValues(alpha: 0.82))
+                      ? Border.all(color: Colors.white.withOpacity(0.82))
                       : null,
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: Md3Colors.primary.withValues(alpha: 0.08),
+                            color: Md3Colors.primary.withOpacity(0.08),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),

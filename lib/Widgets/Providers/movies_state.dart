@@ -17,14 +17,22 @@ class MoviesState with ChangeNotifier {
     setCachedUserMovies();
     unawaited(_discardLegacyExternalListCache());
     setCachedMoviesLists();
+    _pendingAnonymousRatingSyncsLoad = setCachedPendingAnonymousRatingSyncs();
   }
 
   final serviceAgent = ServiceAgent();
   final storage = const FlutterSecureStorage();
   static const _cacheReadTimeout = Duration(seconds: 2);
   static const _movieCacheWriteDebounce = Duration(milliseconds: 700);
+  static const _pendingAnonymousRatingSyncsKey = 'pendingAnonymousRatingSyncs';
+  static const _anonymousRatingSyncDebounce = Duration(milliseconds: 900);
+  static const _anonymousRatingSyncMaxDelay = Duration(minutes: 5);
   Timer? _movieCacheWriteTimer;
   Timer? _personalListsCacheWriteTimer;
+  Timer? _anonymousRatingSyncTimer;
+  Future<void>? _pendingAnonymousRatingSyncsLoad;
+  bool _pendingAnonymousRatingSyncsLoaded = false;
+  bool _isAnonymousRatingSyncInFlight = false;
 
   List<Movie> cachedUserMovies = [];
   List<Movie> userMovies = [];
@@ -33,6 +41,7 @@ class MoviesState with ChangeNotifier {
   List<Movie> starterDeckMovies = [];
   List<MoviesList> externalMoviesLists = [];
   List<MoviesList> personalMoviesLists = [];
+  List<_PendingAnonymousRatingSync> _pendingAnonymousRatingSyncs = [];
   List<DropdownMenuItem<String>> genres = [];
   bool moviesOnly = false;
   bool tvOnly = false;
@@ -54,6 +63,8 @@ class MoviesState with ChangeNotifier {
   bool isMoviesListsRequested = false;
   bool isStarterDeckRequested = false;
   bool isCachedMoviesLoaded = false;
+  int get pendingAnonymousRatingSyncCount =>
+      _pendingAnonymousRatingSyncs.length;
 
   setCachedUserMovies() async {
     String? storedMovies;
@@ -166,6 +177,46 @@ class MoviesState with ChangeNotifier {
     }
   }
 
+  Future<void> setCachedPendingAnonymousRatingSyncs() async {
+    try {
+      final storedSyncs = await storage
+          .read(key: _pendingAnonymousRatingSyncsKey)
+          .timeout(_cacheReadTimeout);
+
+      if (storedSyncs == null || storedSyncs.trim().isEmpty) {
+        return;
+      }
+
+      final decodedSyncs = json.decode(storedSyncs);
+      if (decodedSyncs is! Iterable) {
+        debugPrint('Guest rating sync queue cache was not a list.');
+        return;
+      }
+
+      _pendingAnonymousRatingSyncs = decodedSyncs
+          .map((sync) {
+            if (sync is! Map) {
+              return null;
+            }
+
+            return _PendingAnonymousRatingSync.fromJson(
+              Map<String, dynamic>.from(sync),
+            );
+          })
+          .whereType<_PendingAnonymousRatingSync>()
+          .where((sync) => sync.movieId.isNotEmpty)
+          .toList();
+
+      if (_pendingAnonymousRatingSyncs.isNotEmpty) {
+        _scheduleAnonymousRatingSync(delay: const Duration(seconds: 2));
+      }
+    } catch (error) {
+      debugPrint('Guest rating sync queue cache read skipped: $error');
+    } finally {
+      _pendingAnonymousRatingSyncsLoaded = true;
+    }
+  }
+
   getMoviesListFromJson(String jsonString) {
     Iterable iterableMoviesLists;
     try {
@@ -226,6 +277,238 @@ class MoviesState with ChangeNotifier {
     } catch (error) {
       debugPrint('Personal movies list cache write skipped: $error');
     }
+  }
+
+  Future<void> _ensurePendingAnonymousRatingSyncsLoaded() async {
+    if (_pendingAnonymousRatingSyncsLoaded) {
+      return;
+    }
+
+    _pendingAnonymousRatingSyncsLoad ??= setCachedPendingAnonymousRatingSyncs();
+    await _pendingAnonymousRatingSyncsLoad;
+  }
+
+  void queueAnonymousRatingSync(String movieId, int movieRate) {
+    if (movieId.isEmpty) {
+      return;
+    }
+
+    unawaited(_queueAnonymousRatingSync(movieId, movieRate));
+  }
+
+  Future<bool> retryPendingAnonymousRatingSyncs() {
+    return _drainPendingAnonymousRatingSyncs();
+  }
+
+  Future<bool> flushPendingAnonymousRatingSyncs({Duration? timeout}) {
+    final sync = _drainPendingAnonymousRatingSyncs();
+
+    if (timeout == null) {
+      return sync;
+    }
+
+    return sync.timeout(timeout, onTimeout: () => false);
+  }
+
+  Future<void> _queueAnonymousRatingSync(String movieId, int movieRate) async {
+    await _ensurePendingAnonymousRatingSyncsLoaded();
+
+    final userState = ServiceAgent.state;
+    final targetUserId =
+        userState?.userId != null && userState!.userId!.isNotEmpty
+            ? userState.userId
+            : null;
+    final updatedSync = _PendingAnonymousRatingSync(
+      movieId: movieId,
+      movieRate: movieRate,
+      userId: targetUserId,
+      updatedAt: DateTime.now(),
+    );
+    final existingIndex = _pendingAnonymousRatingSyncs.indexWhere(
+      (sync) => sync.movieId == movieId && sync.userId == targetUserId,
+    );
+
+    if (existingIndex == -1) {
+      _pendingAnonymousRatingSyncs.add(updatedSync);
+    } else {
+      _pendingAnonymousRatingSyncs[existingIndex] = updatedSync.copyWith(
+        attempts: _pendingAnonymousRatingSyncs[existingIndex].attempts,
+      );
+    }
+
+    await _writePendingAnonymousRatingSyncs();
+    _scheduleAnonymousRatingSync();
+  }
+
+  Future<void> _writePendingAnonymousRatingSyncs() async {
+    try {
+      if (_pendingAnonymousRatingSyncs.isEmpty) {
+        await storage.delete(key: _pendingAnonymousRatingSyncsKey);
+        return;
+      }
+
+      await storage.write(
+        key: _pendingAnonymousRatingSyncsKey,
+        value: jsonEncode(_pendingAnonymousRatingSyncs),
+      );
+    } catch (error) {
+      debugPrint('Guest rating sync queue write skipped: $error');
+    }
+  }
+
+  void _scheduleAnonymousRatingSync({
+    Duration delay = _anonymousRatingSyncDebounce,
+  }) {
+    _anonymousRatingSyncTimer?.cancel();
+    _anonymousRatingSyncTimer = Timer(delay, () {
+      unawaited(_drainPendingAnonymousRatingSyncs());
+    });
+  }
+
+  Future<bool> _drainPendingAnonymousRatingSyncs() async {
+    if (_isAnonymousRatingSyncInFlight) {
+      return false;
+    }
+
+    await _ensurePendingAnonymousRatingSyncsLoaded();
+
+    if (_pendingAnonymousRatingSyncs.isEmpty) {
+      return true;
+    }
+
+    final userState = ServiceAgent.state;
+    final userId = userState?.userId;
+    if (userState?.isIncognitoMode != true ||
+        userId == null ||
+        userId.isEmpty) {
+      return false;
+    }
+
+    final staleSyncCount = _pendingAnonymousRatingSyncs
+        .where((sync) => sync.userId != null && sync.userId != userId)
+        .length;
+    if (staleSyncCount > 0) {
+      _pendingAnonymousRatingSyncs.removeWhere(
+        (sync) => sync.userId != null && sync.userId != userId,
+      );
+      await _writePendingAnonymousRatingSyncs();
+      debugPrint(
+        'Dropped $staleSyncCount stale guest rating sync item(s) for a previous anonymous profile.',
+      );
+    }
+
+    if (_pendingAnonymousRatingSyncs.isEmpty) {
+      return true;
+    }
+
+    _isAnonymousRatingSyncInFlight = true;
+    var syncedCount = 0;
+    Object? failure;
+
+    try {
+      final syncSnapshot = List<_PendingAnonymousRatingSync>.of(
+        _pendingAnonymousRatingSyncs,
+      );
+
+      for (final sync in syncSnapshot) {
+        if (sync.userId != null && sync.userId != userId) {
+          continue;
+        }
+
+        final response = await serviceAgent.rateMovie(
+          sync.movieId,
+          userId,
+          sync.movieRate,
+        );
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          _removePendingAnonymousRatingSync(sync);
+          syncedCount += 1;
+          continue;
+        }
+
+        failure = 'HTTP ${response.statusCode} from User/RateMovie';
+        _recordAnonymousRatingSyncAttempt(sync);
+        break;
+      }
+    } catch (error) {
+      failure = error;
+      if (_pendingAnonymousRatingSyncs.isNotEmpty) {
+        _recordAnonymousRatingSyncAttempt(_pendingAnonymousRatingSyncs.first);
+      }
+    } finally {
+      _isAnonymousRatingSyncInFlight = false;
+    }
+
+    await _writePendingAnonymousRatingSyncs();
+
+    if (failure != null) {
+      final retryDelay = _nextAnonymousRatingSyncDelay();
+      debugPrint(
+        'Guest rating sync queued retry: ${_pendingAnonymousRatingSyncs.length} pending; retry in ${retryDelay.inSeconds}s. Last failure: $failure',
+      );
+      _scheduleAnonymousRatingSync(delay: retryDelay);
+      return false;
+    }
+
+    if (syncedCount > 0) {
+      debugPrint('Guest rating sync persisted $syncedCount pending item(s).');
+    }
+
+    if (_pendingAnonymousRatingSyncs.isNotEmpty) {
+      _scheduleAnonymousRatingSync();
+      return false;
+    }
+
+    return _pendingAnonymousRatingSyncs.isEmpty;
+  }
+
+  void _removePendingAnonymousRatingSync(_PendingAnonymousRatingSync sync) {
+    _pendingAnonymousRatingSyncs.removeWhere(
+      (pending) =>
+          pending.movieId == sync.movieId &&
+          pending.movieRate == sync.movieRate &&
+          pending.userId == sync.userId &&
+          pending.updatedAt.millisecondsSinceEpoch ==
+              sync.updatedAt.millisecondsSinceEpoch,
+    );
+  }
+
+  void _recordAnonymousRatingSyncAttempt(_PendingAnonymousRatingSync sync) {
+    final index = _pendingAnonymousRatingSyncs.indexWhere(
+      (pending) =>
+          pending.movieId == sync.movieId &&
+          pending.userId == sync.userId &&
+          pending.updatedAt.millisecondsSinceEpoch ==
+              sync.updatedAt.millisecondsSinceEpoch,
+    );
+
+    if (index == -1) {
+      return;
+    }
+
+    _pendingAnonymousRatingSyncs[index] = _pendingAnonymousRatingSyncs[index]
+        .copyWith(attempts: _pendingAnonymousRatingSyncs[index].attempts + 1);
+  }
+
+  Duration _nextAnonymousRatingSyncDelay() {
+    final attempts = _pendingAnonymousRatingSyncs.isEmpty
+        ? 0
+        : _pendingAnonymousRatingSyncs
+            .map((sync) => sync.attempts)
+            .reduce((value, element) => value > element ? value : element);
+    final seconds = attempts <= 1
+        ? 5
+        : attempts == 2
+            ? 15
+            : attempts == 3
+                ? 45
+                : 120;
+
+    final delay = Duration(seconds: seconds);
+    return delay > _anonymousRatingSyncMaxDelay
+        ? _anonymousRatingSyncMaxDelay
+        : delay;
   }
 
   setInitialMoviesLists(List<MoviesList> moviesLists) async {
@@ -671,14 +954,8 @@ class MoviesState with ChangeNotifier {
 
     _scheduleUserMoviesCacheWrite();
 
-    final userState = ServiceAgent.state;
-    if (isIncognitoMode &&
-        userState?.userId != null &&
-        userState!.userId!.isNotEmpty) {
-      unawaited(serviceAgent
-          .rateMovie(movieId, userState.userId!, movieRate)
-          .catchError(
-              (error) => debugPrint('Guest rating sync failed: $error')));
+    if (isIncognitoMode) {
+      queueAnonymousRatingSync(movieId, movieRate);
     }
   }
 
@@ -686,6 +963,7 @@ class MoviesState with ChangeNotifier {
   void dispose() {
     _movieCacheWriteTimer?.cancel();
     _personalListsCacheWriteTimer?.cancel();
+    _anonymousRatingSyncTimer?.cancel();
     super.dispose();
   }
 
@@ -826,4 +1104,63 @@ class MoviesState with ChangeNotifier {
               : MovieCardMode.viewed,
         ));
   }
+}
+
+class _PendingAnonymousRatingSync {
+  const _PendingAnonymousRatingSync({
+    required this.movieId,
+    required this.movieRate,
+    required this.updatedAt,
+    this.userId,
+    this.attempts = 0,
+  });
+
+  final String movieId;
+  final int movieRate;
+  final String? userId;
+  final int attempts;
+  final DateTime updatedAt;
+
+  factory _PendingAnonymousRatingSync.fromJson(Map<String, dynamic> json) {
+    final updatedAtValue = json['updatedAt'];
+
+    return _PendingAnonymousRatingSync(
+      movieId: '${json['movieId'] ?? ''}',
+      movieRate: json['movieRate'] is int
+          ? json['movieRate']
+          : int.tryParse('${json['movieRate']}') ?? MovieRate.notRated,
+      userId: json['userId'] == null || '${json['userId']}'.isEmpty
+          ? null
+          : '${json['userId']}',
+      attempts: json['attempts'] is int
+          ? json['attempts']
+          : int.tryParse('${json['attempts']}') ?? 0,
+      updatedAt: updatedAtValue is String
+          ? DateTime.tryParse(updatedAtValue) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+
+  _PendingAnonymousRatingSync copyWith({
+    int? movieRate,
+    String? userId,
+    int? attempts,
+    DateTime? updatedAt,
+  }) {
+    return _PendingAnonymousRatingSync(
+      movieId: movieId,
+      movieRate: movieRate ?? this.movieRate,
+      userId: userId ?? this.userId,
+      attempts: attempts ?? this.attempts,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'movieId': movieId,
+        'movieRate': movieRate,
+        'userId': userId,
+        'attempts': attempts,
+        'updatedAt': updatedAt.toIso8601String(),
+      };
 }

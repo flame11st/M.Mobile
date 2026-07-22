@@ -308,6 +308,175 @@ class Md3Chip extends StatelessWidget {
   }
 }
 
+class Md3SkeletonBox extends StatefulWidget {
+  final double? width;
+  final double? height;
+  final double radius;
+  final EdgeInsets margin;
+
+  const Md3SkeletonBox({
+    super.key,
+    this.width,
+    this.height,
+    this.radius = 16,
+    this.margin = EdgeInsets.zero,
+  });
+
+  @override
+  State<Md3SkeletonBox> createState() => _Md3SkeletonBoxState();
+}
+
+class _Md3SkeletonBoxState extends State<Md3SkeletonBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _animationsDisabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1250),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animationsDisabled =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (animationsDisabled == _animationsDisabled &&
+        (_controller.isAnimating || animationsDisabled)) {
+      return;
+    }
+
+    _animationsDisabled = animationsDisabled;
+    if (_animationsDisabled) {
+      _controller.stop();
+      _controller.value = 0.5;
+    } else {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final slide = -1.2 + (_controller.value * 2.4);
+
+            return Container(
+              width: widget.width,
+              height: widget.height,
+              margin: widget.margin,
+              decoration: BoxDecoration(
+                color: Md3Colors.surfaceMuted,
+                borderRadius: BorderRadius.circular(widget.radius),
+                gradient: _animationsDisabled
+                    ? null
+                    : LinearGradient(
+                        begin: Alignment(slide - 1, -0.4),
+                        end: Alignment(slide + 1, 0.4),
+                        colors: const [
+                          Md3Colors.surfaceMuted,
+                          Color(0xffe8edf2),
+                          Color(0xfff6f8fa),
+                          Color(0xffe8edf2),
+                          Md3Colors.surfaceMuted,
+                        ],
+                        stops: const [0, 0.34, 0.5, 0.66, 1],
+                      ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class Md3ListSkeletonCard extends StatelessWidget {
+  final int rows;
+  final double posterWidth;
+  final double posterHeight;
+  final double cardPadding;
+  final double itemSpacing;
+  final bool showTrailing;
+  final double trailingSize;
+
+  const Md3ListSkeletonCard({
+    super.key,
+    this.rows = 3,
+    this.posterWidth = 64,
+    this.posterHeight = 96,
+    this.cardPadding = 10,
+    this.itemSpacing = 10,
+    this.showTrailing = true,
+    this.trailingSize = 40,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Column(
+        children: List.generate(rows, (index) {
+          return Md3Card(
+            margin: EdgeInsets.only(
+              bottom: index == rows - 1 ? 0 : itemSpacing,
+            ),
+            padding: EdgeInsets.all(cardPadding),
+            child: Row(
+              children: [
+                Md3SkeletonBox(
+                  width: posterWidth,
+                  height: posterHeight,
+                  radius: 14,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Md3SkeletonBox(height: 16, radius: 8),
+                      SizedBox(height: 10),
+                      FractionallySizedBox(
+                        widthFactor: 0.72,
+                        child: Md3SkeletonBox(height: 12, radius: 8),
+                      ),
+                      SizedBox(height: 10),
+                      FractionallySizedBox(
+                        widthFactor: 0.46,
+                        child: Md3SkeletonBox(height: 12, radius: 8),
+                      ),
+                    ],
+                  ),
+                ),
+                if (showTrailing) ...[
+                  const SizedBox(width: 12),
+                  Md3SkeletonBox(
+                    width: trailingSize,
+                    height: trailingSize,
+                    radius: trailingSize / 2,
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
 class Md3MoviePoster extends StatelessWidget {
   final Movie movie;
   final double width;
@@ -322,26 +491,48 @@ class Md3MoviePoster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final posterPath = movie.posterPath.isNotEmpty
-        ? movie.posterPath
-        : '/movie_placeholder.png';
+    final posterPath = movie.posterPath.trim();
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: CachedNetworkImage(
-        imageUrl:
-            'https://moviediarystorage.blob.core.windows.net/movies$posterPath',
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => _PosterFallback(
+    if (posterPath.isEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: _PosterFallback(
           width: width,
           height: height,
-          showSpinner: true,
+          title: movie.title,
         ),
-        errorWidget: (context, url, error) => _PosterFallback(
+      );
+    }
+
+    final imageUrl =
+        'https://moviediarystorage.blob.core.windows.net/movies$posterPath';
+    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
           width: width,
           height: height,
+          memCacheWidth: (width * pixelRatio).round(),
+          memCacheHeight: (height * pixelRatio).round(),
+          fit: BoxFit.cover,
+          fadeInDuration: const Duration(milliseconds: 180),
+          fadeOutDuration: const Duration(milliseconds: 100),
+          placeholder: (context, url) => _PosterFallback(
+            width: width,
+            height: height,
+            title: movie.title,
+            isLoading: true,
+          ),
+          errorWidget: (context, url, error) => _PosterFallback(
+            width: width,
+            height: height,
+            title: movie.title,
+          ),
         ),
       ),
     );
@@ -351,47 +542,97 @@ class Md3MoviePoster extends StatelessWidget {
 class _PosterFallback extends StatelessWidget {
   final double width;
   final double height;
-  final bool showSpinner;
+  final String title;
+  final bool isLoading;
 
   const _PosterFallback({
     required this.width,
     required this.height,
-    this.showSpinner = false,
+    required this.title,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showLabel = width >= 58 && height >= 86;
+    final trimmedTitle = title.trim();
+    final posterInitial = trimmedTitle.isNotEmpty
+        ? trimmedTitle.substring(0, 1).toUpperCase()
+        : '?';
+
     return Semantics(
-      label: 'Poster unavailable',
+      label: isLoading ? 'Loading poster' : 'Poster unavailable',
       image: true,
-      child: Container(
+      child: SizedBox(
         width: width,
         height: height,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Md3Colors.surfaceMuted,
-              Color(0xffd8e0e8),
-            ],
-          ),
-        ),
-        alignment: Alignment.center,
-        child: showSpinner
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Md3Colors.primary,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (isLoading)
+              Md3SkeletonBox(width: width, height: height, radius: 16)
+            else
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xffedf2f6),
+                      Color(0xffd9e3ec),
+                    ],
+                  ),
                 ),
-              )
-            : const Icon(
-                Icons.movie_creation_outlined,
-                color: Md3Colors.muted,
-                size: 28,
               ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: showLabel ? 38 : 30,
+                    height: showLabel ? 38 : 30,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(
+                        isLoading ? 0.46 : 0.72,
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                    child: isLoading
+                        ? const Icon(
+                            Icons.image_outlined,
+                            color: Md3Colors.muted,
+                            size: 20,
+                          )
+                        : Text(
+                            posterInitial,
+                            style: const TextStyle(
+                              color: Md3Colors.primary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18,
+                            ),
+                          ),
+                  ),
+                  if (!isLoading && showLabel) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No poster',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

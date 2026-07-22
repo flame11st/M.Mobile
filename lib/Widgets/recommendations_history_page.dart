@@ -131,7 +131,10 @@ class RecommendationsHistoryPageState
       ),
     );
 
-    const loaderWidget = Center(child: CircularProgressIndicator());
+    const loaderWidget = Padding(
+      padding: EdgeInsets.fromLTRB(18, 16, 18, 24),
+      child: Md3ListSkeletonCard(rows: 4),
+    );
 
     MyGlobals.personalListsKey = GlobalKey<AnimatedListState>();
 

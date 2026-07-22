@@ -19,14 +19,13 @@ class MSearchDelegate extends SearchDelegate {
   final storage = const FlutterSecureStorage();
   UserState? userState;
   String? oldQuery;
-  String? currentQuery;
+  int _searchRequestId = 0;
   bool isLoading = false;
   bool isLoadingSuggestions = false;
   bool suggestionsLoaded = false;
   List<String> popularSearches = [];
   List<String> recentSearches = [];
 
-  int? searchTimestamp;
   bool notFound = false;
   bool hasSearchError = false;
   String? searchErrorMessage;
@@ -35,21 +34,25 @@ class MSearchDelegate extends SearchDelegate {
   GlobalKey? globalKey;
 
   static const String recentSearchesKey = 'movieDiaryRecentSuccessfulSearches';
+  static const Duration searchDebounce = Duration(milliseconds: 450);
 
   getResultsWidget(String query, bool isResultSearch) {
     return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
-      if (query == '') {
+      final trimmedQuery = query.trim();
+
+      if (trimmedQuery.isEmpty) {
+        if (oldQuery != '') {
+          _searchRequestId++;
+        }
         oldQuery = '';
         isLoading = false;
-        setState(() {
-          notFound = false;
-          hasSearchError = false;
-          searchErrorMessage = null;
-        });
-        setState(() => foundMovies.clear());
-      } else if (query != oldQuery || isLoading) {
-        oldQuery = query;
+        notFound = false;
+        hasSearchError = false;
+        searchErrorMessage = null;
+        foundMovies.clear();
+      } else if (trimmedQuery != oldQuery) {
+        oldQuery = trimmedQuery;
         searchMovies(context, setState);
       }
 
@@ -70,12 +73,16 @@ class MSearchDelegate extends SearchDelegate {
                     ? const EdgeInsets.fromLTRB(0, 8, 0, 24)
                     : const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 children: <Widget>[
-                  SizedBox(
-                      height: 5,
-                      child: isLoading
-                          ? const LinearProgressIndicator()
-                          : const SizedBox.shrink()),
-                  if (foundMovies.isEmpty && !notFound && !hasSearchError)
+                  if (foundMovies.isEmpty &&
+                      isLoading &&
+                      query.trim().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Md3ListSkeletonCard(rows: 4),
+                  ],
+                  if (foundMovies.isEmpty &&
+                      !isLoading &&
+                      !notFound &&
+                      !hasSearchError)
                     _buildSearchLanding(context, setState),
                   if (foundMovies.isEmpty && hasSearchError)
                     _buildSearchError(context, setState),
@@ -296,19 +303,21 @@ class MSearchDelegate extends SearchDelegate {
   }
 
   searchMovies(BuildContext context, StateSetter setStateFunction) async {
-    currentQuery = query;
-    setStateFunction(() {
-      isLoading = true;
-      hasSearchError = false;
-      searchErrorMessage = null;
-    });
+    final queryToDebounce = query.trim();
+    final requestId = ++_searchRequestId;
+    isLoading = true;
+    notFound = false;
+    hasSearchError = false;
+    searchErrorMessage = null;
+    foundMovies = [];
 
     userState ??= Provider.of<UserState>(context, listen: false);
 
     // Debounce
-    final queryToDebounce = query;
-    await Future.delayed(const Duration(milliseconds: 2000));
-    if (queryToDebounce != query) return;
+    await Future.delayed(searchDebounce);
+    if (requestId != _searchRequestId || queryToDebounce != query.trim()) {
+      return;
+    }
 
     if (!userState!.isPremium &&
         userState!.aiRequestsCount % 6 == 0 &&
@@ -316,11 +325,9 @@ class MSearchDelegate extends SearchDelegate {
       AdManager.showInterstitialAd();
     }
 
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-
     dynamic moviesResponse;
 
-    final encoded = Uri.encodeFull(queryToDebounce).replaceAll('&', '%26');
+    final encoded = Uri.encodeQueryComponent(queryToDebounce);
 
     try {
       if (isAdvanced) {
@@ -329,7 +336,11 @@ class MSearchDelegate extends SearchDelegate {
         moviesResponse = await serviceAgent.search(encoded);
       }
     } catch (_) {
-      if (!context.mounted) return;
+      if (!context.mounted ||
+          requestId != _searchRequestId ||
+          queryToDebounce != query.trim()) {
+        return;
+      }
 
       setStateFunction(() {
         isLoading = false;
@@ -342,35 +353,55 @@ class MSearchDelegate extends SearchDelegate {
       return;
     }
 
-    if (searchTimestamp != null && timestamp < searchTimestamp!) return;
+    if (!context.mounted ||
+        requestId != _searchRequestId ||
+        queryToDebounce != query.trim()) {
+      return;
+    }
 
     if (moviesResponse.statusCode == 200) {
-      searchTimestamp = timestamp;
+      late final List<Movie> foundMoviesNew;
+      try {
+        final decoded = json.decode(moviesResponse.body);
+        if (decoded is! Iterable) {
+          throw const FormatException('Search response is not a list.');
+        }
+        foundMoviesNew = decoded.map((model) => Movie.fromJson(model)).toList();
+      } catch (_) {
+        setStateFunction(() {
+          isLoading = false;
+          foundMovies = [];
+          notFound = false;
+          hasSearchError = true;
+          searchErrorMessage =
+              'MovieDiary could not read the search response. Try again.';
+        });
+        return;
+      }
 
-      Iterable iterableMovies = json.decode(moviesResponse.body);
-      final foundMoviesNew = iterableMovies.map((model) {
-        return Movie.fromJson(model);
-      }).toList();
-
-      if (!context.mounted) {
+      if (!context.mounted || requestId != _searchRequestId) {
         return;
       }
 
       RatingHelper.refreshMoviesRating(foundMoviesNew, context);
 
-      setStateFunction(() => foundMovies = foundMoviesNew);
+      setStateFunction(() {
+        foundMovies = foundMoviesNew;
+        notFound = foundMoviesNew.isEmpty;
+        hasSearchError = false;
+        searchErrorMessage = null;
+        isLoading = false;
+      });
       globalKey = GlobalKey();
 
       if (ServiceAgent.showLoadingAd) userState!.increaseAiRequestsCount();
 
-      notFound = foundMovies.isEmpty;
-      hasSearchError = false;
-      searchErrorMessage = null;
       if (foundMovies.isNotEmpty) {
         await _rememberRecentSuccessfulSearch(queryToDebounce);
       }
     } else {
       setStateFunction(() {
+        isLoading = false;
         foundMovies = [];
         notFound = false;
         hasSearchError = true;
@@ -378,13 +409,14 @@ class MSearchDelegate extends SearchDelegate {
             'Search returned ${moviesResponse.statusCode}. Try again in a moment.';
       });
     }
-
-    setStateFunction(() => isLoading = currentQuery != queryToDebounce);
   }
 
   Future<void> _loadSearchSuggestions(
       BuildContext context, StateSetter setState) async {
-    setState(() => isLoadingSuggestions = true);
+    // This method is kicked off while the landing state is being built. Update
+    // the delegate field directly here so we do not schedule a rebuild from
+    // inside that build; the async completion below performs the safe rebuild.
+    isLoadingSuggestions = true;
 
     final loadedPopularSearches = <String>[];
 
@@ -395,16 +427,13 @@ class MSearchDelegate extends SearchDelegate {
         final decoded = jsonDecode(response.body);
 
         if (decoded is Iterable) {
-          loadedPopularSearches.addAll(decoded
+          loadedPopularSearches.addAll(_normalizeSuggestions(decoded
               .map((item) => item is String
                   ? item
                   : item is Map<String, dynamic>
                       ? item['query']
                       : null)
-              .whereType<String>()
-              .map((item) => item.trim())
-              .where((item) => item.isNotEmpty)
-              .take(6));
+              .whereType<String>()));
         }
       }
     } catch (_) {
@@ -437,12 +466,7 @@ class MSearchDelegate extends SearchDelegate {
         return [];
       }
 
-      return decoded
-          .whereType<String>()
-          .map((item) => item.trim())
-          .where((item) => item.isNotEmpty)
-          .take(6)
-          .toList();
+      return _normalizeSuggestions(decoded.whereType<String>());
     } catch (_) {
       return [];
     }
@@ -469,6 +493,30 @@ class MSearchDelegate extends SearchDelegate {
       key: recentSearchesKey,
       value: jsonEncode(updatedSearches),
     );
+  }
+
+  List<String> _normalizeSuggestions(Iterable<String> suggestions) {
+    final normalizedKeys = <String>{};
+    final result = <String>[];
+
+    for (final suggestion in suggestions) {
+      final display = suggestion.trim().replaceAll(RegExp(r'\s+'), ' ');
+      final key = display.toLowerCase();
+
+      if (display.length < 2 ||
+          display.length > 80 ||
+          RegExp(r'[\u0000-\u001F\u007F]').hasMatch(display) ||
+          !normalizedKeys.add(key)) {
+        continue;
+      }
+
+      result.add(display);
+      if (result.length == 6) {
+        break;
+      }
+    }
+
+    return result;
   }
 
   @override
