@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:mmobile/Enums/movie_type.dart';
+import 'package:mmobile/Enums/recommendation_discovery_level.dart';
 
 class Movie {
   final String id;
@@ -28,6 +29,8 @@ class Movie {
   int imdbVotes;
   int recommendationMatchPercent;
   String? recommendationReason;
+  DateTime? recommendationGeneratedAt;
+  RecommendationDiscoveryLevel? recommendationDiscoveryLevel;
 
   updateMovie(Movie updatedMovie) {
     if (updatedMovie.id != id) return;
@@ -55,6 +58,8 @@ class Movie {
     imdbVotes = updatedMovie.imdbVotes;
     recommendationMatchPercent = updatedMovie.recommendationMatchPercent;
     recommendationReason = updatedMovie.recommendationReason;
+    recommendationGeneratedAt = updatedMovie.recommendationGeneratedAt;
+    recommendationDiscoveryLevel = updatedMovie.recommendationDiscoveryLevel;
     updated = updatedMovie.updated;
   }
 
@@ -83,6 +88,8 @@ class Movie {
       required this.imdbVotes,
       this.recommendationMatchPercent = 0,
       this.recommendationReason,
+      this.recommendationGeneratedAt,
+      this.recommendationDiscoveryLevel,
       this.updated});
 
   factory Movie.fromJson(Map<String, dynamic> json) {
@@ -95,8 +102,10 @@ class Movie {
     var genres = json['genres'] is List
         ? json['genres'].cast<String>()
         : jsonDecode(json['genres']).cast<String>();
-    var updated =
-        json['updated'] == null ? null : DateTime.parse(json['updated']);
+    final updatedValue = '${json['updated'] ?? ''}'.trim();
+    final updated = updatedValue.isEmpty || updatedValue == 'null'
+        ? null
+        : DateTime.tryParse(updatedValue);
 
     var imdbRate =
         json['imdbRate'] > 10 ? json['imdbRate'] / 10 : json['imdbRate'] / 1;
@@ -114,7 +123,7 @@ class Movie {
         title: json['title'],
         tagline: json['tagline'],
         overview: json['overview'],
-        posterPath: json['posterPath'],
+        posterPath: '${json['posterPath'] ?? ''}'.trim(),
         genres: genres,
         releaseDate: DateTime.parse(json['releaseDate']),
         duration: json['duration'],
@@ -134,6 +143,13 @@ class Movie {
         imdbVotes: json['imdbVotes'],
         recommendationMatchPercent: json['recommendationMatchPercent'] ?? 0,
         recommendationReason: json['recommendationReason'],
+        recommendationGeneratedAt:
+            DateTime.tryParse('${json['recommendationGeneratedAt'] ?? ''}'),
+        recommendationDiscoveryLevel:
+            json['recommendationDiscoveryLevel'] == null
+                ? null
+                : RecommendationDiscoveryLevel
+                    .values[json['recommendationDiscoveryLevel']],
         updated: updated);
   }
 
@@ -160,7 +176,10 @@ class Movie {
         'imdbVotes': imdbVotes,
         'recommendationMatchPercent': recommendationMatchPercent,
         'recommendationReason': recommendationReason,
-        'updated': updated.toString()
+        'recommendationGeneratedAt':
+            recommendationGeneratedAt?.toIso8601String(),
+        'recommendationDiscoveryLevel': recommendationDiscoveryLevel?.index,
+        'updated': updated?.toIso8601String()
       };
 
   static int getMovieRating(int likedVotes, int dislikedVotes) {

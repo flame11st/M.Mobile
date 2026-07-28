@@ -24,6 +24,8 @@ import 'Shared/m_card.dart';
 import 'package:fluttericon/entypo_icons.dart';
 
 class Settings extends StatefulWidget {
+  const Settings({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return SettingsState();
@@ -39,6 +41,7 @@ class SettingsState extends State<Settings> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final removeController = TextEditingController();
+  final _scrollController = ScrollController();
 
   final _formNameKey = GlobalKey<FormState>();
   final _formEmailKey = GlobalKey<FormState>();
@@ -87,37 +90,71 @@ class SettingsState extends State<Settings> {
 
   Widget _buildSummaryMetric(
       String label, String value, Color accent, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Md3Colors.background,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Md3Colors.border),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Md3Colors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Md3Colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accent, size: 18),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTonalButton({
+    required BuildContext context,
+    required String text,
+    required VoidCallback onPressed,
+    Key? key,
+  }) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+
+    return SizedBox(
+      key: key,
+      height: textScale > 1.3 ? 56 : 44,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: Md3Colors.primarySoft,
+          foregroundColor: Md3Colors.primary,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: accent, size: 18),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Md3Colors.text,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Md3Colors.muted,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+        child: Text(
+          text,
+          maxLines: 2,
+          overflow: TextOverflow.fade,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );
@@ -171,6 +208,90 @@ class SettingsState extends State<Settings> {
     }
 
     await InAppPurchase.instance.restorePurchases();
+  }
+
+  Widget _buildRestorePurchasesCard(BuildContext context) {
+    final copy = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Md3Colors.primarySoft,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.refresh_rounded,
+            color: Md3Colors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Restore purchases',
+                style: TextStyle(
+                  color: Md3Colors.text,
+                  fontSize: 16,
+                  height: 1.31,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Reconnect premium purchases on this device if they do not appear automatically.',
+                style: TextStyle(
+                  color: Md3Colors.muted,
+                  fontSize: 14,
+                  height: 1.43,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    return Md3Card(
+      key: const Key('restorePurchasesCard'),
+      padding: const EdgeInsets.all(16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useTrailingButton = constraints.maxWidth >= 568 &&
+              MediaQuery.textScalerOf(context).scale(1) <= 1.3;
+          final restoreButton = SizedBox(
+            width: useTrailingButton ? 96 : double.infinity,
+            child: _buildTonalButton(
+              context: context,
+              text: 'Restore',
+              onPressed: () => restorePurchases(),
+            ),
+          );
+
+          if (useTrailingButton) {
+            return Row(
+              children: [
+                Expanded(child: copy),
+                const SizedBox(width: 16),
+                restoreButton,
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              copy,
+              const SizedBox(height: 12),
+              restoreButton,
+            ],
+          );
+        },
+      ),
+    );
   }
 
   changeUserInfo(
@@ -325,7 +446,21 @@ class SettingsState extends State<Settings> {
     oldPasswordController.dispose();
     newPasswordController.dispose();
     confirmPasswordController.dispose();
+    removeController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> handleActiveTabTap() async {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -357,60 +492,20 @@ class SettingsState extends State<Settings> {
       emailController.text = initialUserEmail = userState.user!.email;
     }
 
-    final headingField = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        const Row(
-          children: <Widget>[
-            Icon(Icons.settings, size: 25, color: Md3Colors.primary),
-            SizedBox(
-              width: 10,
-            ),
-            Text(
-              'Settings',
-              style: TextStyle(
-                color: Md3Colors.text,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            )
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            if (!userState.isIncognitoMode)
-              MaterialButton(
-                child: Row(
-                  children: <Widget>[
-                    Text(
-                      'Sign out',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Icon(
-                      Entypo.logout,
-                      size: 25,
-                      color: Theme.of(context).hintColor,
-                    )
-                  ],
-                ),
-                onPressed: () {
-                  userState.logout();
-                  moviesState.logout();
-
-                  AdManager.hideBanner();
-                  Navigator.of(context).pop();
-                },
-              ),
-          ],
-        ),
-      ],
+    const headingField = Text(
+      'Settings',
+      style: TextStyle(
+        color: Md3Colors.text,
+        fontSize: 32,
+        height: 1.2,
+        fontWeight: FontWeight.w900,
+      ),
     );
 
     final accountStatusCard = Md3Card(
-      padding: const EdgeInsets.all(18),
+      key: const Key('settingsAccountStatusCard'),
+      padding: const EdgeInsets.all(20),
+      borderRadius: 20,
       child: Column(
         children: [
           Row(
@@ -445,7 +540,8 @@ class SettingsState extends State<Settings> {
                           : 'Signed in${userState.user != null && userState.user!.name.isNotEmpty ? ' as ${userState.user!.name}' : ''}',
                       style: const TextStyle(
                         color: Md3Colors.text,
-                        fontSize: 16,
+                        fontSize: 20,
+                        height: 1.25,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -458,8 +554,8 @@ class SettingsState extends State<Settings> {
                               : 'Your MovieDiary account is active on this device.',
                       style: const TextStyle(
                         color: Md3Colors.muted,
-                        fontSize: 13,
-                        height: 1.35,
+                        fontSize: 15,
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -470,9 +566,36 @@ class SettingsState extends State<Settings> {
           if (userState.isIncognitoMode) ...[
             const SizedBox(height: 16),
             Md3PrimaryButton(
+              key: const Key('settingsSignInButton'),
               text: 'Sign in or create account',
               icon: Icons.login_rounded,
               onPressed: _openSignIn,
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                height: 44,
+                child: TextButton.icon(
+                  key: const Key('settingsSignOutButton'),
+                  onPressed: () {
+                    userState.logout();
+                    moviesState.logout();
+                    AdManager.hideBanner();
+                    Navigator.of(context).maybePop();
+                  },
+                  icon: const Icon(Entypo.logout, size: 18),
+                  label: const Text('Sign out'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Md3Colors.muted,
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ],
@@ -491,8 +614,11 @@ class SettingsState extends State<Settings> {
       child: Form(
         key: _formNameKey,
         child: Theme(
-            data: Theme.of(context)
-                .copyWith(primaryColor: Theme.of(context).indicatorColor),
+            data: Theme.of(context).copyWith(
+              colorScheme: Theme.of(context)
+                  .colorScheme
+                  .copyWith(primary: Md3Colors.primary),
+            ),
             child: TextFormField(
               style: Theme.of(context).textTheme.headlineSmall,
               decoration: const InputDecoration(
@@ -520,8 +646,11 @@ class SettingsState extends State<Settings> {
       child: Form(
           key: _formEmailKey,
           child: Theme(
-              data: Theme.of(context)
-                  .copyWith(primaryColor: Theme.of(context).indicatorColor),
+              data: Theme.of(context).copyWith(
+                colorScheme: Theme.of(context)
+                    .colorScheme
+                    .copyWith(primary: Md3Colors.primary),
+              ),
               child: TextFormField(
                 style: Theme.of(context).textTheme.headlineSmall,
                 validator: (value) {
@@ -534,66 +663,92 @@ class SettingsState extends State<Settings> {
     );
 
     final premiumField = Md3Card(
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: userState.isPremium
-                  ? const Color(0xffe9f7ef)
-                  : const Color(0xfffff4dc),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              userState.isPremium
-                  ? Icons.check_circle_rounded
-                  : Icons.workspace_premium_rounded,
-              color:
-                  userState.isPremium ? Md3Colors.success : Md3Colors.warning,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Premium',
-                  style: TextStyle(
-                    color: Md3Colors.text,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useTrailingButton = constraints.maxWidth >= 480 &&
+              MediaQuery.textScalerOf(context).scale(1) <= 1.3;
+          final copy = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: userState.isPremium
+                      ? const Color(0xffe9f7ef)
+                      : const Color(0xfffff4dc),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 4),
-                Text(
+                child: Icon(
                   userState.isPremium
-                      ? 'Premium is active on this device.'
-                      : 'Support MovieDiary and remove ads.',
-                  style: const TextStyle(
-                    color: Md3Colors.muted,
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
+                      ? Icons.check_circle_rounded
+                      : Icons.workspace_premium_rounded,
+                  color: userState.isPremium
+                      ? Md3Colors.success
+                      : Md3Colors.warning,
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 124,
-            child: MButton(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Premium',
+                      style: TextStyle(
+                        color: Md3Colors.text,
+                        fontSize: 16,
+                        height: 1.31,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      userState.isPremium
+                          ? 'Premium is active on this device.'
+                          : 'Support MovieDiary and remove ads.',
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 14,
+                        height: 1.43,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final plansButton = SizedBox(
+            width: useTrailingButton ? 124 : double.infinity,
+            child: _buildTonalButton(
+              context: context,
               text: userState.isPremium ? 'Included' : 'View plans',
-              onPressedCallback: () {
+              onPressed: () {
                 Navigator.of(context)
                     .push(RouteHelper.createRoute(() => Premium()));
               },
-              active: true,
-              backgroundColor: Theme.of(context).cardColor,
             ),
-          ),
-        ],
+          );
+
+          if (useTrailingButton) {
+            return Row(
+              children: [
+                Expanded(child: copy),
+                const SizedBox(width: 12),
+                plansButton,
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              copy,
+              const SizedBox(height: 12),
+              plansButton,
+            ],
+          );
+        },
       ),
     );
 
@@ -621,17 +776,53 @@ class SettingsState extends State<Settings> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildSummaryMetric('Watchlist', '$watchlistCount',
-                  Md3Colors.primary, Icons.bookmark_rounded),
-              const SizedBox(width: 10),
-              _buildSummaryMetric('Viewed', '$viewedCount', Md3Colors.success,
-                  Icons.visibility_rounded),
-              const SizedBox(width: 10),
-              _buildSummaryMetric(
-                  'Liked', '$likedCount', Md3Colors.warning, Icons.favorite),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackMetrics = constraints.maxWidth < 300 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
+              final metrics = [
+                _buildSummaryMetric(
+                  'Watchlist',
+                  '$watchlistCount',
+                  Md3Colors.primary,
+                  Icons.bookmark_rounded,
+                ),
+                _buildSummaryMetric(
+                  'Viewed',
+                  '$viewedCount',
+                  Md3Colors.success,
+                  Icons.visibility_rounded,
+                ),
+                _buildSummaryMetric(
+                  'Liked',
+                  '$likedCount',
+                  Md3Colors.warning,
+                  Icons.favorite,
+                ),
+              ];
+
+              if (stackMetrics) {
+                return Column(
+                  children: [
+                    metrics[0],
+                    const SizedBox(height: 8),
+                    metrics[1],
+                    const SizedBox(height: 8),
+                    metrics[2],
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: metrics[0]),
+                  const SizedBox(width: 10),
+                  Expanded(child: metrics[1]),
+                  const SizedBox(width: 10),
+                  Expanded(child: metrics[2]),
+                ],
+              );
+            },
           ),
           if (userMoviesCount > 0) ...[
             const SizedBox(height: 14),
@@ -698,8 +889,11 @@ class SettingsState extends State<Settings> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               Theme(
-                  data: Theme.of(context)
-                      .copyWith(primaryColor: Theme.of(context).indicatorColor),
+                  data: Theme.of(context).copyWith(
+                    colorScheme: Theme.of(context)
+                        .colorScheme
+                        .copyWith(primary: Md3Colors.primary),
+                  ),
                   child: TextFormField(
                     style: Theme.of(context).textTheme.headlineSmall,
                     validator: (value) => oldPasswordController.text.isNotEmpty
@@ -717,8 +911,11 @@ class SettingsState extends State<Settings> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               Theme(
-                  data: Theme.of(context)
-                      .copyWith(primaryColor: Theme.of(context).indicatorColor),
+                  data: Theme.of(context).copyWith(
+                    colorScheme: Theme.of(context)
+                        .colorScheme
+                        .copyWith(primary: Md3Colors.primary),
+                  ),
                   child: TextFormField(
                     style: Theme.of(context).textTheme.headlineSmall,
                     validator: (value) {
@@ -742,8 +939,11 @@ class SettingsState extends State<Settings> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               Theme(
-                  data: Theme.of(context)
-                      .copyWith(primaryColor: Theme.of(context).indicatorColor),
+                  data: Theme.of(context).copyWith(
+                    colorScheme: Theme.of(context)
+                        .colorScheme
+                        .copyWith(primary: Md3Colors.primary),
+                  ),
                   child: TextFormField(
                     style: Theme.of(context).textTheme.headlineSmall,
                     validator: (value) {
@@ -826,105 +1026,44 @@ class SettingsState extends State<Settings> {
             appBar: AppBar(
               backgroundColor: Md3Colors.background,
               foregroundColor: Md3Colors.text,
+              surfaceTintColor: Colors.transparent,
               elevation: 0,
               title: headingField,
             ),
             body: Container(
               key: globalKey,
               child: SingleChildScrollView(
+                controller: _scrollController,
                 child: Container(
-                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 104),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      8,
+                      16,
+                      Md3NavigationMetrics.contentBottomInset(context) + 24,
+                    ),
                     color: Md3Colors.background,
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
                         accountStatusCard,
                         if (!userState.isIncognitoMode &&
-                            userState.user != null &&
-                            userState.user!.name.isNotEmpty)
-                          nameField,
-                        if (!userState.isIncognitoMode &&
-                            userState.user != null &&
-                            userState.user!.email.isNotEmpty &&
-                            !userState.user!.isIncognito)
-                          emailField,
-                        if (!userState.isIncognitoMode &&
                             userState.user != null) ...[
                           _buildSectionTitle('Account'),
+                          if (userState.user!.name.isNotEmpty) nameField,
+                          if (userState.user!.email.isNotEmpty &&
+                              !userState.user!.isIncognito)
+                            emailField,
                           if (!userState.isSignedInWithGoogle &&
                               !userState.user!.isIncognito)
                             changePasswordField,
                           if (!userState.user!.isIncognito) removeUserField,
                         ],
-                        _buildSectionTitle(
-                          'Preferences',
-                          subtitle:
-                              'Keep these tools lightweight so Discover and My Movies stay central.',
-                        ),
-                        premiumField,
-                        _buildSectionTitle(
-                          'Movie activity',
-                          subtitle:
-                              'Watchlist, Viewed, and Liked stay visible here without taking over the app.',
-                        ),
+                        _buildSectionTitle('Movie activity'),
                         userMoviesCountField,
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        Md3Card(
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xffe8f0fb),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: const Icon(
-                                  Icons.refresh_rounded,
-                                  color: Md3Colors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Restore purchases',
-                                      style: TextStyle(
-                                        color: Md3Colors.text,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Reconnect premium purchases on this device if they do not appear automatically.',
-                                      style: TextStyle(
-                                        color: Md3Colors.muted,
-                                        fontSize: 13,
-                                        height: 1.35,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              SizedBox(
-                                width: 104,
-                                child: MButton(
-                                  text: 'Restore',
-                                  onPressedCallback: () => restorePurchases(),
-                                  active: true,
-                                  height: 40,
-                                  backgroundColor: Theme.of(context).cardColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildSectionTitle('Purchases'),
+                        premiumField,
+                        const SizedBox(height: 12),
+                        _buildRestorePurchasesCard(context),
                       ],
                     )),
               ),

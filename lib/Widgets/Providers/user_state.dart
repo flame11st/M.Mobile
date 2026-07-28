@@ -2,24 +2,28 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mmobile/Objects/launch_snapshot.dart';
 import 'package:mmobile/Objects/user.dart';
 import 'package:mmobile/Services/service_agent.dart';
 
-class OnboardingStage {
-  static const none = 'None';
-  static const rating = 'Rating';
-  static const completed = 'Completed';
-  static const skipped = 'Skipped';
-}
+export 'package:mmobile/Objects/launch_snapshot.dart'
+    show LaunchDestination, OnboardingStage;
 
 class UserState with ChangeNotifier {
-  UserState() {
-    setInitialData();
+  UserState({
+    FlutterSecureStorage? storage,
+    ServiceAgent? serviceAgent,
+  })  : storage = storage ?? const FlutterSecureStorage(),
+        serviceAgent = serviceAgent ?? ServiceAgent() {
+    initialization = setInitialData();
   }
 
   static const _authorizationCheckTimeout = Duration(seconds: 5);
-  final storage = const FlutterSecureStorage();
-  final serviceAgent = ServiceAgent();
+  static const launchSnapshotKey = 'launchSnapshotV1';
+  final FlutterSecureStorage storage;
+  final ServiceAgent serviceAgent;
+  late final Future<void> initialization;
+  Future<void> _snapshotWrite = Future.value();
 
   bool isUserAuthorizedOrInIncognitoMode = false;
   bool isAppLoaded = false;
@@ -40,75 +44,70 @@ class UserState with ChangeNotifier {
   bool onboardingSkipped = false;
   String onboardingStage = OnboardingStage.none;
   List<String> onboardingSelectedGenres = [];
+  int? cachedRatedMoviesCount;
+  DateTime? lastSuccessfulLibraryRefreshAt;
   int aiRequestsCount = 2;
 
-  void setInitialData() async {
-    String? storedToken;
-    String? storedRefreshToken;
-    String? storedUserId;
-    String? storedUserName;
-    String? storedSignedInWithGoogle;
-    String? storedUser;
-    String? storedIsIncognitoMode;
-    String? storedPremiumPurchasedIncognito;
-    String? storedAppReviewRequested;
-    String? storedOnboardingStarted;
-    String? storedOnboardingCompleted;
-    String? storedOnboardingSkipped;
-    String? storedOnboardingStage;
-    String? storedOnboardingSelectedGenres;
-
+  Future<void> setInitialData() async {
+    Map<String, String> storedValues = const {};
     try {
-      storedToken = await storage.read(key: 'token');
-      storedRefreshToken = await storage.read(key: 'refreshToken');
-      storedUserId = await storage.read(key: 'userId');
-      storedUserName = await storage.read(key: 'userName');
-      storedSignedInWithGoogle =
-          await storage.read(key: 'isSignedInWithGoogle');
-      storedIsIncognitoMode = await storage.read(key: 'isIncognitoMode');
-      storedPremiumPurchasedIncognito =
-          await storage.read(key: 'premiumPurchasedIncognito');
-      storedAppReviewRequested = await storage.read(key: "appReviewRequested");
-      storedOnboardingStarted = await storage.read(key: 'onboardingStarted');
-      storedOnboardingCompleted =
-          await storage.read(key: 'onboardingCompleted');
-      storedOnboardingSkipped = await storage.read(key: 'onboardingSkipped');
-      storedOnboardingStage = await storage.read(key: 'onboardingStage');
-      storedOnboardingSelectedGenres =
-          await storage.read(key: 'onboardingSelectedGenres');
-      storedUser = await storage.read(key: 'user');
-    } catch (on) {
-      await clearStorage();
+      storedValues = await storage.readAll();
+    } catch (error) {
+      debugPrint('Secure startup state could not be read: $error');
     }
 
-    appReviewRequested = storedAppReviewRequested == "true";
-    onboardingStarted = storedOnboardingStarted == "true";
-    onboardingCompleted = storedOnboardingCompleted == "true";
-    onboardingSkipped = storedOnboardingSkipped == "true";
-    onboardingStage = storedOnboardingStage ?? _stageFromLegacyFlags();
-    if (storedOnboardingSelectedGenres != null) {
-      final genres = jsonDecode(storedOnboardingSelectedGenres);
-      if (genres is Iterable) {
-        onboardingSelectedGenres = genres.map((genre) => '$genre').toList();
+    final snapshot = _readLaunchSnapshot(storedValues[launchSnapshotKey]);
+
+    appReviewRequested = storedValues['appReviewRequested'] == 'true';
+    onboardingStarted = storedValues['onboardingStarted'] == 'true';
+    onboardingCompleted = storedValues['onboardingCompleted'] == 'true';
+    onboardingSkipped = storedValues['onboardingSkipped'] == 'true';
+    onboardingStage = OnboardingStage.normalize(
+      snapshot?.onboardingStage ??
+          storedValues['onboardingStage'] ??
+          _stageFromLegacyFlags(),
+    );
+    cachedRatedMoviesCount = snapshot?.ratedMoviesCount;
+    lastSuccessfulLibraryRefreshAt = snapshot?.lastSuccessfulLibraryRefreshAt;
+
+    final storedGenres = storedValues['onboardingSelectedGenres'];
+    if (storedGenres != null) {
+      try {
+        final genres = jsonDecode(storedGenres);
+        if (genres is Iterable) {
+          onboardingSelectedGenres = genres.map((genre) => '$genre').toList();
+        }
+      } catch (error) {
+        debugPrint('Stored onboarding genres were ignored: $error');
       }
     }
 
-    token = storedToken;
-    refreshToken = storedRefreshToken;
-    userId = storedUserId;
-    userName = storedUserName;
-    isSignedInWithGoogle = storedSignedInWithGoogle == "true";
+    token = storedValues['token'];
+    refreshToken = storedValues['refreshToken'];
+    userId = storedValues['userId'] ?? snapshot?.userId;
+    userName = storedValues['userName'];
+    isSignedInWithGoogle = storedValues['isSignedInWithGoogle'] == 'true';
 
+    final storedUser = storedValues['user'];
     if (storedUser != null) {
-      final userJson = jsonDecode(storedUser);
-      user = User.fromJson(userJson);
+      try {
+        final userJson = jsonDecode(storedUser);
+        if (userJson is Map<String, dynamic>) {
+          user = User.fromJson(userJson);
+        }
+      } catch (error) {
+        debugPrint('Stored user profile was ignored: $error');
+      }
     }
 
     ServiceAgent.state = this;
 
-    if (storedIsIncognitoMode == "true") {
+    final storedIncognitoMode = storedValues['isIncognitoMode'] == 'true' ||
+        snapshot?.isIncognitoMode == true;
+    if (storedIncognitoMode) {
       isIncognitoMode = true;
-      premiumPurchasedIncognito = storedPremiumPurchasedIncognito == "true";
+      premiumPurchasedIncognito =
+          storedValues['premiumPurchasedIncognito'] == 'true';
 
       if (_hasStoredCredentials()) {
         isUserAuthorizedOrInIncognitoMode = true;
@@ -118,27 +117,26 @@ class UserState with ChangeNotifier {
       }
 
       isAppLoaded = true;
+      await _persistLaunchSnapshot();
       notifyListeners();
       return;
     }
 
     if (_hasStoredCredentials()) {
-      try {
-        var authorizationResponse = await serviceAgent
-            .checkAuthorization()
-            .timeout(_authorizationCheckTimeout);
-        if (authorizationResponse.statusCode == 200) {
-          isUserAuthorizedOrInIncognitoMode = true;
-        }
-      } catch (error) {
-        debugPrint('Authorization check skipped during startup: $error');
-      }
+      isUserAuthorizedOrInIncognitoMode = true;
+      unawaited(_verifyAuthorizationInBackground());
     }
 
     isAppLoaded = true;
-
+    await _persistLaunchSnapshot();
     notifyListeners();
   }
+
+  LaunchDestination get launchDestination => resolveLaunchDestination(
+        hasAuthenticatedSession: !isIncognitoMode && _hasStoredCredentials(),
+        hasAnonymousProfile: isIncognitoMode && _hasStoredCredentials(),
+        onboardingStage: onboardingStage,
+      );
 
   get isPremium {
     var result = user != null
@@ -158,6 +156,7 @@ class UserState with ChangeNotifier {
     await storage.write(key: "user", value: jsonEncode(user));
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
+    await _persistLaunchSnapshot();
     notifyListeners();
   }
 
@@ -201,8 +200,8 @@ class UserState with ChangeNotifier {
       onboardingStage = OnboardingStage.none;
     }
 
+    await _persistOnboardingState();
     notifyListeners();
-    _persistOnboardingState();
   }
 
   Future<void> setOnboardingStarted(bool value) async {
@@ -214,6 +213,7 @@ class UserState with ChangeNotifier {
     await storage.write(
         key: 'onboardingStarted', value: onboardingStarted.toString());
     await storage.write(key: 'onboardingStage', value: onboardingStage);
+    await _persistLaunchSnapshot();
 
     notifyListeners();
   }
@@ -228,22 +228,22 @@ class UserState with ChangeNotifier {
       onboardingStage = OnboardingStage.none;
     }
 
+    await _persistOnboardingState();
     notifyListeners();
-    _persistOnboardingState();
   }
 
   Future<void> setOnboardingStage(String stage) async {
-    onboardingStage = stage;
+    onboardingStage = OnboardingStage.normalize(stage);
     onboardingStarted = stage != OnboardingStage.none;
     onboardingCompleted = stage == OnboardingStage.completed;
     onboardingSkipped = stage == OnboardingStage.skipped;
 
+    await _persistOnboardingState();
     notifyListeners();
-    _persistOnboardingState();
   }
 
-  void _persistOnboardingState() {
-    unawaited(Future.wait([
+  Future<void> _persistOnboardingState() async {
+    await Future.wait([
       storage.write(key: 'onboardingStage', value: onboardingStage),
       storage.write(
           key: 'onboardingStarted', value: onboardingStarted.toString()),
@@ -251,10 +251,8 @@ class UserState with ChangeNotifier {
           key: 'onboardingCompleted', value: onboardingCompleted.toString()),
       storage.write(
           key: 'onboardingSkipped', value: onboardingSkipped.toString()),
-    ]).catchError((error) {
-      debugPrint('Onboarding state persistence failed: $error');
-      return <void>[];
-    }));
+      _persistLaunchSnapshot(),
+    ]);
   }
 
   Future<void> setOnboardingSelectedGenres(List<String> genres) async {
@@ -287,6 +285,7 @@ class UserState with ChangeNotifier {
 
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
+    await _persistLaunchSnapshot();
 
     notifyListeners();
 
@@ -307,6 +306,7 @@ class UserState with ChangeNotifier {
 
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
+    await _persistLaunchSnapshot();
   }
 
   Future<void> processLoginResponse(
@@ -323,6 +323,7 @@ class UserState with ChangeNotifier {
         isSignedInWithThirdPartyServices, showTutorial);
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
+    await _persistLaunchSnapshot();
 
     try {
       final userInfoResponse = await serviceAgent.getUserInfo(userId);
@@ -364,6 +365,8 @@ class UserState with ChangeNotifier {
     await storage.delete(key: 'onboardingSkipped');
     await storage.delete(key: 'onboardingStage');
     await storage.delete(key: 'onboardingSelectedGenres');
+    await _snapshotWrite;
+    await storage.delete(key: launchSnapshotKey);
   }
 
   bool _hasStoredCredentials() {
@@ -391,6 +394,7 @@ class UserState with ChangeNotifier {
     await storage.delete(key: 'isSignedInWithGoogle');
     await storage.delete(key: 'isIncognitoMode');
     await storage.delete(key: 'user');
+    await _persistLaunchSnapshot();
   }
 
   Future<void> setTokens(String accessToken, String refreshToken) async {
@@ -399,6 +403,7 @@ class UserState with ChangeNotifier {
 
     await storage.write(key: 'token', value: token);
     await storage.write(key: 'refreshToken', value: refreshToken);
+    await _persistLaunchSnapshot();
   }
 
   Future<void> setInitialUserData(
@@ -424,12 +429,90 @@ class UserState with ChangeNotifier {
     await storage.write(key: 'refreshToken', value: refreshToken);
     await storage.write(
         key: 'isSignedInWithGoogle', value: isSignedInWithGoogle.toString());
+    await _persistLaunchSnapshot();
   }
 
   changeShowTutorialField(bool value) {
     showTutorial = value;
 
     notifyListeners();
+  }
+
+  Future<void> setCachedRatedMoviesCount(int value) async {
+    final normalizedValue = value < 0 ? 0 : value;
+    if (cachedRatedMoviesCount == normalizedValue) {
+      return;
+    }
+
+    cachedRatedMoviesCount = normalizedValue;
+    await _persistLaunchSnapshot();
+    notifyListeners();
+  }
+
+  Future<void> markLibraryRefreshSucceeded(int ratedMoviesCount) async {
+    cachedRatedMoviesCount = ratedMoviesCount < 0 ? 0 : ratedMoviesCount;
+    lastSuccessfulLibraryRefreshAt = DateTime.now().toUtc();
+    await _persistLaunchSnapshot();
+    notifyListeners();
+  }
+
+  Future<void> _verifyAuthorizationInBackground() async {
+    try {
+      final response = await serviceAgent
+          .checkAuthorization()
+          .timeout(_authorizationCheckTimeout);
+      if (response.statusCode != 200) {
+        debugPrint(
+          'Stored session verification returned ${response.statusCode}; '
+          'the cached session remains available until an explicit sign-in '
+          'decision is required.',
+        );
+      }
+    } catch (error) {
+      debugPrint('Stored session verification deferred: $error');
+    }
+  }
+
+  LaunchSnapshot? _readLaunchSnapshot(String? encodedSnapshot) {
+    if (encodedSnapshot == null || encodedSnapshot.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(encodedSnapshot);
+      if (decoded is Map<String, dynamic>) {
+        return LaunchSnapshot.fromJson(decoded);
+      }
+    } catch (error) {
+      debugPrint('Stored launch snapshot was ignored: $error');
+    }
+
+    return null;
+  }
+
+  Future<void> _persistLaunchSnapshot() {
+    final encodedSnapshot = jsonEncode(
+      LaunchSnapshot(
+        userId: userId,
+        isIncognitoMode: isIncognitoMode,
+        hasCredentials: _hasStoredCredentials(),
+        onboardingStage: onboardingStage,
+        ratedMoviesCount: cachedRatedMoviesCount,
+        lastSuccessfulLibraryRefreshAt: lastSuccessfulLibraryRefreshAt,
+      ),
+    );
+
+    _snapshotWrite = _snapshotWrite.catchError((error) {
+      debugPrint('Previous launch snapshot write failed: $error');
+    }).then((_) async {
+      try {
+        await storage.write(key: launchSnapshotKey, value: encodedSnapshot);
+      } catch (error) {
+        debugPrint('Launch snapshot persistence failed: $error');
+      }
+    });
+
+    return _snapshotWrite;
   }
 
   String _stageFromLegacyFlags() {

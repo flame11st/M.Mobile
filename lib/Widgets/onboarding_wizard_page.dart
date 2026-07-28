@@ -19,10 +19,16 @@ import 'package:provider/provider.dart';
 
 class OnboardingWizardPage extends StatefulWidget {
   final VoidCallback onFinished;
+  final VoidCallback? onExitStarted;
+  final VoidCallback? onExitCompleted;
+  final WidgetBuilder? recommendationsBuilder;
 
   const OnboardingWizardPage({
     super.key,
     required this.onFinished,
+    this.onExitStarted,
+    this.onExitCompleted,
+    this.recommendationsBuilder,
   });
 
   @override
@@ -32,9 +38,11 @@ class OnboardingWizardPage extends StatefulWidget {
 class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   final serviceAgent = ServiceAgent();
   final skippedIds = <String>{};
-  int ratedInSession = 0;
+  final ScrollController _scrollController = ScrollController();
   bool isRetryingStarterDeck = false;
   bool isSavingRating = false;
+  bool isCompleting = false;
+  String? _expandedSynopsisMovieId;
 
   static const targetRatings = 10;
 
@@ -52,6 +60,12 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         userState.setOnboardingStage(OnboardingStage.rating);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -88,7 +102,12 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         child: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 132),
+              padding: EdgeInsets.fromLTRB(
+                Md3Layout.pageHorizontalInset(context),
+                18,
+                Md3Layout.pageHorizontalInset(context),
+                132,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -233,174 +252,222 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   Widget _buildRatingStep(Movie movie, int profileCount, int remaining) {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final sourceLabel = _starterSourceLabel(movie, moviesState);
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final isCompact = viewportWidth <= 390;
+    final posterWidth = isCompact ? 92.0 : 112.0;
+    final posterHeight = isCompact ? 138.0 : 168.0;
+    final trayClearance = textScale >= 1.6 ? 184.0 : 160.0;
+    final synopsisExpanded = _expandedSynopsisMovieId == movie.id;
 
     return Scaffold(
       backgroundColor: Md3Colors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildRatingHeader(profileCount),
-              const SizedBox(height: 16),
-              Md3Card(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Md3MoviePoster(
-                          movie: movie,
-                          width: 112,
-                          height: 168,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _scrollController,
+              padding: EdgeInsets.fromLTRB(16, 8, 16, trayClearance),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildRatingHeader(profileCount),
+                  const SizedBox(height: 16),
+                  KeyedSubtree(
+                    key: ValueKey(movie.id),
+                    child: Md3Card(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildSourcePill(sourceLabel),
-                              const SizedBox(height: 10),
-                              Text(
-                                movie.title,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Md3Colors.text,
-                                  fontSize: 24,
-                                  height: 1.08,
-                                  fontWeight: FontWeight.w900,
-                                ),
+                              Md3MoviePoster(
+                                movie: movie,
+                                width: posterWidth,
+                                height: posterHeight,
                               ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  if (movie.releaseDate.year > 1)
-                                    Md3Chip(
-                                        text:
-                                            movie.releaseDate.year.toString()),
-                                  if (movie.duration > 0)
-                                    Md3Chip(text: '${movie.duration} min'),
-                                ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSourcePill(sourceLabel),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      movie.title,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Md3Colors.text,
+                                        fontSize: isCompact ? 21 : 24,
+                                        height: isCompact ? 1.19 : 1.08,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _candidateMetadata(movie),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Md3Colors.muted,
+                                        fontSize: 13,
+                                        height: 1.38,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    if (movie.genres.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        movie.genres.take(3).join(' / '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Md3Colors.muted,
-                          fontSize: 15,
-                          height: 1.3,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                    if (movie.overview.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        movie.overview,
-                        style: const TextStyle(
-                          color: Md3Colors.muted,
-                          fontSize: 16,
-                          height: 1.36,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    _buildRatingControls(movie),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '$remaining left in this starter deck',
+                          if (movie.genres.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              movie.genres.take(4).join(' / '),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Md3Colors.muted,
+                                fontSize: 14,
+                                height: 1.4,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                          if (movie.overview.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            AnimatedSize(
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 180),
+                              curve: Curves.easeOutCubic,
+                              alignment: Alignment.topCenter,
+                              child: Text(
+                                movie.overview,
+                                maxLines: synopsisExpanded ? null : 3,
+                                overflow: synopsisExpanded
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Md3Colors.muted,
+                                  fontSize: 15,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(44, 44),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _expandedSynopsisMovieId =
+                                        synopsisExpanded ? null : movie.id;
+                                  });
+                                },
+                                child: Text(
+                                  synopsisExpanded ? 'Less' : 'More',
+                                  style: const TextStyle(
+                                    color: Md3Colors.primary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                          Text(
+                            remaining <= 1
+                                ? 'You can change your rating later'
+                                : '$remaining choices ready. You can change your rating later.',
                             style: const TextStyle(
                               color: Md3Colors.muted,
                               fontSize: 13,
-                              fontWeight: FontWeight.w800,
+                              height: 1.38,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
-                        const Text(
-                          'Change later',
-                          style: TextStyle(
-                            color: Md3Colors.muted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: _buildRatingTray(movie),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  String _candidateMetadata(Movie movie) {
+    final values = <String>[
+      if (movie.releaseDate.year > 1) movie.releaseDate.year.toString(),
+      movie.movieType == MovieType.tv ? 'TV' : 'Movie',
+      if (movie.duration > 0) '${movie.duration} min',
+    ];
+
+    return values.join('  /  ');
+  }
+
   Widget _buildRatingHeader(int profileCount) {
     final progress = (profileCount / targetRatings).clamp(0.0, 1.0);
-    final remaining = (targetRatings - profileCount).clamp(0, targetRatings);
 
-    return Md3Card(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Rate Movies',
-                      style: TextStyle(
-                        color: Md3Colors.text,
-                        fontSize: 30,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'A few ratings unlock your first taste profile.',
-                      style: TextStyle(
-                        color: Md3Colors.muted,
-                        fontSize: 15,
-                        height: 1.32,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Rate Movies',
+                  style: TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 28,
+                    height: 1.21,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                onPressed: isCompleting ? null : _openLogin,
+                child: const Text(
+                  'Sign in',
+                  style: TextStyle(
+                    color: Md3Colors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               PopupMenuButton<String>(
-                tooltip: 'Onboarding options',
+                tooltip: 'More onboarding options',
                 icon: const Icon(Icons.more_horiz_rounded),
+                constraints: const BoxConstraints(minWidth: 180),
                 color: Md3Colors.surface,
                 onSelected: (value) {
                   if (value == 'skip') {
                     _skipOnboarding();
-                  } else if (value == 'signin') {
-                    _openLogin();
                   }
                 },
                 itemBuilder: (context) => const [
@@ -408,52 +475,43 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                     value: 'skip',
                     child: Text('Skip for now'),
                   ),
-                  PopupMenuItem(
-                    value: 'signin',
-                    child: Text('Sign in'),
-                  ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Text(
-                '$profileCount/$targetRatings',
-                style: const TextStyle(
-                  color: Md3Colors.primary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    minHeight: 7,
-                    value: progress,
-                    backgroundColor: Md3Colors.surfaceMuted,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Md3Colors.primary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                remaining == 0 ? 'Ready' : '$remaining left',
-                style: const TextStyle(
-                  color: Md3Colors.muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+        ),
+        const Text(
+          'Rate 10 movies to build your taste profile.',
+          style: TextStyle(
+            color: Md3Colors.muted,
+            fontSize: 15,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '$profileCount of $targetRatings movies rated',
+          style: const TextStyle(
+            color: Md3Colors.text,
+            fontSize: 14,
+            height: 1.29,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            minHeight: 6,
+            value: progress,
+            backgroundColor: const Color(0xffdfe5eb),
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              Md3Colors.primary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -468,66 +526,104 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         child: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 132),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Md3Card(
+              padding: EdgeInsets.fromLTRB(
+                Md3Layout.pageHorizontalInset(context),
+                24,
+                Md3Layout.pageHorizontalInset(context),
+                148,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Md3Card(
+                    padding: const EdgeInsets.all(24),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: Md3Colors.success,
-                          size: 48,
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(
+                            color: Color(0xffe5f3eb),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check_rounded,
+                            color: Md3Colors.success,
+                            size: 28,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           profileCount >= targetRatings
                               ? 'Taste profile ready'
                               : 'Your taste profile has started',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Md3Colors.text,
                             fontSize: 28,
-                            height: 1.08,
-                            fontWeight: FontWeight.w900,
+                            height: 1.21,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           deckEmpty
-                              ? 'No more starter movies are available right now. Discover will still keep the Rate Movies CTA ready.'
+                              ? 'No more starter movies are available right now. You can keep building your profile from Discover.'
                               : 'We have enough ratings to generate better recommendations.',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Md3Colors.muted,
-                            fontSize: 15,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            height: 1.44,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Md3Colors.primarySoft,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '$profileCount movies rated',
+                            style: const TextStyle(
+                              color: Md3Colors.primary,
+                              fontSize: 14,
+                              height: 1.29,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildProgressCard(profileCount),
-                ],
+                ),
               ),
             ),
             Align(
               alignment: Alignment.bottomCenter,
               child: _buildBottomBar(
-                primaryText: profileCount >= targetRatings
-                    ? 'Get Recommendations'
-                    : 'Go to Discover',
+                primaryText: isCompleting
+                    ? 'Saving your profile'
+                    : profileCount >= targetRatings
+                        ? 'Get Recommendations'
+                        : 'Go to Discover',
                 primaryIcon: profileCount >= targetRatings
                     ? Icons.bolt_rounded
                     : Icons.explore_rounded,
-                onPrimary: profileCount >= targetRatings
-                    ? _openRecommendations
-                    : _finishOnboarding,
+                onPrimary: isCompleting
+                    ? null
+                    : profileCount >= targetRatings
+                        ? _openRecommendations
+                        : _finishOnboarding,
                 secondaryText:
                     profileCount >= targetRatings ? 'Go to Discover' : 'Back',
-                onSecondary: _finishOnboarding,
+                onSecondary: isCompleting ? null : _finishOnboarding,
               ),
             ),
           ],
@@ -596,63 +692,212 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     );
   }
 
-  Widget _buildRatingControls(Movie movie) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Md3Colors.surfaceMuted,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Md3Colors.border),
+  Widget _buildRatingTray(Movie movie) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final useWrappedLayout = textScale >= 1.6;
+
+    return Semantics(
+      container: true,
+      label: 'Rating actions for ${movie.title}',
+      child: Md3LiquidGlass(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        borderRadius: BorderRadius.circular(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (useWrappedLayout) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _ratingAction(
+                      movie: movie,
+                      label: 'Liked',
+                      icon: Icons.favorite_rounded,
+                      feedbackColor: const Color(0xff287a50),
+                      height: 64,
+                      onPressed: isSavingRating
+                          ? null
+                          : () => _rate(movie, MovieRate.liked),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ratingAction(
+                      movie: movie,
+                      label: 'Okay',
+                      icon: Icons.sentiment_satisfied_alt_rounded,
+                      feedbackColor: const Color(0xffa96716),
+                      height: 64,
+                      onPressed: isSavingRating
+                          ? null
+                          : () => _rate(movie, MovieRate.okay),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ratingAction(
+                      movie: movie,
+                      label: 'Disliked',
+                      icon: Icons.thumb_down_alt_rounded,
+                      feedbackColor: const Color(0xffb93a46),
+                      height: 64,
+                      onPressed: isSavingRating
+                          ? null
+                          : () => _rate(movie, MovieRate.notLiked),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _unseenAction(movie, height: 64),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _ratingAction(
+                      movie: movie,
+                      label: 'Liked',
+                      icon: Icons.favorite_rounded,
+                      feedbackColor: const Color(0xff287a50),
+                      height: 52,
+                      onPressed: isSavingRating
+                          ? null
+                          : () => _rate(movie, MovieRate.liked),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ratingAction(
+                      movie: movie,
+                      label: 'Okay',
+                      icon: Icons.sentiment_satisfied_alt_rounded,
+                      feedbackColor: const Color(0xffa96716),
+                      height: 52,
+                      onPressed: isSavingRating
+                          ? null
+                          : () => _rate(movie, MovieRate.okay),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ratingAction(
+                      movie: movie,
+                      label: 'Disliked',
+                      icon: Icons.thumb_down_alt_rounded,
+                      feedbackColor: const Color(0xffb93a46),
+                      height: 52,
+                      onPressed: isSavingRating
+                          ? null
+                          : () => _rate(movie, MovieRate.notLiked),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _unseenAction(movie, height: 44),
+            ],
+          ],
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _ratingButton(
-                  'Liked it',
-                  Icons.favorite_rounded,
-                  Md3Colors.success,
-                  isSavingRating ? null : () => _rate(movie, MovieRate.liked),
-                ),
+    );
+  }
+
+  Widget _ratingAction({
+    required Movie movie,
+    required String label,
+    required IconData icon,
+    required Color feedbackColor,
+    required double height,
+    required VoidCallback? onPressed,
+  }) {
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: '$label ${movie.title}',
+      child: SizedBox(
+        height: height,
+        child: FilledButton(
+          style: ButtonStyle(
+            padding: const WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: 4),
+            ),
+            backgroundColor: const WidgetStatePropertyAll(
+              Color(0xf2ffffff),
+            ),
+            foregroundColor: const WidgetStatePropertyAll(Md3Colors.primary),
+            overlayColor: WidgetStatePropertyAll(
+              feedbackColor.withValues(alpha: 0.16),
+            ),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: const BorderSide(color: Md3Colors.border),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ratingButton(
-                  'It was okay',
-                  Icons.sentiment_satisfied_alt_rounded,
-                  Md3Colors.warning,
-                  isSavingRating ? null : () => _rate(movie, MovieRate.okay),
+            ),
+            elevation: const WidgetStatePropertyAll(0),
+          ),
+          onPressed: onPressed,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.29,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _ratingButton(
-                  "Didn't like it",
-                  Icons.block_rounded,
-                  Md3Colors.danger,
-                  isSavingRating
-                      ? null
-                      : () => _rate(movie, MovieRate.notLiked),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ratingButton(
-                  "Haven't Seen",
-                  Icons.skip_next_rounded,
-                  Md3Colors.muted,
-                  isSavingRating ? null : () => _skip(movie),
-                ),
-              ),
-            ],
+        ),
+      ),
+    );
+  }
+
+  Widget _unseenAction(Movie movie, {required double height}) {
+    return Semantics(
+      button: true,
+      enabled: !isSavingRating,
+      label: "Haven't seen ${movie.title}",
+      child: SizedBox(
+        width: double.infinity,
+        height: height,
+        child: TextButton.icon(
+          style: TextButton.styleFrom(
+            foregroundColor: Md3Colors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
           ),
-        ],
+          onPressed: isSavingRating ? null : () => _skip(movie),
+          icon: const Icon(Icons.skip_next_rounded, size: 19),
+          label: const Text(
+            "Haven't seen it",
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.29,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -678,38 +923,12 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     );
   }
 
-  Widget _ratingButton(
-      String text, IconData icon, Color color, VoidCallback? onPressed) {
-    return SizedBox(
-      height: 48,
-      child: FilledButton.icon(
-        style: FilledButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-        ),
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            text,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBottomBar({
     required String primaryText,
     required IconData primaryIcon,
     required VoidCallback? onPrimary,
     required String secondaryText,
-    required VoidCallback onSecondary,
+    required VoidCallback? onSecondary,
   }) {
     return Md3LiquidGlass(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -722,6 +941,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
             text: primaryText,
             icon: primaryIcon,
             onPressed: onPrimary,
+            height: 52,
           ),
           const SizedBox(height: 8),
           TextButton(
@@ -865,9 +1085,15 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   }
 
   int _ratedCount(MoviesState moviesState) {
-    return moviesState.userMovies
+    final localCount = moviesState.userMovies
         .where((movie) => MovieRate.isViewed(movie.movieRate))
         .length;
+    final cachedCount =
+        Provider.of<UserState>(context, listen: false).cachedRatedMoviesCount;
+
+    return cachedCount != null && cachedCount > localCount
+        ? cachedCount
+        : localCount;
   }
 
   Future<void> _rate(Movie movie, int movieRate) async {
@@ -922,9 +1148,10 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     }
 
     setState(() {
-      ratedInSession += 1;
+      _expandedSynopsisMovieId = null;
       isSavingRating = false;
     });
+    _resetCandidateViewport();
 
     MSnackBar.showSnackBar('"${movie.title}" saved', true);
   }
@@ -932,42 +1159,88 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   void _skip(Movie movie) {
     setState(() {
       skippedIds.add(movie.id);
+      _expandedSynopsisMovieId = null;
     });
+    _resetCandidateViewport();
   }
 
   Future<void> _finishOnboarding() async {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
-    final userState = Provider.of<UserState>(context, listen: false);
     final navigator = Navigator.of(context);
+    final completed = _ratedCount(moviesState) >= targetRatings;
 
-    if (_ratedCount(moviesState) >= targetRatings) {
-      await userState.setOnboardingCompleted(true);
-    } else {
-      await userState.setOnboardingSkipped(true);
-    }
-
-    if (!mounted) {
+    if (!await _persistOnboardingExit(completed: completed)) {
       return;
     }
 
-    if (navigator.canPop()) {
+    if (widget.onExitStarted != null) {
+      widget.onFinished();
+    } else if (navigator.canPop()) {
       navigator.pop();
-      return;
+    } else {
+      widget.onFinished();
     }
-
-    widget.onFinished();
+    widget.onExitCompleted?.call();
   }
 
   Future<void> _skipOnboarding() async {
-    final userState = Provider.of<UserState>(context, listen: false);
-
-    await userState.setOnboardingSkipped(true);
-
-    if (!mounted) {
+    final navigator = Navigator.of(context);
+    if (!await _persistOnboardingExit(completed: false)) {
       return;
     }
 
-    widget.onFinished();
+    if (widget.onExitStarted != null) {
+      widget.onFinished();
+    } else if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      widget.onFinished();
+    }
+    widget.onExitCompleted?.call();
+  }
+
+  Future<bool> _persistOnboardingExit({required bool completed}) async {
+    if (isCompleting) {
+      return false;
+    }
+
+    setState(() {
+      isCompleting = true;
+    });
+    widget.onExitStarted?.call();
+
+    final userState = Provider.of<UserState>(context, listen: false);
+    try {
+      if (completed) {
+        await userState.setOnboardingCompleted(true);
+      } else {
+        await userState.setOnboardingSkipped(true);
+      }
+      return true;
+    } catch (error) {
+      debugPrint('Onboarding completion could not be persisted: $error');
+      widget.onExitCompleted?.call();
+      if (mounted) {
+        setState(() {
+          isCompleting = false;
+        });
+        MSnackBar.showSnackBar(
+          'Could not save your onboarding progress. Try again.',
+          false,
+        );
+      }
+      return false;
+    }
+  }
+
+  void _resetCandidateViewport() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
+        return;
+      }
+
+      _scrollController.jumpTo(0);
+    });
   }
 
   Future<void> _retryStarterDeck() async {
@@ -1018,127 +1291,21 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     );
   }
 
-  Future<void> _completeIfReadyOtherwiseSkip() {
-    final moviesState = Provider.of<MoviesState>(context, listen: false);
-    final userState = Provider.of<UserState>(context, listen: false);
-
-    if (_ratedCount(moviesState) >= targetRatings) {
-      return userState.setOnboardingCompleted(true);
-    }
-
-    return userState.setOnboardingSkipped(true);
-  }
-
   Future<void> _openRecommendations() async {
-    await _completeIfReadyOtherwiseSkip();
-
-    if (!mounted) {
+    final navigator = Navigator.of(context);
+    if (!await _persistOnboardingExit(completed: true) || !mounted) {
       return;
     }
 
-    final userState = Provider.of<UserState>(context, listen: false);
-    if (userState.isIncognitoMode) {
-      await _showSaveAndSyncPrompt();
+    final recommendationsPage = widget.recommendationsBuilder?.call(context) ??
+        const RecommendationsPage(autoStart: true);
+    final route = RouteHelper.createRoute(() => recommendationsPage);
 
-      if (!mounted) {
-        return;
-      }
+    if (widget.onExitStarted != null) {
+      navigator.push(route);
+    } else {
+      navigator.pushReplacement(route);
     }
-
-    Navigator.of(context).push(
-      RouteHelper.createRoute(() => const RecommendationsPage(autoStart: true)),
-    );
-  }
-
-  Future<void> _showSaveAndSyncPrompt() {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Md3LiquidGlass(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            padding: const EdgeInsets.all(16),
-            borderRadius: BorderRadius.circular(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Save and sync your movie taste',
-                  style: TextStyle(
-                    color: Md3Colors.text,
-                    fontSize: 22,
-                    height: 1.1,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Create a free account to keep your ratings, watchlist, and recommendations across devices.',
-                  style: TextStyle(
-                    color: Md3Colors.muted,
-                    fontSize: 14,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _authPromptButton(
-                  sheetContext,
-                  'Continue with Apple',
-                  Icons.apple_rounded,
-                ),
-                const SizedBox(height: 8),
-                _authPromptButton(
-                  sheetContext,
-                  'Continue with Google',
-                  Icons.g_mobiledata_rounded,
-                ),
-                const SizedBox(height: 8),
-                _authPromptButton(
-                  sheetContext,
-                  'Email',
-                  Icons.mail_rounded,
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    child: const Text(
-                      'Not now',
-                      style: TextStyle(
-                        color: Md3Colors.primary,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _authPromptButton(
-    BuildContext sheetContext,
-    String text,
-    IconData icon,
-  ) {
-    return Md3PrimaryButton(
-      text: text,
-      icon: icon,
-      tonal: true,
-      onPressed: () {
-        Navigator.of(sheetContext).pop();
-        Navigator.of(context).push(
-          RouteHelper.createRoute(() => const Login()),
-        );
-      },
-    );
+    widget.onExitCompleted?.call();
   }
 }

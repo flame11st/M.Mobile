@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
-import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Variables/validators.dart';
@@ -20,7 +19,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class Login extends StatefulWidget {
-  const Login({super.key});
+  final TargetPlatform? platformOverride;
+  final bool loadMovieLists;
+
+  const Login({
+    super.key,
+    this.platformOverride,
+    this.loadMovieLists = true,
+  });
 
   @override
   State<StatefulWidget> createState() {
@@ -38,6 +44,11 @@ class LoginState extends State<Login> {
   bool isLoaderHided = false;
   bool signInButtonActive = false;
   bool isListsRequested = false;
+  bool _obscurePassword = true;
+
+  bool get _isIOS =>
+      widget.platformOverride == TargetPlatform.iOS ||
+      (widget.platformOverride == null && Platform.isIOS);
 
   @override
   void initState() {
@@ -94,7 +105,7 @@ class LoginState extends State<Login> {
         await googleSignInAccount.authentication;
 
     final incognitoUserId = _currentIncognitoUserId();
-    var response = Platform.isIOS
+    var response = _isIOS
         ? await serviceAgent.googleLoginIOS(googleSignInAuthentication.idToken!,
             incognitoUserId: incognitoUserId)
         : await serviceAgent.googleLogin(googleSignInAuthentication.idToken!,
@@ -194,6 +205,160 @@ class LoginState extends State<Login> {
     }
   }
 
+  Future<void> _openForgotPassword() async {
+    final enteredEmail = emailController.text.trim();
+    final resetEmailController = TextEditingController(
+      text: Validators.emailValidator(enteredEmail) == null ? enteredEmail : '',
+    );
+
+    await showMd3BottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        var isSending = false;
+        var wasSent = false;
+        String? errorMessage;
+
+        return Md3BottomSheetSurface(
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              final email = resetEmailController.text.trim();
+              final isValid =
+                  email.isNotEmpty && Validators.emailValidator(email) == null;
+
+              Future<void> sendResetLink() async {
+                if (!isValid || isSending || wasSent) {
+                  return;
+                }
+
+                setSheetState(() {
+                  isSending = true;
+                  errorMessage = null;
+                });
+
+                try {
+                  final response =
+                      await serviceAgent.requestPasswordReset(email);
+                  if (!sheetContext.mounted) {
+                    return;
+                  }
+
+                  if (response.statusCode >= 200 && response.statusCode < 300) {
+                    setSheetState(() {
+                      isSending = false;
+                      wasSent = true;
+                    });
+                    return;
+                  }
+
+                  setSheetState(() {
+                    isSending = false;
+                    errorMessage =
+                        "We couldn't send a reset email. Try again later.";
+                  });
+                } on Object {
+                  if (!sheetContext.mounted) {
+                    return;
+                  }
+                  setSheetState(() {
+                    isSending = false;
+                    errorMessage =
+                        "We couldn't send a reset email. Check your connection and try again.";
+                  });
+                }
+              }
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Reset your password',
+                    style: TextStyle(
+                      color: Md3Colors.text,
+                      fontSize: 22,
+                      height: 1.25,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    wasSent
+                        ? 'Check $email for a password reset link.'
+                        : 'Enter the email for your MovieDiary account.',
+                    style: const TextStyle(
+                      color: Md3Colors.muted,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (!wasSent)
+                    TextFormField(
+                      key: const Key('passwordResetEmailField'),
+                      controller: resetEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.email],
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Enter your email'
+                              : Validators.emailValidator(value.trim()),
+                      decoration: _inputDecoration(
+                        'Email',
+                        Icons.mail_outline_rounded,
+                      ),
+                      onChanged: (_) {
+                        setSheetState(() {
+                          errorMessage = null;
+                        });
+                      },
+                      onFieldSubmitted: (_) => sendResetLink(),
+                    ),
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        errorMessage!,
+                        key: const Key('passwordResetError'),
+                        style: const TextStyle(
+                          color: Md3Colors.danger,
+                          fontSize: 14,
+                          height: 1.4,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  if (wasSent)
+                    Md3PrimaryButton(
+                      key: const Key('passwordResetDoneButton'),
+                      text: 'Done',
+                      icon: Icons.check_rounded,
+                      tonal: true,
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                    )
+                  else
+                    Md3PrimaryButton(
+                      key: const Key('passwordResetSendButton'),
+                      text:
+                          isSending ? 'Sending reset link' : 'Send reset link',
+                      icon: Icons.mark_email_read_outlined,
+                      onPressed: isValid && !isSending ? sendResetLink : null,
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    resetEmailController.dispose();
+  }
+
   processLoginResponse(
       String response, bool isSignedInWithThirdPartyServices) async {
     final userState = Provider.of<UserState>(context, listen: false);
@@ -221,13 +386,19 @@ class LoginState extends State<Login> {
     return userState.userId;
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(
+    String label,
+    IconData icon, {
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      constraints: const BoxConstraints(minHeight: 52),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Md3Colors.border),
@@ -253,9 +424,11 @@ class LoginState extends State<Login> {
     final background = primary ? Md3Colors.primary : Colors.white;
     final foreground = primary ? Colors.white : Md3Colors.text;
     final isEnabled = onPressed != null;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final buttonHeight = textScale > 1.3 ? 64.0 : 52.0;
 
     return SizedBox(
-      height: 50,
+      height: buttonHeight,
       width: double.infinity,
       child: FilledButton(
         style: FilledButton.styleFrom(
@@ -282,28 +455,17 @@ class LoginState extends State<Login> {
             else if (icon != null)
               Icon(icon, size: 19),
             if (image != null || icon != null) const SizedBox(width: 10),
-            Text(
-              text,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 2,
+                overflow: TextOverflow.fade,
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionLabel(String text) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 2),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Md3Colors.text,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-          ),
         ),
       ),
     );
@@ -313,14 +475,19 @@ class LoginState extends State<Login> {
     return Row(
       children: [
         const Expanded(child: Divider(color: Md3Colors.border, thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+        Flexible(
+          flex: 4,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              text,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -367,7 +534,7 @@ class LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    if (!isListsRequested) {
+    if (widget.loadMovieLists && !isListsRequested) {
       setMoviesLists();
 
       isListsRequested = true;
@@ -386,6 +553,7 @@ class LoginState extends State<Login> {
     }
 
     final emailField = TextFormField(
+      key: const Key('loginEmailField'),
       validator: (value) => emailController.text.isNotEmpty
           ? Validators.emailValidator(emailController.text)
           : null,
@@ -393,23 +561,47 @@ class LoginState extends State<Login> {
       controller: emailController,
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
+      autofillHints: const [AutofillHints.username, AutofillHints.email],
       decoration: _inputDecoration('Email', Icons.mail_outline_rounded),
     );
 
     final passwordField = TextFormField(
+      key: const Key('loginPasswordField'),
       validator: (value) => passwordController.text.isNotEmpty
           ? Validators.passwordValidator(passwordController.text)
           : null,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       controller: passwordController,
-      obscureText: true,
+      obscureText: _obscurePassword,
       textInputAction: TextInputAction.done,
+      autofillHints: const [AutofillHints.password],
       onFieldSubmitted: (_) {
         if (signInButtonActive) {
           login();
         }
       },
-      decoration: _inputDecoration('Password', Icons.lock_outline_rounded),
+      decoration: _inputDecoration(
+        'Password',
+        Icons.lock_outline_rounded,
+        suffixIcon: SizedBox(
+          width: 44,
+          height: 44,
+          child: IconButton(
+            key: const Key('toggleLoginPasswordVisibility'),
+            tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+            ),
+          ),
+        ),
+      ),
     );
 
     final loginButton = _authButton(
@@ -427,145 +619,193 @@ class LoginState extends State<Login> {
 
     final signInWithAppleButton = SignInWithAppleButton(
       borderRadius: BorderRadius.circular(14),
-      height: 50,
+      height: 52,
       onPressed: () => signInWithApple(),
     );
 
-    final incognitoButton = _authButton(
-      text: 'Continue without account',
-      onPressed: () => proceedIncognitoMode(),
-      icon: Icons.person_outline_rounded,
+    final incognitoButton = SizedBox(
+      height: 44,
+      child: TextButton(
+        key: const Key('continueWithoutAccountButton'),
+        onPressed: () => proceedIncognitoMode(),
+        style: TextButton.styleFrom(
+          foregroundColor: Md3Colors.muted,
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        child: const Text('Continue without account'),
+      ),
     );
 
-    final signUpButton = _authButton(
-      text: 'Create account',
-      onPressed: () async {
-        final navigator = Navigator.of(context);
-        final authenticated = await navigator.push<bool>(
-          MaterialPageRoute(builder: (ctx) => const SignUp()),
-        );
-        if (authenticated == true && mounted && navigator.canPop()) {
-          navigator.pop(true);
-        }
-      },
-      icon: FontAwesome5.user_plus,
+    final signUpButton = SizedBox(
+      height: 44,
+      child: TextButton(
+        key: const Key('createAccountButton'),
+        onPressed: () async {
+          final navigator = Navigator.of(context);
+          final authenticated = await navigator.push<bool>(
+            MaterialPageRoute(builder: (ctx) => const SignUp()),
+          );
+          if (authenticated == true && mounted && navigator.canPop()) {
+            navigator.pop(true);
+          }
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: Md3Colors.primary,
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        child: const Text('Create account'),
+      ),
     );
-
-    final hasTypedCredentials =
-        emailController.text.isNotEmpty || passwordController.text.isNotEmpty;
 
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final isKeyboardVisible = keyboardInset > 0;
+    final canPop = Navigator.of(context).canPop();
     final scrollPadding = EdgeInsets.fromLTRB(
-      22,
-      isKeyboardVisible ? 14 : 20,
-      22,
-      28 + keyboardInset,
+      24,
+      isKeyboardVisible ? 8 : 16,
+      24,
+      24 + keyboardInset,
     );
 
     return Scaffold(
       backgroundColor: Md3Colors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          key: globalKey,
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: scrollPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image(
-                    image: const AssetImage("Assets/mdIcon_V_with_effect.png"),
-                    width: isKeyboardVisible ? 42 : 54,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'MovieDiary',
-                    style: GoogleFonts.parisienne(
-                      textStyle: TextStyle(
-                        fontSize: isKeyboardVisible ? 30 : 36,
-                        color: Md3Colors.primary,
+        child: AutofillGroup(
+          child: SingleChildScrollView(
+            key: globalKey,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: scrollPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: canPop
+                          ? IconButton(
+                              key: const Key('loginBackButton'),
+                              tooltip: 'Back',
+                              padding: EdgeInsets.zero,
+                              onPressed: () => Navigator.of(context).maybePop(),
+                              icon: const Icon(
+                                Icons.arrow_back_rounded,
+                                color: Md3Colors.text,
+                              ),
+                            )
+                          : null,
+                    ),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image(
+                            image: const AssetImage(
+                              "Assets/mdIcon_V_with_effect.png",
+                            ),
+                            width: isKeyboardVisible ? 40 : 48,
+                            height: isKeyboardVisible ? 40 : 48,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'MovieDiary',
+                              overflow: TextOverflow.fade,
+                              softWrap: false,
+                              style: GoogleFonts.parisienne(
+                                textStyle: TextStyle(
+                                  fontSize: isKeyboardVisible ? 27 : 32,
+                                  color: Md3Colors.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(width: 44, height: 44),
+                  ],
+                ),
+                SizedBox(height: isKeyboardVisible ? 8 : 16),
+                Text(
+                  'Sign in to MovieDiary',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: isKeyboardVisible ? 25 : 30,
+                    height: 1.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (!isKeyboardVisible) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Sync your ratings, watchlist, and recommendations.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Md3Colors.muted,
+                      fontSize: 16,
+                      height: 1.44,
                     ),
                   ),
                 ],
-              ),
-              SizedBox(height: isKeyboardVisible ? 10 : 16),
-              Text(
-                'Sign in or try first',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Md3Colors.text,
-                  fontSize: isKeyboardVisible ? 22 : 26,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              if (!isKeyboardVisible) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  "Keep your movie taste synced, or continue without an account.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Md3Colors.muted,
-                    fontSize: 15,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                incognitoButton,
-              ],
-              SizedBox(height: isKeyboardVisible ? 14 : 18),
-              _buildSectionLabel('Email and password'),
-              const SizedBox(height: 10),
-              Md3Card(
-                padding: const EdgeInsets.all(18),
-                child: Form(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      emailField,
-                      const SizedBox(height: 14),
-                      passwordField,
-                      const SizedBox(height: 18),
-                      loginButton,
-                      if (!signInButtonActive) ...[
+                SizedBox(height: isKeyboardVisible ? 16 : 24),
+                if (_isIOS) ...[
+                  signInWithAppleButton,
+                  const SizedBox(height: 12),
+                ],
+                googleLoginButton,
+                const SizedBox(height: 16),
+                _buildDivider('or sign in with email'),
+                const SizedBox(height: 16),
+                Md3Card(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        emailField,
                         const SizedBox(height: 12),
-                        Text(
-                          hasTypedCredentials
-                              ? 'Enter a valid email and password to continue.'
-                              : 'Enter your email and password to continue.',
-                          style: const TextStyle(
-                            color: Md3Colors.muted,
-                            fontSize: 12,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
+                        passwordField,
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            height: 44,
+                            child: TextButton(
+                              key: const Key('forgotPasswordButton'),
+                              onPressed: _openForgotPassword,
+                              style: TextButton.styleFrom(
+                                foregroundColor: Md3Colors.primary,
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              child: const Text('Forgot password?'),
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        loginButton,
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              _buildDivider('Or continue with'),
-              const SizedBox(height: 18),
-              if (Platform.isIOS) ...[
-                signInWithAppleButton,
-                const SizedBox(height: 12),
-              ],
-              googleLoginButton,
-              const SizedBox(height: 12),
-              signUpButton,
-              if (isKeyboardVisible) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: 4),
+                signUpButton,
+                const SizedBox(height: 4),
                 incognitoButton,
               ],
-            ],
+            ),
           ),
         ),
       ),

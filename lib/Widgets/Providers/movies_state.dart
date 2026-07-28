@@ -13,15 +13,18 @@ import '../../Services/service_agent.dart';
 import '../movie_list_item.dart';
 
 class MoviesState with ChangeNotifier {
-  MoviesState() {
-    setCachedUserMovies();
-    unawaited(_discardLegacyExternalListCache());
-    setCachedMoviesLists();
-    _pendingAnonymousRatingSyncsLoad = setCachedPendingAnonymousRatingSyncs();
+  MoviesState({
+    FlutterSecureStorage? storage,
+    ValueChanged<int>? onRatedMoviesCountChanged,
+  })  : storage = storage ?? const FlutterSecureStorage(),
+        _onRatedMoviesCountChanged = onRatedMoviesCountChanged {
+    cacheInitialization = _initializeCache();
   }
 
   final serviceAgent = ServiceAgent();
-  final storage = const FlutterSecureStorage();
+  final FlutterSecureStorage storage;
+  final ValueChanged<int>? _onRatedMoviesCountChanged;
+  late final Future<void> cacheInitialization;
   static const _cacheReadTimeout = Duration(seconds: 2);
   static const _movieCacheWriteDebounce = Duration(milliseconds: 700);
   static const _pendingAnonymousRatingSyncsKey = 'pendingAnonymousRatingSyncs';
@@ -63,10 +66,28 @@ class MoviesState with ChangeNotifier {
   bool isMoviesListsRequested = false;
   bool isStarterDeckRequested = false;
   bool isCachedMoviesLoaded = false;
+  bool hasCachedUserMoviesSnapshot = false;
   int get pendingAnonymousRatingSyncCount =>
       _pendingAnonymousRatingSyncs.length;
 
-  setCachedUserMovies() async {
+  Future<void> _initializeCache() async {
+    await Future.wait([
+      setCachedUserMovies(),
+      setCachedMoviesLists(),
+      _discardLegacyExternalListCache(),
+    ]);
+    _pendingAnonymousRatingSyncsLoad = setCachedPendingAnonymousRatingSyncs();
+
+    if (userMovies.isEmpty && cachedUserMovies.isNotEmpty) {
+      setInitialUserMovies(cachedUserMovies);
+    }
+
+    isCachedMoviesLoaded = true;
+    setGenres();
+    notifyListeners();
+  }
+
+  Future<void> setCachedUserMovies() async {
     String? storedMovies;
     try {
       storedMovies =
@@ -79,38 +100,40 @@ class MoviesState with ChangeNotifier {
 
     Iterable iterableMovies;
     try {
-      iterableMovies = json.decode(storedMovies);
+      final decodedMovies = json.decode(storedMovies);
+      if (decodedMovies is! Iterable) {
+        debugPrint('Movie cache was not a list.');
+        return;
+      }
+      iterableMovies = decodedMovies;
     } catch (error) {
       debugPrint('Movie cache decode skipped: $error');
       return;
     }
 
-    if (iterableMovies.isNotEmpty) {
-      List<Movie> movies = iterableMovies.map((model) {
-        return Movie.fromJson(model);
-      }).toList();
-
-      if (userMovies.isEmpty) cachedUserMovies = movies;
+    try {
+      final movies =
+          iterableMovies.map((model) => Movie.fromJson(model)).toList();
+      hasCachedUserMoviesSnapshot = true;
+      if (userMovies.isEmpty) {
+        cachedUserMovies = movies;
+      }
+      _notifyRatedMoviesCountChanged(movies);
+    } catch (error) {
+      debugPrint('Movie cache entries were ignored: $error');
     }
   }
 
   Future<void> setInitialData() async {
-    await Future.delayed(const Duration(milliseconds: 1));
-
-    if (userMovies.isEmpty && cachedUserMovies.isNotEmpty) {
-      setInitialUserMovies(cachedUserMovies);
-    }
-
-    setGenres();
-
-    notifyListeners();
+    await cacheInitialization;
   }
 
-  void setInitialUserMovies(List<Movie> userMovies) async {
+  void setInitialUserMovies(List<Movie> userMovies) {
     this.userMovies = userMovies;
 
     refreshMovies();
     refreshDates();
+    _notifyRatedMoviesCountChanged(this.userMovies);
   }
 
   Future<void> setUserMovies(List<Movie> userMovies) async {
@@ -123,6 +146,7 @@ class MoviesState with ChangeNotifier {
     refreshDates();
 
     _scheduleUserMoviesCacheWrite();
+    _notifyRatedMoviesCountChanged(this.userMovies);
   }
 
   void updateUserMoviesIncognito(List<Movie> movies) {
@@ -132,6 +156,7 @@ class MoviesState with ChangeNotifier {
 
     refreshMovies();
     refreshDates();
+    _notifyRatedMoviesCountChanged(userMovies);
   }
 
   void updateUserMovies(List<Movie> userMovies, bool shouldSetRate) {
@@ -157,7 +182,7 @@ class MoviesState with ChangeNotifier {
     this.userMovies = updatedUserMovies;
   }
 
-  setCachedMoviesLists() async {
+  Future<void> setCachedMoviesLists() async {
     String? storedPersonalMoviesLists;
     try {
       storedPersonalMoviesLists = await storage
@@ -258,6 +283,17 @@ class MoviesState with ChangeNotifier {
     } catch (error) {
       debugPrint('Movie cache write skipped: $error');
     }
+  }
+
+  void _notifyRatedMoviesCountChanged(List<Movie> movies) {
+    final callback = _onRatedMoviesCountChanged;
+    if (callback == null) {
+      return;
+    }
+
+    callback(
+      movies.where((movie) => MovieRate.isViewed(movie.movieRate)).length,
+    );
   }
 
   void _schedulePersonalMoviesListsCacheWrite(List<MoviesList> lists) {
@@ -546,6 +582,24 @@ class MoviesState with ChangeNotifier {
     starterDeckMovies = movies;
     isStarterDeckRequested = true;
 
+    notifyListeners();
+  }
+
+  void markMoviesListsRequestFinished() {
+    if (isMoviesListsRequested) {
+      return;
+    }
+
+    isMoviesListsRequested = true;
+    notifyListeners();
+  }
+
+  void markStarterDeckRequestFinished() {
+    if (isStarterDeckRequested) {
+      return;
+    }
+
+    isStarterDeckRequested = true;
     notifyListeners();
   }
 
@@ -953,6 +1007,7 @@ class MoviesState with ChangeNotifier {
     setGenres();
 
     _scheduleUserMoviesCacheWrite();
+    _notifyRatedMoviesCountChanged(userMovies);
 
     if (isIncognitoMode) {
       queueAnonymousRatingSync(movieId, movieRate);
@@ -1081,6 +1136,7 @@ class MoviesState with ChangeNotifier {
     cachedUserMovies.clear();
     personalMoviesLists.clear();
     externalMoviesLists = getMappedMoviesList(externalMoviesLists);
+    _notifyRatedMoviesCountChanged(userMovies);
 
     await clearStorage();
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_list_type.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
+import 'package:mmobile/Helpers/route_helper.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
@@ -10,7 +11,7 @@ import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'movie_list_item.dart';
 import 'Providers/movies_state.dart';
-import 'search_delegate.dart';
+import 'search_page.dart';
 import 'Shared/md3_ui.dart';
 import 'Shared/m_button.dart';
 import 'Shared/m_dialog.dart';
@@ -180,7 +181,12 @@ class MovieListPageState extends State<MoviesListPage> {
             ),
           )
         : Md3Page(
-            padding: EdgeInsets.fromLTRB(18, 18, 18, bottomPadding),
+            padding: EdgeInsets.fromLTRB(
+              Md3Layout.pageHorizontalInset(context),
+              18,
+              Md3Layout.pageHorizontalInset(context),
+              bottomPadding,
+            ),
             child: Md3Card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,9 +219,10 @@ class MovieListPageState extends State<MoviesListPage> {
                   Md3PrimaryButton(
                     text: 'Search Movies or TV Shows',
                     icon: Icons.search_rounded,
-                    onPressed: () => showSearch(
-                      context: context,
-                      delegate: MSearchDelegate(),
+                    onPressed: () => Navigator.of(context).push(
+                      RouteHelper.createRoute(
+                        () => const SearchStandalonePage(),
+                      ),
                     ),
                   ),
                 ],

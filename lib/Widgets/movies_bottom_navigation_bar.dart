@@ -1,12 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mmobile/Widgets/movies_lists_page.dart';
-import 'movies_filter.dart';
-import 'Providers/movies_state.dart';
-import 'search_delegate.dart';
-import 'settings.dart';
 import 'Shared/md3_ui.dart';
-import 'package:mmobile/Helpers/route_helper.dart';
-import 'package:provider/provider.dart';
 
 class MoviesBottomNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -20,18 +13,17 @@ class MoviesBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final moviesState = Provider.of<MoviesState>(context);
     final bottomMargin = Md3NavigationMetrics.bottomMargin(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 0, 12, bottomMargin),
       child: Md3LiquidGlass(
         borderRadius: BorderRadius.circular(28),
-        tint: Colors.white.withOpacity(0.78),
-        borderColor: Colors.white.withOpacity(0.72),
+        tint: Colors.white.withValues(alpha: 0.78),
+        borderColor: Colors.white.withValues(alpha: 0.72),
         shadows: [
           BoxShadow(
-            color: const Color(0xff102a43).withOpacity(0.14),
+            color: const Color(0xff102a43).withValues(alpha: 0.14),
             blurRadius: 28,
             offset: const Offset(0, 14),
           ),
@@ -41,6 +33,8 @@ class MoviesBottomNavigationBar extends StatelessWidget {
           child: Row(
             children: [
               _NavItem(
+                index: 0,
+                flex: 64,
                 label: 'Discover',
                 icon: Icons.auto_awesome_outlined,
                 selectedIcon: Icons.auto_awesome_rounded,
@@ -48,48 +42,39 @@ class MoviesBottomNavigationBar extends StatelessWidget {
                 onTap: () => onTabSelected(0),
               ),
               _NavItem(
+                index: 1,
+                flex: 50,
                 label: 'Search',
                 icon: Icons.search_rounded,
-                onTap: () => showSearch(
-                  context: context,
-                  delegate: MSearchDelegate(),
-                ),
+                selected: selectedIndex == 1,
+                onTap: () => onTabSelected(1),
               ),
               _NavItem(
+                index: 2,
+                flex: 75,
                 label: 'My Movies',
-                icon: moviesState.isAnyFilterSelected()
-                    ? Icons.filter_alt_rounded
-                    : Icons.movie_filter_outlined,
-                selectedIcon: Icons.movie_filter_rounded,
+                icon: Icons.video_library_outlined,
+                selectedIcon: Icons.video_library_rounded,
                 selected: selectedIndex == 2,
-                showDot: moviesState.isAnyFilterSelected(),
-                onTap: () {
-                  if (selectedIndex == 2) {
-                    showModalBottomSheet<void>(
-                      backgroundColor: Colors.transparent,
-                      context: context,
-                      builder: (context) => MoviesFilter(),
-                    );
-                    return;
-                  }
-                  onTabSelected(2);
-                },
+                onTap: () => onTabSelected(2),
               ),
               _NavItem(
+                index: 3,
+                flex: 49,
                 label: 'Lists',
                 icon: Icons.list_alt_rounded,
-                onTap: () => Navigator.of(context).push(
-                  RouteHelper.createRoute(
-                    () => const MoviesListsPage(initialPageIndex: 0),
-                  ),
-                ),
+                selectedIcon: Icons.list_alt_rounded,
+                selected: selectedIndex == 3,
+                onTap: () => onTabSelected(3),
               ),
               _NavItem(
+                index: 4,
+                flex: 58,
                 label: 'Settings',
                 icon: Icons.settings_outlined,
-                onTap: () => Navigator.of(context).push(
-                  RouteHelper.createRoute(() => Settings()),
-                ),
+                selectedIcon: Icons.settings_rounded,
+                selected: selectedIndex == 4,
+                onTap: () => onTabSelected(4),
               ),
             ],
           ),
@@ -100,19 +85,21 @@ class MoviesBottomNavigationBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
+  final int index;
+  final int flex;
   final String label;
   final IconData icon;
   final IconData? selectedIcon;
   final bool selected;
-  final bool showDot;
   final VoidCallback onTap;
 
   const _NavItem({
+    required this.index,
+    required this.flex,
     required this.label,
     required this.icon,
     this.selectedIcon,
     this.selected = false,
-    this.showDot = false,
     required this.onTap,
   });
 
@@ -121,10 +108,13 @@ class _NavItem extends StatelessWidget {
     final foreground = selected ? Md3Colors.primary : Md3Colors.muted;
 
     return Expanded(
+      flex: flex,
       child: Semantics(
+        key: ValueKey('root-navigation-item-$index'),
+        container: true,
         button: true,
         selected: selected,
-        label: label,
+        label: '$label tab, ${index + 1} of 5',
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
           child: Material(
@@ -138,16 +128,18 @@ class _NavItem extends StatelessWidget {
                 constraints: const BoxConstraints(minHeight: 56),
                 decoration: BoxDecoration(
                   color: selected
-                      ? Md3Colors.primarySoft.withOpacity(0.96)
+                      ? Md3Colors.primarySoft.withValues(alpha: 0.96)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(22),
                   border: selected
-                      ? Border.all(color: Colors.white.withOpacity(0.82))
+                      ? Border.all(
+                          color: Colors.white.withValues(alpha: 0.82),
+                        )
                       : null,
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: Md3Colors.primary.withOpacity(0.08),
+                            color: Md3Colors.primary.withValues(alpha: 0.08),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -157,40 +149,28 @@ class _NavItem extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(
-                          selected ? selectedIcon ?? icon : icon,
-                          size: 22,
-                          color: foreground,
-                        ),
-                        if (showDot)
-                          Positioned(
-                            right: -4,
-                            top: -2,
-                            child: Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: Md3Colors.accent,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                      ],
+                    Icon(
+                      selected ? selectedIcon ?? icon : icon,
+                      size: 22,
+                      color: foreground,
                     ),
                     const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: foreground,
-                          fontSize: 11,
-                          fontWeight:
-                              selected ? FontWeight.w800 : FontWeight.w700,
+                    SizedBox(
+                      width: double.infinity,
+                      child: MediaQuery.withClampedTextScaling(
+                        minScaleFactor: 1,
+                        maxScaleFactor: 1.3,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          softWrap: false,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: foreground,
+                            fontSize: 11,
+                            fontWeight:
+                                selected ? FontWeight.w800 : FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),

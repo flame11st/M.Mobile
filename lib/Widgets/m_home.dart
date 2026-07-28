@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Services/service_agent.dart';
-import 'package:mmobile/Variables/themes.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
 import 'package:provider/provider.dart';
 import 'loading_animation.dart';
@@ -19,12 +19,21 @@ class MHome extends StatefulWidget {
   }
 }
 
-class MHomeState extends State<MHome> {
+class MHomeState extends State<MHome> with RestorationMixin {
   StreamSubscription<dynamic>? _subscription;
   final serviceAgent = ServiceAgent();
-  static const _anonymousBootstrapTimeout = Duration(seconds: 10);
+  final _selectedRootTab = RestorableInt(0);
+  static const _anonymousBootstrapTimeout = Duration(seconds: 8);
   bool _anonymousBootstrapInFlight = false;
   String? _anonymousBootstrapError;
+
+  @override
+  String? get restorationId => 'movieDiaryHome';
+
+  @override
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) {
+    registerForRestoration(_selectedRootTab, 'selectedRootTab');
+  }
 
   _handlePurchaseUpdates(List<PurchaseDetails> purchases) {
     final userState = Provider.of<UserState>(context, listen: false);
@@ -81,6 +90,7 @@ class MHomeState extends State<MHome> {
   @override
   void dispose() {
     _subscription?.cancel();
+    _selectedRootTab.dispose();
     super.dispose();
   }
 
@@ -88,34 +98,6 @@ class MHomeState extends State<MHome> {
   Widget build(BuildContext context) {
     final userState = Provider.of<UserState>(context);
     final loaderState = Provider.of<LoaderState>(context);
-    final theme = Themes.family;
-    //  final primaryColor = Color(0xff206a5d);
-    //  final secondaryColor = Color(0xff307a6d);
-    //  final additionalColor = Color(0xfff1f1e8);
-    //  final fontsColor = Color(0xffbfdcae);
-    // MTheme theme = new MTheme(
-    //   brightness: Brightness.light,
-    //     colorTheme: MColorTheme(
-    //       primaryColor: primaryColor,
-    //       secondaryColor: secondaryColor,
-    //       additionalColor: additionalColor,
-    //       fontsColor: fontsColor,
-    //     ),
-    //     textStyleTheme: MTextStyleTheme(
-    //       title: TextStyle(
-    //           fontSize: 15,
-    //           fontWeight: FontWeight.bold,
-    //           color: additionalColor),
-    //       subtitleText: TextStyle(
-    //           fontSize: 15.0,
-    //           color: additionalColor,
-    //           fontWeight: FontWeight.bold),
-    //       bodyText: TextStyle(fontSize: 15.0, color: fontsColor),
-    //       expandedTitle: TextStyle(
-    //           fontSize: 16,
-    //           fontWeight: FontWeight.bold,
-    //           color: additionalColor),
-    //     ));
 
     Widget widgetToReturn = _buildStartupSurface(
       loadingLabel: 'Loading your MovieDiary',
@@ -123,7 +105,12 @@ class MHomeState extends State<MHome> {
     );
     if (userState.isAppLoaded) {
       if (userState.isUserAuthorizedOrInIncognitoMode) {
-        widgetToReturn = MyMovies();
+        widgetToReturn = MyMovies(
+          initialNavigationIndex: _selectedRootTab.value,
+          onNavigationIndexChanged: (index) {
+            _selectedRootTab.value = index;
+          },
+        );
       } else {
         if (_anonymousBootstrapError == null) {
           _bootstrapAnonymousOnboarding(userState);
@@ -139,41 +126,32 @@ class MHomeState extends State<MHome> {
       }
     }
 
-    return MaterialApp(
-        home: Stack(
-          children: <Widget>[
-            widgetToReturn,
-            if (loaderState.isLoaderVisible) const LoadingAnimation(),
-          ],
-        ),
-        // routes: {
-        //   'moviesList': (context) => MoviesListPage(),
-        // },
-        theme: ThemeData(
-            // Define the default brightness and colors.
-            brightness: theme.brightness,
-            splashFactory: InkRipple.splashFactory,
-            primaryColor: theme.colorTheme.primaryColor,
-            indicatorColor: theme.colorTheme.additionalColor,
-            hintColor: theme.colorTheme.fontsColor,
-            cardColor: theme.colorTheme.secondaryColor,
-            highlightColor: theme.colorTheme.fontsColor,
-            splashColor: theme.colorTheme.primaryColor,
-            iconTheme: IconThemeData(color: theme.colorTheme.fontsColor),
-            appBarTheme: AppBarTheme(
-                backgroundColor: theme.colorTheme.primaryColor,
-                iconTheme: IconThemeData(color: theme.colorTheme.fontsColor)),
-            textTheme: TextTheme(
-              displayMedium: theme.textStyleTheme.expandedTitle,
-              displaySmall: theme.textStyleTheme.title,
-              headlineMedium: theme.textStyleTheme.subtitleText,
-              headlineSmall: theme.textStyleTheme.bodyText,
-              titleLarge: theme.textStyleTheme.expandedTitle,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Md3Colors.background,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: MaterialApp(
+          title: 'MovieDiary',
+          restorationScopeId: 'movieDiaryApp',
+          home: Stack(
+            children: <Widget>[
+              widgetToReturn,
+              if (loaderState.isLoaderVisible) const LoadingAnimation(),
+            ],
+          ),
+          theme: MovieDiaryTheme.light().copyWith(
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+              },
             ),
-            pageTransitionsTheme: const PageTransitionsTheme(builders: {
-              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-              TargetPlatform.iOS: CupertinoPageTransitionsBuilder()
-            })));
+          )),
+    );
   }
 
   void _bootstrapAnonymousOnboarding(UserState userState) {
@@ -229,58 +207,43 @@ class MHomeState extends State<MHome> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Spacer(),
-              Container(
-                width: 88,
-                height: 88,
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 32,
-                      offset: const Offset(0, 18),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Image(
-                    image: AssetImage('Assets/mdIcon_V_with_effect.png'),
-                    width: 54,
-                  ),
-                ),
+              const Image(
+                image: AssetImage('Assets/mdIcon_V_with_effect.png'),
+                width: 72,
+                height: 72,
               ),
+              const SizedBox(height: 24),
               const Text(
                 'MovieDiary',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 30,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
                   color: Md3Colors.text,
-                  letterSpacing: -0.8,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 loadingLabel,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                  height: 1.3,
+                  fontWeight: FontWeight.w700,
                   color: Md3Colors.primary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 body,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.45,
+                  fontSize: 15,
+                  height: 1.4,
                   color: Md3Colors.muted,
                 ),
               ),

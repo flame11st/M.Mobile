@@ -9,16 +9,28 @@ import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Objects/user.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:provider/provider.dart';
-import 'movies_bottom_navigation_bar.dart';
 import 'movie_list.dart';
 import 'discover_page.dart';
+import 'movies_lists_page.dart';
 import 'onboarding_wizard_page.dart';
+import 'root_navigation_shell.dart';
+import 'search_page.dart';
+import 'Settings.dart';
 import 'Providers/loader_state.dart';
 import 'Providers/movies_state.dart';
 import 'Providers/user_state.dart';
 import 'Shared/md3_ui.dart';
 
 class MyMovies extends StatefulWidget {
+  final int initialNavigationIndex;
+  final ValueChanged<int>? onNavigationIndexChanged;
+
+  const MyMovies({
+    super.key,
+    this.initialNavigationIndex = 0,
+    this.onNavigationIndexChanged,
+  });
+
   @override
   State<StatefulWidget> createState() {
     return MyMoviesState();
@@ -27,10 +39,21 @@ class MyMovies extends StatefulWidget {
 
 class MyMoviesState extends State<MyMovies> {
   final serviceAgent = ServiceAgent();
-  static const _initialDataLoadTimeout = Duration(seconds: 12);
-  int selectedNavigationIndex = 0;
+  static const _cacheLoadTimeout = Duration(seconds: 3);
+  static const _remoteRefreshTimeout = Duration(seconds: 8);
+  final _visitedTabs = <bool>[true, false, false, false, false];
+  final _discoverKey = GlobalKey<DiscoverPageState>();
+  final _searchKey = GlobalKey<SearchPageState>();
+  final _myMoviesKey = GlobalKey<MovieListState>();
+  final _listsKey = GlobalKey<MoviesListsPageState>();
+  final _settingsKey = GlobalKey<SettingsState>();
   bool initialDataLoaded = false;
-  String? _initialDataLoadError;
+  bool _initializationInFlight = false;
+  bool _refreshInFlight = false;
+  bool _retainOnboardingDuringExit = false;
+  String? _refreshError;
+
+  int selectedNavigationIndex = 0;
 
   bool _isSuccessfulJsonResponse(String body, int statusCode) {
     return statusCode >= 200 && statusCode < 300 && body.trim().isNotEmpty;
@@ -39,6 +62,9 @@ class MyMoviesState extends State<MyMovies> {
   @override
   void initState() {
     super.initState();
+    selectedNavigationIndex =
+        widget.initialNavigationIndex.clamp(0, _visitedTabs.length - 1);
+    _visitedTabs[selectedNavigationIndex] = true;
 
     Future.microtask(() {
       if (mounted) {
@@ -47,36 +73,29 @@ class MyMoviesState extends State<MyMovies> {
     });
   }
 
-  Future<void> setUserMovies() async {
+  Future<bool> _refreshUserMovies() async {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
     final loaderState = Provider.of<LoaderState>(context, listen: false);
+    final userId = userState.userId;
 
-    if (userState.isIncognitoMode) {
-      if (loaderState.isLoaderVisible) {
-        loaderState.setIsLoaderVisible(false);
-      }
-
-      await moviesState.setInitialData();
-
-      unawaited(_refreshIncognitoUserMoviesInBackground(
-        moviesState,
-        userState,
-      ));
-
-      return;
+    if (userId == null || userId.isEmpty) {
+      return false;
     }
 
-    final moviesResponse = await serviceAgent.getUserMovies(userState.userId!);
+    final moviesResponse = await serviceAgent.getUserMovies(userId);
     final responseBody = moviesResponse.body.trim();
 
     if (!_isSuccessfulJsonResponse(responseBody, moviesResponse.statusCode)) {
       debugPrint('User movies load skipped: ${moviesResponse.statusCode}');
-      moviesState.setUserMovies([]);
+      if (userState.isIncognitoMode) {
+        await _refreshCachedAnonymousMovieMetadata(moviesState);
+        _syncCachedAnonymousRatings(moviesState, userState);
+      }
       if (loaderState.isLoaderVisible) {
         loaderState.setIsLoaderVisible(false);
       }
-      return;
+      return false;
     }
 
     Iterable iterableMovies;
@@ -84,75 +103,52 @@ class MyMoviesState extends State<MyMovies> {
       final decodedBody = json.decode(responseBody);
       if (decodedBody is! Iterable) {
         debugPrint('User movies response was not a list.');
-        moviesState.setUserMovies([]);
         if (loaderState.isLoaderVisible) {
           loaderState.setIsLoaderVisible(false);
         }
-        return;
+        return false;
       }
 
       iterableMovies = decodedBody;
     } on FormatException catch (error) {
       debugPrint('User movies response was not valid JSON: $error');
-      moviesState.setUserMovies([]);
       if (loaderState.isLoaderVisible) {
         loaderState.setIsLoaderVisible(false);
       }
-      return;
+      return false;
     }
 
-    debugPrint('Movies loaded');
+    final movies = iterableMovies.map((model) {
+      return Movie.fromJson(model);
+    }).toList();
 
-    if (iterableMovies.isNotEmpty) {
-      List<Movie> movies = iterableMovies.map((model) {
-        return Movie.fromJson(model);
-      }).toList();
-
-      moviesState.setUserMovies(movies);
+    if (userState.isIncognitoMode &&
+        movies.isEmpty &&
+        moviesState.userMovies.isNotEmpty) {
+      _syncCachedAnonymousRatings(moviesState, userState);
     } else {
-      moviesState.setUserMovies([]);
+      await moviesState.setUserMovies(movies);
     }
+
+    final ratedMoviesCount = moviesState.userMovies
+        .where((movie) => MovieRate.isViewed(movie.movieRate))
+        .length;
+    await userState.markLibraryRefreshSucceeded(ratedMoviesCount);
 
     if (loaderState.isLoaderVisible) {
       loaderState.setIsLoaderVisible(false);
     }
+
+    return true;
   }
 
-  Future<void> _refreshIncognitoUserMoviesInBackground(
+  Future<void> _refreshCachedAnonymousMovieMetadata(
     MoviesState moviesState,
-    UserState userState,
   ) async {
-    try {
-      final moviesResponse =
-          await serviceAgent.getUserMovies(userState.userId!);
-      final responseBody = moviesResponse.body.trim();
-      if (_isSuccessfulJsonResponse(
-        responseBody,
-        moviesResponse.statusCode,
-      )) {
-        try {
-          final decodedBody = json.decode(responseBody);
-          if (decodedBody is Iterable && decodedBody.isNotEmpty) {
-            final movies =
-                decodedBody.map((model) => Movie.fromJson(model)).toList();
-            await moviesState.setUserMovies(movies);
-            return;
-          }
-        } on FormatException catch (error) {
-          debugPrint('Anonymous user movies were not valid JSON: $error');
-        }
-      }
-
-      await setIncognitoUserMovies(moviesState);
-      _syncCachedAnonymousRatings(moviesState, userState);
-    } catch (error, stackTrace) {
-      debugPrint('Incognito movies background refresh failed: $error');
-      debugPrint('$stackTrace');
-    }
-  }
-
-  Future<void> setIncognitoUserMovies(MoviesState moviesState) async {
     final moviesIds = moviesState.cachedUserMovies.map((e) => e.id).toList();
+    if (moviesIds.isEmpty) {
+      return;
+    }
 
     var encodedIds = json.encode(moviesIds);
 
@@ -216,7 +212,7 @@ class MyMoviesState extends State<MyMovies> {
     }
   }
 
-  Future<void> setMoviesLists() async {
+  Future<bool> setMoviesLists() async {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
 
@@ -230,13 +226,8 @@ class MyMoviesState extends State<MyMovies> {
       debugPrint(
         'Movies lists load skipped: ${moviesListsResponse.statusCode}',
       );
-      if (userState.isIncognitoMode) {
-        moviesState.setInitialMoviesListsIncognito([]);
-      } else {
-        moviesState.setInitialMoviesLists([]);
-      }
-
-      return;
+      moviesState.markMoviesListsRequestFinished();
+      return false;
     }
 
     Iterable iterableMoviesLists;
@@ -244,25 +235,15 @@ class MyMoviesState extends State<MyMovies> {
       final decodedBody = json.decode(responseBody);
       if (decodedBody is! Iterable) {
         debugPrint('Movies lists response was not a list.');
-        if (userState.isIncognitoMode) {
-          moviesState.setInitialMoviesListsIncognito([]);
-        } else {
-          moviesState.setInitialMoviesLists([]);
-        }
-
-        return;
+        moviesState.markMoviesListsRequestFinished();
+        return false;
       }
 
       iterableMoviesLists = decodedBody;
     } on FormatException catch (error) {
       debugPrint('Movies lists response was not valid JSON: $error');
-      if (userState.isIncognitoMode) {
-        moviesState.setInitialMoviesListsIncognito([]);
-      } else {
-        moviesState.setInitialMoviesLists([]);
-      }
-
-      return;
+      moviesState.markMoviesListsRequestFinished();
+      return false;
     }
 
     final moviesLists = iterableMoviesLists.map((model) {
@@ -275,6 +256,8 @@ class MyMoviesState extends State<MyMovies> {
     } else {
       moviesState.setInitialMoviesLists(moviesLists);
     }
+
+    return true;
   }
 
   Future<void> setUserInfo() async {
@@ -313,31 +296,33 @@ class MyMoviesState extends State<MyMovies> {
   }
 
   Future<void> setUserData() async {
+    if (_initializationInFlight) {
+      return;
+    }
+
+    _initializationInFlight = true;
     final loaderState = Provider.of<LoaderState>(context, listen: false);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
 
     if (mounted) {
       setState(() {
         initialDataLoaded = false;
-        _initialDataLoadError = null;
       });
     }
 
     try {
-      await setUserInfo();
-      unawaited(_loadStarterDeckInBackground());
-      unawaited(_loadMoviesListsInBackground());
-      await setUserMovies().timeout(_initialDataLoadTimeout);
-    } on TimeoutException catch (error, stackTrace) {
-      debugPrint('Initial user data load timed out: $error');
-      debugPrint('$stackTrace');
-      _initialDataLoadError =
-          'MovieDiary could not finish loading your library. You can retry, or start rating while we reconnect.';
+      await moviesState.setInitialData().timeout(_cacheLoadTimeout);
+    } on TimeoutException catch (error) {
+      debugPrint('Cached library load timed out: $error');
+      _refreshError =
+          'MovieDiary could not read all saved data on this device.';
     } catch (error, stackTrace) {
-      debugPrint('Initial user data load failed: $error');
+      debugPrint('Cached library load failed: $error');
       debugPrint('$stackTrace');
-      _initialDataLoadError =
-          'MovieDiary could not load your library. Your saved movies are still safe; try again when the API is reachable.';
+      _refreshError =
+          'MovieDiary could not read all saved data on this device.';
     } finally {
+      _initializationInFlight = false;
       if (loaderState.isLoaderVisible) {
         loaderState.setIsLoaderVisible(false);
       }
@@ -348,42 +333,91 @@ class MyMoviesState extends State<MyMovies> {
     }
 
     setState(() {
-      initialDataLoaded = _initialDataLoadError == null;
+      initialDataLoaded = true;
+    });
+
+    unawaited(_refreshRemoteData());
+  }
+
+  Future<void> _refreshRemoteData() async {
+    if (_refreshInFlight) {
+      return;
+    }
+
+    _refreshInFlight = true;
+    if (mounted) {
+      setState(() {});
+    }
+
+    final userInfoFuture = _runRefreshTask('User info', () async {
+      await setUserInfo();
+      return true;
+    });
+    final listsFuture = _runRefreshTask('Movies lists', () => setMoviesLists());
+    final starterDeckFuture =
+        _runRefreshTask('Starter deck', _loadStarterDeckInBackground);
+    final librarySucceeded =
+        await _runRefreshTask('Library', _refreshUserMovies);
+
+    final sideResults =
+        await Future.wait([userInfoFuture, listsFuture, starterDeckFuture]);
+
+    if (!mounted) {
+      return;
+    }
+
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    if (!sideResults[1]) {
+      moviesState.markMoviesListsRequestFinished();
+    }
+    if (!sideResults[2]) {
+      moviesState.markStarterDeckRequestFinished();
+    }
+
+    setState(() {
+      _refreshInFlight = false;
+      _refreshError = librarySucceeded
+          ? null
+          : 'MovieDiary could not refresh your library.';
     });
   }
 
-  Future<void> _loadMoviesListsInBackground() async {
+  Future<bool> _runRefreshTask(
+    String label,
+    Future<bool> Function() task,
+  ) async {
     try {
-      await setMoviesLists().timeout(_initialDataLoadTimeout);
+      return await task().timeout(_remoteRefreshTimeout);
     } catch (error, stackTrace) {
-      debugPrint('Movies lists background load failed: $error');
+      debugPrint('$label refresh failed: $error');
       debugPrint('$stackTrace');
+      return false;
     }
   }
 
-  Future<void> _loadStarterDeckInBackground() async {
+  Future<bool> _loadStarterDeckInBackground() async {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     if (moviesState.starterDeckMovies.isNotEmpty) {
-      return;
+      return true;
     }
 
     try {
       final response = await serviceAgent
           .getStarterDeck(perBucket: 20)
-          .timeout(_initialDataLoadTimeout);
+          .timeout(_remoteRefreshTimeout);
       final responseBody = response.body.trim();
 
       if (!_isSuccessfulJsonResponse(responseBody, response.statusCode)) {
         debugPrint('Starter deck load skipped: ${response.statusCode}');
-        moviesState.setStarterDeckMovies([]);
-        return;
+        moviesState.markStarterDeckRequestFinished();
+        return false;
       }
 
       final decodedBody = json.decode(responseBody);
       if (decodedBody is! Iterable) {
         debugPrint('Starter deck response was not a list.');
-        moviesState.setStarterDeckMovies([]);
-        return;
+        moviesState.markStarterDeckRequestFinished();
+        return false;
       }
 
       final movies = decodedBody
@@ -391,17 +425,91 @@ class MyMoviesState extends State<MyMovies> {
           .toList();
 
       moviesState.setStarterDeckMovies(movies);
+      return true;
     } catch (error, stackTrace) {
       debugPrint('Starter deck background load failed: $error');
       debugPrint('$stackTrace');
-      moviesState.setStarterDeckMovies([]);
+      moviesState.markStarterDeckRequestFinished();
+      return false;
     }
   }
 
   void selectNavigationTab(int index) {
+    if (index < 0 || index >= _visitedTabs.length) {
+      return;
+    }
+
+    if (index == selectedNavigationIndex) {
+      _handleActiveTabTap(index);
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       selectedNavigationIndex = index;
+      _visitedTabs[index] = true;
     });
+    widget.onNavigationIndexChanged?.call(index);
+  }
+
+  void _handleActiveTabTap(int index) {
+    switch (index) {
+      case 0:
+        unawaited(_discoverKey.currentState?.handleActiveTabTap());
+        return;
+      case 1:
+        unawaited(_searchKey.currentState?.handleActiveTabTap());
+        return;
+      case 2:
+        unawaited(_myMoviesKey.currentState?.handleActiveTabTap());
+        return;
+      case 3:
+        unawaited(_listsKey.currentState?.handleActiveTabTap());
+        return;
+      case 4:
+        unawaited(_settingsKey.currentState?.handleActiveTabTap());
+        return;
+    }
+  }
+
+  Future<void> _startRatingFromLibrary() async {
+    final userState = Provider.of<UserState>(context, listen: false);
+    await userState.setOnboardingStage(OnboardingStage.rating);
+  }
+
+  Widget _buildRootTab(int index) {
+    if (!_visitedTabs[index]) {
+      return SizedBox.shrink(key: ValueKey('unvisited-root-tab-$index'));
+    }
+
+    return switch (index) {
+      0 => DiscoverPage(
+          key: _discoverKey,
+          isOffline: _refreshError != null,
+          isRefreshing: _refreshInFlight,
+          onRetry: _refreshRemoteData,
+          onOpenLists: () => selectNavigationTab(3),
+        ),
+      1 => SearchPage(
+          key: _searchKey,
+          isActive: selectedNavigationIndex == 1,
+          handlesBackNavigation: false,
+        ),
+      2 => MovieList(
+          key: _myMoviesKey,
+          onOpenDiscover: () => selectNavigationTab(0),
+          onStartRating: () => unawaited(_startRatingFromLibrary()),
+          isRefreshing: _refreshInFlight,
+          refreshError: _refreshError,
+          onRetry: _refreshRemoteData,
+        ),
+      3 => MoviesListsPage(
+          key: _listsKey,
+          initialPageIndex: 0,
+        ),
+      4 => Settings(key: _settingsKey),
+      _ => const SizedBox.shrink(),
+    };
   }
 
   @override
@@ -418,12 +526,9 @@ class MyMoviesState extends State<MyMovies> {
       loaderState.setIsLoaderVisible(false);
     }
 
-    final ratedMoviesCount = moviesState.userMovies
-        .where((movie) => MovieRate.isViewed(movie.movieRate))
-        .length;
-    final shouldShowOnboarding = !userState.onboardingCompleted &&
-        !userState.onboardingSkipped &&
-        ratedMoviesCount < 10;
+    final shouldShowOnboarding =
+        userState.launchDestination == LaunchDestination.rateMovies ||
+            _retainOnboardingDuringExit;
 
     if (shouldShowOnboarding && AdManager.bannerVisible) {
       Future.microtask(AdManager.hideBanner);
@@ -431,6 +536,22 @@ class MyMoviesState extends State<MyMovies> {
 
     if (shouldShowOnboarding) {
       return OnboardingWizardPage(
+        onExitStarted: () {
+          if (!mounted || _retainOnboardingDuringExit) {
+            return;
+          }
+          setState(() {
+            _retainOnboardingDuringExit = true;
+          });
+        },
+        onExitCompleted: () {
+          if (!mounted || !_retainOnboardingDuringExit) {
+            return;
+          }
+          setState(() {
+            _retainOnboardingDuringExit = false;
+          });
+        },
         onFinished: () {
           if (!mounted) {
             return;
@@ -438,7 +559,10 @@ class MyMoviesState extends State<MyMovies> {
 
           setState(() {
             selectedNavigationIndex = 0;
+            _visitedTabs[0] = true;
+            _retainOnboardingDuringExit = false;
           });
+          widget.onNavigationIndexChanged?.call(0);
         },
       );
     }
@@ -447,8 +571,11 @@ class MyMoviesState extends State<MyMovies> {
         AdManager.bannerVisible &&
         AdManager.bannersReady;
 
-    final myMoviesWidget = Scaffold(
-      resizeToAvoidBottomInset: false,
+    final myMoviesWidget = MovieDiaryRootNavigationShell(
+      selectedIndex: selectedNavigationIndex,
+      tabs: List<Widget>.generate(5, _buildRootTab),
+      onTabSelected: selectNavigationTab,
+      resizeToAvoidBottomInset: selectedNavigationIndex == 1,
       appBar: showAds
           ? AppBar(
               title:
@@ -456,108 +583,67 @@ class MyMoviesState extends State<MyMovies> {
               elevation: 0.7,
             )
           : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
-      body: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          selectedNavigationIndex == 0 ? const DiscoverPage() : MovieList(),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: MoviesBottomNavigationBar(
-              selectedIndex: selectedNavigationIndex,
-              onTabSelected: selectNavigationTab,
-            ),
-          ),
-        ],
-      ),
     );
     return myMoviesWidget;
   }
 
   Widget _buildInitialLoadingState() {
-    final hasError = _initialDataLoadError != null;
-
-    return Scaffold(
-      backgroundColor: const Color(0xfff6f7fb),
+    return const Scaffold(
+      backgroundColor: Md3Colors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          padding: EdgeInsets.fromLTRB(24, 24, 24, 32),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Spacer(),
-              Container(
-                width: 88,
-                height: 88,
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.92),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 28,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Image(
-                    image: AssetImage('Assets/mdIcon_V_with_effect.png'),
-                    width: 54,
-                  ),
-                ),
+              Spacer(),
+              Image(
+                image: AssetImage('Assets/mdIcon_V_with_effect.png'),
+                width: 72,
+                height: 72,
               ),
+              SizedBox(height: 24),
               Text(
-                hasError ? 'Library did not load' : 'Loading your library',
+                'MovieDiary',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xff1f2937),
-                  fontSize: 32,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.8,
+                style: TextStyle(
+                  color: Md3Colors.text,
+                  fontSize: 30,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 10),
               Text(
-                hasError
-                    ? _initialDataLoadError!
-                    : 'Bringing in your watchlist, viewed movies, and lists.',
+                'Loading your library',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xff6b7280),
-                  fontSize: 16,
-                  height: 1.35,
-                  fontWeight: FontWeight.w600,
+                style: TextStyle(
+                  color: Md3Colors.primary,
+                  fontSize: 17,
+                  height: 1.3,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 32),
-              if (hasError) ...[
-                Md3PrimaryButton(
-                  text: 'Try Again',
-                  icon: Icons.refresh_rounded,
-                  onPressed: setUserData,
+              SizedBox(height: 8),
+              Text(
+                'Your saved movies will appear first. Fresh details load in the background.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Md3Colors.muted,
+                  fontSize: 15,
+                  height: 1.4,
                 ),
-                const SizedBox(height: 12),
-                Md3PrimaryButton(
-                  text: 'Start Rating',
-                  icon: Icons.movie_filter_rounded,
-                  tonal: true,
-                  onPressed: () {
-                    setState(() {
-                      initialDataLoaded = true;
-                      _initialDataLoadError = null;
-                    });
-                  },
+              ),
+              SizedBox(height: 24),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: Md3Colors.primary,
                 ),
-              ] else
-                const Md3ListSkeletonCard(
-                  rows: 2,
-                  showTrailing: false,
-                ),
-              const Spacer(),
+              ),
+              Spacer(),
             ],
           ),
         ),

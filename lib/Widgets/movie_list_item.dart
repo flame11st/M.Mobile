@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Enums/movie_type.dart';
@@ -37,88 +39,120 @@ class MovieListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Provider.of<MoviesState>(context);
+    final moviesState = Provider.of<MoviesState>(context);
+    final matchingMovies =
+        moviesState.userMovies.where((element) => element.id == movie.id);
+    final currentMovie =
+        matchingMovies.isNotEmpty ? matchingMovies.first : movie;
+    final mediaQuery = MediaQuery.of(context);
+    final isCompactPoster = mediaQuery.size.width <= 390;
+    final wrapsPrimaryAction =
+        mediaQuery.size.width < 360 || mediaQuery.textScaler.scale(1) >= 1.3;
+    final posterWidth = isCompactPoster ? 72.0 : 80.0;
+    final posterHeight = isCompactPoster ? 108.0 : 120.0;
+    final isWatchlist = mode == MovieCardMode.watchlist;
+    final showStatus =
+        !isWatchlist && currentMovie.movieRate != MovieRate.notRated;
 
     return Hero(
       tag: 'movie-hero-animation${movie.id}',
       child: Material(
         color: Colors.transparent,
-        child: Md3Card(
-          margin: const EdgeInsets.fromLTRB(12, 5, 12, 5),
-          padding: const EdgeInsets.all(10),
-          onTap: () => _openDetails(context),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Md3MoviePoster(movie: movie, width: 64, height: 96),
-              const SizedBox(width: 12),
-              Expanded(child: _MovieCardSummary(movie: movie)),
-              const SizedBox(width: 8),
-              _buildAction(context),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Md3Colors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Md3Colors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0f172231),
+                blurRadius: 18,
+                offset: Offset(0, 6),
+              ),
             ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Semantics(
+                          container: true,
+                          button: true,
+                          excludeSemantics: true,
+                          label: 'Open ${currentMovie.title} details',
+                          onTap: () => _openDetails(context, currentMovie),
+                          child: InkWell(
+                            excludeFromSemantics: true,
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () => _openDetails(context, currentMovie),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Md3MoviePoster(
+                                  movie: currentMovie,
+                                  width: posterWidth,
+                                  height: posterHeight,
+                                  borderRadius: 12,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _MovieCardContent(
+                                    movie: currentMovie,
+                                    showStatus: showStatus,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _CardIconAction(
+                        tooltip: 'Movie actions',
+                        onPressed: () =>
+                            _openActionsSheet(context, currentMovie),
+                      ),
+                    ],
+                  ),
+                  if (isWatchlist) ...[
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: wrapsPrimaryAction ? 0 : posterWidth + 12,
+                      ),
+                      child: SizedBox(
+                        width: wrapsPrimaryAction ? double.infinity : 120,
+                        child: _MarkWatchedButton(
+                          onPressed: () =>
+                              _openMarkWatchedSheet(context, currentMovie),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAction(BuildContext context) {
-    if (mode == MovieCardMode.personalList) {
-      return _CardIconAction(
-        tooltip: 'Movie actions',
-        icon: Icons.more_horiz_rounded,
-        foreground: Md3Colors.primary,
-        background: Md3Colors.primarySoft,
-        onPressed: () => _openActionsSheet(context),
-      );
-    }
-
-    if (mode == MovieCardMode.watchlist ||
-        movie.movieRate == MovieRate.addedToWatchlist) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _CardTextAction(
-            label: 'Mark\nWatched',
-            icon: Icons.check_circle_outline_rounded,
-            onPressed: () => _openMarkWatchedSheet(context),
-          ),
-          const SizedBox(width: 8),
-          _CardIconAction(
-            tooltip: 'More actions',
-            icon: Icons.more_horiz_rounded,
-            foreground: Md3Colors.primary,
-            background: Md3Colors.primarySoft,
-            onPressed: () => _openActionsSheet(context),
-          ),
-        ],
-      );
-    }
-
-    if (mode == MovieCardMode.viewed || MovieRate.isViewed(movie.movieRate)) {
-      return _CardIconAction(
-        tooltip: 'Movie actions',
-        icon: Icons.more_horiz_rounded,
-        foreground: Md3Colors.primary,
-        background: Md3Colors.primarySoft,
-        onPressed: () => _openActionsSheet(context),
-      );
-    }
-
-    return _CardIconAction(
-      tooltip: 'Movie actions',
-      icon: Icons.more_horiz_rounded,
-      foreground: Md3Colors.primary,
-      background: Md3Colors.primarySoft,
-      onPressed: () => _openActionsSheet(context),
-    );
-  }
-
-  void _openDetails(BuildContext context) {
+  void _openDetails(BuildContext context, Movie currentMovie) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => MovieListItemExpanded(
-          movie: movie,
+          movie: currentMovie,
           imageUrl: 'https://moviediarystorage.blob.core.windows.net/movies',
           moviesList: moviesList,
           shouldRequestReview: shouldRequestReview,
@@ -127,40 +161,185 @@ class MovieListItem extends StatelessWidget {
     );
   }
 
-  void _openMarkWatchedSheet(BuildContext context) {
-    FocusManager.instance.primaryFocus?.unfocus();
-    showModalBottomSheet<void>(
-      backgroundColor: Colors.transparent,
-      context: context,
-      builder: (context) => MarkWatchedBottomSheet(movie: movie),
-    );
+  void _openMarkWatchedSheet(BuildContext context, Movie currentMovie) {
+    showMarkWatchedBottomSheet(context: context, movie: currentMovie);
   }
 
-  void _openActionsSheet(BuildContext context) {
-    FocusManager.instance.primaryFocus?.unfocus();
-    showModalBottomSheet<void>(
-      backgroundColor: Colors.transparent,
+  void _openActionsSheet(BuildContext context, Movie currentMovie) {
+    showMd3BottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => _MovieRowActionsSheet(
-        movie: movie,
+      builder: (sheetContext) => _MovieRowActionsSheet(
+        movie: currentMovie,
         moviesList: moviesList,
         mode: mode,
         shouldRequestReview: shouldRequestReview,
+        parentContext: context,
         onOpenDetails: () {
-          Navigator.of(context).pop();
-          _openDetails(context);
+          Navigator.of(sheetContext).pop();
+          _openDetails(context, currentMovie);
         },
       ),
     );
   }
 }
 
-class _MovieRowActionsSheet extends StatelessWidget {
+class _MovieCardContent extends StatelessWidget {
+  final Movie movie;
+  final bool showStatus;
+
+  const _MovieCardContent({
+    required this.movie,
+    required this.showStatus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final runtime = movie.movieType == MovieType.tv
+        ? movie.seasonsCount > 0
+            ? '${movie.seasonsCount} season${movie.seasonsCount == 1 ? '' : 's'}'
+            : movie.averageTimeOfEpisode > 0
+                ? '${movie.averageTimeOfEpisode} min'
+                : null
+        : movie.duration > 0
+            ? '${movie.duration} min'
+            : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Text(
+            movie.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 17,
+              height: 22 / 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _MetadataPill(text: '${movie.releaseDate.year}'),
+            if (runtime != null) _MetadataPill(text: runtime),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          movie.genres.isNotEmpty
+              ? movie.genres.take(3).join(', ')
+              : movie.movieType == MovieType.tv
+                  ? 'TV Series'
+                  : 'Movie',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Md3Colors.muted,
+            fontSize: 13,
+            height: 18 / 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (showStatus) ...[
+          const SizedBox(height: 10),
+          Md3OpinionBadge(movieRate: movie.movieRate),
+        ],
+      ],
+    );
+  }
+}
+
+class _MarkWatchedButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _MarkWatchedButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 120,
+      height: 44,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          backgroundColor: Md3Colors.primarySoft,
+          foregroundColor: Md3Colors.primary,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        onPressed: onPressed,
+        icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+        label: const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'Mark watched',
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardIconAction extends StatelessWidget {
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _CardIconAction({
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Semantics(
+        container: true,
+        button: true,
+        label: tooltip,
+        onTap: onPressed,
+        child: ExcludeSemantics(
+          child: IconButton(
+            tooltip: tooltip,
+            style: IconButton.styleFrom(
+              backgroundColor: Md3Colors.primarySoft,
+              foregroundColor: Md3Colors.primary,
+              minimumSize: const Size(44, 44),
+              maximumSize: const Size(44, 44),
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            onPressed: onPressed,
+            icon: const Icon(Icons.more_horiz_rounded, size: 21),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MovieRowActionsSheet extends StatefulWidget {
   final Movie movie;
   final MoviesList? moviesList;
   final MovieCardMode mode;
   final bool shouldRequestReview;
+  final BuildContext parentContext;
   final VoidCallback onOpenDetails;
 
   const _MovieRowActionsSheet({
@@ -168,193 +347,282 @@ class _MovieRowActionsSheet extends StatelessWidget {
     required this.moviesList,
     required this.mode,
     required this.shouldRequestReview,
+    required this.parentContext,
     required this.onOpenDetails,
   });
 
   @override
+  State<_MovieRowActionsSheet> createState() => _MovieRowActionsSheetState();
+}
+
+class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
+  bool _updatingWatchlist = false;
+
+  @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-    final matchingMovies =
-        moviesState.userMovies.where((element) => element.id == movie.id);
+    final matchingMovies = moviesState.userMovies
+        .where((element) => element.id == widget.movie.id);
     final currentMovie =
-        matchingMovies.isNotEmpty ? matchingMovies.first : movie;
+        matchingMovies.isNotEmpty ? matchingMovies.first : widget.movie;
     final isWatchlist = currentMovie.movieRate == MovieRate.addedToWatchlist ||
-        mode == MovieCardMode.watchlist;
+        widget.mode == MovieCardMode.watchlist;
     final isViewed = MovieRate.isViewed(currentMovie.movieRate);
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 18),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Md3Colors.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return Md3BottomSheetSurface(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Md3MoviePoster(movie: currentMovie, width: 46, height: 68),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Movie actions',
-                          style: TextStyle(
-                            color: Md3Colors.text,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          currentMovie.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Md3Colors.muted,
-                            fontSize: 14,
-                            height: 1.3,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
+              Md3MoviePoster(
+                movie: currentMovie,
+                width: 46,
+                height: 68,
+                borderRadius: 12,
               ),
-              if (currentMovie.movieRate != MovieRate.notRated) ...[
-                const SizedBox(height: 14),
-                Md3OpinionBadge(movieRate: currentMovie.movieRate),
-              ],
-              const SizedBox(height: 18),
-              if (isWatchlist)
-                _SheetActionButton(
-                  label: 'Mark watched',
-                  detail: 'Move to Viewed and save your opinion.',
-                  icon: Icons.check_circle_outline_rounded,
-                  color: Md3Colors.primary,
-                  filled: true,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    showModalBottomSheet<void>(
-                      backgroundColor: Colors.transparent,
-                      context: context,
-                      builder: (context) =>
-                          MarkWatchedBottomSheet(movie: currentMovie),
-                    );
-                  },
-                )
-              else
-                _SheetActionButton(
-                  label: 'Add to Watchlist',
-                  detail: 'Save it for later without rating it yet.',
-                  icon: Icons.bookmark_add_rounded,
-                  color: Md3Colors.primary,
-                  filled: true,
-                  onTap: () => _rate(
-                    context,
-                    currentMovie,
-                    MovieRate.addedToWatchlist,
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Movie actions',
+                      style: TextStyle(
+                        color: Md3Colors.text,
+                        fontSize: 24,
+                        height: 29 / 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      currentMovie.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 15,
+                        height: 20 / 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 12),
-              _SheetActionButton(
-                label: isViewed ? 'Change rating' : 'Rate now',
-                detail: 'Pick Liked, Okay, or Disliked.',
-                icon: Icons.favorite_rounded,
-                color: Md3Colors.success,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  showModalBottomSheet<void>(
-                    backgroundColor: Colors.transparent,
-                    context: context,
-                    builder: (context) => MovieRateButtons(
-                      moviesList: moviesList,
-                      movie: currentMovie,
-                      showTitle: true,
-                      addMargin: false,
-                      shouldRequestReview: shouldRequestReview,
-                    ),
-                  );
-                },
               ),
-              const SizedBox(height: 12),
-              _PersonalListAction(movie: currentMovie, moviesList: moviesList),
-              const SizedBox(height: 12),
-              _SheetActionButton(
-                label: 'View details',
-                detail: 'Open cast, story, ratings, and where to watch.',
-                icon: Icons.info_outline_rounded,
-                color: Md3Colors.muted,
-                onTap: onOpenDetails,
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                  tooltip: 'Close',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
               ),
             ],
           ),
-        ),
+          if (currentMovie.movieRate != MovieRate.notRated) ...[
+            const SizedBox(height: 12),
+            Md3OpinionBadge(movieRate: currentMovie.movieRate),
+          ],
+          const SizedBox(height: 16),
+          if (isWatchlist)
+            _SheetActionButton(
+              label: 'Mark watched',
+              detail: 'Move to Viewed and save your opinion.',
+              icon: Icons.check_circle_outline_rounded,
+              color: Md3Colors.primary,
+              filled: true,
+              onTap: () => _openMarkWatched(currentMovie),
+            )
+          else
+            _SheetActionButton(
+              label: isViewed ? 'Move to Watchlist' : 'Add to Watchlist',
+              detail: isViewed
+                  ? 'Your current rating will be removed.'
+                  : 'Save it for later.',
+              icon: Icons.bookmark_add_rounded,
+              color: Md3Colors.primary,
+              filled: true,
+              busy: _updatingWatchlist,
+              onTap: _updatingWatchlist
+                  ? null
+                  : () => _moveToWatchlist(currentMovie, isViewed: isViewed),
+            ),
+          const SizedBox(height: 12),
+          _SheetActionButton(
+            label: isViewed ? 'Change rating' : 'Rate now',
+            detail: 'Pick Liked, Okay, or Disliked.',
+            icon: Icons.favorite_rounded,
+            color: Md3Colors.success,
+            onTap: () => _openRating(currentMovie),
+          ),
+          const SizedBox(height: 12),
+          _PersonalListAction(
+            movie: currentMovie,
+            currentList: widget.moviesList,
+          ),
+          const SizedBox(height: 12),
+          _SheetActionButton(
+            label: 'Open details',
+            detail: 'Open cast, story, ratings, and where to watch.',
+            icon: Icons.info_outline_rounded,
+            color: Md3Colors.muted,
+            onTap: widget.onOpenDetails,
+          ),
+          if (widget.moviesList != null) ...[
+            const SizedBox(height: 8),
+            const Divider(color: Md3Colors.border),
+            const SizedBox(height: 8),
+            _RemoveFromListAction(
+              movie: currentMovie,
+              moviesList: widget.moviesList!,
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Future<void> _rate(
-    BuildContext context,
-    Movie currentMovie,
-    int selectedRate,
-  ) async {
-    final navigator = Navigator.of(context);
-    final moviesState = Provider.of<MoviesState>(context, listen: false);
-    final userState = Provider.of<UserState>(context, listen: false);
+  void _openMarkWatched(Movie currentMovie) {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.parentContext.mounted) {
+        showMarkWatchedBottomSheet(
+          context: widget.parentContext,
+          movie: currentMovie,
+        );
+      }
+    });
+  }
 
-    await moviesState.changeMovieRate(
-      currentMovie.id,
-      selectedRate,
-      userState.isIncognitoMode,
-      currentMovie,
-    );
+  void _openRating(Movie currentMovie) {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!widget.parentContext.mounted) {
+        return;
+      }
 
-    if (!userState.isIncognitoMode && userState.userId != null) {
-      await ServiceAgent().rateMovie(
-        currentMovie.id,
-        userState.userId!,
-        selectedRate,
+      showMd3BottomSheet<void>(
+        context: widget.parentContext,
+        builder: (context) => MovieRateButtons(
+          moviesList: widget.moviesList,
+          movie: currentMovie,
+          showTitle: true,
+          addMargin: false,
+          shouldRequestReview: widget.shouldRequestReview,
+        ),
       );
+    });
+  }
+
+  Future<void> _moveToWatchlist(
+    Movie currentMovie, {
+    required bool isViewed,
+  }) async {
+    if (isViewed) {
+      final ratingLabel = MovieRate.opinionLabel(currentMovie.movieRate);
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Move to Watchlist?'),
+          content: Text(
+            'Your $ratingLabel rating will be removed when '
+            '${currentMovie.title} moves back to Watchlist.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Move'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
     }
 
-    if (!context.mounted) {
+    setState(() => _updatingWatchlist = true);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final previousRate = currentMovie.movieRate;
+
+    try {
+      await moviesState.changeMovieRate(
+        currentMovie.id,
+        MovieRate.addedToWatchlist,
+        userState.isIncognitoMode,
+        currentMovie,
+      );
+
+      if (!userState.isIncognitoMode) {
+        final userId = userState.userId;
+        if (userId == null || userId.isEmpty || ServiceAgent.state == null) {
+          throw const HttpException('Signed-in movie update is unavailable.');
+        }
+
+        final response = await ServiceAgent().rateMovie(
+          currentMovie.id,
+          userId,
+          MovieRate.addedToWatchlist,
+        );
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw HttpException(
+            'Movie update failed with ${response.statusCode}.',
+          );
+        }
+      }
+    } catch (_) {
+      await moviesState.changeMovieRate(
+        currentMovie.id,
+        previousRate,
+        userState.isIncognitoMode,
+        currentMovie,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _updatingWatchlist = false);
+      MSnackBar.showWithMessenger(
+        messenger,
+        'Couldn’t update ${currentMovie.title}. Try again.',
+        false,
+        duration: const Duration(milliseconds: 2500),
+      );
+      return;
+    }
+
+    if (!mounted) {
       return;
     }
 
     navigator.pop();
-    MSnackBar.showSnackBar('Added to Watchlist.', true);
+    MSnackBar.showWithMessenger(
+      messenger,
+      isViewed ? 'Moved to Watchlist. Rating removed.' : 'Added to Watchlist.',
+      true,
+      duration: const Duration(milliseconds: 2500),
+    );
   }
 }
 
 class _PersonalListAction extends StatelessWidget {
   final Movie movie;
-  final MoviesList? moviesList;
+  final MoviesList? currentList;
 
   const _PersonalListAction({
     required this.movie,
-    required this.moviesList,
+    required this.currentList,
   });
 
   @override
@@ -362,16 +630,6 @@ class _PersonalListAction extends StatelessWidget {
     final moviesState = Provider.of<MoviesState>(context);
     final userLists = [...moviesState.personalMoviesLists]
       ..sort((a, b) => a.order.compareTo(b.order));
-
-    if (moviesList != null) {
-      return _SheetActionButton(
-        label: 'Remove from ${moviesList!.name}',
-        detail: 'Keep the movie status, but remove it from this list.',
-        icon: Icons.remove_circle_outline_rounded,
-        color: Md3Colors.danger,
-        onTap: () => _removeFromList(context, moviesList!),
-      );
-    }
 
     if (userLists.isEmpty) {
       return _SheetActionButton(
@@ -407,9 +665,11 @@ class _PersonalListAction extends StatelessWidget {
             fontWeight: FontWeight.w900,
           ),
         ),
-        subtitle: const Text(
-          'Choose one of your lists.',
-          style: TextStyle(
+        subtitle: Text(
+          currentList == null
+              ? 'Choose one of your lists.'
+              : 'Add it to another collection.',
+          style: const TextStyle(
             color: Md3Colors.muted,
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -422,32 +682,9 @@ class _PersonalListAction extends StatelessWidget {
       ),
     );
   }
-
-  Future<void> _removeFromList(BuildContext context, MoviesList list) async {
-    final navigator = Navigator.of(context);
-    final moviesState = Provider.of<MoviesState>(context, listen: false);
-    final userState = Provider.of<UserState>(context, listen: false);
-
-    if (!userState.isIncognitoMode && userState.userId != null) {
-      await ServiceAgent().removeMovieFromList(
-        userState.userId!,
-        movie.id,
-        list.name,
-      );
-    }
-
-    moviesState.removeMovieFromPersonalList(list.name, movie);
-
-    if (!context.mounted) {
-      return;
-    }
-
-    navigator.pop();
-    MSnackBar.showSnackBar('Removed from ${list.name}.', true);
-  }
 }
 
-class _ListChoice extends StatelessWidget {
+class _ListChoice extends StatefulWidget {
   final Movie movie;
   final MoviesList moviesList;
 
@@ -457,9 +694,16 @@ class _ListChoice extends StatelessWidget {
   });
 
   @override
+  State<_ListChoice> createState() => _ListChoiceState();
+}
+
+class _ListChoiceState extends State<_ListChoice> {
+  bool _submitting = false;
+
+  @override
   Widget build(BuildContext context) {
-    final movieInList =
-        moviesList.listMovies.any((element) => element.id == movie.id);
+    final movieInList = widget.moviesList.listMovies
+        .any((element) => element.id == widget.movie.id);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -468,8 +712,9 @@ class _ListChoice extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
-          onTap: movieInList ? null : () => _addToList(context),
+          onTap: movieInList || _submitting ? null : _addToList,
           child: Container(
+            constraints: const BoxConstraints(minHeight: 56),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
@@ -482,7 +727,7 @@ class _ListChoice extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        moviesList.name,
+                        widget.moviesList.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -493,7 +738,8 @@ class _ListChoice extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${moviesList.listMovies.length} item${moviesList.listMovies.length == 1 ? '' : 's'}',
+                        '${widget.moviesList.listMovies.length} '
+                        'item${widget.moviesList.listMovies.length == 1 ? '' : 's'}',
                         style: const TextStyle(
                           color: Md3Colors.muted,
                           fontSize: 12,
@@ -503,12 +749,19 @@ class _ListChoice extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  movieInList
-                      ? Icons.check_circle_rounded
-                      : Icons.add_circle_outline_rounded,
-                  color: movieInList ? Md3Colors.success : Md3Colors.primary,
-                ),
+                if (_submitting)
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    movieInList
+                        ? Icons.check_circle_rounded
+                        : Icons.add_circle_outline_rounded,
+                    color: movieInList ? Md3Colors.success : Md3Colors.primary,
+                  ),
               ],
             ),
           ),
@@ -517,27 +770,153 @@ class _ListChoice extends StatelessWidget {
     );
   }
 
-  Future<void> _addToList(BuildContext context) async {
+  Future<void> _addToList() async {
+    if (_submitting) {
+      return;
+    }
+
+    setState(() => _submitting = true);
     final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
 
-    if (!userState.isIncognitoMode && userState.userId != null) {
-      await ServiceAgent().addMovieToList(
-        userState.userId!,
-        movie.id,
-        moviesList.name,
+    try {
+      if (!userState.isIncognitoMode) {
+        final userId = userState.userId;
+        if (userId == null || userId.isEmpty || ServiceAgent.state == null) {
+          throw const HttpException('Signed-in list update is unavailable.');
+        }
+
+        final response = await ServiceAgent().addMovieToList(
+          userId,
+          widget.movie.id,
+          widget.moviesList.name,
+        );
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw HttpException(
+            'List update failed with ${response.statusCode}.',
+          );
+        }
+      }
+
+      moviesState.addMovieToPersonalList(
+        widget.moviesList.name,
+        widget.movie,
       );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _submitting = false);
+      MSnackBar.showWithMessenger(
+        messenger,
+        'Couldn’t update ${widget.movie.title}. Try again.',
+        false,
+        duration: const Duration(milliseconds: 2500),
+      );
+      return;
     }
 
-    moviesState.addMovieToPersonalList(moviesList.name, movie);
-
-    if (!context.mounted) {
+    if (!mounted) {
       return;
     }
 
     navigator.pop();
-    MSnackBar.showSnackBar('Added to ${moviesList.name}.', true);
+    MSnackBar.showWithMessenger(
+      messenger,
+      'Added to ${widget.moviesList.name}.',
+      true,
+      duration: const Duration(milliseconds: 2500),
+    );
+  }
+}
+
+class _RemoveFromListAction extends StatefulWidget {
+  final Movie movie;
+  final MoviesList moviesList;
+
+  const _RemoveFromListAction({
+    required this.movie,
+    required this.moviesList,
+  });
+
+  @override
+  State<_RemoveFromListAction> createState() => _RemoveFromListActionState();
+}
+
+class _RemoveFromListActionState extends State<_RemoveFromListAction> {
+  bool _submitting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SheetActionButton(
+      label: 'Remove from ${widget.moviesList.name}',
+      detail: 'Keep the movie status, but remove it from this list.',
+      icon: Icons.remove_circle_outline_rounded,
+      color: Md3Colors.danger,
+      busy: _submitting,
+      onTap: _submitting ? null : _remove,
+    );
+  }
+
+  Future<void> _remove() async {
+    setState(() => _submitting = true);
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
+
+    try {
+      if (!userState.isIncognitoMode) {
+        final userId = userState.userId;
+        if (userId == null || userId.isEmpty || ServiceAgent.state == null) {
+          throw const HttpException('Signed-in list update is unavailable.');
+        }
+
+        final response = await ServiceAgent().removeMovieFromList(
+          userId,
+          widget.movie.id,
+          widget.moviesList.name,
+        );
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw HttpException(
+            'List update failed with ${response.statusCode}.',
+          );
+        }
+      }
+
+      moviesState.removeMovieFromPersonalList(
+        widget.moviesList.name,
+        widget.movie,
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _submitting = false);
+      MSnackBar.showWithMessenger(
+        messenger,
+        'Couldn’t update ${widget.movie.title}. Try again.',
+        false,
+        duration: const Duration(milliseconds: 2500),
+      );
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    navigator.pop();
+    MSnackBar.showWithMessenger(
+      messenger,
+      'Removed from ${widget.moviesList.name}.',
+      true,
+      duration: const Duration(milliseconds: 2500),
+    );
   }
 }
 
@@ -547,7 +926,8 @@ class _SheetActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final bool filled;
-  final VoidCallback onTap;
+  final bool busy;
+  final VoidCallback? onTap;
 
   const _SheetActionButton({
     required this.label,
@@ -556,6 +936,7 @@ class _SheetActionButton extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.filled = false,
+    this.busy = false,
   });
 
   @override
@@ -592,33 +973,45 @@ class _SheetActionButton extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: foreground,
                         fontSize: 16,
+                        height: 1.2,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       detail,
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: detailColor,
                         fontSize: 13,
-                        height: 1.25,
+                        height: 18 / 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: filled ? Colors.white : Md3Colors.muted,
-              ),
+              const SizedBox(width: 8),
+              if (busy)
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: filled ? Colors.white : color,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: filled ? Colors.white : Md3Colors.muted,
+                ),
             ],
           ),
         ),
@@ -654,78 +1047,6 @@ class _SheetActionIcon extends StatelessWidget {
   }
 }
 
-class _MovieCardSummary extends StatelessWidget {
-  final Movie movie;
-
-  const _MovieCardSummary({required this.movie});
-
-  @override
-  Widget build(BuildContext context) {
-    final runtime = movie.movieType == MovieType.tv
-        ? movie.seasonsCount > 0
-            ? '${movie.seasonsCount} season${movie.seasonsCount == 1 ? '' : 's'}'
-            : movie.averageTimeOfEpisode > 0
-                ? '${movie.averageTimeOfEpisode} min'
-                : null
-        : movie.duration > 0
-            ? '${movie.duration} min'
-            : null;
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 96),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            movie.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Md3Colors.text,
-              fontSize: 17,
-              height: 1.14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 9),
-          Wrap(
-            spacing: 7,
-            runSpacing: 6,
-            children: [
-              _MetadataPill(text: '${movie.releaseDate.year}'),
-              if (runtime != null) _MetadataPill(text: runtime),
-            ],
-          ),
-          const SizedBox(height: 9),
-          Text(
-            movie.genres.isNotEmpty
-                ? movie.genres.take(3).join(', ')
-                : movie.movieType == MovieType.tv
-                    ? 'TV Series'
-                    : 'Movie',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 13,
-              height: 1.3,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (movie.movieRate != MovieRate.notRated) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Md3OpinionBadge(movieRate: movie.movieRate),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _MetadataPill extends StatelessWidget {
   final String text;
 
@@ -734,109 +1055,22 @@ class _MetadataPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
       constraints: const BoxConstraints(minHeight: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: Md3Colors.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Md3Colors.border),
       ),
-      child: Center(
-        widthFactor: 1,
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Md3Colors.text,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CardIconAction extends StatelessWidget {
-  final String tooltip;
-  final IconData icon;
-  final Color foreground;
-  final Color background;
-  final VoidCallback onPressed;
-
-  const _CardIconAction({
-    required this.tooltip,
-    required this.icon,
-    required this.foreground,
-    required this.background,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: IconButton(
-          style: IconButton.styleFrom(
-            backgroundColor: background,
-            foregroundColor: foreground,
-            minimumSize: const Size(48, 48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          onPressed: onPressed,
-          icon: Icon(icon, size: 21),
-        ),
-      ),
-    );
-  }
-}
-
-class _CardTextAction extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _CardTextAction({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 74,
-      height: 54,
-      child: FilledButton(
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-          backgroundColor: Md3Colors.primarySoft,
-          foregroundColor: Md3Colors.primary,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        onPressed: onPressed,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 19),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 10.5,
-                height: 1.0,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Md3Colors.text,
+          fontSize: 12,
+          height: 18 / 12,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

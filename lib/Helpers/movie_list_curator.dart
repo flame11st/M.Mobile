@@ -114,9 +114,7 @@ class MovieListCurator {
           return isTv ? 'TMDb popular TV' : 'TMDb popular movie';
         }
 
-        return isTv
-            ? 'Popular with MovieDiary members'
-            : 'Popular with MovieDiary members';
+        return isTv ? 'Popular TV pick' : 'Popular movie pick';
       }
     }
 
@@ -126,9 +124,9 @@ class MovieListCurator {
   static String sourceNoteForPurpose(CuratedMovieListPurpose purpose) {
     switch (purpose) {
       case CuratedMovieListPurpose.popularMovies:
-        return 'MovieDiary activity · released movies only';
+        return 'Popular with MovieDiary members · released titles';
       case CuratedMovieListPurpose.popularTv:
-        return 'MovieDiary activity · released TV only';
+        return 'Popular with MovieDiary members · released titles';
       case CuratedMovieListPurpose.topRatedMovies:
         return 'IMDb top-rated · high vote count';
       case CuratedMovieListPurpose.topRatedTv:

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
@@ -12,17 +14,32 @@ void main() {
 
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: Color(0xfff7f8fa),
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => UserState()),
-        ChangeNotifierProvider(create: (context) => MoviesState()),
-        ChangeNotifierProvider(create: (context) => LoaderState()),
-      ],
-      child: MaterialApp(
-        title: 'MovieDiary',
-        home: MHome(),
+    RootRestorationScope(
+      restorationId: 'movieDiaryRoot',
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (context) => UserState()),
+          ChangeNotifierProvider(
+            create: (context) => MoviesState(
+              onRatedMoviesCountChanged: (count) {
+                unawaited(
+                  context.read<UserState>().setCachedRatedMoviesCount(count),
+                );
+              },
+            ),
+          ),
+          ChangeNotifierProvider(create: (context) => LoaderState()),
+        ],
+        child: MHome(),
       ),
     ),
   );

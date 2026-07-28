@@ -36,12 +36,25 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   late Future<MovieWatchProviderGroup> whereToWatchFuture;
   final serviceAgent = ServiceAgent();
   bool showAllWatchProviders = false;
+  static const _providerTimeout = Duration(seconds: 12);
 
   @override
   void initState() {
     super.initState();
-    whereToWatchFuture =
-        serviceAgent.getWhereToWatchGrouped(widget.movie.id, 'US');
+    whereToWatchFuture = _loadWhereToWatch();
+  }
+
+  Future<MovieWatchProviderGroup> _loadWhereToWatch() {
+    return serviceAgent
+        .getWhereToWatchGrouped(widget.movie.id, 'US')
+        .timeout(_providerTimeout);
+  }
+
+  void _retryWhereToWatch() {
+    setState(() {
+      showAllWatchProviders = false;
+      whereToWatchFuture = _loadWhereToWatch();
+    });
   }
 
   @override
@@ -86,7 +99,12 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+          padding: EdgeInsets.fromLTRB(
+            Md3Layout.pageHorizontalInset(context),
+            8,
+            Md3Layout.pageHorizontalInset(context),
+            32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -186,12 +204,13 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               if (movie.overview.isNotEmpty) ...[
                 const Md3SectionHeader(title: 'Story'),
                 Md3Card(
-                  child: Text(
-                    movie.overview,
+                  child: Md3ExpandableText(
+                    key: const Key('movie-story'),
+                    text: movie.overview,
                     style: const TextStyle(
                       color: Md3Colors.text,
-                      fontSize: 15,
-                      height: 1.45,
+                      fontSize: 16,
+                      height: 23 / 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -242,50 +261,64 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             ? 'Change your opinion or move it back to Watchlist.'
             : 'Rate it if you have seen it, or save it to Watchlist.';
 
-    return Md3Card(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (hasStatus) ...[
-                Md3OpinionBadge(movieRate: movie.movieRate),
-                const SizedBox(width: 10),
+    return SizedBox(
+      height: 220,
+      child: Md3Card(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (hasStatus) ...[
+                  Md3OpinionBadge(movieRate: movie.movieRate),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: Md3Colors.text,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
               ],
-              Expanded(
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  title,
+                  detail,
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Md3Colors.text,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                    color: Md3Colors.muted,
+                    fontSize: 13,
+                    height: 18 / 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            detail,
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 13,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
             ),
-          ),
-          const SizedBox(height: 14),
-          MovieRateButtons(
-            movie: movie,
-            fromSearch: widget.fromSearch,
-            closeParentOnRate: false,
-            shouldRequestReview: widget.shouldRequestReview,
-            moviesList: widget.moviesList,
-          ),
-        ],
+            const Spacer(),
+            MovieRateButtons(
+              movie: movie,
+              fromSearch: widget.fromSearch,
+              closeParentOnRate: false,
+              shouldRequestReview: widget.shouldRequestReview,
+              moviesList: widget.moviesList,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -354,8 +387,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       child: TextButton.icon(
         style: TextButton.styleFrom(
           foregroundColor: Md3Colors.primary,
+          minimumSize: const Size(44, 44),
           padding: const EdgeInsets.only(top: 8, right: 10),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         onPressed: () {
           setState(() {
@@ -414,15 +447,30 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     return FutureBuilder<MovieWatchProviderGroup>(
       future: whereToWatchFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildProviderSection(
+            semanticLabel: 'Loading streaming availability',
+            child: const Md3ProviderSkeletonList(rows: 2),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return _buildProviderTerminalState(
+            title: 'Streaming availability unavailable',
+            body:
+                'MovieDiary could not check providers right now. Movie details remain available.',
+          );
         }
 
         final group = snapshot.data!;
         final entries = _providerEntries(group);
 
         if (entries.isEmpty) {
-          return const SizedBox.shrink();
+          return _buildProviderTerminalState(
+            title: 'No streaming sources listed',
+            body:
+                'Provider availability can change by region. Retry to check again.',
+          );
         }
 
         final visibleEntries =
@@ -486,6 +534,78 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildProviderSection({
+    required Widget child,
+    String? semanticLabel,
+  }) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Md3SectionHeader(title: 'Where to Watch'),
+        Md3Card(
+          padding: const EdgeInsets.all(16),
+          child: child,
+        ),
+      ],
+    );
+
+    if (semanticLabel == null) {
+      return content;
+    }
+    return Semantics(
+      liveRegion: true,
+      label: semanticLabel,
+      child: content,
+    );
+  }
+
+  Widget _buildProviderTerminalState({
+    required String title,
+    required String body,
+  }) {
+    return _buildProviderSection(
+      semanticLabel: title,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 16,
+              height: 22 / 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 14,
+              height: 20 / 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: Md3Colors.primary,
+              minimumSize: const Size(44, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            onPressed: _retryWhereToWatch,
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            label: const Text(
+              'Retry',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -575,56 +695,39 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   }
 
   Widget buildProviderChip(BuildContext context, MovieWatchProvider provider) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: Md3Colors.background,
-        borderRadius: const BorderRadius.all(Radius.circular(999)),
-        border: Border.all(color: Md3Colors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (provider.logoPath != null && provider.logoPath!.isNotEmpty)
-            ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(5)),
-              child: Image.network(
-                'https://image.tmdb.org/t/p/w45${provider.logoPath}',
-                height: 22,
-                width: 22,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) =>
-                    loadingProgress == null
-                        ? child
-                        : const Md3SkeletonBox(
-                            width: 22,
-                            height: 22,
-                            radius: 5,
-                          ),
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 22,
-                  height: 22,
-                  color: Md3Colors.surfaceMuted,
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.live_tv_outlined,
-                    color: Md3Colors.muted,
-                    size: 14,
-                  ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 52),
+        padding: const EdgeInsets.fromLTRB(6, 6, 12, 6),
+        decoration: BoxDecoration(
+          color: Md3Colors.background,
+          borderRadius: const BorderRadius.all(Radius.circular(14)),
+          border: Border.all(color: Md3Colors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Md3ProviderLogo(
+              providerName: provider.providerName,
+              logoPath: provider.logoPath,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                provider.providerName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Md3Colors.text,
+                  fontSize: 13,
+                  height: 18 / 13,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-          if (provider.logoPath != null && provider.logoPath!.isNotEmpty)
-            const SizedBox(width: 6),
-          Text(
-            provider.providerName,
-            style: const TextStyle(
-              color: Md3Colors.text,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

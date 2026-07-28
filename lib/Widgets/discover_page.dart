@@ -19,19 +19,54 @@ import 'package:mmobile/Widgets/recommendations_page.dart';
 import 'package:provider/provider.dart';
 
 class DiscoverPage extends StatefulWidget {
-  const DiscoverPage({super.key});
+  const DiscoverPage({
+    super.key,
+    this.isOffline = false,
+    this.isRefreshing = false,
+    this.onRetry,
+    this.onOpenLists,
+    this.scrollController,
+  });
+
+  final bool isOffline;
+  final bool isRefreshing;
+  final Future<void> Function()? onRetry;
+  final VoidCallback? onOpenLists;
+  final ScrollController? scrollController;
 
   @override
-  State<DiscoverPage> createState() => _DiscoverPageState();
+  State<DiscoverPage> createState() => DiscoverPageState();
 }
 
-class _DiscoverPageState extends State<DiscoverPage> {
+class DiscoverPageState extends State<DiscoverPage> {
   final serviceAgent = ServiceAgent();
+  final _fallbackScrollController = ScrollController();
   Future<UserTasteProfile>? _profileFuture;
   String? _profileUserId;
   int? _profileRatingsCount;
   bool _isRetryingLists = false;
   bool _isTasteProfileExpanded = false;
+
+  ScrollController get _scrollController =>
+      widget.scrollController ?? _fallbackScrollController;
+
+  Future<void> handleActiveTabTap() async {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _fallbackScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,21 +90,27 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final hasStarterMovies = _hasStarterMovies(moviesState);
 
     return Md3Page(
+      scrollController: _scrollController,
       includeBottomSafeArea: false,
       padding: EdgeInsets.fromLTRB(
-        18,
+        Md3Layout.pageHorizontalInset(context),
         14,
-        18,
+        Md3Layout.pageHorizontalInset(context),
         Md3NavigationMetrics.contentBottomInset(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (widget.isOffline) ...[
+            _buildOfflineBanner(),
+            const SizedBox(height: 12),
+          ],
           FutureBuilder<UserTasteProfile>(
             future: profileFuture,
             builder: (context, snapshot) {
               final effectiveRatedCount = _effectiveRatedCount(
                 ratedMovies.length,
+                userState.cachedRatedMoviesCount,
                 snapshot.data,
               );
               final progress = (effectiveRatedCount / 10).clamp(0.0, 1.0);
@@ -100,11 +141,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           _buildDiscoverSectionHeader(
             title: 'Popular Movies',
             actionText: 'Open General Lists',
-            onAction: () => Navigator.of(context).push(
-              RouteHelper.createRoute(
-                () => const MoviesListsPage(initialPageIndex: 0),
-              ),
-            ),
+            onAction: () => _openLists(context),
           ),
           _buildSourceNote(
             MovieListCurator.sourceNoteForPurpose(
@@ -118,6 +155,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
               posterHeight: 86,
               cardPadding: 12,
               itemSpacing: 12,
+              cardMargin: EdgeInsets.zero,
+              cardRadius: 24,
             )
           else if (popularMovies.isEmpty)
             _buildEmptyListCard(
@@ -137,11 +176,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           _buildDiscoverSectionHeader(
             title: 'Popular TV',
             actionText: 'Open General Lists',
-            onAction: () => Navigator.of(context).push(
-              RouteHelper.createRoute(
-                () => const MoviesListsPage(initialPageIndex: 0),
-              ),
-            ),
+            onAction: () => _openLists(context),
           ),
           _buildSourceNote(
             MovieListCurator.sourceNoteForPurpose(
@@ -155,6 +190,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
               posterHeight: 86,
               cardPadding: 12,
               itemSpacing: 12,
+              cardMargin: EdgeInsets.zero,
+              cardRadius: 24,
             )
           else if (popularTv.isEmpty)
             _buildEmptyListCard(
@@ -197,6 +234,20 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
+  void _openLists(BuildContext context) {
+    final openRootLists = widget.onOpenLists;
+    if (openRootLists != null) {
+      openRootLists();
+      return;
+    }
+
+    Navigator.of(context).push(
+      RouteHelper.createRoute(
+        () => const MoviesListsPage(initialPageIndex: 0),
+      ),
+    );
+  }
+
   Widget _buildHero(
     BuildContext context,
     int ratedCount,
@@ -213,9 +264,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
             isReady ? 'Discover' : "Find movies you'll love",
             style: const TextStyle(
               color: Md3Colors.text,
-              fontSize: 28,
-              height: 1.05,
-              fontWeight: FontWeight.w900,
+              fontSize: 32,
+              height: 38 / 32,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 5),
@@ -249,16 +300,18 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final canRate = isReady || hasStarterMovies;
     final hasDetails =
         isReady && profile != null && _hasTasteProfileDetails(profile);
-    final title = hasProfileError
-        ? 'Taste profile unavailable'
-        : isReady
-            ? 'Your taste profile'
+    final title = isReady
+        ? 'Your taste profile'
+        : hasProfileError
+            ? 'Taste profile unavailable'
             : 'Build your taste profile';
-    final body = hasProfileError
-        ? 'MovieDiary could not load your taste profile from the API. Your ratings are still saved; retry when the service is reachable.'
-        : isReady
-            ? _profileSummary(profile, ratedCount)
-            : 'Rate $remaining more ${remaining == 1 ? 'title' : 'titles'} to unlock sharper recommendations.';
+    final body = hasProfileError && isReady
+        ? 'Based on $ratedCount rated ${ratedCount == 1 ? 'title' : 'titles'}. Connect to refresh your detailed taste signals.'
+        : hasProfileError
+            ? 'MovieDiary could not refresh your taste profile. Your saved ratings are still here.'
+            : isReady
+                ? _profileSummary(profile, ratedCount)
+                : 'Rate $remaining more ${remaining == 1 ? 'title' : 'titles'} to unlock sharper recommendations.';
     final ctaText = isReady
         ? 'Get Recommendations'
         : hasStarterMovies
@@ -293,8 +346,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   title,
                   style: const TextStyle(
                     color: Md3Colors.text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                    height: 25 / 20,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -306,38 +360,32 @@ class _DiscoverPageState extends State<DiscoverPage> {
           const SizedBox(height: 10),
           Text(
             body,
-            maxLines: hasProfileError ? 4 : 2,
-            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Md3Colors.muted,
-              fontSize: 14,
-              height: 1.3,
+              fontSize: 16,
+              height: 23 / 16,
             ),
           ),
           const SizedBox(height: 12),
           if (isReady)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (profile != null)
-                  Expanded(
-                    child: Text(
-                      _confidenceLabel(profile),
-                      style: const TextStyle(
-                        color: Md3Colors.muted,
-                        fontSize: 12,
-                        height: 1.25,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  )
-                else
-                  const Spacer(),
-                const SizedBox(width: 10),
+                Text(
+                  _confidenceLabel(),
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 13,
+                    height: 18 / 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 _buildTasteProfileActionButton(
                   text: _isRetryingLists ? 'Loading' : ctaText,
                   icon: Icons.bolt_rounded,
                   tonal: false,
+                  fillWidth: true,
                   onPressed: _isRetryingLists
                       ? null
                       : () {
@@ -390,8 +438,28 @@ class _DiscoverPageState extends State<DiscoverPage> {
             ),
           ],
           if (isLoading && ratedCount >= 10) ...[
-            const SizedBox(height: 16),
-            const LinearProgressIndicator(minHeight: 3),
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                Icon(
+                  Icons.sync_rounded,
+                  size: 16,
+                  color: Md3Colors.muted,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Refreshing taste details…',
+                    style: TextStyle(
+                      color: Md3Colors.muted,
+                      fontSize: 13,
+                      height: 18 / 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
           if (hasProfileError) ...[
             const SizedBox(height: 12),
@@ -461,8 +529,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
               title,
               style: const TextStyle(
                 color: Md3Colors.text,
-                fontSize: 21,
-                fontWeight: FontWeight.w900,
+                fontSize: 24,
+                height: 29 / 24,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -532,39 +601,45 @@ class _DiscoverPageState extends State<DiscoverPage> {
     required String text,
     required IconData icon,
     required bool tonal,
+    bool fillWidth = false,
     required VoidCallback? onPressed,
   }) {
     final background = tonal ? Md3Colors.primarySoft : Md3Colors.primary;
     final foreground = tonal ? Md3Colors.primary : Colors.white;
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 112, maxWidth: 172),
-      child: SizedBox(
-        height: 42,
-        child: FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor: background,
-            foregroundColor: foreground,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
+    final button = SizedBox(
+      height: 48,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
           ),
-          onPressed: onPressed,
-          icon: Icon(icon, size: 18),
-          label: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              text,
-              maxLines: 1,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
+        ),
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            text,
+            maxLines: 1,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ),
       ),
+    );
+
+    if (fillWidth) {
+      return SizedBox(width: double.infinity, child: button);
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 112, maxWidth: 172),
+      child: button,
     );
   }
 
@@ -619,9 +694,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
               TextButton(
                 style: TextButton.styleFrom(
                   foregroundColor: Md3Colors.primary,
-                  minimumSize: const Size(0, 36),
+                  minimumSize: const Size(44, 44),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   textStyle: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
@@ -659,16 +733,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  String _confidenceLabel(UserTasteProfile profile) {
-    if (profile.profileConfidencePercent >= 85 || profile.ratingsCount >= 25) {
-      return 'Well-defined';
-    }
-
-    if (profile.profileConfidencePercent >= 70 || profile.ratingsCount >= 15) {
-      return 'Taking shape';
-    }
-
-    return 'Early read';
+  String _confidenceLabel() {
+    return 'Ready · improves as you rate more';
   }
 
   String _ratingsBasis(UserTasteProfile profile) {
@@ -694,7 +760,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final providedSummary = profile?.summaryText == null
         ? ''
         : _cleanLocalTasteText(profile!.summaryText!);
-    if (providedSummary.isNotEmpty && providedSummary.length <= 130) {
+    if (providedSummary.isNotEmpty && providedSummary.length <= 90) {
       return providedSummary;
     }
 
@@ -702,10 +768,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
         ? const <String>[]
         : _cleanProfileLabels(profile.favoriteGenres).take(2).toList();
     if (genres.isNotEmpty) {
-      return 'Your ratings point to ${genres.join(' and ')}. This profile will keep refining as you rate more.';
+      return 'Your ratings favor ${genres.join(' and ')}. This profile sharpens as you rate more.';
     }
 
-    return 'Built from $ratedCount ratings. Rate a wider mix to make your recommendations more precise.';
+    return 'Built from $ratedCount ratings. More variety sharpens your recommendations.';
   }
 
   List<String> _cleanProfileLabels(
@@ -728,18 +794,89 @@ class _DiscoverPageState extends State<DiscoverPage> {
         .toList();
   }
 
-  int _effectiveRatedCount(int localRatedCount, UserTasteProfile? profile) {
+  int _effectiveRatedCount(
+    int localRatedCount,
+    int? cachedRatedCount,
+    UserTasteProfile? profile,
+  ) {
+    final localOrCached =
+        cachedRatedCount != null && cachedRatedCount > localRatedCount
+            ? cachedRatedCount
+            : localRatedCount;
     if (profile == null) {
-      return localRatedCount;
+      return localOrCached;
     }
 
     final profileRatedCount = profile.ratingsCount > 0
         ? profile.ratingsCount
         : profile.movieRatingsCount + profile.tvRatingsCount;
 
-    return profileRatedCount > localRatedCount
+    return profileRatedCount > localOrCached
         ? profileRatedCount
-        : localRatedCount;
+        : localOrCached;
+  }
+
+  Widget _buildOfflineBanner() {
+    return Semantics(
+      liveRegion: true,
+      label: 'You are offline. Your saved movies are still here.',
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
+        decoration: BoxDecoration(
+          color: const Color(0xfffff7e8),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Md3Colors.warning.withValues(alpha: 0.22),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 20,
+              color: Md3Colors.warning,
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                "You're offline. Your saved movies are still here.",
+                style: TextStyle(
+                  color: Md3Colors.warning,
+                  fontSize: 14,
+                  height: 1.3,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                tooltip: 'Retry connection',
+                onPressed: widget.isRefreshing || widget.onRetry == null
+                    ? null
+                    : widget.onRetry,
+                icon: widget.isRefreshing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Md3Colors.warning,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.refresh_rounded,
+                        color: Md3Colors.warning,
+                        size: 21,
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<UserTasteProfile>? _getProfileFuture(

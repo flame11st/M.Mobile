@@ -7,7 +7,6 @@ import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
-import 'package:mmobile/Widgets/Shared/m_icon_add_to_list_button.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:provider/provider.dart';
 
@@ -116,13 +115,6 @@ class MovieRateButtons extends StatelessWidget {
             ),
           ],
         ),
-        if (isTitledSheet) ...[
-          const SizedBox(height: 12),
-          MAddToListButton(
-            movie: currentMovie,
-            moviesList: moviesList,
-          ),
-        ],
       ],
     );
 
@@ -133,25 +125,7 @@ class MovieRateButtons extends StatelessWidget {
       );
     }
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 18),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Md3Colors.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: content,
-      ),
-    );
+    return Md3BottomSheetSurface(child: content);
   }
 
   Future<void> _rate(
@@ -263,49 +237,56 @@ class _RateAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = active ? Colors.white : Md3Colors.muted;
-    final background = active ? color : Colors.white.withOpacity(0.78);
+    final background = active ? color : Colors.white.withValues(alpha: 0.78);
     final borderColor = active ? color : Md3Colors.border;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          height: 62,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: borderColor, width: active ? 1.5 : 1),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.22),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
+    return Semantics(
+      button: true,
+      selected: active,
+      label: '$label status',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: borderColor, width: active ? 1.5 : 1),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.22),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: foreground, size: 19),
+                const SizedBox(height: 5),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
                     ),
-                  ]
-                : const [],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: foreground, size: 19),
-              const SizedBox(height: 5),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

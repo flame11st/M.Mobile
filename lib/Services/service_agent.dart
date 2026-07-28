@@ -84,6 +84,13 @@ class ServiceAgent {
         }));
   }
 
+  requestPasswordReset(String email) {
+    return post(
+      'Identity/RequestPasswordReset',
+      jsonEncode({'Email': email}),
+    );
+  }
+
   signInIncognito() {
     return post('Identity/SignUpIncognito', '');
   }

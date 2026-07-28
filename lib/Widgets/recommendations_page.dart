@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:fluttericon/font_awesome_icons.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Enums/recommendation_discovery_level.dart';
@@ -14,7 +14,6 @@ import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
-import 'package:mmobile/Widgets/Shared/filter_button.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:mmobile/Widgets/mark_watched_bottom_sheet.dart';
@@ -23,12 +22,22 @@ import 'package:mmobile/Widgets/onboarding_wizard_page.dart';
 import 'package:mmobile/Widgets/recommendations_history_page.dart';
 import 'package:provider/provider.dart';
 
+enum RecommendationFailureKind {
+  timeout,
+  unavailable,
+  cancelled,
+}
+
 class RecommendationsPage extends StatefulWidget {
   final bool autoStart;
+  final ServiceAgent? serviceAgent;
+  final Duration generationTimeout;
 
   const RecommendationsPage({
     super.key,
     this.autoStart = false,
+    this.serviceAgent,
+    this.generationTimeout = const Duration(seconds: 24),
   });
 
   @override
@@ -38,8 +47,8 @@ class RecommendationsPage extends StatefulWidget {
 }
 
 class RecommendationsPageState extends State<RecommendationsPage> {
-  final serviceAgent = ServiceAgent();
-  final pageController = PageController(viewportFraction: 0.94);
+  late final ServiceAgent serviceAgent;
+  final pageController = PageController();
 
   GlobalKey? globalKey;
   List<Movie> recommendedMovies = <Movie>[];
@@ -50,17 +59,26 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   MovieType selectedType = MovieType.movie;
   RecommendationDiscoveryLevel selectedDiscoveryLevel =
       RecommendationDiscoveryLevel.balanced;
+  MovieType? deckType;
+  RecommendationDiscoveryLevel? deckDiscoveryLevel;
+  RecommendationFailureKind? failureKind;
   String? sessionId;
   int nextCursor = 0;
   bool hasMore = false;
   int currentIndex = 0;
+  bool isPaging = false;
   int _requestToken = 0;
+  final Set<String> _savingMovieIds = <String>{};
 
-  static const _generationTimeout = Duration(seconds: 24);
+  bool get isDeckStale =>
+      recommendedMovies.isNotEmpty &&
+      (deckType != selectedType ||
+          deckDiscoveryLevel != selectedDiscoveryLevel);
 
   @override
   void initState() {
     super.initState();
+    serviceAgent = widget.serviceAgent ?? ServiceAgent();
 
     if (widget.autoStart) {
       Future.microtask(() {
@@ -79,36 +97,22 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   }
 
   void setSelectedType(MovieType type) {
-    if (isLoading) {
+    if (isLoading || selectedType == type) {
       return;
     }
 
     setState(() {
       selectedType = type;
-      recommendedMovies = [];
-      sessionId = null;
-      nextCursor = 0;
-      hasMore = false;
-      currentIndex = 0;
-      hasRequestedRecommendations = false;
-      recommendationError = null;
     });
   }
 
   void setDiscoveryLevel(RecommendationDiscoveryLevel level) {
-    if (isLoading) {
+    if (isLoading || selectedDiscoveryLevel == level) {
       return;
     }
 
     setState(() {
       selectedDiscoveryLevel = level;
-      recommendedMovies = [];
-      sessionId = null;
-      nextCursor = 0;
-      hasMore = false;
-      currentIndex = 0;
-      hasRequestedRecommendations = false;
-      recommendationError = null;
     });
   }
 
@@ -118,10 +122,15 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     }
 
     final requestToken = ++_requestToken;
+    final requestType = reset ? selectedType : deckType ?? selectedType;
+    final requestLevel = reset
+        ? selectedDiscoveryLevel
+        : deckDiscoveryLevel ?? selectedDiscoveryLevel;
 
     setState(() {
       isLoading = true;
       isButtonDisabled = true;
+      isPaging = !reset;
       if (reset) {
         recommendedMovies = [];
         sessionId = null;
@@ -130,6 +139,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         currentIndex = 0;
         hasRequestedRecommendations = false;
         recommendationError = null;
+        failureKind = null;
       }
     });
 
@@ -140,21 +150,24 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
     List<Movie> movies = [];
     String? error;
+    RecommendationFailureKind? requestFailure;
 
     try {
-      movies = await getSessionRecommendations(userState, reset)
-          .timeout(_generationTimeout);
-      if (movies.isEmpty && (sessionId == null || sessionId!.isEmpty)) {
-        error =
-            'We could not build your discovery deck. Please try again in a moment.';
-      }
+      movies = await getSessionRecommendations(
+        userState,
+        reset,
+        requestType,
+        requestLevel,
+      ).timeout(widget.generationTimeout);
     } on TimeoutException {
       error =
           'MovieDiary is taking too long to build this deck. Your ratings are safe. Try again.';
+      requestFailure = RecommendationFailureKind.timeout;
     } catch (exception) {
       debugPrint('Recommendation discovery failed: $exception');
       error =
           'MovieDiary could not reach the recommendation service. Your ratings are safe. Try again.';
+      requestFailure = RecommendationFailureKind.unavailable;
     }
 
     if (!mounted || requestToken != _requestToken) {
@@ -169,8 +182,14 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       }
       isLoading = false;
       isButtonDisabled = false;
+      isPaging = false;
       hasRequestedRecommendations = true;
       recommendationError = error;
+      failureKind = requestFailure;
+      if (reset && error == null) {
+        deckType = requestType;
+        deckDiscoveryLevel = requestLevel;
+      }
     });
 
     if (error != null && !reset) {
@@ -183,7 +202,11 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   }
 
   Future<List<Movie>> getSessionRecommendations(
-      UserState userState, bool reset) async {
+    UserState userState,
+    bool reset,
+    MovieType requestType,
+    RecommendationDiscoveryLevel requestLevel,
+  ) async {
     RecommendationDiscoverySession? session;
 
     if (userState.userId == null || userState.userId!.isEmpty) {
@@ -193,8 +216,8 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     if (reset || sessionId == null) {
       session = await serviceAgent.createDiscoverySession(
         userState.userId!,
-        selectedType,
-        selectedDiscoveryLevel,
+        requestType,
+        requestLevel,
         10,
       );
     } else if (hasMore) {
@@ -203,7 +226,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     }
 
     if (session == null) {
-      return [];
+      throw const HttpException('Recommendation service returned no session.');
     }
 
     if (session.sessionId == '00000000-0000-0000-0000-000000000000') {
@@ -237,10 +260,12 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     setState(() {
       isLoading = false;
       isButtonDisabled = false;
+      isPaging = false;
       hasRequestedRecommendations = true;
       if (recommendedMovies.isEmpty) {
         recommendationError =
             'Discovery was cancelled. Start again when you are ready.';
+        failureKind = RecommendationFailureKind.cancelled;
       }
     });
 
@@ -250,8 +275,12 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   @override
   Widget build(BuildContext context) {
     final userState = Provider.of<UserState>(context, listen: false);
-    final showBottomControls = recommendedMovies.isNotEmpty ||
-        (!isLoading && !hasRequestedRecommendations);
+    final isFullPageLoading = isLoading && !isPaging;
+    final showStickyCommand = !isFullPageLoading;
+    final safeBottom = MediaQuery.viewPaddingOf(context).bottom;
+    final stickyBottom = safeBottom > 8 ? safeBottom : 8.0;
+    final contentBottomPadding =
+        showStickyCommand ? 68 + stickyBottom + 16 : 24.0;
 
     if (recommendedMovies.isNotEmpty) {
       RatingHelper.refreshMoviesRating(recommendedMovies, context);
@@ -266,96 +295,385 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
     return Scaffold(
       backgroundColor: Md3Colors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size(0, 0),
-        child: Container(),
-      ),
-      body: Scaffold(
-        backgroundColor: Md3Colors.background,
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Md3Colors.background,
-          iconTheme: const IconThemeData(color: Md3Colors.text),
-          title: buildHeading(context, userState),
-        ),
-        body: Stack(
-          children: [
-            if (isLoading && recommendedMovies.isNotEmpty)
-              const SizedBox(
-                height: 8,
-                child: LinearProgressIndicator(minHeight: 8),
-              ),
-            Container(
-              key: globalKey,
-              margin: const EdgeInsets.only(top: 8),
-              padding: EdgeInsets.only(bottom: showBottomControls ? 190 : 24),
-              color: Md3Colors.background,
-              child: isLoading && recommendedMovies.isEmpty
-                  ? buildLoadingState(context)
-                  : recommendedMovies.isEmpty
-                      ? buildIntro(context)
-                      : buildRecommendationDeck(),
+      body: Column(
+        children: [
+          buildHeading(context, userState),
+          buildFilterBar(context),
+          if (isDeckStale) buildStaleDeckNotice(),
+          Expanded(
+            child: Stack(
+              children: [
+                Container(
+                  key: globalKey,
+                  color: Md3Colors.background,
+                  child: isFullPageLoading
+                      ? buildLoadingState(context)
+                      : recommendedMovies.isEmpty
+                          ? buildIntro(context, contentBottomPadding)
+                          : buildRecommendationDeck(contentBottomPadding),
+                ),
+                if (isPaging)
+                  const Align(
+                    alignment: Alignment.topCenter,
+                    child: LinearProgressIndicator(
+                      minHeight: 4,
+                      color: Md3Colors.primary,
+                      backgroundColor: Md3Colors.primarySoft,
+                    ),
+                  ),
+                if (showStickyCommand)
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: buildStickyCommand(context, stickyBottom),
+                  ),
+              ],
             ),
-            if (showBottomControls)
-              Align(
-                alignment: const Alignment(0.0, 1),
-                child: buildControls(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildHeading(BuildContext context, UserState userState) {
+    final canOpenHistory =
+        userState.userId != null && userState.userId!.isNotEmpty;
+
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 44,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: IconButton(
+                      tooltip: 'Back',
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Md3Colors.text,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (canOpenHistory)
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: IconButton(
+                        tooltip: 'Recommendation history',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            RouteHelper.createRoute(
+                              () => const RecommendationsHistoryPage(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.history_rounded,
+                          color: Md3Colors.primary,
+                        ),
+                      ),
+                    ),
+                ],
               ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(6, 4, 6, 12),
+              child: Text(
+                'Recommended For You',
+                style: TextStyle(
+                  color: Md3Colors.text,
+                  fontSize: 32,
+                  height: 38 / 32,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget buildHeading(BuildContext context, UserState userState) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        const Expanded(
-          child: Text(
-            'Recommended For You',
-            style: TextStyle(
-              color: Md3Colors.text,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        if (userState.user != null)
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                RouteHelper.createRoute(() => RecommendationsHistoryPage()),
+  Widget buildFilterBar(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: 'Recommendation filters',
+      child: SizedBox(
+        key: const Key('recommendation-filter-bar'),
+        height: 52,
+        child: Md3LiquidGlass(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(4),
+          borderRadius: BorderRadius.circular(24),
+          blur: 20,
+          tint: const Color(0xccffffff),
+          borderColor: const Color(0xffe9edf2),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 290 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
+
+              return Row(
+                children: [
+                  Expanded(
+                    flex: constraints.maxWidth < 290 ? 5 : 4,
+                    child: _buildTypeSegment(compact: compact),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    flex: 3,
+                    child: _buildDiscoveryStyleMenu(
+                      compact: compact,
+                    ),
+                  ),
+                ],
               );
             },
-            icon: const Icon(
-              Icons.history,
-              color: Md3Colors.primary,
-            ),
           ),
-      ],
+        ),
+      ),
     );
   }
 
-  Widget buildIntro(BuildContext context) {
+  Widget _buildTypeSegment({required bool compact}) {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: Md3Colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTypeOption(
+              type: MovieType.movie,
+              label: 'Movies',
+              icon: Icons.movie_outlined,
+              compact: compact,
+            ),
+          ),
+          Expanded(
+            child: _buildTypeOption(
+              type: MovieType.tv,
+              label: 'TV',
+              icon: Icons.tv_rounded,
+              compact: compact,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeOption({
+    required MovieType type,
+    required String label,
+    required IconData icon,
+    required bool compact,
+  }) {
+    final selected = selectedType == type;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label == 'TV' ? 'TV shows' : label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : () => setSelectedType(type),
+          borderRadius: BorderRadius.circular(20),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: selected ? Md3Colors.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (!compact) ...[
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: selected ? Colors.white : Md3Colors.text,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    style: TextStyle(
+                      color: selected ? Colors.white : Md3Colors.text,
+                      fontSize: 14,
+                      height: 18 / 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscoveryStyleMenu({required bool compact}) {
+    final label = _discoveryLevelLabel(selectedDiscoveryLevel);
+
+    return Semantics(
+      button: true,
+      value: label,
+      label: 'Discovery style',
+      child: PopupMenuButton<RecommendationDiscoveryLevel>(
+        enabled: !isLoading,
+        tooltip: 'Discovery style: $label',
+        onSelected: setDiscoveryLevel,
+        itemBuilder: (context) => RecommendationDiscoveryLevel.values
+            .map(
+              (level) => PopupMenuItem<RecommendationDiscoveryLevel>(
+                value: level,
+                height: 48,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      child: level == selectedDiscoveryLevel
+                          ? const Icon(
+                              Icons.check_rounded,
+                              size: 18,
+                              color: Md3Colors.primary,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(_discoveryLevelLabel(level)),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+        child: Container(
+          height: 44,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
+          decoration: BoxDecoration(
+            color: Md3Colors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Md3Colors.border),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.tune_rounded,
+                size: 18,
+                color: Md3Colors.primary,
+              ),
+              if (!compact) ...[
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Md3Colors.text,
+                      fontSize: 14,
+                      height: 18 / 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 2),
+              const Icon(
+                Icons.expand_more_rounded,
+                size: 18,
+                color: Md3Colors.muted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildStaleDeckNotice() {
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          Md3Layout.pageHorizontalInset(context),
+          8,
+          Md3Layout.pageHorizontalInset(context),
+          0,
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.info_outline_rounded,
+              size: 16,
+              color: Md3Colors.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Filters changed. Your current deck stays until you build a ${_typeDeckLabel(selectedType)} deck.',
+                style: const TextStyle(
+                  color: Md3Colors.muted,
+                  fontSize: 13,
+                  height: 18 / 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildIntro(BuildContext context, double bottomPadding) {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final ratedCount = moviesState.userMovies
         .where((movie) => MovieRate.isViewed(movie.movieRate))
         .length;
-    final title = hasRequestedRecommendations
-        ? recommendationError == null
-            ? 'No recommendations found'
-            : 'Discovery is temporarily unavailable'
-        : 'Personal discovery';
-    final message = hasRequestedRecommendations
-        ? recommendationError ??
-            'Try another title type or rate a few more movies to broaden your taste signals.'
-        : 'Start a fresh recommendation deck based on your MovieDiary taste.';
+    final title = !hasRequestedRecommendations
+        ? 'Personal discovery'
+        : switch (failureKind) {
+            RecommendationFailureKind.timeout => 'This deck took too long',
+            RecommendationFailureKind.unavailable =>
+              'Recommendations unavailable',
+            RecommendationFailureKind.cancelled => 'Discovery paused',
+            null => 'No recommendations in this deck yet.',
+          };
+    final message = !hasRequestedRecommendations
+        ? 'Start a fresh recommendation deck based on your MovieDiary taste.'
+        : recommendationError ??
+            'Rate a few more movies or choose a broader discovery style, then try again.';
+    final showBackAction = failureKind != null;
+    final showEmptyActions =
+        hasRequestedRecommendations && recommendationError == null;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      key: const Key('recommendation-terminal-state'),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
       children: [
         Md3Card(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -364,6 +682,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                 style: const TextStyle(
                   color: Md3Colors.text,
                   fontSize: 24,
+                  height: 29 / 24,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -372,41 +691,12 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                 message,
                 style: const TextStyle(
                   color: Md3Colors.muted,
-                  fontSize: 15,
-                  height: 1.35,
+                  fontSize: 16,
+                  height: 23 / 16,
                 ),
               ),
               const SizedBox(height: 16),
-              if (hasRequestedRecommendations) ...[
-                Md3PrimaryButton(
-                  text: recommendationError == null
-                      ? 'Rate More Movies'
-                      : 'Try Again',
-                  icon: recommendationError == null
-                      ? Icons.swipe_rounded
-                      : Icons.refresh_rounded,
-                  tonal: recommendationError == null,
-                  onPressed: recommendationError == null
-                      ? () => _openRatingFlow(context)
-                      : isButtonDisabled
-                          ? null
-                          : () => getRecommendations(),
-                ),
-                if (recommendationError == null) ...[
-                  const SizedBox(height: 10),
-                  Md3PrimaryButton(
-                    text: 'Try Adventurous',
-                    icon: Icons.explore_rounded,
-                    onPressed: isButtonDisabled
-                        ? null
-                        : () {
-                            setDiscoveryLevel(
-                                RecommendationDiscoveryLevel.adventurous);
-                            getRecommendations();
-                          },
-                  ),
-                ],
-              ] else if (ratedCount < 10)
+              if (!hasRequestedRecommendations && ratedCount < 10)
                 Text(
                   '$ratedCount/10 movies rated. You can start now, but 10 ratings makes the deck sharper.',
                   style: const TextStyle(
@@ -415,55 +705,46 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                     fontWeight: FontWeight.w700,
                   ),
                 )
-              else
+              else if (!hasRequestedRecommendations)
                 const Text(
-                  'Choose a type and discovery style below, then start your deck.',
+                  'Choose a type and discovery style above, then start your deck.',
                   style: TextStyle(
                     color: Md3Colors.muted,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Md3Card(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Md3SkeletonBox(width: 122, height: 182, radius: 16),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Md3SkeletonBox(width: 92, height: 26, radius: 13),
-                        SizedBox(height: 14),
-                        Md3SkeletonBox(height: 22, radius: 10),
-                        SizedBox(height: 10),
-                        FractionallySizedBox(
-                          widthFactor: 0.72,
-                          child: Md3SkeletonBox(height: 22, radius: 10),
-                        ),
-                        SizedBox(height: 18),
-                        Md3SkeletonBox(width: 108, height: 34, radius: 17),
-                      ],
+              if (showEmptyActions) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _openRatingFlow(context),
+                      icon: const Icon(Icons.swipe_rounded, size: 18),
+                      label: const Text('Rate more movies'),
                     ),
+                    if (selectedDiscoveryLevel !=
+                        RecommendationDiscoveryLevel.adventurous)
+                      TextButton.icon(
+                        onPressed: () => setDiscoveryLevel(
+                          RecommendationDiscoveryLevel.adventurous,
+                        ),
+                        icon: const Icon(Icons.explore_rounded, size: 18),
+                        label: const Text('Use Adventurous'),
+                      ),
+                  ],
+                ),
+              ],
+              if (showBackAction)
+                SizedBox(
+                  height: 44,
+                  child: TextButton.icon(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                    label: const Text('Back to Discover'),
                   ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Md3SkeletonBox(height: 15, radius: 8),
-              SizedBox(height: 10),
-              FractionallySizedBox(
-                widthFactor: 0.82,
-                child: Md3SkeletonBox(height: 15, radius: 8),
-              ),
+                ),
             ],
           ),
         ),
@@ -480,95 +761,106 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     };
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      key: const Key('recommendation-loading-state'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        Md3Card(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Md3Colors.primarySoft,
-                      borderRadius: BorderRadius.circular(16),
+        Semantics(
+          liveRegion: true,
+          label:
+              'Building a $levelLabel $typeLabel recommendation deck. You can cancel.',
+          child: Md3Card(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Md3Colors.primarySoft,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Md3Colors.primary,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Md3Colors.primary,
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Building your deck',
+                        style: TextStyle(
+                          color: Md3Colors.text,
+                          fontSize: 24,
+                          height: 29 / 24,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: const LinearProgressIndicator(
+                    minHeight: 8,
+                    color: Md3Colors.primary,
+                    backgroundColor: Md3Colors.primarySoft,
                   ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Building your deck',
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Matching your ratings with $levelLabel $typeLabel picks. This usually takes a few seconds.',
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 16,
+                    height: 23 / 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 48,
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Md3Colors.primary,
+                      side: const BorderSide(color: Md3Colors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      backgroundColor: Colors.white,
+                    ),
+                    onPressed: cancelRecommendationRequest,
+                    icon: const Icon(Icons.close_rounded, size: 19),
+                    label: const Text(
+                      'Cancel',
                       style: TextStyle(
-                        color: Md3Colors.text,
-                        fontSize: 24,
-                        height: 1.1,
+                        fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: const LinearProgressIndicator(minHeight: 8),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Matching your ratings with $levelLabel $typeLabel picks. This usually takes a few seconds.',
-                style: const TextStyle(
-                  color: Md3Colors.muted,
-                  fontSize: 15,
-                  height: 1.35,
-                  fontWeight: FontWeight.w600,
                 ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 48,
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Md3Colors.primary,
-                    side: const BorderSide(color: Md3Colors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    backgroundColor: Colors.white,
-                  ),
-                  onPressed: cancelRecommendationRequest,
-                  icon: const Icon(Icons.close_rounded, size: 19),
-                  label: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget buildRecommendationDeck() {
+  Widget buildRecommendationDeck(double bottomPadding) {
     return PageView.builder(
+      key: const Key('recommendation-result-deck'),
       controller: pageController,
       itemCount: recommendedMovies.length,
       onPageChanged: maybeLoadNextPage,
       itemBuilder: (context, index) {
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
           children: [
             _buildRecommendationCard(context, recommendedMovies[index], index),
             Padding(
@@ -598,15 +890,15 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         : movie.duration > 0
             ? '${movie.duration} min'
             : '';
-    final matchPercent = movie.recommendationMatchPercent > 0
-        ? movie.recommendationMatchPercent
-        : 82;
     final reason = movie.recommendationReason?.trim().isNotEmpty == true
         ? movie.recommendationReason!.trim()
         : 'A strong fit for the taste profile you have been building in MovieDiary.';
 
+    final isSaving = _savingMovieIds.contains(movie.id);
+
     return Md3Card(
-      padding: const EdgeInsets.all(20),
+      key: Key('recommendation-card-$index'),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -615,8 +907,8 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             children: [
               Md3MoviePoster(
                 movie: movie,
-                width: 122,
-                height: 182,
+                width: 104,
+                height: 156,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -634,37 +926,56 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                       style: const TextStyle(
                         color: Md3Colors.text,
                         fontSize: 24,
-                        height: 1.08,
+                        height: 29 / 24,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        Md3Chip(text: '${movie.releaseDate.year}'),
-                        if (runtimeText.isNotEmpty) Md3Chip(text: runtimeText),
-                        Md3Chip(
-                          text: '$matchPercent% match',
-                          icon: Icons.auto_awesome_rounded,
-                          active: true,
-                        ),
-                      ],
-                    ),
+                    if (movie.recommendationMatchPercent > 0)
+                      MediaQuery.textScalerOf(context).scale(1) > 1.3
+                          ? Text(
+                              '${movie.recommendationMatchPercent}% match',
+                              style: const TextStyle(
+                                color: Md3Colors.primary,
+                                fontSize: 13,
+                                height: 18 / 13,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            )
+                          : Md3Chip(
+                              text:
+                                  '${movie.recommendationMatchPercent}% match',
+                              icon: Icons.auto_awesome_rounded,
+                              active: true,
+                            ),
                     const SizedBox(height: 12),
                     Text(
-                      movie.genres.isNotEmpty
-                          ? movie.genres.take(3).join(', ')
-                          : 'Movie recommendation',
+                      [
+                        '${movie.releaseDate.year}',
+                        if (runtimeText.isNotEmpty) runtimeText,
+                      ].join('  •  '),
                       style: const TextStyle(
                         color: Md3Colors.muted,
-                        fontSize: 15,
-                        height: 1.35,
+                        fontSize: 13,
+                        height: 18 / 13,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
+                    Text(
+                      movie.genres.isNotEmpty
+                          ? movie.genres.take(3).join(', ')
+                          : movie.movieType == MovieType.tv
+                              ? 'TV recommendation'
+                              : 'Movie recommendation',
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 13,
+                        height: 18 / 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
                       movie.imdbVotes > 0
                           ? 'IMDb ${movie.imdbRate.toStringAsFixed(1)}  •  ${_formatVotes(movie.imdbVotes)} votes'
@@ -685,7 +996,8 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             "Why you'll like it",
             style: TextStyle(
               color: Md3Colors.text,
-              fontSize: 18,
+              fontSize: 20,
+              height: 25 / 20,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -694,30 +1006,44 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             reason,
             style: const TextStyle(
               color: Md3Colors.muted,
-              fontSize: 15,
-              height: 1.4,
+              fontSize: 16,
+              height: 23 / 16,
             ),
           ),
           const SizedBox(height: 20),
-          _buildRecommendationPrimaryAction(context, movie),
+          _buildRecommendationPrimaryAction(context, movie, isSaving),
           if (!MovieRate.isViewed(movie.movieRate)) ...[
             const SizedBox(height: 8),
-            _buildSeenAlreadyAction(context, movie),
+            _buildSeenAlreadyAction(context, movie, isSaving),
           ],
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: () => _openMovieDetails(context, movie),
-            icon: const Icon(Icons.open_in_new_rounded, size: 18),
-            label: Text(index == currentIndex
-                ? 'Open details'
-                : 'Open details before you swipe on'),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 44,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Md3Colors.primary,
+                minimumSize: const Size(44, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              onPressed:
+                  isSaving ? null : () => _openMovieDetails(context, movie),
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text(
+                'Open details',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSeenAlreadyAction(BuildContext context, Movie movie) {
+  Widget _buildSeenAlreadyAction(
+    BuildContext context,
+    Movie movie,
+    bool isSaving,
+  ) {
     return SizedBox(
       height: 48,
       width: double.infinity,
@@ -730,20 +1056,24 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           ),
           backgroundColor: Colors.white,
         ),
-        onPressed: () => _markSeenAlready(context, movie),
+        onPressed: isSaving ? null : () => _markSeenAlready(context, movie),
         icon: const Icon(Icons.visibility_rounded, size: 19),
         label: const Text(
-          'Seen already?',
+          'Seen already',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
         ),
       ),
     );
   }
 
-  Widget _buildRecommendationPrimaryAction(BuildContext context, Movie movie) {
+  Widget _buildRecommendationPrimaryAction(
+    BuildContext context,
+    Movie movie,
+    bool isSaving,
+  ) {
     if (movie.movieRate == MovieRate.addedToWatchlist) {
       return const Md3PrimaryButton(
-        text: 'Saved to Watchlist',
+        text: 'In Watchlist',
         icon: Icons.bookmark_added_rounded,
         tonal: true,
       );
@@ -766,45 +1096,87 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     }
 
     return Md3PrimaryButton(
-      text: 'Add to Watchlist',
+      text: isSaving ? 'Saving' : 'Add to Watchlist',
       icon: Icons.bookmark_add_rounded,
-      onPressed: () => _addToWatchlist(context, movie),
+      onPressed: isSaving ? null : () => _addToWatchlist(context, movie),
     );
   }
 
   Future<void> _addToWatchlist(BuildContext context, Movie movie) async {
+    if (_savingMovieIds.contains(movie.id)) {
+      return;
+    }
+
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+    final previousRate = movie.movieRate;
 
-    await moviesState.changeMovieRate(
-      movie.id,
-      MovieRate.addedToWatchlist,
-      userState.isIncognitoMode,
-      movie,
-    );
+    setState(() => _savingMovieIds.add(movie.id));
 
-    if (!userState.isIncognitoMode && userState.userId != null) {
-      await serviceAgent.rateMovie(
+    try {
+      await moviesState.changeMovieRate(
         movie.id,
-        userState.userId!,
         MovieRate.addedToWatchlist,
+        userState.isIncognitoMode,
+        movie,
       );
+
+      if (!userState.isIncognitoMode) {
+        final userId = userState.userId;
+        if (userId == null || userId.isEmpty || ServiceAgent.state == null) {
+          throw const HttpException('Signed-in movie update is unavailable.');
+        }
+
+        final response = await serviceAgent.rateMovie(
+          movie.id,
+          userId,
+          MovieRate.addedToWatchlist,
+        );
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw HttpException(
+            'Movie update failed with ${response.statusCode}.',
+          );
+        }
+      }
+    } catch (_) {
+      await moviesState.changeMovieRate(
+        movie.id,
+        previousRate,
+        userState.isIncognitoMode,
+        movie,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _savingMovieIds.remove(movie.id));
+      MSnackBar.showWithMessenger(
+        messenger,
+        'Couldn’t update ${movie.title}. Try again.',
+        false,
+        duration: const Duration(milliseconds: 2500),
+      );
+      return;
     }
 
     if (!mounted) {
       return;
     }
 
-    setState(() {});
-    MSnackBar.showSnackBar('Added to Watchlist.', true);
+    setState(() => _savingMovieIds.remove(movie.id));
+    MSnackBar.showWithMessenger(
+      messenger,
+      'Added to Watchlist.',
+      true,
+      duration: const Duration(milliseconds: 2500),
+    );
   }
 
   Future<void> _markSeenAlready(BuildContext context, Movie movie) async {
-    await showModalBottomSheet<void>(
+    await showMarkWatchedBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => MarkWatchedBottomSheet(movie: movie),
+      movie: movie,
     );
 
     if (!mounted) {
@@ -848,116 +1220,108 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     return '$votes';
   }
 
-  Widget buildControls(BuildContext context) {
-    return SizedBox(
-      height: 182,
-      child: Md3LiquidGlass(
-        margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-        padding: const EdgeInsets.all(14),
-        borderRadius: BorderRadius.circular(32),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                const Text(
-                  'Type:',
-                  style: TextStyle(
-                    color: Md3Colors.muted,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Row(
-                  children: [
-                    FilterIcon(
-                      height: 30,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(25),
-                        bottomLeft: Radius.circular(25),
-                      ),
-                      width: MediaQuery.of(context).size.width / 2 - 60,
-                      icon: FontAwesome.video,
-                      text: 'Movies',
-                      isActive: selectedType == MovieType.movie,
-                      onPressedCallback: () => setSelectedType(MovieType.movie),
-                    ),
-                    FilterIcon(
-                      height: 30,
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(25),
-                        bottomRight: Radius.circular(25),
-                      ),
-                      width: MediaQuery.of(context).size.width / 2 - 60,
-                      icon: Icons.tv,
-                      text: 'TV Shows',
-                      isActive: selectedType == MovieType.tv,
-                      onPressedCallback: () => setSelectedType(MovieType.tv),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                buildLevelButton('Familiar', RecommendationDiscoveryLevel.safe),
-                buildLevelButton(
-                    'Balanced', RecommendationDiscoveryLevel.balanced),
-                buildLevelButton(
-                    'Adventurous', RecommendationDiscoveryLevel.adventurous),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Md3PrimaryButton(
-              text: isLoading
-                  ? 'Building Deck'
-                  : recommendedMovies.isEmpty
-                      ? 'Start Discovery'
-                      : 'Refresh Deck',
-              icon:
-                  isLoading ? Icons.hourglass_top_rounded : Icons.bolt_rounded,
-              onPressed: isButtonDisabled ? null : () => getRecommendations(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget buildStickyCommand(BuildContext context, double bottomInset) {
+    final label = _primaryCommandLabel();
+    final icon = switch (label) {
+      'Refresh deck' || 'Retry' => Icons.refresh_rounded,
+      'Try Adventurous' => Icons.explore_rounded,
+      _ => Icons.bolt_rounded,
+    };
 
-  Widget buildLevelButton(String text, RecommendationDiscoveryLevel level) {
-    final active = selectedDiscoveryLevel == level;
-
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: isLoading ? null : () => setDiscoveryLevel(level),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: active ? Md3Colors.primary : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: active ? Md3Colors.primary : Md3Colors.border,
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SizedBox(
+        key: const Key('recommendation-sticky-command-bar'),
+        height: 68,
+        child: Md3LiquidGlass(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(24),
+          blur: 20,
+          tint: const Color(0xccffffff),
+          borderColor: const Color(0xffe9edf2),
+          child: SizedBox(
+            height: 52,
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const Key('recommendation-primary-command'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Md3Colors.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Md3Colors.primarySoft,
+                disabledForegroundColor: Md3Colors.muted,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
-            ),
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: active ? Colors.white : Md3Colors.text,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
+              onPressed: isButtonDisabled ? null : _runPrimaryCommand,
+              icon: Icon(icon, size: 20),
+              label: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _primaryCommandLabel() {
+    if (isDeckStale) {
+      return 'Build ${_typeDeckLabel(selectedType)} deck';
+    }
+
+    if (recommendedMovies.isNotEmpty) {
+      return 'Refresh deck';
+    }
+
+    if (!hasRequestedRecommendations) {
+      return 'Start Discovery';
+    }
+
+    if (failureKind == RecommendationFailureKind.timeout ||
+        failureKind == RecommendationFailureKind.unavailable) {
+      return 'Retry';
+    }
+
+    if (failureKind == RecommendationFailureKind.cancelled) {
+      return 'Start Discovery';
+    }
+
+    return selectedDiscoveryLevel == RecommendationDiscoveryLevel.adventurous
+        ? 'Retry'
+        : 'Try Adventurous';
+  }
+
+  void _runPrimaryCommand() {
+    if (recommendedMovies.isEmpty &&
+        hasRequestedRecommendations &&
+        recommendationError == null &&
+        selectedDiscoveryLevel != RecommendationDiscoveryLevel.adventurous) {
+      setState(() {
+        selectedDiscoveryLevel = RecommendationDiscoveryLevel.adventurous;
+      });
+    }
+
+    getRecommendations();
+  }
+
+  String _typeDeckLabel(MovieType type) {
+    return type == MovieType.tv ? 'TV' : 'movie';
+  }
+
+  String _discoveryLevelLabel(RecommendationDiscoveryLevel level) {
+    return switch (level) {
+      RecommendationDiscoveryLevel.safe => 'Familiar',
+      RecommendationDiscoveryLevel.adventurous => 'Adventurous',
+      RecommendationDiscoveryLevel.balanced => 'Balanced',
+    };
   }
 }
