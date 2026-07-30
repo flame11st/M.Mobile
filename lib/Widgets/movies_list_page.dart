@@ -13,7 +13,6 @@ import 'movie_list_item.dart';
 import 'Providers/movies_state.dart';
 import 'search_page.dart';
 import 'Shared/md3_ui.dart';
-import 'Shared/m_button.dart';
 import 'Shared/m_dialog.dart';
 import 'Shared/m_movies_animated_list.dart';
 
@@ -30,8 +29,6 @@ class MoviesListPage extends StatefulWidget {
 
 class MovieListPageState extends State<MoviesListPage> {
   late MoviesList moviesList;
-  final nameController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
 
   MovieListPageState(MoviesList moviesList) {
     this.moviesList = moviesList;
@@ -55,114 +52,89 @@ class MovieListPageState extends State<MoviesListPage> {
                 : MovieCardMode.browse));
   }
 
-  void removeListButtonClicked() {
-    Navigator.of(context).pop();
-
-    var mDialog = MDialog(
-        context: context,
-        content: Text(
-            'Remove "${moviesList.name}"? This deletes the list, but keeps the movies in your watch history.'),
-        firstButtonText: 'Yes, remove',
-        firstButtonCallback: () {
-          removeList();
-        },
-        secondButtonText: 'Cancel',
-        secondButtonCallback: () {});
-
-    mDialog.openDialog();
-  }
-
-  void renameListButtonClicked() {
-    Navigator.of(context).pop();
-
-    final moviesState = Provider.of<MoviesState>(context, listen: false);
-    final userState = Provider.of<UserState>(context, listen: false);
-
-    nameController.text = moviesList.name;
-
-    showDialog<String>(
-        context: context,
-        builder: (BuildContext context1) => AlertDialog(
-              contentPadding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              backgroundColor: Theme.of(context).primaryColor,
-              contentTextStyle: Theme.of(context).textTheme.headlineSmall,
-              content: Container(
-                  height: 90,
-                  padding: const EdgeInsets.all(10),
-                  margin: const EdgeInsets.all(0),
-                  child: Form(
-                    key: _formKey,
-                    child: Theme(
-                        data: Theme.of(context).copyWith(
-                            primaryColor: Theme.of(context).indicatorColor),
-                        child: TextFormField(
-                          validator: (value) => nameController.text.isEmpty
-                              ? "Please enter name"
-                              : moviesState.personalMoviesLists.any((element) =>
-                                      element.name == nameController.text &&
-                                      element != moviesList)
-                                  ? "List with the same name already exists"
-                                  : null,
-                          controller: nameController,
-                          decoration: InputDecoration(
-                              contentPadding:
-                                  const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                              labelText: "Enter new list name",
-                              hintStyle:
-                                  Theme.of(context).textTheme.headlineSmall),
-                        )),
-                  )),
-              actions: [
-                MButton(
-                  active: true,
-                  text: 'Rename',
-                  parentContext: context,
-                  onPressedCallback: () async {
-                    if (_formKey.currentState != null &&
-                        _formKey.currentState!.validate()) {
-                      final oldName = moviesList.name;
-                      final newName = nameController.text;
-                      moviesState.renameMoviesList(oldName, newName);
-
-                      MSnackBar.showSnackBar(
-                          'The List renamed to "$newName"', true);
-
-                      Navigator.of(context1).pop();
-
-                      if (userState.userId != null &&
-                          userState.userId!.isNotEmpty) {
-                        await serviceAgent.renameUserMoviesList(
-                            userState.userId!, oldName, newName);
-                      }
-
-                      nameController.clear();
-                    }
-                  },
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                MButton(
-                  active: true,
-                  text: 'Cancel',
-                  parentContext: context,
-                  onPressedCallback: () => Navigator.of(context1).pop(),
-                )
-              ],
-            ));
-  }
-
-  void removeList() {
+  Future<void> removeListButtonClicked() async {
     final userState = Provider.of<UserState>(context, listen: false);
     final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final listName = moviesList.name;
 
-    moviesState.removeMoviesList(moviesList.name);
+    final confirmed = await showMd3ConfirmationDialog(
+      context: context,
+      title: 'Remove “$listName”?',
+      body: 'The list will be deleted. Movies you watched will stay in Viewed.',
+      confirmLabel: 'Remove list',
+      failureMessage:
+          'Couldn’t remove this list. Check your connection and try again.',
+      onConfirm: () async {
+        final userId = userState.userId;
+        if (userId == null || userId.isEmpty) {
+          return;
+        }
 
-    Navigator.of(context).pop();
+        final response =
+            await serviceAgent.removeUserMoviesList(userId, listName);
+        if (response.statusCode != 200) {
+          throw StateError('Remove list request failed.');
+        }
+      },
+    );
 
-    if (userState.userId != null && userState.userId!.isNotEmpty) {
-      serviceAgent.removeUserMoviesList(userState.userId!, moviesList.name);
+    if (!confirmed || !mounted) {
+      return;
     }
+
+    moviesState.removeMoviesList(listName);
+    MSnackBar.showSnackBar('“$listName” removed.', true);
+    Navigator.of(context).pop();
+  }
+
+  Future<void> renameListButtonClicked() async {
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
+    final oldName = moviesList.name;
+
+    final newName = await showMd3TextInputDialog(
+      context: context,
+      title: 'Rename list',
+      body: 'Choose a clear name you’ll recognize in Personal lists.',
+      fieldLabel: 'List name',
+      initialValue: oldName,
+      confirmLabel: 'Save name',
+      validator: (value) {
+        if (value.isEmpty) {
+          return 'Enter a list name.';
+        }
+
+        final normalizedValue = value.toLowerCase();
+        final duplicate = moviesState.personalMoviesLists.any(
+          (list) =>
+              !identical(list, moviesList) &&
+              list.name.trim().toLowerCase() == normalizedValue,
+        );
+        return duplicate ? 'A list with this name already exists.' : null;
+      },
+      failureMessage:
+          'Couldn’t rename this list. Check your connection and try again.',
+      onConfirm: (value) async {
+        final userId = userState.userId;
+        if (userId == null || userId.isEmpty) {
+          return;
+        }
+
+        final response =
+            await serviceAgent.renameUserMoviesList(userId, oldName, value);
+        if (response.statusCode != 200) {
+          throw StateError('Rename list request failed.');
+        }
+      },
+    );
+
+    if (newName == null || !mounted || newName == oldName) {
+      return;
+    }
+
+    moviesState.renameMoviesList(oldName, newName);
+    setState(() {});
+    MSnackBar.showSnackBar('Renamed to “$newName”.', true);
   }
 
   Widget getBody() {
@@ -254,34 +226,41 @@ class MovieListPageState extends State<MoviesListPage> {
           ),
         )),
         if (moviesList.movieListType == MovieListType.personal)
-          PopupMenuButton(
+          PopupMenuButton<String>(
             padding: EdgeInsets.zero,
+            onSelected: (value) {
+              if (value == 'remove') {
+                removeListButtonClicked();
+              } else if (value == 'rename') {
+                renameListButtonClicked();
+              }
+            },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
-              PopupMenuItem<String>(
-                  child: GestureDetector(
-                      onTap: () => removeListButtonClicked(),
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.delete_forever,
-                          size: 25,
-                          color: Theme.of(context).indicatorColor,
-                        ),
-                        title: const Text("Remove List"),
-                      ))),
+              const PopupMenuItem<String>(
+                value: 'remove',
+                child: ListTile(
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 24,
+                    color: Md3Colors.danger,
+                  ),
+                  title: Text('Remove list'),
+                ),
+              ),
               const PopupMenuDivider(
                 height: 5,
               ),
-              PopupMenuItem<String>(
-                  child: GestureDetector(
-                      onTap: () => renameListButtonClicked(),
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.edit,
-                          size: 25,
-                          color: Theme.of(context).indicatorColor,
-                        ),
-                        title: const Text("Change List Name"),
-                      ))),
+              const PopupMenuItem<String>(
+                value: 'rename',
+                child: ListTile(
+                  leading: Icon(
+                    Icons.edit_outlined,
+                    size: 24,
+                    color: Md3Colors.primary,
+                  ),
+                  title: Text('Rename list'),
+                ),
+              ),
             ],
           ),
       ],

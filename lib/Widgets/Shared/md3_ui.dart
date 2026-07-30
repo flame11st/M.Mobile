@@ -422,6 +422,8 @@ class Md3LiquidGlass extends StatelessWidget {
 Future<T?> showMd3BottomSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
+  bool isDismissible = true,
+  bool enableDrag = true,
 }) {
   FocusManager.instance.primaryFocus?.unfocus();
 
@@ -429,10 +431,15 @@ Future<T?> showMd3BottomSheet<T>({
     context: context,
     useSafeArea: true,
     isScrollControlled: true,
+    isDismissible: isDismissible,
+    enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.48),
     builder: (sheetContext) {
       final mediaQuery = MediaQuery.of(sheetContext);
+      final motionDuration = mediaQuery.disableAnimations
+          ? Duration.zero
+          : const Duration(milliseconds: 180);
       final availableHeight = (mediaQuery.size.height -
               mediaQuery.viewInsets.bottom -
               mediaQuery.viewPadding.top)
@@ -440,7 +447,7 @@ Future<T?> showMd3BottomSheet<T>({
           .toDouble();
 
       return AnimatedPadding(
-        duration: const Duration(milliseconds: 180),
+        duration: motionDuration,
         curve: Curves.easeOut,
         padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
         child: Align(
@@ -462,12 +469,14 @@ class Md3BottomSheetSurface extends StatelessWidget {
   final Widget child;
   final EdgeInsets contentPadding;
   final bool showDragHandle;
+  final double borderRadius;
 
   const Md3BottomSheetSurface({
     super.key,
     required this.child,
     this.contentPadding = const EdgeInsets.fromLTRB(20, 16, 20, 20),
     this.showDragHandle = true,
+    this.borderRadius = 24,
   });
 
   @override
@@ -476,7 +485,7 @@ class Md3BottomSheetSurface extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       decoration: BoxDecoration(
         color: Md3Colors.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: Md3Colors.border),
         boxShadow: const [
           BoxShadow(

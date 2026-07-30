@@ -635,16 +635,19 @@ class MoviesState with ChangeNotifier {
     return lists;
   }
 
-  addMoviesList(String listName, int order) async {
-    personalMoviesLists.add(MoviesList(
-        name: listName,
-        movieListType: MovieListType.personal,
-        order: order,
-        listMovies: []));
+  MoviesList addMoviesList(String listName, int order) {
+    final list = MoviesList(
+      name: listName,
+      movieListType: MovieListType.personal,
+      order: order,
+      listMovies: [],
+    );
+    personalMoviesLists.add(list);
 
     _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
 
     notifyListeners();
+    return list;
   }
 
   renameMoviesList(String oldName, String newName) async {
@@ -665,6 +668,18 @@ class MoviesState with ChangeNotifier {
 
     _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
 
+    notifyListeners();
+  }
+
+  void removeMoviesListEntry(MoviesList list) {
+    final previousLength = personalMoviesLists.length;
+    personalMoviesLists =
+        personalMoviesLists.where((entry) => !identical(entry, list)).toList();
+    if (personalMoviesLists.length == previousLength) {
+      return;
+    }
+
+    _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
     notifyListeners();
   }
 

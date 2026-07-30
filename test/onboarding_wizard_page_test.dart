@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
@@ -88,6 +89,23 @@ void main() {
   });
 
   testWidgets(
+      'process recreation excludes rated movies from a fresh starter deck',
+      (tester) async {
+    final states = await _statesWithRatings(1);
+    addTearDown(states.movies.dispose);
+    states.movies.setStarterDeckMovies([
+      _movie(id: 'rated-0', movieRate: MovieRate.notRated),
+      _movie(id: 'fresh-candidate', movieRate: MovieRate.notRated),
+    ]);
+
+    await _pumpWizard(tester, states);
+
+    expect(find.text('1 of 10 movies rated'), findsOneWidget);
+    expect(find.text('Movie rated-0'), findsNothing);
+    expect(find.text('Movie fresh-candidate'), findsOneWidget);
+  });
+
+  testWidgets(
       'rating layout stays reachable across target sizes and text scales',
       (tester) async {
     final states = await _statesWithRatings(0);
@@ -96,9 +114,11 @@ void main() {
       _movie(
         id: 'compact-candidate',
         movieRate: MovieRate.notRated,
-        overview:
-            'A long synopsis that should remain concise by default while the '
-            'rating actions stay available as the primary repetitive task.',
+        overview: List.filled(
+          6,
+          'A long synopsis that should remain fully reachable while enlarged '
+          'text and the sticky rating actions share a compact viewport.',
+        ).join(' '),
       ),
     ]);
 
@@ -113,20 +133,125 @@ void main() {
 
     for (final size in sizes) {
       for (final scale in scales) {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
         await tester.binding.setSurfaceSize(size);
-        await _pumpWizard(tester, states, textScale: scale);
+        await _pumpWizard(
+          tester,
+          states,
+          textScale: scale,
+          viewportSize: size,
+        );
 
         expect(find.text('More'), findsOneWidget);
         expect(find.text('Liked'), findsOneWidget);
         expect(find.text('Okay'), findsOneWidget);
         expect(find.text('Disliked'), findsOneWidget);
         expect(find.text("Haven't seen it"), findsOneWidget);
+        final sourceLabel = tester.renderObject<RenderParagraph>(
+          find.byKey(const Key('starter-source-label')),
+        );
+        expect(sourceLabel.didExceedMaxLines, isFalse);
         expect(
           tester.getRect(find.text("Haven't seen it")).bottom,
           lessThan(size.height),
         );
+        for (final label in const [
+          'Liked',
+          'Okay',
+          'Disliked',
+          "Haven't seen it",
+        ]) {
+          final labelWidget = tester.widget<Text>(find.text(label));
+          expect(labelWidget.maxLines, 1);
+        }
+
+        final likedTarget = find.ancestor(
+          of: find.text('Liked'),
+          matching: find.byType(FilledButton),
+        );
+        final unseenTarget = find.ancestor(
+          of: find.text("Haven't seen it"),
+          matching: find.byType(TextButton),
+        );
+        expect(tester.getSize(likedTarget).height, greaterThanOrEqualTo(44));
+        expect(tester.getSize(unseenTarget).height, greaterThanOrEqualTo(44));
+
+        if (size.width <= 390 && scale >= 1.3) {
+          final trayContext =
+              tester.element(find.byKey(const Key('rating-action-tray')));
+          expect(
+            tester.getSize(find.byKey(const Key('rating-action-tray'))).height,
+            greaterThanOrEqualTo(156),
+            reason: 'Expected wrapped actions at $size and ${scale}x text; '
+                'tray MediaQuery=${MediaQuery.sizeOf(trayContext)} / '
+                '${MediaQuery.textScalerOf(trayContext).scale(1)}x.',
+          );
+        }
+
+        await tester.ensureVisible(find.text('More'));
+        await tester.pump();
+        await tester.tap(find.text('More'));
+        await tester.pumpAndSettle();
+        expect(find.text('Less'), findsOneWidget);
+
+        final scrollable =
+            tester.state<ScrollableState>(find.byType(Scrollable).first);
+        scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+        await tester.pump();
+
+        final footerRect =
+            tester.getRect(find.byKey(const Key('rating-later-footer')));
+        final trayRect =
+            tester.getRect(find.byKey(const Key('rating-action-tray')));
+        expect(footerRect.bottom, lessThanOrEqualTo(trayRect.top));
+        expect(footerRect.top, greaterThanOrEqualTo(0));
         expect(tester.takeException(), isNull);
       }
+    }
+  });
+
+  testWidgets('large-text Rate Movies visual goldens keep content clear',
+      (tester) async {
+    final states = await _statesWithRatings(0);
+    addTearDown(states.movies.dispose);
+    states.movies.setStarterDeckMovies([
+      _movie(
+        id: 'golden-candidate',
+        movieRate: MovieRate.notRated,
+        overview: List.filled(
+          5,
+          'MovieDiary keeps this synopsis reachable above every rating action.',
+        ).join(' '),
+      ),
+    ]);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    for (final scale in const [1.3, 2.0]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await tester.binding.setSurfaceSize(const Size(360, 640));
+      await _pumpWizard(
+        tester,
+        states,
+        textScale: scale,
+        viewportSize: const Size(360, 640),
+      );
+      await tester.ensureVisible(find.text('More'));
+      await tester.pump();
+      await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const Key('rating-later-footer')),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byKey(const Key('onboarding-golden')),
+        matchesGoldenFile(
+          'goldens/uxr18-rate-360x640-${scale == 1.3 ? '1.3x' : '2x'}.png',
+        ),
+      );
     }
   });
 
@@ -149,7 +274,11 @@ void main() {
 
     await tester.binding.setSurfaceSize(const Size(360, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await _pumpWizard(tester, states);
+    await _pumpWizard(
+      tester,
+      states,
+      viewportSize: const Size(360, 640),
+    );
 
     await tester.drag(
       find.byType(SingleChildScrollView),
@@ -201,6 +330,7 @@ Future<void> _pumpWizard(
   VoidCallback? onExitCompleted,
   WidgetBuilder? recommendationsBuilder,
   double textScale = 1,
+  Size? viewportSize,
 }) async {
   await tester.pumpWidget(
     MultiProvider(
@@ -212,16 +342,21 @@ Future<void> _pumpWizard(
         builder: (context, child) {
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(
+              size: viewportSize,
               textScaler: TextScaler.linear(textScale),
+              disableAnimations: true,
             ),
             child: child!,
           );
         },
-        home: OnboardingWizardPage(
-          onFinished: onFinished ?? () {},
-          onExitStarted: onExitStarted,
-          onExitCompleted: onExitCompleted,
-          recommendationsBuilder: recommendationsBuilder,
+        home: RepaintBoundary(
+          key: const Key('onboarding-golden'),
+          child: OnboardingWizardPage(
+            onFinished: onFinished ?? () {},
+            onExitStarted: onExitStarted,
+            onExitCompleted: onExitCompleted,
+            recommendationsBuilder: recommendationsBuilder,
+          ),
         ),
       ),
     ),

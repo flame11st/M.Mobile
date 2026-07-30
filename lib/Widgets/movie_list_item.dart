@@ -8,6 +8,7 @@ import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
+import 'package:mmobile/Widgets/Shared/m_dialog.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:mmobile/Widgets/Shared/movie_rate_buttons.dart';
@@ -524,27 +525,15 @@ class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
   }) async {
     if (isViewed) {
       final ratingLabel = MovieRate.opinionLabel(currentMovie.movieRate);
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showMd3ConfirmationDialog(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Move to Watchlist?'),
-          content: Text(
-            'Your $ratingLabel rating will be removed when '
+        title: 'Move to Watchlist?',
+        body: 'Your $ratingLabel rating will be removed when '
             '${currentMovie.title} moves back to Watchlist.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Move'),
-            ),
-          ],
-        ),
+        confirmLabel: 'Move to Watchlist',
+        onConfirm: () {},
       );
-      if (confirmed != true || !mounted) {
+      if (!confirmed || !mounted) {
         return;
       }
     }

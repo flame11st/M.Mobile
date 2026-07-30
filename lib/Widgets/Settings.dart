@@ -324,26 +324,19 @@ class SettingsState extends State<Settings> {
     }
   }
 
-  clearUserMovies(String userId) async {
+  Future<void> clearUserMovies(String userId) async {
     var clearMoviesResponse = await serviceAgent.clearUserMovies(userId);
 
-    if (clearMoviesResponse.statusCode == 200) {
-      MSnackBar.showSnackBar('All movies removed', true);
+    if (clearMoviesResponse.statusCode != 200) {
+      throw StateError('Clear library request failed.');
     }
   }
 
-  removeUser(
-      String userId, UserState userState, MoviesState moviesState) async {
-    var text = removeController.text;
-    var removeUserResponse = await serviceAgent.deleteUser(userId, text);
+  Future<void> removeUser(String userId, String feedback) async {
+    var removeUserResponse = await serviceAgent.deleteUser(userId, feedback);
 
-    if (removeUserResponse.statusCode == 200) {
-      if (!mounted) return;
-      userState.logout();
-      moviesState.logout();
-      Navigator.of(context).pop();
-    } else {
-      MSnackBar.showSnackBar('Something went wrong', false);
+    if (removeUserResponse.statusCode != 200) {
+      throw StateError('Delete account request failed.');
     }
   }
 
@@ -838,27 +831,31 @@ class SettingsState extends State<Settings> {
                     fontSize: 14,
                   ),
                 ),
-                onPressed: () {
-                  var mDialog = MDialog(
-                      context: context,
-                      content: const Text(
-                          'Clear every rating and Watchlist item from this device? This cannot be undone.'),
-                      firstButtonText: 'Yes, clear library',
-                      firstButtonCallback: () {
-                        if (!userState.isIncognitoMode) {
-                          clearUserMovies(userState.userId!);
-                        }
+                onPressed: () async {
+                  final cleared = await showMd3ConfirmationDialog(
+                    context: context,
+                    title: 'Clear your library?',
+                    body:
+                        'This removes every rating and Watchlist item. This can’t be undone.',
+                    confirmLabel: 'Clear library',
+                    failureMessage:
+                        'Couldn’t clear your library. Check your connection and try again.',
+                    onConfirm: () async {
+                      if (!userState.isIncognitoMode) {
+                        await clearUserMovies(userState.userId!);
+                      }
+                    },
+                  );
 
-                        setState(() {
-                          userMoviesCount = 0;
-                        });
+                  if (!cleared || !mounted) {
+                    return;
+                  }
 
-                        moviesState.clear();
-                      },
-                      secondButtonText: 'Cancel',
-                      secondButtonCallback: () {});
-
-                  mDialog.openDialog();
+                  setState(() {
+                    userMoviesCount = 0;
+                  });
+                  await moviesState.clear();
+                  MSnackBar.showSnackBar('Library cleared.', true);
                 },
               ),
             ),
@@ -971,37 +968,36 @@ class SettingsState extends State<Settings> {
           MButton(
             text: 'Remove user',
             active: true,
-            onPressedCallback: () {
-              var mDialog = MDialog(
-                  context: context,
-                  content: SizedBox(
-                    height: 143,
-                    child: Column(
-                      children: [
-                        const Text(
-                            'Are you sure you want to remove your user?'),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        TextField(
-                          controller: removeController,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                              hintText:
-                                  'Please tell us why are you going to remove your user.\n',
-                              border: OutlineInputBorder()),
-                        ),
-                      ],
-                    ),
-                  ),
-                  firstButtonText: 'Remove',
-                  firstButtonCallback: () {
-                    removeUser(userState.userId!, userState, moviesState);
-                  },
-                  secondButtonText: 'Cancel',
-                  secondButtonCallback: () {});
+            onPressedCallback: () async {
+              final feedback = await showMd3TextInputDialog(
+                context: context,
+                title: 'Delete your account?',
+                body:
+                    'This deactivates your MovieDiary account and removes its saved ratings and Watchlist items. This can’t be undone.',
+                fieldLabel: 'Reason (optional)',
+                initialValue: removeController.text,
+                confirmLabel: 'Delete account',
+                destructive: true,
+                maxLines: 3,
+                keyboardType: TextInputType.multiline,
+                failureMessage:
+                    'Couldn’t delete your account. Check your connection and try again.',
+                onConfirm: (value) async {
+                  await removeUser(userState.userId!, value);
+                },
+              );
 
-              mDialog.openDialog();
+              if (feedback == null || !mounted) {
+                return;
+              }
+
+              removeController.clear();
+              await userState.logout();
+              await moviesState.logout();
+              if (!mounted) {
+                return;
+              }
+              Navigator.of(this.context).maybePop();
             },
             height: 40,
           ),

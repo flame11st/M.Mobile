@@ -399,17 +399,50 @@ class DiscoverPageState extends State<DiscoverPage> {
               ],
             )
           else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(child: _buildCompactProgress(progress, remaining)),
-                const SizedBox(width: 12),
-                _buildTasteProfileActionButton(
-                  text: _isRetryingLists ? 'Loading' : ctaText,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final actionText = _isRetryingLists ? 'Loading' : ctaText;
+                final textScaler = MediaQuery.textScalerOf(context);
+                final textDirection = Directionality.of(context);
+                final progressLabel = remaining == 0
+                    ? 'Ready for a deck'
+                    : '$remaining more to unlock';
+                final progressPainter = TextPainter(
+                  text: TextSpan(
+                    text: progressLabel,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  textDirection: textDirection,
+                  textScaler: textScaler,
+                  maxLines: 1,
+                )..layout();
+                final actionPainter = TextPainter(
+                  text: TextSpan(
+                    text: actionText,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  textDirection: textDirection,
+                  textScaler: textScaler,
+                  maxLines: 1,
+                )..layout();
+                final preferredActionWidth =
+                    (actionPainter.width + 50).clamp(112.0, 172.0);
+                final useStackedLayout =
+                    progressPainter.width + preferredActionWidth + 12 >
+                        constraints.maxWidth;
+                final action = _buildTasteProfileActionButton(
+                  text: actionText,
                   icon: hasStarterMovies
                       ? Icons.swipe_rounded
                       : Icons.refresh_rounded,
                   tonal: true,
+                  fillWidth: useStackedLayout,
                   onPressed: _isRetryingLists
                       ? null
                       : () {
@@ -420,8 +453,32 @@ class DiscoverPageState extends State<DiscoverPage> {
 
                           _openRatingFlow(context);
                         },
-                ),
-              ],
+                );
+
+                if (useStackedLayout) {
+                  return Column(
+                    key: const Key('taste-progress-action-layout'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildCompactProgress(progress, remaining),
+                      const SizedBox(height: 12),
+                      action,
+                    ],
+                  );
+                }
+
+                return Row(
+                  key: const Key('taste-progress-action-layout'),
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: _buildCompactProgress(progress, remaining),
+                    ),
+                    const SizedBox(width: 12),
+                    action,
+                  ],
+                );
+              },
             ),
           if (!canRate) ...[
             const SizedBox(height: 10),
@@ -520,35 +577,100 @@ class DiscoverPageState extends State<DiscoverPage> {
     required String? actionText,
     required VoidCallback? onAction,
   }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 18, 2, 10),
-      child: Row(
-        children: [
-          Expanded(
+    final titleWidget = Semantics(
+      header: true,
+      child: Text(
+        title,
+        key: ValueKey('discover-section-title-$title'),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Md3Colors.text,
+          fontSize: 24,
+          height: 29 / 24,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+    final actionWidget = actionText != null && onAction != null
+        ? TextButton(
+            key: ValueKey('discover-section-action-$title'),
+            onPressed: onAction,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              foregroundColor: Md3Colors.primary,
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             child: Text(
-              title,
+              actionText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          )
+        : null;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScaler = MediaQuery.textScalerOf(context);
+        final textScale = textScaler.scale(14) / 14;
+        final viewportWidth = constraints.maxWidth + 32;
+        var labelsCompete = false;
+        if (actionText != null) {
+          final titlePainter = TextPainter(
+            text: TextSpan(
+              text: title,
               style: const TextStyle(
-                color: Md3Colors.text,
                 fontSize: 24,
                 height: 29 / 24,
                 fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-          if (actionText != null && onAction != null)
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                foregroundColor: Md3Colors.primary,
-                textStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
+            textDirection: Directionality.of(context),
+            textScaler: textScaler,
+            maxLines: 1,
+          )..layout();
+          final actionPainter = TextPainter(
+            text: TextSpan(
+              text: actionText,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
               ),
-              child: Text(actionText),
             ),
-        ],
-      ),
+            textDirection: Directionality.of(context),
+            textScaler: textScaler,
+            maxLines: 1,
+          )..layout();
+          labelsCompete = titlePainter.width + actionPainter.width + 28 >
+              constraints.maxWidth;
+        }
+        final useStackedLayout =
+            (viewportWidth <= 390 && textScale >= 1.29) || labelsCompete;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(2, 18, 2, 10),
+          child: useStackedLayout
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleWidget,
+                    if (actionWidget != null) ...[
+                      const SizedBox(height: 8),
+                      actionWidget,
+                    ],
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: titleWidget),
+                    if (actionWidget != null) actionWidget,
+                  ],
+                ),
+        );
+      },
     );
   }
 
@@ -585,6 +707,7 @@ class DiscoverPageState extends State<DiscoverPage> {
         ),
         const SizedBox(height: 5),
         Text(
+          key: const Key('taste-progress-label'),
           remaining == 0 ? 'Ready for a deck' : '$remaining more to unlock',
           style: const TextStyle(
             color: Md3Colors.muted,

@@ -253,21 +253,31 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final sourceLabel = _starterSourceLabel(movie, moviesState);
     final viewportWidth = MediaQuery.sizeOf(context).width;
-    final textScale = MediaQuery.textScalerOf(context).scale(1);
     final isCompact = viewportWidth <= 390;
     final posterWidth = isCompact ? 92.0 : 112.0;
     final posterHeight = isCompact ? 138.0 : 168.0;
-    final trayClearance = textScale >= 1.6 ? 184.0 : 160.0;
     final synopsisExpanded = _expandedSynopsisMovieId == movie.id;
+    final synopsisText = Text(
+      movie.overview,
+      maxLines: synopsisExpanded ? null : 3,
+      overflow: synopsisExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: Md3Colors.muted,
+        fontSize: 15,
+        height: 1.4,
+        fontWeight: FontWeight.w500,
+      ),
+    );
 
     return Scaffold(
       backgroundColor: Md3Colors.background,
       body: SafeArea(
+        bottom: false,
         child: Stack(
           children: [
             SingleChildScrollView(
               controller: _scrollController,
-              padding: EdgeInsets.fromLTRB(16, 8, 16, trayClearance),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -339,26 +349,15 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                           ],
                           if (movie.overview.isNotEmpty) ...[
                             const SizedBox(height: 12),
-                            AnimatedSize(
-                              duration: MediaQuery.disableAnimationsOf(context)
-                                  ? Duration.zero
-                                  : const Duration(milliseconds: 180),
-                              curve: Curves.easeOutCubic,
-                              alignment: Alignment.topCenter,
-                              child: Text(
-                                movie.overview,
-                                maxLines: synopsisExpanded ? null : 3,
-                                overflow: synopsisExpanded
-                                    ? TextOverflow.visible
-                                    : TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Md3Colors.muted,
-                                  fontSize: 15,
-                                  height: 1.4,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            if (MediaQuery.disableAnimationsOf(context))
+                              synopsisText
+                            else
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOutCubic,
+                                alignment: Alignment.topCenter,
+                                child: synopsisText,
                               ),
-                            ),
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
@@ -386,6 +385,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                             ),
                           ],
                           Text(
+                            key: const Key('rating-later-footer'),
                             remaining <= 1
                                 ? 'You can change your rating later'
                                 : '$remaining choices ready. You can change your rating later.',
@@ -403,12 +403,12 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                 ],
               ),
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _buildRatingTray(movie),
-            ),
           ],
         ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: _buildRatingTray(movie),
       ),
     );
   }
@@ -693,10 +693,13 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   }
 
   Widget _buildRatingTray(Movie movie) {
-    final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final useWrappedLayout = textScale >= 1.6;
+    final useWrappedLayout = _shouldWrapRatingTray(
+      context,
+      MediaQuery.sizeOf(context).width - 56,
+    );
 
     return Semantics(
+      key: const Key('rating-action-tray'),
       container: true,
       label: 'Rating actions for ${movie.title}',
       child: Md3LiquidGlass(
@@ -809,6 +812,40 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     );
   }
 
+  bool _shouldWrapRatingTray(BuildContext context, double availableWidth) {
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    if (viewportWidth <= 390 && textScale >= 1.29) {
+      return true;
+    }
+
+    const gaps = 16.0;
+    const buttonChrome = 31.0;
+    final labelWidth = ((availableWidth - gaps) / 3) - buttonChrome;
+    if (labelWidth <= 0) {
+      return true;
+    }
+
+    const labelStyle = TextStyle(
+      fontSize: 14,
+      height: 18 / 14,
+      fontWeight: FontWeight.w700,
+    );
+    for (final label in const ['Liked', 'Okay', 'Disliked']) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: labelStyle),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout(maxWidth: labelWidth);
+      if (painter.didExceedMaxLines) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   Widget _ratingAction({
     required Movie movie,
     required String label,
@@ -850,15 +887,18 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
               Icon(icon, size: 18),
               const SizedBox(width: 5),
               Flexible(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.29,
-                    fontWeight: FontWeight.w700,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    textScaler: TextScaler.noScaling,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 18 / 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -877,7 +917,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       child: SizedBox(
         width: double.infinity,
         height: height,
-        child: TextButton.icon(
+        child: TextButton(
           style: TextButton.styleFrom(
             foregroundColor: Md3Colors.primary,
             shape: RoundedRectangleBorder(
@@ -885,17 +925,28 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
             ),
           ),
           onPressed: isSavingRating ? null : () => _skip(movie),
-          icon: const Icon(Icons.skip_next_rounded, size: 19),
-          label: const Text(
-            "Haven't seen it",
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.29,
-              fontWeight: FontWeight.w700,
-            ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.skip_next_rounded, size: 18),
+              SizedBox(width: 5),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    "Haven't seen it",
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    textScaler: TextScaler.noScaling,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 18 / 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -911,9 +962,11 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         border: Border.all(color: const Color(0xffc9d8ea)),
       ),
       child: Text(
+        key: const Key('starter-source-label'),
         label,
-        maxLines: 1,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
         style: const TextStyle(
           color: Md3Colors.primary,
           fontSize: 12,
@@ -961,11 +1014,16 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
 
   List<Movie> _candidates(MoviesState moviesState) {
     final pool = _buildStarterPool(moviesState);
+    final ratedMovieIds = moviesState.userMovies
+        .where((movie) => MovieRate.isViewed(movie.movieRate))
+        .map((movie) => movie.id)
+        .toSet();
     final seenIds = <String>{};
 
     return pool
         .where((movie) => seenIds.add(movie.id))
         .where((movie) => !skippedIds.contains(movie.id))
+        .where((movie) => !ratedMovieIds.contains(movie.id))
         .where((movie) => !MovieRate.isViewed(movie.movieRate))
         .where(MovieListCurator.isTrustedStarterItem)
         .take(40)

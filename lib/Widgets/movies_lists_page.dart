@@ -316,6 +316,11 @@ class MoviesListsPageState extends State<MoviesListsPage>
     final duration =
         animationsDisabled ? Duration.zero : const Duration(milliseconds: 160);
     final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final guidanceHeight = textScale > 1.5
+        ? 240.0
+        : textScale > 1.15
+            ? 208.0
+            : 176.0;
 
     return AnimatedSwitcher(
       duration: duration,
@@ -329,7 +334,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
           ? const SizedBox.shrink(key: Key('general-intro-hidden'))
           : SizedBox(
               key: const Key('general-intro'),
-              height: textScale > 1.5 ? 240 : 176,
+              height: guidanceHeight,
               child: Md3Card(
                 borderRadius: 20,
                 padding: const EdgeInsets.all(20),
@@ -521,6 +526,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
 
     final createdName = await showMd3BottomSheet<String>(
       context: context,
+      isDismissible: false,
+      enableDrag: false,
       builder: (sheetContext) => _CreateListSheet(
         moviesState: moviesState,
         userState: userState,
@@ -539,14 +546,14 @@ class MoviesListsPageState extends State<MoviesListsPage>
       }
       SemanticsService.sendAnnouncement(
         View.of(context),
-        'Created $createdName',
+        '“$createdName” created.',
         Directionality.of(context),
       );
     });
 
     MSnackBar.showWithMessenger(
       ScaffoldMessenger.of(context),
-      'Created $createdName',
+      '“$createdName” created.',
       true,
       duration: const Duration(milliseconds: 2500),
       bottomMargin: Md3NavigationMetrics.contentBottomInset(context),
@@ -951,18 +958,27 @@ class _CreateListSheetState extends State<_CreateListSheet> {
   final _nameController = TextEditingController();
   final _focusNode = FocusNode();
   bool _submitting = false;
+  bool _completed = false;
   String? _requestError;
+  Set<String>? _namesBeforeSubmit;
 
   String get _trimmedName => _nameController.text.trim();
 
+  String _normalizeName(String name) =>
+      name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
   bool get _isDuplicate {
-    final normalized = _trimmedName.toLowerCase();
+    final normalized = _normalizeName(_trimmedName);
     if (normalized.isEmpty) {
       return false;
     }
 
+    if (_submitting && _namesBeforeSubmit != null) {
+      return _namesBeforeSubmit!.contains(normalized);
+    }
+
     return widget.moviesState.personalMoviesLists.any(
-      (list) => list.name.trim().toLowerCase() == normalized,
+      (list) => _normalizeName(list.name) == normalized,
     );
   }
 
@@ -988,18 +1004,27 @@ class _CreateListSheetState extends State<_CreateListSheet> {
   }
 
   Future<void> _submit() async {
-    if (!_canSubmit) {
+    if (!_canSubmit || _completed) {
       return;
     }
 
     final listName = _trimmedName;
+    final namesBeforeSubmit = widget.moviesState.personalMoviesLists
+        .map((list) => _normalizeName(list.name))
+        .toSet();
+    if (namesBeforeSubmit.contains(_normalizeName(listName))) {
+      setState(() {});
+      return;
+    }
+
     setState(() {
       _submitting = true;
       _requestError = null;
+      _namesBeforeSubmit = namesBeforeSubmit;
     });
 
-    await widget.moviesState.addMoviesList(listName, widget.order);
-    var shouldRollback = true;
+    final optimisticList =
+        widget.moviesState.addMoviesList(listName, widget.order);
 
     try {
       final userId = widget.userState.userId?.trim();
@@ -1012,28 +1037,121 @@ class _CreateListSheetState extends State<_CreateListSheet> {
         }
       }
 
-      shouldRollback = false;
-      if (mounted) {
-        Navigator.of(context).pop(listName);
+      if (!mounted || _completed) {
+        return;
       }
+
+      _completed = true;
+      Navigator.of(context).pop(listName);
     } catch (error, stackTrace) {
       debugPrint('Personal list create failed: $error');
       debugPrint('$stackTrace');
+      widget.moviesState.removeMoviesListEntry(optimisticList);
       if (!mounted) {
         return;
       }
 
       setState(() {
         _submitting = false;
+        _namesBeforeSubmit = null;
         _requestError =
-            'MovieDiary could not create this list. Check your connection, then retry.';
+            'MovieDiary couldn’t create this list. Check your connection, then retry.';
       });
-    } finally {
-      if (shouldRollback) {
-        widget.moviesState.removeMoviesList(listName);
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _focusNode.requestFocus();
+        }
+      });
     }
   }
+
+  Widget _buildSubmitButton(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final animationsDisabled =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final motionDuration =
+        animationsDisabled ? Duration.zero : const Duration(milliseconds: 180);
+    final buttonText = _submitting
+        ? 'Creating…'
+        : _requestError == null
+            ? 'Create List'
+            : 'Retry';
+    final disabledForValidation = !_submitting && !_canSubmit;
+
+    return Semantics(
+      liveRegion: _submitting,
+      button: true,
+      enabled: _canSubmit,
+      label: _submitting ? 'Creating $listNameForSemantics' : buttonText,
+      child: SizedBox(
+        height: textScale > 1.3 ? 72 : 52,
+        width: double.infinity,
+        child: FilledButton(
+          key: const Key('create-list-submit'),
+          style: FilledButton.styleFrom(
+            backgroundColor: Md3Colors.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor:
+                _submitting ? Md3Colors.primary : Md3Colors.border,
+            disabledForegroundColor:
+                _submitting ? Colors.white : Md3Colors.muted,
+            side: BorderSide(
+              color:
+                  disabledForValidation ? Md3Colors.border : Md3Colors.primary,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          onPressed: _canSubmit ? _submit : null,
+          child: AnimatedSwitcher(
+            duration: motionDuration,
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeOut,
+            child: Row(
+              key: ValueKey(buttonText),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_submitting)
+                  const SizedBox(
+                    key: Key('create-list-progress'),
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                else
+                  Icon(
+                    _requestError == null
+                        ? Icons.add_rounded
+                        : Icons.refresh_rounded,
+                    size: 20,
+                  ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    buttonText,
+                    maxLines: 2,
+                    overflow: TextOverflow.fade,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String get listNameForSemantics =>
+      _trimmedName.isEmpty ? 'personal list' : _trimmedName;
 
   @override
   Widget build(BuildContext context) {
@@ -1043,6 +1161,8 @@ class _CreateListSheetState extends State<_CreateListSheet> {
     return PopScope(
       canPop: !_submitting,
       child: Md3BottomSheetSurface(
+        key: const Key('create-list-sheet'),
+        borderRadius: 32,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1081,6 +1201,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                   width: 44,
                   height: 44,
                   child: IconButton(
+                    key: const Key('create-list-close'),
                     tooltip: 'Close',
                     onPressed:
                         _submitting ? null : () => Navigator.of(context).pop(),
@@ -1247,30 +1368,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
               ),
             ],
             const SizedBox(height: 20),
-            Md3PrimaryButton(
-              key: const Key('create-list-submit'),
-              text: _requestError == null ? 'Create List' : 'Retry',
-              icon: _submitting
-                  ? Icons.hourglass_top_rounded
-                  : _requestError == null
-                      ? Icons.add_rounded
-                      : Icons.refresh_rounded,
-              height: MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 72 : 52,
-              onPressed: _canSubmit ? _submit : null,
-            ),
-            if (_submitting) ...[
-              const SizedBox(height: 12),
-              const Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Md3Colors.primary,
-                  ),
-                ),
-              ),
-            ],
+            _buildSubmitButton(context),
           ],
         ),
       ),

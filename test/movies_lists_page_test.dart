@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +12,6 @@ import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
-import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/movies_lists_page.dart';
 import 'package:provider/provider.dart';
 
@@ -190,6 +191,11 @@ void main() {
           const [],
           type: MovieListType.personal,
         ),
+        _list(
+          'Weekend   Picks',
+          const [],
+          type: MovieListType.personal,
+        ),
       ]);
       addTearDown(states.movies.dispose);
       addTearDown(states.user.dispose);
@@ -222,10 +228,30 @@ void main() {
         find.text('A list with this name already exists.'),
         findsOneWidget,
       );
-      final duplicateButton = tester.widget<Md3PrimaryButton>(
+      final duplicateButton = tester.widget<FilledButton>(
         find.byKey(const Key('create-list-submit')),
       );
       expect(duplicateButton.onPressed, isNull);
+
+      await tester.enterText(
+        find.byKey(const Key('create-list-name-field')),
+        '  FAVORITES  ',
+      );
+      await tester.pump();
+      expect(
+        find.text('A list with this name already exists.'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('create-list-name-field')),
+        ' weekend picks ',
+      );
+      await tester.pump();
+      expect(
+        find.text('A list with this name already exists.'),
+        findsOneWidget,
+      );
 
       await tester.enterText(
         find.byKey(const Key('create-list-name-field')),
@@ -238,11 +264,18 @@ void main() {
 
       expect(
           find.byKey(const Key('create-list-request-error')), findsOneWidget);
+      expect(
+        find.text(
+          'MovieDiary couldn’t create this list. Check your connection, then retry.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Retry'), findsOneWidget);
       final field = tester.widget<TextField>(
         find.byKey(const Key('create-list-name-field')),
       );
       expect(field.controller?.text, 'Road Trip');
+      expect(field.focusNode?.hasFocus, isTrue);
       expect(
         states.movies.personalMoviesLists
             .where((list) => list.name == 'Road Trip'),
@@ -255,7 +288,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Create personal list'), findsNothing);
-      expect(find.text('Created Road Trip'), findsOneWidget);
+      expect(find.text('“Road Trip” created.'), findsOneWidget);
       expect(service.calls, 2);
       expect(
         states.movies.personalMoviesLists
@@ -279,6 +312,266 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'delayed signed-in success has one truthful Creating state and cannot dismiss',
+    (tester) async {
+      final response = Completer<http.Response>();
+      final service = _CreateListService(
+        statusCode: 201,
+        pendingResponse: response,
+      );
+      final states = await _testStates(const []);
+      states.user.isIncognitoMode = false;
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(360, 640));
+      await _pumpLists(tester, states, serviceAgent: service);
+
+      await tester.tap(find.byKey(const Key('lists-tab-personal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('personal-empty-create-list')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('create-list-name-field')),
+        'WeekendWinners',
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('create-list-submit')));
+      await tester.tap(find.byKey(const Key('create-list-submit')));
+      await tester.pump();
+
+      expect(find.text('Creating…'), findsOneWidget);
+      expect(find.byKey(const Key('create-list-progress')), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(const Key('create-list-progress'))),
+        const Size(18, 18),
+      );
+      expect(
+        find.text('A list with this name already exists.'),
+        findsNothing,
+      );
+      expect(
+        states.movies.personalMoviesLists
+            .where((list) => list.name == 'WeekendWinners')
+            .length,
+        1,
+      );
+      expect(service.calls, 1);
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const Key('create-list-name-field')),
+            )
+            .enabled,
+        isFalse,
+      );
+      expect(
+        tester
+            .widget<IconButton>(
+              find.byKey(const Key('create-list-close')),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      await tester.tap(
+        find.byKey(const Key('create-list-submit')),
+        warnIfMissed: false,
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.tapAt(const Offset(8, 8));
+      await tester.pump();
+      expect(service.calls, 1);
+      expect(find.text('Create personal list'), findsOneWidget);
+      expect(find.text('Creating…'), findsOneWidget);
+
+      response.complete(http.Response('', 201));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create personal list'), findsNothing);
+      expect(find.text('“WeekendWinners” created.'), findsOneWidget);
+      expect(
+        states.movies.personalMoviesLists
+            .where((list) => list.name == 'WeekendWinners')
+            .length,
+        1,
+      );
+      expect(service.calls, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(milliseconds: 800));
+    },
+  );
+
+  testWidgets(
+    'local-only guest create succeeds without a server request',
+    (tester) async {
+      final service = _CreateListService(statusCode: 503);
+      final states = await _testStates(const []);
+      states.user
+        ..userId = null
+        ..isIncognitoMode = true;
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+      await _pumpLists(tester, states, serviceAgent: service);
+
+      await tester.tap(find.byKey(const Key('lists-tab-personal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('personal-empty-create-list')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('create-list-name-field')),
+        'Offline Picks',
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('create-list-submit')));
+      await tester.tap(find.byKey(const Key('create-list-submit')));
+      await tester.pumpAndSettle();
+
+      expect(service.calls, 0);
+      expect(find.text('“Offline Picks” created.'), findsOneWidget);
+      expect(
+        states.movies.personalMoviesLists
+            .where((list) => list.name == 'Offline Picks')
+            .length,
+        1,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(milliseconds: 800));
+    },
+  );
+
+  testWidgets(
+    'timeout rolls back the pending row, restores focus, and keeps Retry safe',
+    (tester) async {
+      final response = Completer<http.Response>();
+      final service = _CreateListService(
+        statusCode: 201,
+        pendingResponse: response,
+      );
+      final states = await _testStates(const []);
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+      await _pumpLists(tester, states, serviceAgent: service, textScale: 1.3);
+
+      await tester.tap(find.byKey(const Key('lists-tab-personal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('personal-empty-create-list')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('create-list-name-field')),
+        'Slow Night',
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('create-list-submit')));
+      await tester.tap(find.byKey(const Key('create-list-submit')));
+      await tester.pump();
+      expect(find.text('Creating…'), findsOneWidget);
+
+      response.completeError(TimeoutException('offline'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Retry'), findsOneWidget);
+      expect(
+        find.text(
+          'MovieDiary couldn’t create this list. Check your connection, then retry.',
+        ),
+        findsOneWidget,
+      );
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('create-list-name-field')),
+      );
+      expect(field.controller?.text, 'Slow Night');
+      expect(field.enabled, isTrue);
+      expect(field.focusNode?.hasFocus, isTrue);
+      expect(
+        states.movies.personalMoviesLists
+            .where((list) => list.name == 'Slow Night'),
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(milliseconds: 800));
+    },
+  );
+
+  testWidgets('create sheet ready and Creating states match visual contract',
+      (tester) async {
+    final response = Completer<http.Response>();
+    final service = _CreateListService(
+      statusCode: 201,
+      pendingResponse: response,
+    );
+    final states = await _testStates([
+      _list(
+        'Favorites',
+        const [],
+        type: MovieListType.personal,
+      ),
+    ]);
+    addTearDown(states.movies.dispose);
+    addTearDown(states.user.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    await _pumpLists(
+      tester,
+      states,
+      serviceAgent: service,
+      textScale: 1.3,
+    );
+
+    await tester.tap(find.byKey(const Key('lists-tab-personal')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('personal-lists-add-fab')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('create-list-name-field')),
+      'WeekendWinners',
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(const Key('create-list-sheet')),
+      matchesGoldenFile('goldens/uxr20-create-list-ready-390x844-1.3x.png'),
+    );
+
+    await tester.ensureVisible(find.byKey(const Key('create-list-submit')));
+    await tester.tap(find.byKey(const Key('create-list-submit')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(const Key('create-list-sheet')),
+      matchesGoldenFile(
+        'goldens/uxr20-create-list-creating-390x844-1.3x.png',
+      ),
+    );
+
+    response.complete(http.Response('', 201));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(tester.takeException(), isNull);
+  });
+
+  test('identity rollback keeps a same-named pre-existing list', () async {
+    final existing = _list(
+      'Road Trip',
+      const [],
+      type: MovieListType.personal,
+    );
+    final states = await _testStates([existing]);
+    addTearDown(states.movies.dispose);
+    addTearDown(states.user.dispose);
+
+    final pending = states.movies.addMoviesList('Road Trip', 99);
+    states.movies.removeMoviesListEntry(pending);
+
+    expect(states.movies.personalMoviesLists, hasLength(1));
+    expect(
+        identical(states.movies.personalMoviesLists.single, existing), isTrue);
+  });
 }
 
 Future<_TestStates> _testStates(
@@ -384,8 +677,12 @@ Movie _movie(
 class _CreateListService extends ServiceAgent {
   int statusCode;
   int calls = 0;
+  Completer<http.Response>? pendingResponse;
 
-  _CreateListService({required this.statusCode});
+  _CreateListService({
+    required this.statusCode,
+    this.pendingResponse,
+  });
 
   @override
   Future<http.Response> createUserMoviesList(
@@ -394,6 +691,9 @@ class _CreateListService extends ServiceAgent {
     int order,
   ) async {
     calls += 1;
+    if (pendingResponse != null) {
+      return pendingResponse!.future;
+    }
     return http.Response('', statusCode);
   }
 }

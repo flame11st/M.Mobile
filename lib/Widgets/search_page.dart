@@ -10,12 +10,41 @@ import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/movie_list_item.dart';
 import 'package:mmobile/Widgets/search_state.dart';
 
+typedef PopularSearchFetcher = Future<MovieSearchTransportResponse> Function();
+
+abstract interface class SearchSuggestionStore {
+  Future<String?> read(String key);
+
+  Future<void> write(String key, String value);
+}
+
+class SecureSearchSuggestionStore implements SearchSuggestionStore {
+  final FlutterSecureStorage _storage;
+
+  const SecureSearchSuggestionStore([
+    this._storage = const FlutterSecureStorage(),
+  ]);
+
+  @override
+  Future<String?> read(String key) => _storage.read(key: key);
+
+  @override
+  Future<void> write(String key, String value) =>
+      _storage.write(key: key, value: value);
+}
+
 class SearchPage extends StatefulWidget {
   final bool isActive;
   final bool showBottomNavigationClearance;
   final bool handlesBackNavigation;
   final VoidCallback? onExitRequested;
   final MovieSearchFetcher? fetcher;
+  final PopularSearchFetcher? suggestionFetcher;
+  final SearchSuggestionStore? suggestionStore;
+  final Duration suggestionTimeout;
+  final Duration suggestionRefreshThrottle;
+  final List<Duration> automaticSuggestionRetryDelays;
+  final DateTime Function()? clock;
 
   const SearchPage({
     super.key,
@@ -24,6 +53,16 @@ class SearchPage extends StatefulWidget {
     this.handlesBackNavigation = true,
     this.onExitRequested,
     this.fetcher,
+    this.suggestionFetcher,
+    this.suggestionStore,
+    this.suggestionTimeout = const Duration(seconds: 6),
+    this.suggestionRefreshThrottle = const Duration(minutes: 5),
+    this.automaticSuggestionRetryDelays = const [
+      Duration(seconds: 8),
+      Duration(seconds: 30),
+      Duration(minutes: 2),
+    ],
+    this.clock,
   });
 
   @override
@@ -32,18 +71,31 @@ class SearchPage extends StatefulWidget {
 
 class SearchPageState extends State<SearchPage> {
   static const _recentSearchesKey = 'movieDiaryRecentSuccessfulSearches';
-  static const _suggestionTimeout = Duration(seconds: 6);
+  static const _popularSearchesKey = 'movieDiaryPopularSearches';
+  static const _popularSearchesUpdatedAtKey =
+      'movieDiaryPopularSearchesUpdatedAt';
 
   final _queryController = TextEditingController();
   final _focusNode = FocusNode();
   final _scrollController = ScrollController();
   final _serviceAgent = ServiceAgent();
-  final _storage = const FlutterSecureStorage();
 
   late final MovieSearchStateController _searchController;
-  bool _suggestionsLoading = true;
+  late final SearchSuggestionStore _suggestionStore;
+  late final PopularSearchFetcher _suggestionFetcher;
+  late final DateTime Function() _clock;
+  late final AppLifecycleListener _appLifecycleListener;
+
+  _SuggestionPhase _suggestionPhase = _SuggestionPhase.loading;
   List<String> _popularSearches = const [];
   List<String> _recentSearches = const [];
+  bool _suggestionsRefreshing = false;
+  bool _cachedSuggestionRefreshFailed = false;
+  DateTime? _lastSuggestionSuccessAt;
+  DateTime? _lastSuggestionAttemptAt;
+  Timer? _automaticSuggestionRetryTimer;
+  int _suggestionRequestId = 0;
+  int _automaticSuggestionRetryIndex = 0;
   int? _lastRememberedRequestId;
 
   @override
@@ -52,10 +104,18 @@ class SearchPageState extends State<SearchPage> {
     _searchController = MovieSearchStateController(
       fetcher: widget.fetcher ?? _fetchSearch,
     )..addListener(_handleSearchStateChanged);
+    _suggestionStore =
+        widget.suggestionStore ?? const SecureSearchSuggestionStore();
+    _suggestionFetcher =
+        widget.suggestionFetcher ?? _fetchPopularSearchSuggestions;
+    _clock = widget.clock ?? DateTime.now;
+    _appLifecycleListener = AppLifecycleListener(
+      onResume: _handleAppResume,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        unawaited(_loadSuggestions());
+        unawaited(_restoreAndRefreshSuggestions());
       }
     });
   }
@@ -65,10 +125,15 @@ class SearchPageState extends State<SearchPage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isActive && !widget.isActive) {
       _focusNode.unfocus();
+      _automaticSuggestionRetryTimer?.cancel();
+    } else if (!oldWidget.isActive && widget.isActive) {
+      unawaited(_refreshSuggestionsForActiveTab());
     }
   }
 
   Future<void> handleActiveTabTap() async {
+    unawaited(_refreshSuggestionsForActiveTab());
+
     if (_scrollController.hasClients && _scrollController.offset > 8) {
       await _scrollController.animateTo(
         0,
@@ -83,6 +148,9 @@ class SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    _suggestionRequestId += 1;
+    _automaticSuggestionRetryTimer?.cancel();
+    _appLifecycleListener.dispose();
     _searchController
       ..removeListener(_handleSearchStateChanged)
       ..dispose();
@@ -104,6 +172,20 @@ class SearchPageState extends State<SearchPage> {
       statusCode: response.statusCode,
       body: response.body,
     );
+  }
+
+  Future<MovieSearchTransportResponse> _fetchPopularSearchSuggestions() async {
+    final response = await _serviceAgent.getPopularSearches();
+    return MovieSearchTransportResponse(
+      statusCode: response.statusCode,
+      body: response.body,
+    );
+  }
+
+  void _handleAppResume() {
+    if (mounted && widget.isActive) {
+      unawaited(_refreshSuggestionsForActiveTab());
+    }
   }
 
   void _handleSearchStateChanged() {
@@ -280,9 +362,12 @@ class SearchPageState extends State<SearchPage> {
     final bottomPadding = widget.showBottomNavigationClearance
         ? Md3NavigationMetrics.contentBottomInset(context)
         : 24.0 + MediaQuery.paddingOf(context).bottom;
+    final switchDuration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
+      duration: switchDuration,
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeOutCubic,
       child: switch (state.phase) {
@@ -311,33 +396,61 @@ class SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildLanding(double bottomPadding) {
-    return ListView(
-      key: const ValueKey('search-landing'),
-      controller: _scrollController,
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomPadding),
-      children: [
-        if (_suggestionsLoading)
-          const _SuggestionLoading()
-        else if (_popularSearches.isNotEmpty)
-          _SuggestionSection(
+    final sections = <Widget>[
+      switch (_suggestionPhase) {
+        _SuggestionPhase.loading => const _SuggestionLoading(),
+        _SuggestionPhase.loaded => _SuggestionSection(
             title: 'Popular searches',
-            body: 'Based on successful MovieDiary searches.',
+            body: 'Trending successful title searches from the past 30 days.',
             suggestions: _popularSearches,
             icon: Icons.trending_up_rounded,
             onSelected: _selectSuggestion,
-          )
-        else if (_recentSearches.isNotEmpty)
+            isRefreshing: _suggestionsRefreshing,
+            refreshFailed: _cachedSuggestionRefreshFailed,
+            onRetry: _retrySuggestions,
+          ),
+        _SuggestionPhase.empty => _SuggestionStatusCard(
+            key: const ValueKey('popular-suggestions-empty'),
+            icon: Icons.trending_up_rounded,
+            title: 'Popular searches are still building',
+            body: 'They’ll appear after more successful MovieDiary searches.',
+            actionLabel: 'Search a title',
+            actionIcon: Icons.search_rounded,
+            onAction: _focusNode.requestFocus,
+          ),
+        _SuggestionPhase.error => _SuggestionStatusCard(
+            key: const ValueKey('popular-suggestions-error'),
+            icon: Icons.wifi_off_rounded,
+            title: 'Popular searches unavailable',
+            body: 'Check your connection, then try again.',
+            actionLabel: 'Retry suggestions',
+            actionIcon: Icons.refresh_rounded,
+            onAction: _retrySuggestions,
+            isError: true,
+          ),
+      },
+    ];
+
+    if (_recentSearches.isNotEmpty) {
+      sections
+        ..add(const SizedBox(height: 24))
+        ..add(
           _SuggestionSection(
             title: 'Recent searches',
             body: 'Successful title searches saved on this device.',
             suggestions: _recentSearches,
             icon: Icons.history_rounded,
             onSelected: _selectSuggestion,
-          )
-        else
-          const _NoSuggestions(),
-      ],
+          ),
+        );
+    }
+
+    return ListView(
+      key: const ValueKey('search-landing'),
+      controller: _scrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomPadding),
+      children: sections,
     );
   }
 
@@ -519,6 +632,7 @@ class SearchPageState extends State<SearchPage> {
   void _clearSearch() {
     _queryController.clear();
     _searchController.clear();
+    unawaited(_refreshSuggestionsForActiveTab());
     _focusNode.requestFocus();
   }
 
@@ -531,39 +645,35 @@ class SearchPageState extends State<SearchPage> {
     if (_searchController.state.query.isNotEmpty) {
       _queryController.clear();
       _searchController.clear();
+      unawaited(_refreshSuggestionsForActiveTab());
       return;
     }
 
     widget.onExitRequested?.call();
   }
 
-  Future<void> _loadSuggestions() async {
-    var popularSearches = <String>[];
+  Future<void> _restoreAndRefreshSuggestions() async {
+    String? cachedPopular;
+    String? cachedUpdatedAt;
+    String? cachedRecent;
 
     try {
-      final response =
-          await _serviceAgent.getPopularSearches().timeout(_suggestionTimeout);
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Iterable) {
-          popularSearches = _normalizeSuggestions(
-            decoded
-                .map(
-                  (item) => item is String
-                      ? item
-                      : item is Map<String, dynamic>
-                          ? item['query']
-                          : null,
-                )
-                .whereType<String>(),
-          );
-        }
-      }
+      final storedValues = await Future.wait<String?>([
+        _suggestionStore.read(_popularSearchesKey),
+        _suggestionStore.read(_popularSearchesUpdatedAtKey),
+        _suggestionStore.read(_recentSearchesKey),
+      ]);
+      cachedPopular = storedValues[0];
+      cachedUpdatedAt = storedValues[1];
+      cachedRecent = storedValues[2];
     } catch (_) {
-      // Suggestions are optional; normal title search remains available.
+      // A storage failure should not prevent an online suggestions refresh.
     }
 
-    final recentSearches = await _loadRecentSuccessfulSearches();
+    final popularSearches = _decodeStoredSuggestions(cachedPopular);
+    final recentSearches = _decodeStoredSuggestions(cachedRecent);
+    final lastSuccessfulAt = DateTime.tryParse(cachedUpdatedAt ?? '');
+
     if (!mounted) {
       return;
     }
@@ -571,21 +681,208 @@ class SearchPageState extends State<SearchPage> {
     setState(() {
       _popularSearches = popularSearches;
       _recentSearches = recentSearches;
-      _suggestionsLoading = false;
+      _lastSuggestionSuccessAt = lastSuccessfulAt;
+      _suggestionPhase = popularSearches.isNotEmpty
+          ? _SuggestionPhase.loaded
+          : lastSuccessfulAt == null
+              ? _SuggestionPhase.loading
+              : _SuggestionPhase.empty;
+    });
+
+    if (widget.isActive) {
+      await _refreshPopularSuggestions(force: false);
+    }
+  }
+
+  Future<void> _refreshSuggestionsForActiveTab() async {
+    if (!mounted || !widget.isActive) {
+      return;
+    }
+
+    final hasFailed = _suggestionPhase == _SuggestionPhase.error ||
+        _cachedSuggestionRefreshFailed;
+    await _refreshPopularSuggestions(force: hasFailed);
+  }
+
+  void _retrySuggestions() {
+    unawaited(_refreshPopularSuggestions(force: true));
+  }
+
+  Future<void> _refreshPopularSuggestions({required bool force}) async {
+    if (!mounted || !widget.isActive || _suggestionsRefreshing) {
+      return;
+    }
+
+    final now = _clock();
+    final lastSuccessAt = _lastSuggestionSuccessAt;
+    if (!force &&
+        lastSuccessAt != null &&
+        now.difference(lastSuccessAt) < widget.suggestionRefreshThrottle) {
+      return;
+    }
+
+    final lastAttemptAt = _lastSuggestionAttemptAt;
+    if (!force &&
+        lastAttemptAt != null &&
+        now.difference(lastAttemptAt) < const Duration(seconds: 1)) {
+      return;
+    }
+
+    _automaticSuggestionRetryTimer?.cancel();
+    _lastSuggestionAttemptAt = now;
+    final requestId = ++_suggestionRequestId;
+    final hasCachedPopular = _popularSearches.isNotEmpty;
+    final wasRecoveringFromFailure =
+        _suggestionPhase == _SuggestionPhase.error ||
+            _cachedSuggestionRefreshFailed;
+
+    setState(() {
+      _suggestionsRefreshing = true;
+      _cachedSuggestionRefreshFailed = false;
+      if (!hasCachedPopular) {
+        _suggestionPhase = _SuggestionPhase.loading;
+      }
+    });
+
+    MovieSearchTransportResponse response;
+    try {
+      response = await _suggestionFetcher().timeout(widget.suggestionTimeout);
+    } catch (_) {
+      _finishSuggestionFailure(requestId);
+      return;
+    }
+
+    if (!mounted || requestId != _suggestionRequestId) {
+      return;
+    }
+
+    if (response.statusCode != 200) {
+      _finishSuggestionFailure(requestId);
+      return;
+    }
+
+    List<String> popularSearches;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Iterable) {
+        _finishSuggestionFailure(requestId);
+        return;
+      }
+      popularSearches = _normalizeSuggestions(
+        decoded
+            .map(
+              (item) => item is String
+                  ? item
+                  : item is Map
+                      ? item['query'] ?? item['Query']
+                      : null,
+            )
+            .whereType<String>(),
+      );
+    } catch (_) {
+      _finishSuggestionFailure(requestId);
+      return;
+    }
+
+    final successfulAt = _clock();
+    _automaticSuggestionRetryTimer?.cancel();
+    _automaticSuggestionRetryIndex = 0;
+
+    setState(() {
+      _popularSearches = popularSearches;
+      _suggestionPhase = popularSearches.isEmpty
+          ? _SuggestionPhase.empty
+          : _SuggestionPhase.loaded;
+      _suggestionsRefreshing = false;
+      _cachedSuggestionRefreshFailed = false;
+      _lastSuggestionSuccessAt = successfulAt;
+    });
+
+    unawaited(_persistPopularSuggestions(popularSearches, successfulAt));
+    if (wasRecoveringFromFailure && popularSearches.isNotEmpty) {
+      _announceSuggestionRecovery();
+    }
+  }
+
+  void _finishSuggestionFailure(int requestId) {
+    if (!mounted || requestId != _suggestionRequestId) {
+      return;
+    }
+
+    final hasCachedPopular = _popularSearches.isNotEmpty;
+    setState(() {
+      _suggestionsRefreshing = false;
+      _cachedSuggestionRefreshFailed = hasCachedPopular;
+      if (!hasCachedPopular) {
+        _suggestionPhase = _SuggestionPhase.error;
+      }
+    });
+    _scheduleAutomaticSuggestionRetry();
+  }
+
+  void _scheduleAutomaticSuggestionRetry() {
+    _automaticSuggestionRetryTimer?.cancel();
+    if (!widget.isActive || widget.automaticSuggestionRetryDelays.isEmpty) {
+      return;
+    }
+
+    final retryDelays = widget.automaticSuggestionRetryDelays;
+    final retryIndex =
+        _automaticSuggestionRetryIndex.clamp(0, retryDelays.length - 1).toInt();
+    final retryDelay = retryDelays[retryIndex];
+    if (_automaticSuggestionRetryIndex < retryDelays.length - 1) {
+      _automaticSuggestionRetryIndex += 1;
+    }
+
+    _automaticSuggestionRetryTimer = Timer(retryDelay, () {
+      if (!mounted ||
+          !widget.isActive ||
+          (_suggestionPhase != _SuggestionPhase.error &&
+              !_cachedSuggestionRefreshFailed)) {
+        return;
+      }
+      unawaited(_refreshPopularSuggestions(force: true));
+    });
+  }
+
+  Future<void> _persistPopularSuggestions(
+    List<String> suggestions,
+    DateTime successfulAt,
+  ) async {
+    try {
+      await Future.wait([
+        _suggestionStore.write(
+          _popularSearchesKey,
+          jsonEncode(suggestions),
+        ),
+        _suggestionStore.write(
+          _popularSearchesUpdatedAtKey,
+          successfulAt.toUtc().toIso8601String(),
+        ),
+      ]);
+    } catch (_) {
+      // The live suggestions remain usable even if local caching is unavailable.
+    }
+  }
+
+  void _announceSuggestionRecovery() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        'Popular searches available',
+        Directionality.of(context),
+      );
     });
   }
 
   Future<List<String>> _loadRecentSuccessfulSearches() async {
     try {
-      final storedSearches = await _storage.read(key: _recentSearchesKey);
-      if (storedSearches == null) {
-        return const [];
-      }
-      final decoded = jsonDecode(storedSearches);
-      if (decoded is! Iterable) {
-        return const [];
-      }
-      return _normalizeSuggestions(decoded.whereType<String>());
+      return _decodeStoredSuggestions(
+        await _suggestionStore.read(_recentSearchesKey),
+      );
     } catch (_) {
       return const [];
     }
@@ -611,10 +908,30 @@ class SearchPageState extends State<SearchPage> {
       });
     }
 
-    await _storage.write(
-      key: _recentSearchesKey,
-      value: jsonEncode(updated),
-    );
+    try {
+      await _suggestionStore.write(
+        _recentSearchesKey,
+        jsonEncode(updated),
+      );
+    } catch (_) {
+      // Recent searches are a convenience; live search still completed.
+    }
+  }
+
+  List<String> _decodeStoredSuggestions(String? encodedSuggestions) {
+    if (encodedSuggestions == null) {
+      return const [];
+    }
+
+    try {
+      final decoded = jsonDecode(encodedSuggestions);
+      if (decoded is! Iterable) {
+        return const [];
+      }
+      return _normalizeSuggestions(decoded.whereType<String>());
+    } catch (_) {
+      return const [];
+    }
   }
 
   List<String> _normalizeSuggestions(Iterable<String> suggestions) {
@@ -657,6 +974,13 @@ class SearchStandalonePage extends StatelessWidget {
   }
 }
 
+enum _SuggestionPhase {
+  loading,
+  loaded,
+  empty,
+  error,
+}
+
 class _SuggestionLoading extends StatelessWidget {
   const _SuggestionLoading();
 
@@ -692,6 +1016,9 @@ class _SuggestionSection extends StatelessWidget {
   final List<String> suggestions;
   final IconData icon;
   final ValueChanged<String> onSelected;
+  final bool isRefreshing;
+  final bool refreshFailed;
+  final VoidCallback? onRetry;
 
   const _SuggestionSection({
     required this.title,
@@ -699,6 +1026,9 @@ class _SuggestionSection extends StatelessWidget {
     required this.suggestions,
     required this.icon,
     required this.onSelected,
+    this.isRefreshing = false,
+    this.refreshFailed = false,
+    this.onRetry,
   });
 
   @override
@@ -710,9 +1040,9 @@ class _SuggestionSection extends StatelessWidget {
           title,
           style: const TextStyle(
             color: Md3Colors.text,
-            fontSize: 24,
-            height: 1.17,
-            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            height: 1.25,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
@@ -725,66 +1055,168 @@ class _SuggestionSection extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final suggestion in suggestions)
-              Semantics(
-                button: true,
-                label: 'Search for $suggestion',
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 44),
-                  child: ActionChip(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(color: Md3Colors.border),
-                    ),
-                    backgroundColor: Colors.white,
-                    avatar: Icon(
-                      icon,
-                      size: 18,
-                      color: Md3Colors.primary,
-                    ),
-                    label: Text(suggestion),
-                    labelStyle: const TextStyle(
-                      color: Md3Colors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    onPressed: () => onSelected(suggestion),
+        if (isRefreshing) ...[
+          const SizedBox(height: 12),
+          Semantics(
+            liveRegion: true,
+            label: 'Refreshing popular searches',
+            child: const ClipRRect(
+              borderRadius: BorderRadius.all(Radius.circular(2)),
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                color: Md3Colors.primary,
+                backgroundColor: Md3Colors.primarySoft,
+              ),
+            ),
+          ),
+        ] else if (refreshFailed && onRetry != null) ...[
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Showing saved suggestions. Refresh when you’re back online.',
+                  style: TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 13,
+                    height: 1.38,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-          ],
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 44,
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Md3Colors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Retry'),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final suggestion in suggestions)
+                  Semantics(
+                    button: true,
+                    label: 'Search for $suggestion',
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: 44,
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: ActionChip(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(color: Md3Colors.border),
+                        ),
+                        color: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.pressed)) {
+                            return Md3Colors.primary.withValues(alpha: 0.12);
+                          }
+                          return Colors.white;
+                        }),
+                        surfaceTintColor: Colors.transparent,
+                        pressElevation: 0,
+                        avatar: Icon(
+                          icon,
+                          size: 18,
+                          color: Md3Colors.primary,
+                        ),
+                        label: Text(
+                          suggestion,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        labelStyle: const TextStyle(
+                          color: Md3Colors.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        onPressed: () => onSelected(suggestion),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );
   }
 }
 
-class _NoSuggestions extends StatelessWidget {
-  const _NoSuggestions();
+class _SuggestionStatusCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String body;
+  final String actionLabel;
+  final IconData actionIcon;
+  final VoidCallback onAction;
+  final bool isError;
+
+  const _SuggestionStatusCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.actionLabel,
+    required this.actionIcon,
+    required this.onAction,
+    this.isError = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Md3Card(
-      child: Row(
+    return Md3Card(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.search_rounded, color: Md3Colors.primary, size: 24),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Search by title to find something worth watching.',
-              style: TextStyle(
-                color: Md3Colors.muted,
-                fontSize: 16,
-                height: 1.44,
-              ),
+          Icon(
+            icon,
+            color: isError ? Md3Colors.danger : Md3Colors.primary,
+            size: 28,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 20,
+              height: 1.25,
+              fontWeight: FontWeight.w700,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            body,
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 14,
+              height: 1.43,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Md3PrimaryButton(
+            text: actionLabel,
+            icon: actionIcon,
+            tonal: true,
+            height: 48,
+            onPressed: onAction,
           ),
         ],
       ),
