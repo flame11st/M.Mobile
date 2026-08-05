@@ -442,7 +442,8 @@ Future<T?> showMd3BottomSheet<T>({
           : const Duration(milliseconds: 180);
       final availableHeight = (mediaQuery.size.height -
               mediaQuery.viewInsets.bottom -
-              mediaQuery.viewPadding.top)
+              mediaQuery.viewPadding.top -
+              mediaQuery.viewPadding.bottom)
           .clamp(0.0, mediaQuery.size.height)
           .toDouble();
 

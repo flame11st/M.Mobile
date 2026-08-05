@@ -15,13 +15,15 @@ import '../movie_list_item.dart';
 class MoviesState with ChangeNotifier {
   MoviesState({
     FlutterSecureStorage? storage,
+    ServiceAgent? serviceAgent,
     ValueChanged<int>? onRatedMoviesCountChanged,
   })  : storage = storage ?? const FlutterSecureStorage(),
+        serviceAgent = serviceAgent ?? ServiceAgent(),
         _onRatedMoviesCountChanged = onRatedMoviesCountChanged {
     cacheInitialization = _initializeCache();
   }
 
-  final serviceAgent = ServiceAgent();
+  final ServiceAgent serviceAgent;
   final FlutterSecureStorage storage;
   final ValueChanged<int>? _onRatedMoviesCountChanged;
   late final Future<void> cacheInitialization;
@@ -34,8 +36,10 @@ class MoviesState with ChangeNotifier {
   Timer? _personalListsCacheWriteTimer;
   Timer? _anonymousRatingSyncTimer;
   Future<void>? _pendingAnonymousRatingSyncsLoad;
+  Future<void> _pendingAnonymousRatingSyncPersistence = Future.value();
   bool _pendingAnonymousRatingSyncsLoaded = false;
   bool _isAnonymousRatingSyncInFlight = false;
+  bool _isAnonymousRatingSyncBackoffScheduled = false;
 
   List<Movie> cachedUserMovies = [];
   List<Movie> userMovies = [];
@@ -324,12 +328,12 @@ class MoviesState with ChangeNotifier {
     await _pendingAnonymousRatingSyncsLoad;
   }
 
-  void queueAnonymousRatingSync(String movieId, int movieRate) {
+  Future<void> queueAnonymousRatingSync(String movieId, int movieRate) {
     if (movieId.isEmpty) {
-      return;
+      return Future.value();
     }
 
-    unawaited(_queueAnonymousRatingSync(movieId, movieRate));
+    return _queueAnonymousRatingSync(movieId, movieRate);
   }
 
   Future<bool> retryPendingAnonymousRatingSyncs() {
@@ -377,26 +381,44 @@ class MoviesState with ChangeNotifier {
   }
 
   Future<void> _writePendingAnonymousRatingSyncs() async {
-    try {
-      if (_pendingAnonymousRatingSyncs.isEmpty) {
-        await storage.delete(key: _pendingAnonymousRatingSyncsKey);
-        return;
-      }
+    final syncSnapshot = _pendingAnonymousRatingSyncs
+        .map((sync) => sync.toJson())
+        .toList(growable: false);
 
-      await storage.write(
-        key: _pendingAnonymousRatingSyncsKey,
-        value: jsonEncode(_pendingAnonymousRatingSyncs),
-      );
-    } catch (error) {
-      debugPrint('Guest rating sync queue write skipped: $error');
-    }
+    _pendingAnonymousRatingSyncPersistence =
+        _pendingAnonymousRatingSyncPersistence.then((_) async {
+      try {
+        if (syncSnapshot.isEmpty) {
+          await storage.delete(key: _pendingAnonymousRatingSyncsKey);
+          return;
+        }
+
+        await storage.write(
+          key: _pendingAnonymousRatingSyncsKey,
+          value: jsonEncode(syncSnapshot),
+        );
+      } catch (error) {
+        debugPrint('Guest rating sync queue write skipped: $error');
+      }
+    });
+
+    await _pendingAnonymousRatingSyncPersistence;
   }
 
   void _scheduleAnonymousRatingSync({
     Duration delay = _anonymousRatingSyncDebounce,
+    bool isBackoff = false,
   }) {
+    if (!isBackoff &&
+        _isAnonymousRatingSyncBackoffScheduled &&
+        (_anonymousRatingSyncTimer?.isActive ?? false)) {
+      return;
+    }
+
     _anonymousRatingSyncTimer?.cancel();
+    _isAnonymousRatingSyncBackoffScheduled = isBackoff;
     _anonymousRatingSyncTimer = Timer(delay, () {
+      _isAnonymousRatingSyncBackoffScheduled = false;
       unawaited(_drainPendingAnonymousRatingSyncs());
     });
   }
@@ -483,7 +505,10 @@ class MoviesState with ChangeNotifier {
       debugPrint(
         'Guest rating sync queued retry: ${_pendingAnonymousRatingSyncs.length} pending; retry in ${retryDelay.inSeconds}s. Last failure: $failure',
       );
-      _scheduleAnonymousRatingSync(delay: retryDelay);
+      _scheduleAnonymousRatingSync(
+        delay: retryDelay,
+        isBackoff: true,
+      );
       return false;
     }
 
@@ -1025,7 +1050,7 @@ class MoviesState with ChangeNotifier {
     _notifyRatedMoviesCountChanged(userMovies);
 
     if (isIncognitoMode) {
-      queueAnonymousRatingSync(movieId, movieRate);
+      unawaited(queueAnonymousRatingSync(movieId, movieRate));
     }
   }
 

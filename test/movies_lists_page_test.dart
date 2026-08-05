@@ -207,6 +207,7 @@ void main() {
         serviceAgent: service,
         textScale: 2,
         keyboardInset: 180,
+        bottomViewPadding: 24,
       );
 
       await tester.tap(find.byKey(const Key('lists-tab-personal')));
@@ -216,6 +217,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('personal-lists-add-fab')));
       await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
       expect(find.text('Create personal list'), findsOneWidget);
       expect(find.byKey(const Key('create-list-name-field')), findsOneWidget);
 
@@ -602,6 +604,7 @@ Future<void> _pumpLists(
   ServiceAgent? serviceAgent,
   double textScale = 1,
   double keyboardInset = 0,
+  double bottomViewPadding = 0,
 }) async {
   await tester.pumpWidget(
     MultiProvider(
@@ -614,6 +617,7 @@ Future<void> _pumpLists(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(textScale),
             viewInsets: EdgeInsets.only(bottom: keyboardInset),
+            viewPadding: EdgeInsets.only(bottom: bottomViewPadding),
           ),
           child: child!,
         ),

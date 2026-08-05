@@ -163,6 +163,63 @@ void main() {
   });
 
   testWidgets(
+    'taste profile stays consolidated below at and above readiness',
+    (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      const scenarios = [
+        (count: 9, size: Size(320, 568), textScale: 2.0),
+        (count: 10, size: Size(360, 640), textScale: 1.0),
+        (count: 11, size: Size(430, 932), textScale: 1.3),
+      ];
+
+      for (final scenario in scenarios) {
+        FlutterSecureStorage.setMockInitialValues({});
+        const storage = FlutterSecureStorage();
+        final userState = UserState(storage: storage);
+        await userState.initialization;
+        final moviesState = MoviesState(storage: storage);
+        await moviesState.cacheInitialization;
+        moviesState.setInitialUserMovies([
+          for (var index = 0; index < scenario.count; index++)
+            _ratedMovie(index),
+        ]);
+
+        await tester.binding.setSurfaceSize(scenario.size);
+        await _pumpDiscover(
+          tester,
+          userState,
+          moviesState,
+          textScale: scenario.textScale,
+          viewportSize: scenario.size,
+          onOpenLists: () {},
+        );
+
+        final profileTitles = [
+          ...find.text('Build your taste profile').evaluate(),
+          ...find.text('Your taste profile').evaluate(),
+        ];
+        expect(profileTitles, hasLength(1));
+        expect(find.text('Taste profile ready'), findsNothing);
+
+        if (scenario.count < 10) {
+          expect(find.text('${scenario.count}/10'), findsOneWidget);
+          expect(find.text('Rate Movies'), findsOneWidget);
+          expect(find.text('Get Recommendations'), findsNothing);
+        } else {
+          expect(find.text('${scenario.count} rated'), findsOneWidget);
+          expect(find.text('Get Recommendations'), findsOneWidget);
+          expect(find.text('Rate Movies'), findsNothing);
+        }
+
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        moviesState.dispose();
+      }
+    },
+  );
+
+  testWidgets(
     'under-10 taste progress stacks before compact text fragments',
     (tester) async {
       FlutterSecureStorage.setMockInitialValues({});

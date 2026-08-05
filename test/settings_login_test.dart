@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mmobile/Objects/user.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
+import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/login.dart';
 import 'package:mmobile/Widgets/settings.dart';
 import 'package:provider/provider.dart';
@@ -150,7 +152,7 @@ void main() {
       _app(
         states,
         textScale: 2,
-        home: Settings(),
+        home: const Settings(),
       ),
     );
     await tester.pump();
@@ -173,6 +175,48 @@ void main() {
     expect(find.text('Restore'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'signed-in Settings account editors stay polished at text scale 2',
+      (tester) async {
+    final states = await _signedInStates();
+    addTearDown(states.movies.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+
+    await tester.pumpWidget(
+      _app(
+        states,
+        textScale: 2,
+        home: const Settings(),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Signed in as R3 Acceptance Target'), findsOneWidget);
+    expect(find.byKey(const Key('settingsNameCard')), findsOneWidget);
+    expect(find.byKey(const Key('settingsEmailCard')), findsOneWidget);
+    expect(find.byKey(const Key('settingsPasswordCard')), findsOneWidget);
+    expect(find.byKey(const Key('settingsDeleteAccountCard')), findsOneWidget);
+
+    final nameField = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const Key('settingsNameField')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(nameField.decoration?.fillColor, Md3Colors.background);
+
+    for (final key in [
+      const Key('settingsEmailField'),
+      const Key('settingsOldPasswordField'),
+      const Key('settingsDeleteAccountButton'),
+    ]) {
+      await tester.ensureVisible(find.byKey(key));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
 }
 
 Future<_TestStates> _guestStates() async {
@@ -185,6 +229,36 @@ Future<_TestStates> _guestStates() async {
   const storage = FlutterSecureStorage();
   final user = UserState(storage: storage);
   await user.initialization;
+  final movies = MoviesState(storage: storage);
+  await movies.cacheInitialization;
+
+  return _TestStates(
+    user: user,
+    movies: movies,
+    loader: LoaderState(),
+  );
+}
+
+Future<_TestStates> _signedInStates() async {
+  FlutterSecureStorage.setMockInitialValues({
+    'token': 'signed-in-access',
+    'refreshToken': 'signed-in-refresh',
+    'userId': 'signed-in-settings-test',
+    'isIncognitoMode': 'false',
+  });
+  const storage = FlutterSecureStorage();
+  final user = UserState(storage: storage);
+  await user.initialization;
+  await user.setUser(
+    User(
+      id: 'signed-in-settings-test',
+      name: 'R3 Acceptance Target',
+      email: 'r3-acceptance@example.test',
+      role: 'StandardRole',
+      premiumPurchased: false,
+      isIncognito: false,
+    ),
+  );
   final movies = MoviesState(storage: storage);
   await movies.cacheInitialization;
 

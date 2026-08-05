@@ -12,7 +12,6 @@ import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Variables/validators.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Login.dart';
-import 'package:mmobile/Widgets/Shared/m_button.dart';
 import 'package:mmobile/Widgets/Shared/m_dialog.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
@@ -20,7 +19,6 @@ import 'package:provider/provider.dart';
 import 'premium.dart';
 import 'Providers/movies_state.dart';
 import 'Providers/user_state.dart';
-import 'Shared/m_card.dart';
 import 'package:fluttericon/entypo_icons.dart';
 
 class Settings extends StatefulWidget {
@@ -128,7 +126,7 @@ class SettingsState extends State<Settings> {
   Widget _buildTonalButton({
     required BuildContext context,
     required String text,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     Key? key,
   }) {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
@@ -156,6 +154,86 @@ class SettingsState extends State<Settings> {
             fontWeight: FontWeight.w800,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAccountEditorCard({
+    required BuildContext context,
+    required String title,
+    required String actionLabel,
+    required bool actionEnabled,
+    required VoidCallback onAction,
+    required Widget child,
+    Key? key,
+  }) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+
+    return Md3Card(
+      key: key,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stackHeader = constraints.maxWidth < 360 || textScale > 1.3;
+          final action = SizedBox(
+            width: stackHeader ? double.infinity : 144,
+            child: _buildTonalButton(
+              context: context,
+              text: actionLabel,
+              onPressed: actionEnabled ? onAction : null,
+            ),
+          );
+          final titleWidget = Text(
+            title,
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 18,
+              height: 1.25,
+              fontWeight: FontWeight.w800,
+            ),
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (stackHeader) ...[
+                titleWidget,
+                const SizedBox(height: 12),
+                action,
+              ] else
+                Row(
+                  children: [
+                    Expanded(child: titleWidget),
+                    const SizedBox(width: 12),
+                    action,
+                  ],
+                ),
+              const SizedBox(height: 16),
+              child,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  InputDecoration _accountFieldDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Md3Colors.background,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Md3Colors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Md3Colors.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Md3Colors.primary, width: 2),
       ),
     );
   }
@@ -595,64 +673,61 @@ class SettingsState extends State<Settings> {
       ),
     );
 
-    final nameField = MCard(
-      color: Md3Colors.surface,
-      text: "Name",
-      button: MButton(
-        text: 'Change name',
-        onPressedCallback: () => changeUserInfo(userState.userId!,
-            nameController.text, initialUserEmail!, userState.user!, 'Name'),
-        active: nameButtonActive,
-      ),
+    final nameField = _buildAccountEditorCard(
+      context: context,
+      key: const Key('settingsNameCard'),
+      title: 'Name',
+      actionLabel: 'Save name',
+      actionEnabled: nameButtonActive,
+      onAction: () => changeUserInfo(userState.userId!, nameController.text,
+          initialUserEmail!, userState.user!, 'Name'),
       child: Form(
         key: _formNameKey,
-        child: Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context)
-                  .colorScheme
-                  .copyWith(primary: Md3Colors.primary),
-            ),
-            child: TextFormField(
-              style: Theme.of(context).textTheme.headlineSmall,
-              decoration: const InputDecoration(
-                fillColor: Colors.redAccent,
-              ),
-              validator: (value) {
-                return nameController.text.isEmpty
-                    ? 'Name can\'t be empty'
-                    : null;
-              },
-              controller: nameController,
-            )),
+        child: TextFormField(
+          key: const Key('settingsNameField'),
+          controller: nameController,
+          textInputAction: TextInputAction.done,
+          style: const TextStyle(
+            color: Md3Colors.text,
+            fontSize: 16,
+            height: 1.25,
+          ),
+          decoration: _accountFieldDecoration('Display name'),
+          validator: (value) {
+            return nameController.text.isEmpty ? 'Name can\'t be empty' : null;
+          },
+        ),
       ),
     );
 
-    final emailField = MCard(
-      color: Md3Colors.surface,
-      text: "Email",
-      button: MButton(
-        text: 'Change Email',
-        onPressedCallback: () => changeUserInfo(userState.userId!,
-            initialUserName!, emailController.text, userState.user!, 'Email'),
-        active: emailButtonActive,
-      ),
+    final emailField = _buildAccountEditorCard(
+      context: context,
+      key: const Key('settingsEmailCard'),
+      title: 'Email',
+      actionLabel: 'Save email',
+      actionEnabled: emailButtonActive,
+      onAction: () => changeUserInfo(userState.userId!, initialUserName!,
+          emailController.text, userState.user!, 'Email'),
       child: Form(
-          key: _formEmailKey,
-          child: Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: Theme.of(context)
-                    .colorScheme
-                    .copyWith(primary: Md3Colors.primary),
-              ),
-              child: TextFormField(
-                style: Theme.of(context).textTheme.headlineSmall,
-                validator: (value) {
-                  return emailController.text.isEmpty
-                      ? 'Email can\'t be empty'
-                      : Validators.emailValidator(emailController.text);
-                },
-                controller: emailController,
-              ))),
+        key: _formEmailKey,
+        child: TextFormField(
+          key: const Key('settingsEmailField'),
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.done,
+          style: const TextStyle(
+            color: Md3Colors.text,
+            fontSize: 16,
+            height: 1.25,
+          ),
+          decoration: _accountFieldDecoration('Email address'),
+          validator: (value) {
+            return emailController.text.isEmpty
+                ? 'Email can\'t be empty'
+                : Validators.emailValidator(emailController.text);
+          },
+        ),
+      ),
     );
 
     final premiumField = Md3Card(
@@ -864,142 +939,140 @@ class SettingsState extends State<Settings> {
       ),
     );
 
-    final changePasswordField = MCard(
-        color: Md3Colors.surface,
-        text: 'Change Password',
-        button: MButton(
-          text: 'Change',
-          onPressedCallback: () => changePassword(userState.userId!,
-              oldPasswordController.text, newPasswordController.text),
-          active: changePasswordButtonActive,
+    final changePasswordField = _buildAccountEditorCard(
+      context: context,
+      key: const Key('settingsPasswordCard'),
+      title: 'Change password',
+      actionLabel: 'Save password',
+      actionEnabled: changePasswordButtonActive,
+      onAction: () => changePassword(userState.userId!,
+          oldPasswordController.text, newPasswordController.text),
+      child: Form(
+        key: _formChangePasswordKey,
+        child: Column(
+          children: <Widget>[
+            TextFormField(
+              key: const Key('settingsOldPasswordField'),
+              controller: oldPasswordController,
+              obscureText: true,
+              textInputAction: TextInputAction.next,
+              decoration: _accountFieldDecoration('Current password'),
+              validator: (value) => oldPasswordController.text.isNotEmpty
+                  ? Validators.passwordValidator(oldPasswordController.text)
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const Key('settingsNewPasswordField'),
+              controller: newPasswordController,
+              obscureText: true,
+              textInputAction: TextInputAction.next,
+              decoration: _accountFieldDecoration('New password'),
+              validator: (value) {
+                if (newPasswordController.text.isEmpty) return null;
+
+                var result =
+                    Validators.passwordValidator(newPasswordController.text);
+                result ??= Validators.passwordsMatchValidator(
+                    newPasswordController.text, confirmPasswordController.text);
+                return result;
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const Key('settingsConfirmPasswordField'),
+              controller: confirmPasswordController,
+              obscureText: true,
+              textInputAction: TextInputAction.done,
+              decoration: _accountFieldDecoration('Confirm new password'),
+              validator: (value) {
+                if (confirmPasswordController.text.isEmpty) return null;
+
+                var result = Validators.passwordValidator(
+                    confirmPasswordController.text);
+                result ??= Validators.passwordsMatchValidator(
+                    newPasswordController.text, confirmPasswordController.text);
+                return result;
+              },
+            ),
+          ],
         ),
-        child: Form(
-          key: _formChangePasswordKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(
-                height: 10,
-              ),
-              Text(
-                'Old Password',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: Theme.of(context)
-                        .colorScheme
-                        .copyWith(primary: Md3Colors.primary),
-                  ),
-                  child: TextFormField(
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    validator: (value) => oldPasswordController.text.isNotEmpty
-                        ? Validators.passwordValidator(
-                            oldPasswordController.text)
-                        : null,
-                    controller: oldPasswordController,
-                    obscureText: true,
-                  )),
-              const SizedBox(
-                height: 5,
-              ),
-              Text(
-                'New Password',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: Theme.of(context)
-                        .colorScheme
-                        .copyWith(primary: Md3Colors.primary),
-                  ),
-                  child: TextFormField(
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    validator: (value) {
-                      if (newPasswordController.text.isEmpty) return null;
+      ),
+    );
 
-                      var result = Validators.passwordValidator(
-                          newPasswordController.text);
-                      result ??= Validators.passwordsMatchValidator(
-                          newPasswordController.text,
-                          confirmPasswordController.text);
-                      return result;
-                    },
-                    controller: newPasswordController,
-                    obscureText: true,
-                  )),
-              const SizedBox(
-                height: 5,
-              ),
-              Text(
-                'Confirm Password',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: Theme.of(context)
-                        .colorScheme
-                        .copyWith(primary: Md3Colors.primary),
-                  ),
-                  child: TextFormField(
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    validator: (value) {
-                      if (confirmPasswordController.text.isEmpty) return null;
-
-                      var result = Validators.passwordValidator(
-                          confirmPasswordController.text);
-                      result ??= Validators.passwordsMatchValidator(
-                          newPasswordController.text,
-                          confirmPasswordController.text);
-                      return result;
-                    },
-                    controller: confirmPasswordController,
-                    obscureText: true,
-                  ))
-            ],
+    final removeUserField = Md3Card(
+      key: const Key('settingsDeleteAccountCard'),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Delete account',
+            style: TextStyle(
+              color: Md3Colors.text,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ));
+          const SizedBox(height: 4),
+          const Text(
+            'Permanently deactivate this account and remove its saved library.',
+            style: TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 56 : 44,
+            child: OutlinedButton.icon(
+              key: const Key('settingsDeleteAccountButton'),
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+              label: const Text('Delete account'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Md3Colors.danger,
+                side: const BorderSide(color: Md3Colors.danger),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              onPressed: () async {
+                final feedback = await showMd3TextInputDialog(
+                  context: context,
+                  title: 'Delete your account?',
+                  body:
+                      'This deactivates your MovieDiary account and removes its saved ratings and Watchlist items. This can’t be undone.',
+                  fieldLabel: 'Reason (optional)',
+                  initialValue: removeController.text,
+                  confirmLabel: 'Delete account',
+                  destructive: true,
+                  maxLines: 3,
+                  keyboardType: TextInputType.multiline,
+                  failureMessage:
+                      'Couldn’t delete your account. Check your connection and try again.',
+                  onConfirm: (value) async {
+                    await removeUser(userState.userId!, value);
+                  },
+                );
 
-    final removeUserField = MCard(
-      color: Md3Colors.surface,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          MButton(
-            text: 'Remove user',
-            active: true,
-            onPressedCallback: () async {
-              final feedback = await showMd3TextInputDialog(
-                context: context,
-                title: 'Delete your account?',
-                body:
-                    'This deactivates your MovieDiary account and removes its saved ratings and Watchlist items. This can’t be undone.',
-                fieldLabel: 'Reason (optional)',
-                initialValue: removeController.text,
-                confirmLabel: 'Delete account',
-                destructive: true,
-                maxLines: 3,
-                keyboardType: TextInputType.multiline,
-                failureMessage:
-                    'Couldn’t delete your account. Check your connection and try again.',
-                onConfirm: (value) async {
-                  await removeUser(userState.userId!, value);
-                },
-              );
+                if (feedback == null || !mounted) {
+                  return;
+                }
 
-              if (feedback == null || !mounted) {
-                return;
-              }
-
-              removeController.clear();
-              await userState.logout();
-              await moviesState.logout();
-              if (!mounted) {
-                return;
-              }
-              Navigator.of(this.context).maybePop();
-            },
-            height: 40,
+                removeController.clear();
+                await userState.logout();
+                await moviesState.logout();
+                if (!mounted) {
+                  return;
+                }
+                Navigator.of(this.context).maybePop();
+              },
+            ),
           ),
         ],
       ),

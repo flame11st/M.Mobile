@@ -639,35 +639,38 @@ class _PersonalListAction extends StatelessWidget {
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(top: 8),
-        leading: const _SheetActionIcon(
-          icon: Icons.playlist_add_rounded,
-          color: Md3Colors.primary,
-        ),
-        title: const Text(
-          'Add to personal list',
-          style: TextStyle(
-            color: Md3Colors.text,
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
+      child: Material(
+        color: Colors.transparent,
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(top: 8),
+          leading: const _SheetActionIcon(
+            icon: Icons.playlist_add_rounded,
+            color: Md3Colors.primary,
           ),
-        ),
-        subtitle: Text(
-          currentList == null
-              ? 'Choose one of your lists.'
-              : 'Add it to another collection.',
-          style: const TextStyle(
-            color: Md3Colors.muted,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+          title: const Text(
+            'Add to personal list',
+            style: TextStyle(
+              color: Md3Colors.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
           ),
+          subtitle: Text(
+            currentList == null
+                ? 'Choose one of your lists.'
+                : 'Add it to another collection.',
+            style: const TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          children: [
+            for (final list in userLists)
+              _ListChoice(movie: movie, moviesList: list),
+          ],
         ),
-        children: [
-          for (final list in userLists)
-            _ListChoice(movie: movie, moviesList: list),
-        ],
       ),
     );
   }
@@ -930,6 +933,7 @@ class _SheetActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLargeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
     final background = filled ? color : Md3Colors.background;
     final foreground = filled ? Colors.white : Md3Colors.text;
     final detailColor =
@@ -962,7 +966,7 @@ class _SheetActionButton extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      maxLines: 2,
+                      maxLines: isLargeText ? 4 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: foreground,
@@ -974,7 +978,7 @@ class _SheetActionButton extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       detail,
-                      maxLines: 3,
+                      maxLines: isLargeText ? 6 : 3,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: detailColor,

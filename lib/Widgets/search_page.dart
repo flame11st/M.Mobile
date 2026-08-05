@@ -125,8 +125,14 @@ class SearchPageState extends State<SearchPage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isActive && !widget.isActive) {
       _focusNode.unfocus();
+      _searchController.cancelForTabExit();
       _automaticSuggestionRetryTimer?.cancel();
     } else if (!oldWidget.isActive && widget.isActive) {
+      final searchPhase = _searchController.state.phase;
+      if (searchPhase == MovieSearchPhase.debouncing ||
+          searchPhase == MovieSearchPhase.loading) {
+        _searchController.retry();
+      }
       unawaited(_refreshSuggestionsForActiveTab());
     }
   }

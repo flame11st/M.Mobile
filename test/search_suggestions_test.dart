@@ -97,6 +97,71 @@ void main() {
       expect(attempts, 2);
     });
 
+    testWidgets('tab exit ignores the stale search and resumes the exact query',
+        (tester) async {
+      var isActive = true;
+      late StateSetter setHostState;
+      final firstResponse = Completer<MovieSearchTransportResponse>();
+      final resumedResponse = Completer<MovieSearchTransportResponse>();
+      final searchedQueries = <String>[];
+
+      await tester.pumpWidget(
+        _testApp(
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              setHostState = setState;
+              return SearchPage(
+                key: const ValueKey('persistent-search'),
+                isActive: isActive,
+                handlesBackNavigation: false,
+                showBottomNavigationClearance: false,
+                suggestionStore: _MemorySuggestionStore(),
+                suggestionFetcher: () async =>
+                    const MovieSearchTransportResponse(
+                  statusCode: 200,
+                  body: '[]',
+                ),
+                automaticSuggestionRetryDelays: const [],
+                fetcher: (encodedQuery, _) {
+                  searchedQueries.add(Uri.decodeQueryComponent(encodedQuery));
+                  return searchedQueries.length == 1
+                      ? firstResponse.future
+                      : resumedResponse.future;
+                },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '  Matrix  ');
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(searchedQueries, ['Matrix']);
+
+      setHostState(() => isActive = false);
+      await tester.pump();
+      firstResponse.complete(
+        const MovieSearchTransportResponse(statusCode: 500, body: ''),
+      );
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('Search unavailable'), findsNothing);
+
+      setHostState(() => isActive = true);
+      await tester.pump();
+      expect(searchedQueries, ['Matrix', 'Matrix']);
+
+      resumedResponse.complete(
+        const MovieSearchTransportResponse(statusCode: 200, body: '[]'),
+      );
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No titles found'), findsOneWidget);
+      expect(find.text('Search unavailable'), findsNothing);
+    });
+
     testWidgets('cached chips stay visible through refresh and failure',
         (tester) async {
       final response = Completer<MovieSearchTransportResponse>();

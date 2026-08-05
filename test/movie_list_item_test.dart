@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mmobile/Enums/movie_list_type.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Objects/movie.dart';
+import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
@@ -103,6 +105,52 @@ void main() {
     expect(find.byType(Md3BottomSheetSurface), findsOneWidget);
     expect(tester.takeException(), isNull);
     semanticsHandle.dispose();
+  });
+
+  testWidgets('browse row adds directly to an existing personal list',
+      (tester) async {
+    final states = await _testStates();
+    addTearDown(states.movies.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await states.movies.setInitialMoviesLists([
+      MoviesList(
+        name: 'Weekend Picks',
+        order: 1,
+        listMovies: [],
+        movieListType: MovieListType.personal,
+      ),
+    ]);
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+
+    await _pumpRow(
+      tester,
+      states,
+      movieId: 'browse',
+      mode: MovieCardMode.browse,
+      textScale: 1,
+    );
+
+    await tester.tap(find.byTooltip('Movie actions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add to personal list'), findsOneWidget);
+
+    await tester.tap(find.text('Add to personal list'));
+    await tester.pumpAndSettle();
+    expect(find.text('Weekend Picks'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Weekend Picks'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Weekend Picks'));
+    await tester.pumpAndSettle();
+
+    expect(
+      states.movies.personalMoviesLists.single.listMovies
+          .map((movie) => movie.id),
+      contains('browse'),
+    );
+    expect(find.text('Added to Weekend Picks.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 800));
   });
 
   testWidgets('Mark Watched presenter keeps every action scroll reachable',
