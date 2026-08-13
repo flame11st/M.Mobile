@@ -27,6 +27,7 @@ enum MovieCardMode {
 class MovieListItem extends StatelessWidget {
   final Movie movie;
   final MoviesList? moviesList;
+  final MoviesList? preferredPersonalList;
   final bool shouldRequestReview;
   final MovieCardMode mode;
 
@@ -34,6 +35,7 @@ class MovieListItem extends StatelessWidget {
     super.key,
     required this.movie,
     this.moviesList,
+    this.preferredPersonalList,
     this.shouldRequestReview = false,
     this.mode = MovieCardMode.browse,
   });
@@ -48,7 +50,7 @@ class MovieListItem extends StatelessWidget {
     final mediaQuery = MediaQuery.of(context);
     final isCompactPoster = mediaQuery.size.width <= 390;
     final wrapsPrimaryAction =
-        mediaQuery.size.width < 360 || mediaQuery.textScaler.scale(1) >= 1.3;
+        mediaQuery.size.width < 390 || mediaQuery.textScaler.scale(1) >= 1.5;
     final posterWidth = isCompactPoster ? 72.0 : 80.0;
     final posterHeight = isCompactPoster ? 108.0 : 120.0;
     final isWatchlist = mode == MovieCardMode.watchlist;
@@ -85,36 +87,56 @@ class MovieListItem extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      InkWell(
+                        excludeFromSemantics: true,
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _openDetails(context, currentMovie),
+                        child: Md3MoviePoster(
+                          movie: currentMovie,
+                          width: posterWidth,
+                          height: posterHeight,
+                          borderRadius: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Semantics(
-                          container: true,
-                          button: true,
-                          excludeSemantics: true,
-                          label: 'Open ${currentMovie.title} details',
-                          onTap: () => _openDetails(context, currentMovie),
-                          child: InkWell(
-                            excludeFromSemantics: true,
-                            borderRadius: BorderRadius.circular(14),
-                            onTap: () => _openDetails(context, currentMovie),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Md3MoviePoster(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              container: true,
+                              button: true,
+                              excludeSemantics: true,
+                              label: 'Open ${currentMovie.title} details',
+                              onTap: () => _openDetails(context, currentMovie),
+                              child: InkWell(
+                                excludeFromSemantics: true,
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () =>
+                                    _openDetails(context, currentMovie),
+                                child: _MovieCardContent(
                                   movie: currentMovie,
-                                  width: posterWidth,
-                                  height: posterHeight,
-                                  borderRadius: 12,
+                                  showStatus: showStatus,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _MovieCardContent(
-                                    movie: currentMovie,
-                                    showStatus: showStatus,
+                              ),
+                            ),
+                            if (isWatchlist && !wrapsPrimaryAction) ...[
+                              const SizedBox(height: 12),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 184),
+                                child: _MarkWatchedButton(
+                                  key: const Key(
+                                    'movie-card-mark-watched-action',
+                                  ),
+                                  onPressed: () => _openMarkWatchedSheet(
+                                    context,
+                                    currentMovie,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -125,19 +147,12 @@ class MovieListItem extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (isWatchlist) ...[
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: wrapsPrimaryAction ? 0 : posterWidth + 12,
-                      ),
-                      child: SizedBox(
-                        width: wrapsPrimaryAction ? double.infinity : 120,
-                        child: _MarkWatchedButton(
-                          onPressed: () =>
-                              _openMarkWatchedSheet(context, currentMovie),
-                        ),
-                      ),
+                  if (isWatchlist && wrapsPrimaryAction) ...[
+                    const SizedBox(height: 12),
+                    _MarkWatchedButton(
+                      key: const Key('movie-card-mark-watched-action'),
+                      onPressed: () =>
+                          _openMarkWatchedSheet(context, currentMovie),
                     ),
                   ],
                 ],
@@ -172,6 +187,7 @@ class MovieListItem extends StatelessWidget {
       builder: (sheetContext) => _MovieRowActionsSheet(
         movie: currentMovie,
         moviesList: moviesList,
+        preferredPersonalList: preferredPersonalList,
         mode: mode,
         shouldRequestReview: shouldRequestReview,
         parentContext: context,
@@ -259,18 +275,18 @@ class _MovieCardContent extends StatelessWidget {
 class _MarkWatchedButton extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const _MarkWatchedButton({required this.onPressed});
+  const _MarkWatchedButton({super.key, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 120,
+      width: double.infinity,
       height: 44,
       child: FilledButton.icon(
         style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          backgroundColor: Md3Colors.primarySoft,
-          foregroundColor: Md3Colors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          backgroundColor: Md3Colors.primary,
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -278,15 +294,12 @@ class _MarkWatchedButton extends StatelessWidget {
         ),
         onPressed: onPressed,
         icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-        label: const FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'Mark watched',
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-            ),
+        label: const Text(
+          'Mark watched',
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
@@ -338,6 +351,7 @@ class _CardIconAction extends StatelessWidget {
 class _MovieRowActionsSheet extends StatefulWidget {
   final Movie movie;
   final MoviesList? moviesList;
+  final MoviesList? preferredPersonalList;
   final MovieCardMode mode;
   final bool shouldRequestReview;
   final BuildContext parentContext;
@@ -346,6 +360,7 @@ class _MovieRowActionsSheet extends StatefulWidget {
   const _MovieRowActionsSheet({
     required this.movie,
     required this.moviesList,
+    required this.preferredPersonalList,
     required this.mode,
     required this.shouldRequestReview,
     required this.parentContext,
@@ -464,6 +479,7 @@ class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
           _PersonalListAction(
             movie: currentMovie,
             currentList: widget.moviesList,
+            preferredList: widget.preferredPersonalList,
           ),
           const SizedBox(height: 12),
           _SheetActionButton(
@@ -608,10 +624,12 @@ class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
 class _PersonalListAction extends StatelessWidget {
   final Movie movie;
   final MoviesList? currentList;
+  final MoviesList? preferredList;
 
   const _PersonalListAction({
     required this.movie,
     required this.currentList,
+    required this.preferredList,
   });
 
   @override
@@ -619,21 +637,92 @@ class _PersonalListAction extends StatelessWidget {
     final moviesState = Provider.of<MoviesState>(context);
     final userLists = [...moviesState.personalMoviesLists]
       ..sort((a, b) => a.order.compareTo(b.order));
+    final livePreferredList = preferredList == null
+        ? null
+        : userLists.cast<MoviesList?>().firstWhere(
+              (list) => identical(list, preferredList),
+              orElse: () => null,
+            );
+
+    if (preferredList != null && livePreferredList == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _OriginListUnavailableNotice(listName: preferredList!.name),
+          const SizedBox(height: 12),
+          if (userLists.isEmpty)
+            _buildCreateListAction(context)
+          else ...[
+            const Text(
+              'Choose another personal list',
+              style: TextStyle(
+                color: Md3Colors.text,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final list in userLists)
+              _ListChoice(movie: movie, moviesList: list),
+          ],
+        ],
+      );
+    }
 
     if (userLists.isEmpty) {
-      return _SheetActionButton(
-        label: 'Create a personal list',
-        detail: 'Open Lists to make a collection first.',
-        icon: Icons.playlist_add_rounded,
-        color: Md3Colors.primary,
-        onTap: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const MoviesListsPage(initialPageIndex: 1),
+      return _buildCreateListAction(context);
+    }
+
+    if (livePreferredList != null) {
+      final otherLists = userLists
+          .where((list) => !identical(list, livePreferredList))
+          .toList(growable: false);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ListChoice(
+            movie: movie,
+            moviesList: livePreferredList,
+            preferred: true,
+          ),
+          if (otherLists.isNotEmpty)
+            Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: Material(
+                color: Colors.transparent,
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(top: 8),
+                  leading: const _SheetActionIcon(
+                    icon: Icons.playlist_add_rounded,
+                    color: Md3Colors.muted,
+                  ),
+                  title: const Text(
+                    'Choose another personal list',
+                    style: TextStyle(
+                      color: Md3Colors.text,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Keep this Search open and pick a different collection.',
+                    style: TextStyle(
+                      color: Md3Colors.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  children: [
+                    for (final list in otherLists)
+                      _ListChoice(movie: movie, moviesList: list),
+                  ],
+                ),
+              ),
             ),
-          );
-        },
+        ],
       );
     }
 
@@ -674,15 +763,78 @@ class _PersonalListAction extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildCreateListAction(BuildContext context) {
+    return _SheetActionButton(
+      label: 'Create a personal list',
+      detail: 'Open Lists to make a collection first.',
+      icon: Icons.playlist_add_rounded,
+      color: Md3Colors.primary,
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const MoviesListsPage(initialPageIndex: 1),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OriginListUnavailableNotice extends StatelessWidget {
+  final String listName;
+
+  const _OriginListUnavailableNotice({required this.listName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Md3Colors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Md3Colors.warning.withValues(alpha: 0.32),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: Md3Colors.warning,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '“$listName” changed or is no longer available. '
+              'Choose another list.',
+              style: const TextStyle(
+                color: Md3Colors.text,
+                fontSize: 14,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ListChoice extends StatefulWidget {
   final Movie movie;
   final MoviesList moviesList;
+  final bool preferred;
 
   const _ListChoice({
     required this.movie,
     required this.moviesList,
+    this.preferred = false,
   });
 
   @override
@@ -696,11 +848,26 @@ class _ListChoiceState extends State<_ListChoice> {
   Widget build(BuildContext context) {
     final movieInList = widget.moviesList.listMovies
         .any((element) => element.id == widget.movie.id);
+    final title = widget.preferred
+        ? movieInList
+            ? 'Added to ${widget.moviesList.name}'
+            : 'Add to ${widget.moviesList.name}'
+        : widget.moviesList.name;
+    final detail = widget.preferred
+        ? movieInList
+            ? 'Already in your open personal list.'
+            : 'Your open personal list.'
+        : '${widget.moviesList.listMovies.length} '
+            'item${widget.moviesList.listMovies.length == 1 ? '' : 's'}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: movieInList ? Md3Colors.surfaceMuted : Md3Colors.background,
+        color: widget.preferred
+            ? Md3Colors.primarySoft
+            : movieInList
+                ? Md3Colors.surfaceMuted
+                : Md3Colors.background,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -710,7 +877,11 @@ class _ListChoiceState extends State<_ListChoice> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Md3Colors.border),
+              border: Border.all(
+                color: widget.preferred
+                    ? Md3Colors.primary.withValues(alpha: 0.35)
+                    : Md3Colors.border,
+              ),
             ),
             child: Row(
               children: [
@@ -719,7 +890,7 @@ class _ListChoiceState extends State<_ListChoice> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.moviesList.name,
+                        title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -730,8 +901,7 @@ class _ListChoiceState extends State<_ListChoice> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${widget.moviesList.listMovies.length} '
-                        'item${widget.moviesList.listMovies.length == 1 ? '' : 's'}',
+                        detail,
                         style: const TextStyle(
                           color: Md3Colors.muted,
                           fontSize: 12,

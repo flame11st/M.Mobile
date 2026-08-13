@@ -20,12 +20,38 @@ import 'package:mmobile/Widgets/mark_watched_bottom_sheet.dart';
 import 'package:mmobile/Widgets/movie_list_item_expanded.dart';
 import 'package:mmobile/Widgets/onboarding_wizard_page.dart';
 import 'package:mmobile/Widgets/recommendations_history_page.dart';
+import 'package:mmobile/Widgets/search_page.dart';
 import 'package:provider/provider.dart';
 
 enum RecommendationFailureKind {
   timeout,
   unavailable,
   cancelled,
+}
+
+class _RecommendationRequest {
+  final MovieType movieType;
+  final RecommendationDiscoveryLevel discoveryLevel;
+  final String? previousSessionId;
+  final Set<String> excludedMovieIds;
+  final bool isRefresh;
+
+  const _RecommendationRequest({
+    required this.movieType,
+    required this.discoveryLevel,
+    this.previousSessionId,
+    this.excludedMovieIds = const {},
+    this.isRefresh = false,
+  });
+
+  String get filterKey => '${movieType.index}:${discoveryLevel.index}';
+}
+
+class _DeckMemory {
+  final String sessionId;
+  final Set<String> movieIds;
+
+  const _DeckMemory({required this.sessionId, required this.movieIds});
 }
 
 class RecommendationsPage extends StatefulWidget {
@@ -67,6 +93,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   bool hasMore = false;
   int currentIndex = 0;
   bool isPaging = false;
+  int requestedCount = 10;
+  int availableCount = 0;
+  bool isPartialDeck = false;
+  bool alternativesExhausted = false;
+  bool _lastRequestWasRefresh = false;
+  _RecommendationRequest? _retryRequest;
+  final Map<String, _DeckMemory> _deckMemories = {};
   int _requestToken = 0;
   final Set<String> _savingMovieIds = <String>{};
 
@@ -83,7 +116,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     if (widget.autoStart) {
       Future.microtask(() {
         if (mounted) {
-          getRecommendations();
+          _getRecommendations();
         }
       });
     }
@@ -103,6 +136,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
     setState(() {
       selectedType = type;
+      if (recommendedMovies.isEmpty) {
+        hasRequestedRecommendations = false;
+        recommendationError = null;
+        failureKind = null;
+        alternativesExhausted = false;
+        _retryRequest = null;
+      }
     });
   }
 
@@ -113,19 +153,28 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
     setState(() {
       selectedDiscoveryLevel = level;
+      if (recommendedMovies.isEmpty) {
+        hasRequestedRecommendations = false;
+        recommendationError = null;
+        failureKind = null;
+        alternativesExhausted = false;
+        _retryRequest = null;
+      }
     });
   }
 
-  Future<void> getRecommendations({bool reset = true}) async {
+  Future<void> _getRecommendations({
+    bool reset = true,
+    bool refresh = false,
+    _RecommendationRequest? retryRequest,
+  }) async {
     if (isLoading) {
       return;
     }
 
+    final request = retryRequest ??
+        _buildRecommendationRequest(reset: reset, refresh: refresh);
     final requestToken = ++_requestToken;
-    final requestType = reset ? selectedType : deckType ?? selectedType;
-    final requestLevel = reset
-        ? selectedDiscoveryLevel
-        : deckDiscoveryLevel ?? selectedDiscoveryLevel;
 
     setState(() {
       isLoading = true;
@@ -137,6 +186,12 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         nextCursor = 0;
         hasMore = false;
         currentIndex = 0;
+        requestedCount = 10;
+        availableCount = 0;
+        isPartialDeck = false;
+        alternativesExhausted = false;
+        _lastRequestWasRefresh = request.isRefresh;
+        _retryRequest = request;
         hasRequestedRecommendations = false;
         recommendationError = null;
         failureKind = null;
@@ -148,16 +203,15 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       AdManager.showInterstitialAd();
     }
 
-    List<Movie> movies = [];
+    RecommendationDiscoverySession? session;
     String? error;
     RecommendationFailureKind? requestFailure;
 
     try {
-      movies = await getSessionRecommendations(
+      session = await _getSessionRecommendations(
         userState,
         reset,
-        requestType,
-        requestLevel,
+        request,
       ).timeout(widget.generationTimeout);
     } on TimeoutException {
       error =
@@ -174,6 +228,17 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       return;
     }
 
+    final excludedMovieIds = request.excludedMovieIds;
+    final sessionItems = session?.items ?? const <Movie>[];
+    final movies = excludedMovieIds.isEmpty
+        ? sessionItems
+        : sessionItems
+            .where((movie) => !excludedMovieIds.contains(movie.id))
+            .toList(growable: false);
+    final removedDuplicateItems = movies.length != sessionItems.length;
+    final validSessionId = session != null &&
+        session.sessionId != '00000000-0000-0000-0000-000000000000';
+
     setState(() {
       if (reset) {
         recommendedMovies = movies;
@@ -187,8 +252,35 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       recommendationError = error;
       failureKind = requestFailure;
       if (reset && error == null) {
-        deckType = requestType;
-        deckDiscoveryLevel = requestLevel;
+        deckType = request.movieType;
+        deckDiscoveryLevel = request.discoveryLevel;
+        _retryRequest = null;
+      }
+      if (session != null && error == null) {
+        sessionId = validSessionId ? session.sessionId : null;
+        nextCursor = session.nextCursor;
+        hasMore = session.hasMore;
+        requestedCount = session.requestedCount;
+        availableCount =
+            removedDuplicateItems ? movies.length : session.availableCount;
+        isPartialDeck =
+            session.isPartial || (removedDuplicateItems && movies.isNotEmpty);
+        alternativesExhausted = session.alternativesExhausted ||
+            (sessionItems.isEmpty && !session.hasMore) ||
+            (removedDuplicateItems && movies.length < requestedCount);
+
+        if (validSessionId) {
+          final previousIds = reset
+              ? const <String>{}
+              : _deckMemories[request.filterKey]?.movieIds ?? const <String>{};
+          _deckMemories[request.filterKey] = _DeckMemory(
+            sessionId: session.sessionId,
+            movieIds: <String>{
+              ...previousIds,
+              ...movies.map((movie) => movie.id),
+            },
+          );
+        }
       }
     });
 
@@ -201,11 +293,48 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     }
   }
 
-  Future<List<Movie>> getSessionRecommendations(
+  _RecommendationRequest _buildRecommendationRequest({
+    required bool reset,
+    required bool refresh,
+  }) {
+    if (!reset) {
+      return _RecommendationRequest(
+        movieType: deckType ?? selectedType,
+        discoveryLevel: deckDiscoveryLevel ?? selectedDiscoveryLevel,
+      );
+    }
+
+    final movieType = selectedType;
+    final discoveryLevel = selectedDiscoveryLevel;
+    final filterKey = '${movieType.index}:${discoveryLevel.index}';
+    final rememberedDeck = _deckMemories[filterKey];
+    final currentDeckMatches = recommendedMovies.isNotEmpty &&
+        deckType == movieType &&
+        deckDiscoveryLevel == discoveryLevel;
+    final shouldRefresh =
+        refresh || (!currentDeckMatches && rememberedDeck != null);
+
+    return _RecommendationRequest(
+      movieType: movieType,
+      discoveryLevel: discoveryLevel,
+      previousSessionId: shouldRefresh
+          ? currentDeckMatches
+              ? sessionId
+              : rememberedDeck?.sessionId
+          : null,
+      excludedMovieIds: shouldRefresh
+          ? currentDeckMatches
+              ? recommendedMovies.map((movie) => movie.id).toSet()
+              : rememberedDeck?.movieIds ?? const {}
+          : const {},
+      isRefresh: shouldRefresh,
+    );
+  }
+
+  Future<RecommendationDiscoverySession> _getSessionRecommendations(
     UserState userState,
     bool reset,
-    MovieType requestType,
-    RecommendationDiscoveryLevel requestLevel,
+    _RecommendationRequest request,
   ) async {
     RecommendationDiscoverySession? session;
 
@@ -216,9 +345,11 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     if (reset || sessionId == null) {
       session = await serviceAgent.createDiscoverySession(
         userState.userId!,
-        requestType,
-        requestLevel,
+        request.movieType,
+        request.discoveryLevel,
         10,
+        previousSessionId: request.previousSessionId,
+        excludedMovieIds: request.excludedMovieIds,
       );
     } else if (hasMore) {
       session = await serviceAgent.getDiscoverySessionPage(
@@ -229,15 +360,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       throw const HttpException('Recommendation service returned no session.');
     }
 
-    if (session.sessionId == '00000000-0000-0000-0000-000000000000') {
-      return [];
-    }
-
-    sessionId = session.sessionId;
-    nextCursor = session.nextCursor;
-    hasMore = session.hasMore;
-
-    return session.items;
+    return session;
   }
 
   void maybeLoadNextPage(int index) {
@@ -247,7 +370,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       return;
     }
 
-    getRecommendations(reset: false);
+    _getRecommendations(reset: false);
   }
 
   void cancelRecommendationRequest() {
@@ -403,6 +526,8 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   }
 
   Widget buildFilterBar(BuildContext context) {
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+
     return Semantics(
       container: true,
       label: 'Recommendation filters',
@@ -418,20 +543,26 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           borderColor: const Color(0xffe9edf2),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final compact = constraints.maxWidth < 290 ||
-                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
+              final compact = constraints.maxWidth < 290;
 
               return Row(
                 children: [
                   Expanded(
-                    flex: constraints.maxWidth < 290 ? 5 : 4,
-                    child: _buildTypeSegment(compact: compact),
+                    flex: largeText
+                        ? 6
+                        : constraints.maxWidth < 290
+                            ? 5
+                            : 4,
+                    child: _buildTypeSegment(
+                      compact: compact || largeText,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    flex: 3,
+                    flex: largeText ? 4 : 3,
                     child: _buildDiscoveryStyleMenu(
                       compact: compact,
+                      labelOnly: largeText,
                     ),
                   ),
                 ],
@@ -531,7 +662,10 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     );
   }
 
-  Widget _buildDiscoveryStyleMenu({required bool compact}) {
+  Widget _buildDiscoveryStyleMenu({
+    required bool compact,
+    bool labelOnly = false,
+  }) {
     final label = _discoveryLevelLabel(selectedDiscoveryLevel);
 
     return Semantics(
@@ -568,7 +702,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             .toList(),
         child: Container(
           height: 44,
-          padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: labelOnly
+                ? 6
+                : compact
+                    ? 8
+                    : 12,
+          ),
           decoration: BoxDecoration(
             color: Md3Colors.surface,
             borderRadius: BorderRadius.circular(20),
@@ -577,13 +717,14 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.tune_rounded,
-                size: 18,
-                color: Md3Colors.primary,
-              ),
-              if (!compact) ...[
-                const SizedBox(width: 6),
+              if (!labelOnly)
+                const Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: Md3Colors.primary,
+                ),
+              if (labelOnly || !compact) ...[
+                if (!labelOnly) const SizedBox(width: 6),
                 Flexible(
                   child: Text(
                     label,
@@ -598,12 +739,14 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                   ),
                 ),
               ],
-              const SizedBox(width: 2),
-              const Icon(
-                Icons.expand_more_rounded,
-                size: 18,
-                color: Md3Colors.muted,
-              ),
+              if (!labelOnly) ...[
+                const SizedBox(width: 2),
+                const Icon(
+                  Icons.expand_more_rounded,
+                  size: 18,
+                  color: Md3Colors.muted,
+                ),
+              ],
             ],
           ),
         ),
@@ -651,6 +794,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     final ratedCount = moviesState.userMovies
         .where((movie) => MovieRate.isViewed(movie.movieRate))
         .length;
+    final activeType = deckType ?? selectedType;
+    final activeLevel = deckDiscoveryLevel ?? selectedDiscoveryLevel;
+    final selection =
+        '${_discoveryLevelLabel(activeLevel)} ${_typeDeckLabel(activeType)}';
+    final isExhausted = hasRequestedRecommendations &&
+        recommendationError == null &&
+        alternativesExhausted;
     final title = !hasRequestedRecommendations
         ? 'Personal discovery'
         : switch (failureKind) {
@@ -658,12 +808,16 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             RecommendationFailureKind.unavailable =>
               'Recommendations unavailable',
             RecommendationFailureKind.cancelled => 'Discovery paused',
-            null => 'No recommendations in this deck yet.',
+            null => _lastRequestWasRefresh
+                ? 'No new recommendations available'
+                : 'No recommendations available',
           };
     final message = !hasRequestedRecommendations
         ? 'Start a fresh recommendation deck based on your MovieDiary taste.'
         : recommendationError ??
-            'Rate a few more movies or choose a broader discovery style, then try again.';
+            (isExhausted
+                ? 'You have seen every $selection pick available right now. Your selection stayed ${_discoveryLevelLabel(activeLevel)}.'
+                : 'Rate a few more movies or choose another discovery style, then try again.');
     final showBackAction = failureKind != null;
     final showEmptyActions =
         hasRequestedRecommendations && recommendationError == null;
@@ -720,18 +874,25 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                   runSpacing: 4,
                   children: [
                     TextButton.icon(
-                      onPressed: () => _openRatingFlow(context),
-                      icon: const Icon(Icons.swipe_rounded, size: 18),
-                      label: const Text('Rate more movies'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SearchStandalonePage(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.search_rounded, size: 18),
+                      label: const Text('Search titles'),
                     ),
                     if (selectedDiscoveryLevel !=
                         RecommendationDiscoveryLevel.adventurous)
                       TextButton.icon(
-                        onPressed: () => setDiscoveryLevel(
-                          RecommendationDiscoveryLevel.adventurous,
-                        ),
+                        onPressed: () {
+                          setDiscoveryLevel(
+                            RecommendationDiscoveryLevel.adventurous,
+                          );
+                          _getRecommendations();
+                        },
                         icon: const Icon(Icons.explore_rounded, size: 18),
-                        label: const Text('Use Adventurous'),
+                        label: const Text('Try Adventurous'),
                       ),
                   ],
                 ),
@@ -862,6 +1023,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         return ListView(
           padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
           children: [
+            if (isPartialDeck) _buildPartialDeckNotice(),
             _buildRecommendationCard(context, recommendedMovies[index], index),
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -878,6 +1040,45 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildPartialDeckNotice() {
+    final activeType = deckType ?? selectedType;
+    final activeLevel = deckDiscoveryLevel ?? selectedDiscoveryLevel;
+
+    return Semantics(
+      liveRegion: true,
+      label:
+          '$availableCount recommendations available for the ${_discoveryLevelLabel(activeLevel)} ${_typeDeckLabel(activeType)} selection.',
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: Md3Colors.primary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '$availableCount recommendations available for this ${_discoveryLevelLabel(activeLevel).toLowerCase()} ${_typeDeckLabel(activeType)} selection.',
+                style: const TextStyle(
+                  color: Md3Colors.muted,
+                  fontSize: 14,
+                  height: 20 / 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1202,6 +1403,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     Navigator.of(context).push(
       RouteHelper.createRoute(
         () => OnboardingWizardPage(
+          mode: RatingFlowMode.continuous,
           onFinished: () {
             Navigator.of(context).pop();
           },
@@ -1225,6 +1427,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     final icon = switch (label) {
       'Refresh deck' || 'Retry' => Icons.refresh_rounded,
       'Try Adventurous' => Icons.explore_rounded,
+      'Rate more' => Icons.swipe_rounded,
       _ => Icons.bolt_rounded,
     };
 
@@ -1279,7 +1482,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     }
 
     if (recommendedMovies.isNotEmpty) {
-      return 'Refresh deck';
+      return alternativesExhausted ? 'Rate more' : 'Refresh deck';
     }
 
     if (!hasRequestedRecommendations) {
@@ -1295,22 +1498,25 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       return 'Start Discovery';
     }
 
-    return selectedDiscoveryLevel == RecommendationDiscoveryLevel.adventurous
-        ? 'Retry'
-        : 'Try Adventurous';
+    return 'Rate more';
   }
 
   void _runPrimaryCommand() {
-    if (recommendedMovies.isEmpty &&
-        hasRequestedRecommendations &&
-        recommendationError == null &&
-        selectedDiscoveryLevel != RecommendationDiscoveryLevel.adventurous) {
-      setState(() {
-        selectedDiscoveryLevel = RecommendationDiscoveryLevel.adventurous;
-      });
+    final label = _primaryCommandLabel();
+
+    if (label == 'Rate more') {
+      _openRatingFlow(context);
+      return;
     }
 
-    getRecommendations();
+    final retryRequest =
+        label == 'Retry' || failureKind == RecommendationFailureKind.cancelled
+            ? _retryRequest
+            : null;
+    _getRecommendations(
+      refresh: label == 'Refresh deck',
+      retryRequest: retryRequest,
+    );
   }
 
   String _typeDeckLabel(MovieType type) {

@@ -32,6 +32,7 @@ class MoviesState with ChangeNotifier {
   static const _pendingAnonymousRatingSyncsKey = 'pendingAnonymousRatingSyncs';
   static const _anonymousRatingSyncDebounce = Duration(milliseconds: 900);
   static const _anonymousRatingSyncMaxDelay = Duration(minutes: 5);
+  static final _genreWhitespace = RegExp(r'\s+');
   Timer? _movieCacheWriteTimer;
   Timer? _personalListsCacheWriteTimer;
   Timer? _anonymousRatingSyncTimer;
@@ -60,11 +61,47 @@ class MoviesState with ChangeNotifier {
   String? selectedGenre;
   int currentTabIndex = 0;
 
+  MovieType? _viewedMediaTypeFilter;
+  final Set<String> _viewedGenreFilters = <String>{};
+  final Set<String> _viewedGenreFilterKeys = <String>{};
+
   DateTime? dateMin;
   DateTime? dateMax;
 
   var selectedRates = {MovieRate.liked, MovieRate.notLiked, MovieRate.okay};
   var selectedTypes = {MovieType.movie, MovieType.tv};
+
+  MovieType? get viewedMediaTypeFilter => _viewedMediaTypeFilter;
+  Set<String> get viewedGenreFilters =>
+      Set<String>.unmodifiable(_viewedGenreFilters);
+  bool get hasViewedAdvancedFilters =>
+      _viewedMediaTypeFilter != null || _viewedGenreFilters.isNotEmpty;
+  int get viewedAdvancedFilterCount =>
+      (_viewedMediaTypeFilter == null ? 0 : 1) + _viewedGenreFilters.length;
+
+  List<String> get viewedGenreOptions {
+    final genresByKey = <String, String>{};
+    for (final movie in userMovies) {
+      if (!MovieRate.isViewed(movie.movieRate)) {
+        continue;
+      }
+      for (final rawGenre in movie.genres) {
+        final displayGenre = _cleanGenre(rawGenre);
+        if (displayGenre.isEmpty) {
+          continue;
+        }
+        genresByKey.putIfAbsent(
+          _normaliseGenre(displayGenre),
+          () => displayGenre,
+        );
+      }
+    }
+
+    final result = genresByKey.values.toList(growable: false)
+      ..sort(
+          (left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+    return result;
+  }
 
   bool isMoviesRequested = false;
   bool isMoviesListsRequested = false;
@@ -753,10 +790,15 @@ class MoviesState with ChangeNotifier {
     }
   }
 
-  setCurrentTabIndex(int value) {
+  setCurrentTabIndex(int value, {bool notify = true}) {
+    if (currentTabIndex == value) {
+      return;
+    }
     currentTabIndex = value;
 
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   bool isWatchlist() {
@@ -799,6 +841,99 @@ class MoviesState with ChangeNotifier {
 
   changeNotLikedOnlyFilter() {
     selectViewedRate(MovieRate.notLiked);
+  }
+
+  void applyViewedAdvancedFilters({
+    MovieType? mediaType,
+    required Iterable<String> genres,
+  }) {
+    final availableGenres = <String, String>{
+      for (final genre in viewedGenreOptions) _normaliseGenre(genre): genre,
+    };
+    _viewedMediaTypeFilter = mediaType;
+    _viewedGenreFilters
+      ..clear()
+      ..addAll(
+        genres
+            .map(_cleanGenre)
+            .where((genre) => genre.isNotEmpty)
+            .map((genre) => availableGenres[_normaliseGenre(genre)])
+            .whereType<String>(),
+      );
+    _viewedGenreFilterKeys
+      ..clear()
+      ..addAll(_viewedGenreFilters.map(_normaliseGenre));
+
+    refreshMovies();
+  }
+
+  void clearViewedAdvancedFilters() {
+    if (!hasViewedAdvancedFilters) {
+      return;
+    }
+    _viewedMediaTypeFilter = null;
+    _viewedGenreFilters.clear();
+    _viewedGenreFilterKeys.clear();
+
+    refreshMovies();
+  }
+
+  bool matchesViewedAdvancedFilters(Movie movie) {
+    if (_viewedMediaTypeFilter != null &&
+        movie.movieType != _viewedMediaTypeFilter) {
+      return false;
+    }
+    if (_viewedGenreFilters.isEmpty) {
+      return true;
+    }
+
+    return movie.genres
+        .map(_normaliseGenre)
+        .any(_viewedGenreFilterKeys.contains);
+  }
+
+  String get viewedAdvancedFilterSummary {
+    final parts = <String>[];
+    if (_viewedMediaTypeFilter != null) {
+      parts.add(
+        _viewedMediaTypeFilter == MovieType.movie ? 'Movies' : 'TV',
+      );
+    }
+    if (_viewedGenreFilters.isNotEmpty) {
+      parts.add(
+        _viewedGenreFilters.length == 1
+            ? _viewedGenreFilters.first
+            : '${_viewedGenreFilters.length} genres',
+      );
+    }
+    return parts.join(' • ');
+  }
+
+  static String _cleanGenre(String value) {
+    return value.trim().replaceAll(_genreWhitespace, ' ');
+  }
+
+  static String _normaliseGenre(String value) {
+    return _cleanGenre(value).toLowerCase();
+  }
+
+  void _pruneViewedGenreFilters() {
+    if (_viewedGenreFilters.isEmpty) {
+      return;
+    }
+    final availableGenres = <String, String>{
+      for (final genre in viewedGenreOptions) _normaliseGenre(genre): genre,
+    };
+    final retainedGenres = _viewedGenreFilters
+        .map((genre) => availableGenres[_normaliseGenre(genre)])
+        .whereType<String>()
+        .toSet();
+    _viewedGenreFilters
+      ..clear()
+      ..addAll(retainedGenres);
+    _viewedGenreFilterKeys
+      ..clear()
+      ..addAll(retainedGenres.map(_normaliseGenre));
   }
 
   selectAllViewedRates() {
@@ -895,6 +1030,7 @@ class MoviesState with ChangeNotifier {
   }
 
   refreshMovies() {
+    _pruneViewedGenreFilters();
     var actualWatchlistMovies = getWatchlistMovies();
     var actualViewedMovies = getViewedMovies();
 
@@ -1001,7 +1137,8 @@ class MoviesState with ChangeNotifier {
             (selectedTypes.isEmpty ||
                 selectedTypes.contains(movie.movieType)) &&
             selectedRates.contains(movie.movieRate) &&
-            (selectedGenre == null || movie.genres.contains(selectedGenre)))
+            (selectedGenre == null || movie.genres.contains(selectedGenre)) &&
+            matchesViewedAdvancedFilters(movie))
         .toList();
 
     return result;
@@ -1127,7 +1264,20 @@ class MoviesState with ChangeNotifier {
     moviesList.removeAt(index);
 
     builder(context, animation) {
-      return buildItem(movieToRemove, animation, context: context);
+      final mode = identical(key, watchlistKey)
+          ? MovieCardMode.watchlist
+          : identical(key, viewedListKey)
+              ? MovieCardMode.viewed
+              : MovieCardMode.personalList;
+      return SizeTransition(
+        key: ValueKey<String>('library-${mode.name}-${movieToRemove.id}'),
+        sizeFactor: animation,
+        child: MovieListItem(
+          movie: movieToRemove,
+          shouldRequestReview: true,
+          mode: mode,
+        ),
+      );
     }
 
     if (key?.currentState != null) {
@@ -1149,6 +1299,9 @@ class MoviesState with ChangeNotifier {
   logout() async {
     clear();
     clearAllFilters();
+    _viewedMediaTypeFilter = null;
+    _viewedGenreFilters.clear();
+    _viewedGenreFilterKeys.clear();
     isMoviesRequested = false;
     currentTabIndex = 0;
     dateTo = null;
@@ -1186,20 +1339,6 @@ class MoviesState with ChangeNotifier {
   GlobalKey<AnimatedListState> viewedListKey = GlobalKey<AnimatedListState>();
   GlobalKey<AnimatedListState> personalListKey = GlobalKey<AnimatedListState>();
   // GlobalKey<AnimatedListState> personalListKey;
-
-  Widget buildItem(Movie movie, Animation<double> animation,
-      {bool isPremium = false, required BuildContext context}) {
-    return SizeTransition(
-        key: ObjectKey(movie),
-        sizeFactor: animation,
-        child: MovieListItem(
-          movie: movie,
-          shouldRequestReview: true,
-          mode: currentTabIndex == 0
-              ? MovieCardMode.watchlist
-              : MovieCardMode.viewed,
-        ));
-  }
 }
 
 class _PendingAnonymousRatingSync {

@@ -12,11 +12,81 @@ enum CuratedMovieListPurpose {
 }
 
 class MovieListCurator {
+  static const tmdbPopularFreshnessWindow = Duration(days: 2);
+
+  static MoviesList? listForPurpose(
+    List<MoviesList> lists,
+    CuratedMovieListPurpose purpose,
+  ) {
+    if (purpose != CuratedMovieListPurpose.popularMovies &&
+        purpose != CuratedMovieListPurpose.popularTv) {
+      final matchedLists = lists
+          .where((list) => _matchesPurpose(list, purpose))
+          .toList()
+        ..sort(_compareSourcePriority);
+      return matchedLists.isEmpty ? null : matchedLists.first;
+    }
+
+    final metadataMatches = lists
+        .where((list) => _matchesTmdbSourceMetadata(list, purpose))
+        .toList()
+      ..sort(_compareExactSource);
+    if (metadataMatches.isNotEmpty) {
+      return metadataMatches.first;
+    }
+
+    final canonicalNameMatches = lists
+        .where((list) => _matchesCanonicalTmdbName(list, purpose))
+        .toList()
+      ..sort(_compareExactSource);
+    return canonicalNameMatches.isEmpty ? null : canonicalNameMatches.first;
+  }
+
+  static bool isStalePopularSource(
+    MoviesList list, {
+    DateTime? now,
+  }) {
+    final updatedAt = list.sourceUpdatedAt;
+    if (updatedAt == null) {
+      return false;
+    }
+
+    final age = (now ?? DateTime.now()).toUtc().difference(updatedAt.toUtc());
+    return age > tmdbPopularFreshnessWindow;
+  }
+
+  static List<Movie> moviesFromListForPurpose(
+    MoviesList list,
+    CuratedMovieListPurpose purpose, {
+    int limit = 100,
+  }) {
+    final seenIds = <String>{};
+    return list.listMovies
+        .where((movie) => _matchesMovieType(movie, purpose))
+        .where((movie) => seenIds.add(movie.id))
+        .take(limit)
+        .toList();
+  }
+
   static List<Movie> moviesForPurpose(
     List<MoviesList> lists,
     CuratedMovieListPurpose purpose, {
     int limit = 100,
   }) {
+    if (purpose == CuratedMovieListPurpose.popularMovies ||
+        purpose == CuratedMovieListPurpose.popularTv) {
+      final exactList = listForPurpose(lists, purpose);
+      if (exactList == null || isStalePopularSource(exactList)) {
+        return const [];
+      }
+
+      return moviesFromListForPurpose(
+        exactList,
+        purpose,
+        limit: limit,
+      );
+    }
+
     final matchedLists = lists
         .where((list) => _matchesPurpose(list, purpose))
         .toList()
@@ -193,6 +263,60 @@ class MovieListCurator {
     return a.order.compareTo(b.order);
   }
 
+  static int _compareExactSource(MoviesList a, MoviesList b) {
+    final aUpdated = a.sourceUpdatedAt?.toUtc();
+    final bUpdated = b.sourceUpdatedAt?.toUtc();
+    if (aUpdated != null && bUpdated != null) {
+      final updatedCompare = bUpdated.compareTo(aUpdated);
+      if (updatedCompare != 0) {
+        return updatedCompare;
+      }
+    } else if (aUpdated != null) {
+      return -1;
+    } else if (bUpdated != null) {
+      return 1;
+    }
+
+    return a.order.compareTo(b.order);
+  }
+
+  static bool _matchesTmdbSourceMetadata(
+    MoviesList list,
+    CuratedMovieListPurpose purpose,
+  ) {
+    final sourceKey = _normalizedSourceKey(list.sourceKey);
+    if (sourceKey.isEmpty) {
+      return false;
+    }
+
+    final isTmdb = sourceKey.contains('tmdb');
+    final isPopular = sourceKey.contains('popular');
+    final isTv = sourceKey.contains('tv') || sourceKey.contains('series');
+    final isMovie = sourceKey.contains('movie');
+    if (!isTmdb || !isPopular) {
+      return false;
+    }
+
+    return switch (purpose) {
+      CuratedMovieListPurpose.popularMovies => isMovie && !isTv,
+      CuratedMovieListPurpose.popularTv => isTv,
+      _ => false,
+    };
+  }
+
+  static bool _matchesCanonicalTmdbName(
+    MoviesList list,
+    CuratedMovieListPurpose purpose,
+  ) {
+    final name = _normalizedName(list.name);
+    return switch (purpose) {
+      CuratedMovieListPurpose.popularMovies => name == 'popular movies tmdb',
+      CuratedMovieListPurpose.popularTv =>
+        name == 'popular tv series tmdb' || name == 'popular tv tmdb',
+      _ => false,
+    };
+  }
+
   static int _sourcePriority(String name) {
     final normalized = _normalizedName(name);
 
@@ -219,6 +343,14 @@ class MovieListCurator {
     return name
         .toLowerCase()
         .replaceAll(RegExp(r'[\(\)\[\]\-_/]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  static String _normalizedSourceKey(String? sourceKey) {
+    return (sourceKey ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
   }

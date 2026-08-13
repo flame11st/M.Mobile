@@ -177,10 +177,162 @@ void main() {
     await tester.tap(find.text('Start Discovery'));
     await tester.pumpAndSettle();
 
-    expect(find.text('No recommendations in this deck yet.'), findsOneWidget);
-    expect(find.text('Rate more movies'), findsOneWidget);
-    expect(find.text('Use Adventurous'), findsOneWidget);
+    expect(find.text('No recommendations available'), findsOneWidget);
+    expect(find.text('Rate more'), findsOneWidget);
+    expect(find.text('Search titles'), findsOneWidget);
     expect(find.text('Try Adventurous'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('refresh excludes the visible deck and preserves its filters',
+      (tester) async {
+    final states = await _testStates();
+    final service = _FakeRecommendationService(
+      responses: [
+        _session([_movie(id: 'dune')], sessionId: 'session-1'),
+        _session(
+          [_movie(id: 'arrival', title: 'Arrival')],
+          sessionId: 'session-2',
+        ),
+      ],
+    );
+
+    await _pumpRecommendations(tester, states, service: service);
+    await tester.tap(find.text('Start Discovery'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Refresh deck'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Arrival'), findsOneWidget);
+    expect(find.text('Dune'), findsNothing);
+    expect(find.byTooltip('Discovery style: Balanced'), findsOneWidget);
+    expect(service.calls, hasLength(2));
+    expect(service.calls.last.previousSessionId, 'session-1');
+    expect(service.calls.last.excludedMovieIds, contains('dune'));
+    expect(
+      service.calls.last.discoveryLevel,
+      RecommendationDiscoveryLevel.balanced,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('cancelled stale response cannot replace the retried selection',
+      (tester) async {
+    final states = await _testStates();
+    final service = _FakeRecommendationService(
+      responses: [
+        _session([_movie(id: 'stale-dune')], sessionId: 'stale-session'),
+        _session(
+          [_movie(id: 'arrival', title: 'Arrival')],
+          sessionId: 'current-session',
+        ),
+      ],
+      delays: const [Duration(milliseconds: 200), Duration.zero],
+    );
+
+    await _pumpRecommendations(tester, states, service: service);
+    await tester.tap(find.text('Start Discovery'));
+    await tester.pump();
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    await tester.tap(find.text('Start Discovery'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Arrival'), findsOneWidget);
+    expect(find.text('Dune'), findsNothing);
+    expect(service.calls, hasLength(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('returning to a prior filter cannot resurrect its old deck',
+      (tester) async {
+    final states = await _testStates();
+    final service = _FakeRecommendationService(
+      responses: [
+        _session([_movie(id: 'dune')], sessionId: 'movie-session-1'),
+        _session(
+          [_movie(id: 'severance', title: 'Severance')],
+          sessionId: 'tv-session-1',
+          movieType: MovieType.tv,
+        ),
+        _session(
+          [_movie(id: 'arrival', title: 'Arrival')],
+          sessionId: 'movie-session-2',
+        ),
+      ],
+    );
+
+    await _pumpRecommendations(tester, states, service: service);
+    await tester.tap(find.text('Start Discovery'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('TV'));
+    await tester.pump();
+    await tester.tap(find.text('Build TV deck'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Movies'));
+    await tester.pump();
+    await tester.tap(find.text('Build movie deck'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Arrival'), findsOneWidget);
+    expect(find.text('Dune'), findsNothing);
+    expect(service.calls, hasLength(3));
+    expect(service.calls.last.previousSessionId, 'movie-session-1');
+    expect(service.calls.last.excludedMovieIds, contains('dune'));
+    expect(service.calls.last.movieType, MovieType.movie);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('partial and exhausted refresh states stay truthful at 2x text',
+      (tester) async {
+    final states = await _testStates();
+    final partialMovies = List<Movie>.generate(
+      6,
+      (index) => _movie(id: 'partial-$index', title: 'Pick ${index + 1}'),
+    );
+    final partialService = _FakeRecommendationService(
+      response: _session(
+        partialMovies,
+        availableCount: 6,
+        requestedCount: 10,
+        isPartial: true,
+        alternativesExhausted: true,
+      ),
+    );
+
+    await _pumpRecommendations(
+      tester,
+      states,
+      service: partialService,
+      size: const Size(360, 640),
+      textScale: 2,
+    );
+    await tester.tap(find.text('Start Discovery'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('6 recommendations available'), findsOneWidget);
+    expect(find.text('Balanced'), findsOneWidget);
+    expect(find.text('Rate more'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await _pumpRecommendations(
+      tester,
+      states,
+      service: _FakeRecommendationService(response: _emptySession()),
+      size: const Size(360, 640),
+      textScale: 2,
+    );
+    await tester.tap(find.text('Start Discovery'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No recommendations available'), findsOneWidget);
+    expect(find.textContaining('selection stayed Balanced'), findsOneWidget);
+    expect(find.byTooltip('Discovery style: Balanced'), findsOneWidget);
+    expect(find.text('Rate more'), findsOneWidget);
+    expect(find.text('Try Adventurous'), findsOneWidget);
+    expect(find.text('Search titles'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -278,17 +430,31 @@ Future<void> _pumpRecommendations(
   await tester.pump();
 }
 
-RecommendationDiscoverySession _session(List<Movie> movies) {
+RecommendationDiscoverySession _session(
+  List<Movie> movies, {
+  String sessionId = 'session-1',
+  MovieType movieType = MovieType.movie,
+  RecommendationDiscoveryLevel discoveryLevel =
+      RecommendationDiscoveryLevel.balanced,
+  int requestedCount = 10,
+  int? availableCount,
+  bool isPartial = false,
+  bool alternativesExhausted = false,
+}) {
   return RecommendationDiscoverySession(
-    sessionId: 'session-1',
+    sessionId: sessionId,
     batchId: 'batch-1',
-    movieType: MovieType.movie,
-    discoveryLevel: RecommendationDiscoveryLevel.balanced,
+    movieType: movieType,
+    discoveryLevel: discoveryLevel,
     expiresAt: DateTime(2030),
     items: movies,
     nextCursor: movies.length,
     hasMore: false,
     pageSize: 10,
+    requestedCount: requestedCount,
+    availableCount: availableCount ?? movies.length,
+    isPartial: isPartial,
+    alternativesExhausted: alternativesExhausted,
   );
 }
 
@@ -303,14 +469,18 @@ RecommendationDiscoverySession _emptySession() {
     nextCursor: 0,
     hasMore: false,
     pageSize: 10,
+    requestedCount: 10,
+    availableCount: 0,
+    alternativesExhausted: true,
   );
 }
 
 Movie _movie({
+  String id = 'dune',
   String title = 'Dune',
 }) {
   return Movie(
-    id: 'dune',
+    id: id,
     title: title,
     overview: 'A useful recommendation synopsis.',
     tagline: null,
@@ -340,24 +510,46 @@ Movie _movie({
 
 class _FakeRecommendationService extends ServiceAgent {
   final Duration delay;
+  final List<Duration> delays;
   final RecommendationDiscoverySession? response;
+  final List<RecommendationDiscoverySession?> responses;
+  final List<_CreateDiscoveryCall> calls = [];
 
   _FakeRecommendationService({
-    required this.response,
+    this.response,
+    this.responses = const [],
     this.delay = Duration.zero,
-  });
+    this.delays = const [],
+  }) : assert(response != null || responses.isNotEmpty);
 
   @override
   Future<RecommendationDiscoverySession?> createDiscoverySession(
     String userId,
     MovieType movieType,
     RecommendationDiscoveryLevel discoveryLevel,
-    int pageSize,
-  ) async {
-    if (delay > Duration.zero) {
-      await Future<void>.delayed(delay);
+    int pageSize, {
+    String? previousSessionId,
+    Iterable<String> excludedMovieIds = const [],
+  }) async {
+    final callIndex = calls.length;
+    calls.add(
+      _CreateDiscoveryCall(
+        movieType: movieType,
+        discoveryLevel: discoveryLevel,
+        previousSessionId: previousSessionId,
+        excludedMovieIds: excludedMovieIds.toSet(),
+      ),
+    );
+    final callDelay = callIndex < delays.length ? delays[callIndex] : delay;
+    if (callDelay > Duration.zero) {
+      await Future<void>.delayed(callDelay);
     }
-    return response;
+    if (responses.isEmpty) {
+      return response;
+    }
+    final index =
+        callIndex < responses.length ? callIndex : responses.length - 1;
+    return responses[index];
   }
 
   @override
@@ -368,6 +560,20 @@ class _FakeRecommendationService extends ServiceAgent {
   ) async {
     return http.Response('', 200);
   }
+}
+
+class _CreateDiscoveryCall {
+  final MovieType movieType;
+  final RecommendationDiscoveryLevel discoveryLevel;
+  final String? previousSessionId;
+  final Set<String> excludedMovieIds;
+
+  const _CreateDiscoveryCall({
+    required this.movieType,
+    required this.discoveryLevel,
+    required this.previousSessionId,
+    required this.excludedMovieIds,
+  });
 }
 
 class _TestStates {

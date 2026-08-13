@@ -12,6 +12,10 @@ class RecommendationDiscoverySession {
   final int nextCursor;
   final bool hasMore;
   final int pageSize;
+  final int requestedCount;
+  final int availableCount;
+  final bool isPartial;
+  final bool alternativesExhausted;
 
   const RecommendationDiscoverySession({
     required this.sessionId,
@@ -23,10 +27,17 @@ class RecommendationDiscoverySession {
     required this.nextCursor,
     required this.hasMore,
     required this.pageSize,
+    this.requestedCount = 10,
+    this.availableCount = 0,
+    this.isPartial = false,
+    this.alternativesExhausted = false,
   });
 
   factory RecommendationDiscoverySession.fromJson(Map<String, dynamic> json) {
     final itemModels = json['items'] is Iterable ? json['items'] : [];
+
+    final items =
+        itemModels.map<Movie>((model) => Movie.fromJson(model)).toList();
 
     return RecommendationDiscoverySession(
       sessionId: json['sessionId'],
@@ -36,10 +47,14 @@ class RecommendationDiscoverySession {
           RecommendationDiscoveryLevel.values[json['discoveryLevel'] ?? 0],
       expiresAt:
           json['expiresAt'] == null ? null : DateTime.parse(json['expiresAt']),
-      items: itemModels.map<Movie>((model) => Movie.fromJson(model)).toList(),
+      items: items,
       nextCursor: json['nextCursor'] ?? 0,
       hasMore: json['hasMore'] ?? false,
       pageSize: json['pageSize'] ?? 10,
+      requestedCount: json['requestedCount'] ?? json['pageSize'] ?? 10,
+      availableCount: json['availableCount'] ?? items.length,
+      isPartial: json['isPartial'] ?? false,
+      alternativesExhausted: json['alternativesExhausted'] ?? false,
     );
   }
 }

@@ -2,19 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
+import 'package:mmobile/Enums/movie_list_type.dart';
 import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Objects/movie.dart';
+import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/discover_page.dart';
+import 'package:mmobile/Widgets/movies_list_page.dart';
 import 'package:provider/provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'Discover section actions stack without squeezing titles',
+    'Discover Show all actions stack and open the exact source list',
     (tester) async {
       FlutterSecureStorage.setMockInitialValues({});
       const storage = FlutterSecureStorage();
@@ -35,7 +38,6 @@ void main() {
 
       for (final size in sizes) {
         for (final scale in scales) {
-          var openListsCount = 0;
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
           await tester.binding.setSurfaceSize(size);
@@ -45,7 +47,7 @@ void main() {
             moviesState,
             textScale: scale,
             viewportSize: size,
-            onOpenLists: () => openListsCount++,
+            onOpenLists: () {},
           );
 
           final titleFinder = find.byKey(
@@ -74,8 +76,13 @@ void main() {
           }
 
           await tester.tap(actionFinder);
-          await tester.pump();
-          expect(openListsCount, 1);
+          await tester.pumpAndSettle();
+          expect(find.byType(MoviesListPage), findsOneWidget);
+          expect(find.text('Popular Movies (TMDb)'), findsOneWidget);
+          expect(find.byTooltip('Back to Discover'), findsOneWidget);
+          await tester.tap(find.byTooltip('Back to Discover'));
+          await tester.pumpAndSettle();
+          expect(find.byType(DiscoverPage), findsOneWidget);
           expect(tester.takeException(), isNull);
         }
       }
@@ -145,7 +152,7 @@ void main() {
     );
 
     expect(find.text('Discover'), findsOneWidget);
-    expect(find.text('Your taste profile'), findsOneWidget);
+    expect(find.text('Your MovieDNA'), findsOneWidget);
     final titleFinder = find.byKey(
       const ValueKey('discover-section-title-Popular Movies'),
     );
@@ -197,7 +204,7 @@ void main() {
 
         final profileTitles = [
           ...find.text('Build your taste profile').evaluate(),
-          ...find.text('Your taste profile').evaluate(),
+          ...find.text('Your MovieDNA').evaluate(),
         ];
         expect(profileTitles, hasLength(1));
         expect(find.text('Taste profile ready'), findsNothing);
@@ -268,6 +275,10 @@ Future<void> _pumpDiscover(
   required Size viewportSize,
   required VoidCallback onOpenLists,
 }) async {
+  if (!moviesState.isMoviesListsRequested) {
+    moviesState.setExternalMoviesLists(_popularLists());
+    moviesState.markMoviesListsRequestFinished();
+  }
   await tester.pumpWidget(
     MultiProvider(
       providers: [
@@ -288,16 +299,63 @@ Future<void> _pumpDiscover(
         },
         home: RepaintBoundary(
           key: const Key('discover-golden'),
-          child: DiscoverPage(
-            isOffline: true,
-            onRetry: () async {},
-            onOpenLists: onOpenLists,
+          child: Material(
+            color: Md3Colors.background,
+            child: DiscoverPage(
+              isOffline: true,
+              onRetry: () async {},
+              onOpenLists: onOpenLists,
+            ),
           ),
         ),
       ),
     ),
   );
   await tester.pump();
+}
+
+List<MoviesList> _popularLists() {
+  return [
+    MoviesList(
+      name: 'Popular Movies (TMDb)',
+      order: 1,
+      listMovies: [_browseMovie('tmdb-movie', MovieType.movie)],
+      movieListType: MovieListType.external,
+    ),
+    MoviesList(
+      name: 'Popular TV Series (TMDb)',
+      order: 2,
+      listMovies: [_browseMovie('tmdb-tv', MovieType.tv)],
+      movieListType: MovieListType.external,
+    ),
+  ];
+}
+
+Movie _browseMovie(String id, MovieType type) {
+  return Movie(
+    id: id,
+    title: type == MovieType.movie ? 'TMDb movie' : 'TMDb TV show',
+    overview: 'Overview',
+    tagline: null,
+    posterPath: 'poster.jpg',
+    duration: 110,
+    rating: 80,
+    allVotes: 20,
+    likedVotes: 16,
+    dislikedVotes: 4,
+    countries: 'US',
+    actors: const [],
+    directors: const [],
+    genres: const ['Drama'],
+    movieRate: MovieRate.notRated,
+    movieType: type,
+    releaseDate: DateTime(2024),
+    averageTimeOfEpisode: type == MovieType.tv ? 48 : 0,
+    inProduction: false,
+    seasonsCount: type == MovieType.tv ? 2 : 0,
+    imdbRate: 8,
+    imdbVotes: 10000,
+  );
 }
 
 Movie _ratedMovie(int index) {

@@ -13,7 +13,8 @@ import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/movie_list_item_expanded.dart';
-import 'package:mmobile/Widgets/movies_lists_page.dart';
+import 'package:mmobile/Widgets/movie_dna_profile.dart';
+import 'package:mmobile/Widgets/movies_list_page.dart';
 import 'package:mmobile/Widgets/onboarding_wizard_page.dart';
 import 'package:mmobile/Widgets/recommendations_page.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,7 @@ class DiscoverPage extends StatefulWidget {
     this.isRefreshing = false,
     this.onRetry,
     this.onOpenLists,
+    this.onOpenWatchlist,
     this.scrollController,
   });
 
@@ -32,6 +34,7 @@ class DiscoverPage extends StatefulWidget {
   final bool isRefreshing;
   final Future<void> Function()? onRetry;
   final VoidCallback? onOpenLists;
+  final VoidCallback? onOpenWatchlist;
   final ScrollController? scrollController;
 
   @override
@@ -46,6 +49,7 @@ class DiscoverPageState extends State<DiscoverPage> {
   int? _profileRatingsCount;
   bool _isRetryingLists = false;
   bool _isTasteProfileExpanded = false;
+  bool _isRatingFlowOpen = false;
 
   ScrollController get _scrollController =>
       widget.scrollController ?? _fallbackScrollController;
@@ -75,17 +79,23 @@ class DiscoverPageState extends State<DiscoverPage> {
     final ratedMovies = moviesState.userMovies
         .where((movie) => MovieRate.isViewed(movie.movieRate))
         .toList();
-    final popularMovies = _popularBySource(
-      moviesState,
-      purpose: CuratedMovieListPurpose.popularMovies,
-      fallbackType: MovieType.movie,
+    final popularMoviesList = MovieListCurator.listForPurpose(
+      moviesState.externalMoviesLists,
+      CuratedMovieListPurpose.popularMovies,
     );
-    final popularTv = _popularBySource(
-      moviesState,
-      purpose: CuratedMovieListPurpose.popularTv,
-      fallbackType: MovieType.tv,
+    final popularTvList = MovieListCurator.listForPurpose(
+      moviesState.externalMoviesLists,
+      CuratedMovieListPurpose.popularTv,
     );
-    final watchlistMovies = moviesState.watchlistMovies.take(3).toList();
+    final popularMovies = _moviesForPopularSource(
+      popularMoviesList,
+      CuratedMovieListPurpose.popularMovies,
+    );
+    final popularTv = _moviesForPopularSource(
+      popularTvList,
+      CuratedMovieListPurpose.popularTv,
+    );
+    final watchlistMovies = moviesState.watchlistMovies.take(5).toList();
     final profileFuture = _getProfileFuture(userState, ratedMovies);
     final hasStarterMovies = _hasStarterMovies(moviesState);
 
@@ -140,13 +150,14 @@ class DiscoverPageState extends State<DiscoverPage> {
           ),
           _buildDiscoverSectionHeader(
             title: 'Popular Movies',
-            actionText: 'Open General Lists',
-            onAction: () => _openLists(context),
-          ),
-          _buildSourceNote(
-            MovieListCurator.sourceNoteForPurpose(
-              CuratedMovieListPurpose.popularMovies,
-            ),
+            actionText: popularMovies.isEmpty ? null : 'Show all',
+            onAction: popularMovies.isEmpty
+                ? null
+                : () => _openPopularList(
+                      context,
+                      popularMoviesList!,
+                      popularMovies,
+                    ),
           ),
           if (popularMovies.isEmpty && !moviesState.isMoviesListsRequested)
             const Md3ListSkeletonCard(
@@ -159,13 +170,13 @@ class DiscoverPageState extends State<DiscoverPage> {
               cardRadius: 24,
             )
           else if (popularMovies.isEmpty)
-            _buildEmptyListCard(
-              'Popular movies unavailable',
-              'MovieDiary could not load this section from the API. Try General Lists or Search while it reconnects.',
-              Icons.local_movies_outlined,
+            _buildPopularSourceState(
+              context,
+              sourceList: popularMoviesList,
+              purpose: CuratedMovieListPurpose.popularMovies,
             )
           else
-            ...popularMovies.take(4).map((movie) => Md3HorizontalMovieCard(
+            ...popularMovies.take(5).map((movie) => Md3HorizontalMovieCard(
                   movie: movie,
                   onTap: () => _openMovie(context, movie),
                   trailing: const Icon(
@@ -175,13 +186,14 @@ class DiscoverPageState extends State<DiscoverPage> {
                 )),
           _buildDiscoverSectionHeader(
             title: 'Popular TV',
-            actionText: 'Open General Lists',
-            onAction: () => _openLists(context),
-          ),
-          _buildSourceNote(
-            MovieListCurator.sourceNoteForPurpose(
-              CuratedMovieListPurpose.popularTv,
-            ),
+            actionText: popularTv.isEmpty ? null : 'Show all',
+            onAction: popularTv.isEmpty
+                ? null
+                : () => _openPopularList(
+                      context,
+                      popularTvList!,
+                      popularTv,
+                    ),
           ),
           if (popularTv.isEmpty && !moviesState.isMoviesListsRequested)
             const Md3ListSkeletonCard(
@@ -194,13 +206,13 @@ class DiscoverPageState extends State<DiscoverPage> {
               cardRadius: 24,
             )
           else if (popularTv.isEmpty)
-            _buildEmptyListCard(
-              'Popular TV unavailable',
-              'MovieDiary could not load this section from the API. Try General Lists or Search while it reconnects.',
-              Icons.live_tv_outlined,
+            _buildPopularSourceState(
+              context,
+              sourceList: popularTvList,
+              purpose: CuratedMovieListPurpose.popularTv,
             )
           else
-            ...popularTv.take(4).map((movie) => Md3HorizontalMovieCard(
+            ...popularTv.take(5).map((movie) => Md3HorizontalMovieCard(
                   movie: movie,
                   onTap: () => _openMovie(context, movie),
                   trailing: const Icon(
@@ -210,8 +222,10 @@ class DiscoverPageState extends State<DiscoverPage> {
                 )),
           _buildDiscoverSectionHeader(
             title: 'Your Watchlist',
-            actionText: null,
-            onAction: null,
+            actionText: widget.onOpenWatchlist == null ? null : 'View All',
+            actionSemanticsLabel: 'View all Your Watchlist movies',
+            onAction: widget.onOpenWatchlist,
+            keepInline: true,
           ),
           if (watchlistMovies.isEmpty)
             _buildEmptyListCard(
@@ -234,16 +248,25 @@ class DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  void _openLists(BuildContext context) {
-    final openRootLists = widget.onOpenLists;
-    if (openRootLists != null) {
-      openRootLists();
-      return;
-    }
-
+  void _openPopularList(
+    BuildContext context,
+    MoviesList sourceList,
+    List<Movie> movies,
+  ) {
+    final routedList = MoviesList(
+      name: sourceList.name,
+      order: sourceList.order,
+      movieListType: sourceList.movieListType,
+      sourceKey: sourceList.sourceKey,
+      sourceUpdatedAt: sourceList.sourceUpdatedAt,
+      listMovies: movies,
+    );
     Navigator.of(context).push(
       RouteHelper.createRoute(
-        () => const MoviesListsPage(initialPageIndex: 0),
+        () => MoviesListPage(
+          moviesList: routedList,
+          backTooltip: 'Back to Discover',
+        ),
       ),
     );
   }
@@ -301,7 +324,7 @@ class DiscoverPageState extends State<DiscoverPage> {
     final hasDetails =
         isReady && profile != null && _hasTasteProfileDetails(profile);
     final title = isReady
-        ? 'Your taste profile'
+        ? 'Your MovieDNA'
         : hasProfileError
             ? 'Taste profile unavailable'
             : 'Build your taste profile';
@@ -366,37 +389,33 @@ class DiscoverPageState extends State<DiscoverPage> {
               height: 23 / 16,
             ),
           ),
+          if (isReady && profile != null) ...[
+            const SizedBox(height: 10),
+            MovieDnaTraitPreview(
+              insights: profile.insights,
+              fallbackLabels: _cleanProfileLabels([
+                ...profile.tastePillars,
+                ...profile.favoriteThemes,
+                ...profile.favoriteGenres,
+              ]),
+            ),
+          ],
           const SizedBox(height: 12),
           if (isReady)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _confidenceLabel(),
-                  style: const TextStyle(
-                    color: Md3Colors.muted,
-                    fontSize: 13,
-                    height: 18 / 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildTasteProfileActionButton(
-                  text: _isRetryingLists ? 'Loading' : ctaText,
-                  icon: Icons.bolt_rounded,
-                  tonal: false,
-                  fillWidth: true,
-                  onPressed: _isRetryingLists
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            RouteHelper.createRoute(
-                              () => const RecommendationsPage(autoStart: true),
-                            ),
-                          );
-                        },
-                ),
-              ],
+            _buildTasteProfileActionButton(
+              text: _isRetryingLists ? 'Loading' : ctaText,
+              icon: Icons.bolt_rounded,
+              tonal: false,
+              fillWidth: true,
+              onPressed: _isRetryingLists
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        RouteHelper.createRoute(
+                          () => const RecommendationsPage(autoStart: true),
+                        ),
+                      );
+                    },
             )
           else
             LayoutBuilder(
@@ -494,6 +513,18 @@ class DiscoverPageState extends State<DiscoverPage> {
               ),
             ),
           ],
+          if (isReady && !hasDetails) ...[
+            const SizedBox(height: 8),
+            Text(
+              _confidenceLabel(profile, ratedCount: ratedCount),
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 12,
+                height: 16 / 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
           if (isLoading && ratedCount >= 10) ...[
             const SizedBox(height: 10),
             const Row(
@@ -537,35 +568,60 @@ class DiscoverPageState extends State<DiscoverPage> {
             SizedBox(
               width: double.infinity,
               height: 44,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: Md3Colors.primary,
-                  padding: EdgeInsets.zero,
-                  alignment: Alignment.centerLeft,
-                  textStyle: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isTasteProfileExpanded = !_isTasteProfileExpanded;
-                  });
-                },
-                child: Row(
-                  children: [
-                    const Expanded(child: Text('Taste details')),
-                    Icon(
-                      _isTasteProfileExpanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      size: 20,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _confidenceLabel(profile, ratedCount: ratedCount),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 12,
+                        height: 16 / 12,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Md3Colors.primary,
+                      minimumSize: const Size(44, 44),
+                      padding: const EdgeInsets.only(left: 8),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isTasteProfileExpanded = !_isTasteProfileExpanded;
+                      });
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Taste details'),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _isTasteProfileExpanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (_isTasteProfileExpanded) _buildExpandedProfileDetails(profile),
+            if (_isTasteProfileExpanded)
+              profile.insights.isNotEmpty
+                  ? MovieDnaDetails(
+                      profile: profile,
+                      onRateMore: () => _openRatingFlow(context),
+                    )
+                  : _buildExpandedProfileDetails(profile),
           ],
         ],
       ),
@@ -576,13 +632,15 @@ class DiscoverPageState extends State<DiscoverPage> {
     required String title,
     required String? actionText,
     required VoidCallback? onAction,
+    String? actionSemanticsLabel,
+    bool keepInline = false,
   }) {
     final titleWidget = Semantics(
       header: true,
       child: Text(
         title,
         key: ValueKey('discover-section-title-$title'),
-        maxLines: 2,
+        maxLines: keepInline ? 1 : 2,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: Md3Colors.text,
@@ -606,6 +664,7 @@ class DiscoverPageState extends State<DiscoverPage> {
             ),
             child: Text(
               actionText,
+              semanticsLabel: actionSemanticsLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -615,8 +674,6 @@ class DiscoverPageState extends State<DiscoverPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final textScaler = MediaQuery.textScalerOf(context);
-        final textScale = textScaler.scale(14) / 14;
-        final viewportWidth = constraints.maxWidth + 32;
         var labelsCompete = false;
         if (actionText != null) {
           final titlePainter = TextPainter(
@@ -647,8 +704,7 @@ class DiscoverPageState extends State<DiscoverPage> {
           labelsCompete = titlePainter.width + actionPainter.width + 28 >
               constraints.maxWidth;
         }
-        final useStackedLayout =
-            (viewportWidth <= 390 && textScale >= 1.29) || labelsCompete;
+        final useStackedLayout = !keepInline && labelsCompete;
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(2, 18, 2, 10),
@@ -856,8 +912,22 @@ class DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  String _confidenceLabel() {
-    return 'Ready · improves as you rate more';
+  String _confidenceLabel(
+    UserTasteProfile? profile, {
+    required int ratedCount,
+  }) {
+    if (profile == null || profile.profileConfidencePercent <= 0) {
+      return 'Early read · $ratedCount ratings';
+    }
+
+    final confidence = profile.profileConfidencePercent;
+    if (confidence >= 85) {
+      return 'Strong read · $confidence%';
+    }
+    if (confidence >= 65) {
+      return 'Developing read · $confidence%';
+    }
+    return 'Early read · $confidence%';
   }
 
   String _ratingsBasis(UserTasteProfile profile) {
@@ -883,7 +953,7 @@ class DiscoverPageState extends State<DiscoverPage> {
     final providedSummary = profile?.summaryText == null
         ? ''
         : _cleanLocalTasteText(profile!.summaryText!);
-    if (providedSummary.isNotEmpty && providedSummary.length <= 90) {
+    if (providedSummary.isNotEmpty && providedSummary.length <= 140) {
       return providedSummary;
     }
 
@@ -1012,6 +1082,9 @@ class DiscoverPageState extends State<DiscoverPage> {
     }
 
     final ratingsCount = ratedMovies.length;
+    if (_isRatingFlowOpen && _profileFuture != null) {
+      return _profileFuture;
+    }
     if (_profileFuture == null ||
         _profileUserId != userId ||
         _profileRatingsCount != ratingsCount) {
@@ -1054,13 +1127,16 @@ class DiscoverPageState extends State<DiscoverPage> {
 
     return !profile.isGenerated ||
         profile.summaryText?.trim().isNotEmpty != true ||
-        (profile.favoriteGenres.isEmpty &&
+        (profile.insights.isEmpty &&
+            profile.favoriteGenres.isEmpty &&
             profile.favoriteThemes.isEmpty &&
             profile.preferredDecades.isEmpty);
   }
 
   bool _hasTasteProfileDetails(UserTasteProfile profile) {
     return profile.favoriteGenres.isNotEmpty ||
+        profile.insights.isNotEmpty ||
+        profile.recommendationAdvice.isNotEmpty ||
         profile.favoriteThemes.isNotEmpty ||
         profile.preferredDecades.isNotEmpty ||
         profile.movieRatingsCount > 0 ||
@@ -1079,13 +1155,22 @@ class DiscoverPageState extends State<DiscoverPage> {
         maxWords: 5,
         allowNumbers: false,
       ),
-      tastePillars: const [],
-      recommendationAdvice: const [],
+      tastePillars: _cleanProfileLabels(
+        profile.tastePillars,
+        maxWords: 5,
+        allowNumbers: false,
+      ),
+      recommendationAdvice: profile.recommendationAdvice
+          .map(_cleanLocalTasteText)
+          .where((value) => value.isNotEmpty && value.length <= 160)
+          .take(3)
+          .toList(),
       preferredDecades: _cleanProfileLabels(
         profile.preferredDecades,
         maxWords: 2,
       ).where((value) => RegExp(r'^\d{4}s$').hasMatch(value)).toList(),
       favoriteDirectors: profile.favoriteDirectors,
+      insights: _cleanMovieDnaInsights(profile.insights),
       movieRatingsCount: profile.movieRatingsCount,
       tvRatingsCount: profile.tvRatingsCount,
       profileConfidencePercent: profile.profileConfidencePercent,
@@ -1093,7 +1178,9 @@ class DiscoverPageState extends State<DiscoverPage> {
       summaryText: profile.summaryText == null
           ? null
           : _cleanLocalTasteText(profile.summaryText!),
-      personalityLabel: null,
+      personalityLabel: profile.profileConfidencePercent >= 85
+          ? _cleanLocalTasteText(profile.personalityLabel ?? '')
+          : null,
       generatedAt: profile.generatedAt,
     );
   }
@@ -1134,12 +1221,15 @@ class DiscoverPageState extends State<DiscoverPage> {
           ? dislikedGenres
           : apiProfile?.dislikedGenres ?? const [],
       favoriteThemes: apiProfile?.favoriteThemes ?? const [],
-      tastePillars: const [],
-      recommendationAdvice: const [],
+      tastePillars: apiProfile?.tastePillars ?? const [],
+      recommendationAdvice: apiProfile?.recommendationAdvice ?? const [],
       preferredDecades: preferredDecades.isNotEmpty
           ? preferredDecades
           : apiProfile?.preferredDecades ?? const [],
       favoriteDirectors: apiProfile?.favoriteDirectors ?? const [],
+      insights: apiProfile == null
+          ? const []
+          : _cleanMovieDnaInsights(apiProfile.insights),
       movieRatingsCount: movieRatingsCount,
       tvRatingsCount: tvRatingsCount,
       profileConfidencePercent:
@@ -1151,6 +1241,44 @@ class DiscoverPageState extends State<DiscoverPage> {
       personalityLabel: null,
       generatedAt: apiProfile?.generatedAt,
     );
+  }
+
+  List<MovieDnaInsight> _cleanMovieDnaInsights(
+    Iterable<MovieDnaInsight> insights,
+  ) {
+    return insights
+        .where((insight) => insight.key.isNotEmpty)
+        .map((insight) {
+          final label = _cleanLocalTasteText(insight.label);
+          final description = _cleanLocalTasteText(insight.description);
+          final supportingTitles = insight.supportingTitles
+              .map(_cleanLocalTasteText)
+              .where((title) => title.isNotEmpty && title.length <= 80)
+              .take(3)
+              .toList();
+          return MovieDnaInsight(
+            key: insight.key,
+            label: label,
+            description: description,
+            category: insight.category,
+            confidencePercent: insight.confidencePercent.clamp(0, 100),
+            positiveEvidenceCount: insight.positiveEvidenceCount,
+            counterEvidenceCount: insight.counterEvidenceCount,
+            supportingTitleIds: insight.supportingTitleIds.take(3).toList(),
+            supportingTitles: supportingTitles,
+          );
+        })
+        .where((insight) =>
+            insight.label.isNotEmpty &&
+            insight.label.length <= 40 &&
+            insight.label.split(RegExp(r'\s+')).length <= 5 &&
+            insight.description.isNotEmpty &&
+            insight.description.length <= 160 &&
+            insight.positiveEvidenceCount >= 3 &&
+            insight.positiveEvidenceCount > insight.counterEvidenceCount &&
+            insight.confidencePercent >= 45)
+        .take(5)
+        .toList();
   }
 
   List<String> _topWeightedGenres(
@@ -1240,7 +1368,7 @@ class DiscoverPageState extends State<DiscoverPage> {
         ? ', with ${preferredDecades.take(2).join(' and ')} titles rating well'
         : '';
 
-    return 'Your ratings point to $genreText$decadeText.';
+    return 'Your MovieDNA currently leans toward $genreText$decadeText.';
   }
 
   int _localConfidence(List<Movie> ratedMovies) {
@@ -1264,6 +1392,17 @@ class DiscoverPageState extends State<DiscoverPage> {
       'signal, not a rule',
       'as a signal',
       'prompt',
+      'personality type',
+      'religion',
+      'religious',
+      'ethnicity',
+      'racial identity',
+      'sexuality',
+      'gender identity',
+      'political identity',
+      'medical diagnosis',
+      'disability',
+      'income level',
     ];
     if (internalPhrases.any(
       (phrase) => trimmed.toLowerCase().contains(phrase),
@@ -1318,26 +1457,114 @@ class DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  Widget _buildSourceNote(String text) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+  List<Movie> _moviesForPopularSource(
+    MoviesList? sourceList,
+    CuratedMovieListPurpose purpose,
+  ) {
+    if (sourceList == null ||
+        MovieListCurator.isStalePopularSource(sourceList)) {
+      return const [];
+    }
+
+    return MovieListCurator.moviesFromListForPurpose(
+      sourceList,
+      purpose,
+      limit: 100,
+    );
+  }
+
+  Widget _buildPopularSourceState(
+    BuildContext context, {
+    required MoviesList? sourceList,
+    required CuratedMovieListPurpose purpose,
+  }) {
+    final isTv = purpose == CuratedMovieListPurpose.popularTv;
+    final kind = isTv ? 'TV shows' : 'movies';
+    final isStale =
+        sourceList != null && MovieListCurator.isStalePopularSource(sourceList);
+    final title = isStale
+        ? 'TMDb $kind need refresh'
+        : sourceList == null
+            ? 'TMDb $kind unavailable'
+            : 'TMDb $kind list is empty';
+    final body = isStale
+        ? 'Refresh for the latest TMDb list.'
+        : sourceList == null
+            ? 'The current TMDb list was not returned. MovieDiary alternatives stay separate.'
+            : 'TMDb returned no titles. Refresh to check again.';
+    final isRefreshing = widget.isRefreshing || _isRetryingLists;
+
+    return Md3Card(
+      key: ValueKey('discover-popular-source-state-${isTv ? 'tv' : 'movies'}'),
+      padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.verified_outlined,
-            size: 16,
-            color: Md3Colors.muted,
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Md3Colors.primarySoft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              isTv ? Icons.live_tv_outlined : Icons.local_movies_outlined,
+              color: Md3Colors.primary,
+              size: 22,
+            ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: Md3Colors.muted,
-                fontSize: 13,
-                height: 1.2,
-                fontWeight: FontWeight.w700,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  style: const TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 17,
+                    height: 1.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  body,
+                  maxLines: 3,
+                  style: const TextStyle(
+                    color: Md3Colors.muted,
+                    fontSize: 14,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 4),
+          Tooltip(
+            message: isTv ? 'Retry popular TV' : 'Retry popular movies',
+            child: TextButton(
+              key: ValueKey(
+                'discover-popular-retry-${isTv ? 'tv' : 'movies'}',
               ),
+              onPressed:
+                  isRefreshing ? null : () => _retryPopularSources(context),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(64, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                foregroundColor: Md3Colors.primary,
+                textStyle: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              child: isRefreshing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Retry'),
             ),
           ),
         ],
@@ -1345,26 +1572,18 @@ class DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  List<Movie> _popularBySource(
-    MoviesState moviesState, {
-    required CuratedMovieListPurpose purpose,
-    required MovieType fallbackType,
-  }) {
-    final curatedMovies = MovieListCurator.moviesForPurpose(
-      moviesState.externalMoviesLists,
-      purpose,
-      limit: 12,
-    );
-
-    if (curatedMovies.isNotEmpty) {
-      return curatedMovies;
+  Future<void> _retryPopularSources(BuildContext context) async {
+    if (widget.isRefreshing || _isRetryingLists) {
+      return;
     }
 
-    return MovieListCurator.trustedFallbackByType(
-      moviesState.externalMoviesLists,
-      fallbackType,
-      limit: 12,
-    );
+    final retry = widget.onRetry;
+    if (retry != null) {
+      await retry();
+      return;
+    }
+
+    await _retryStarterMovies(context);
   }
 
   bool _hasStarterMovies(MoviesState moviesState) {
@@ -1427,15 +1646,34 @@ class DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  void _openRatingFlow(BuildContext context) {
-    Navigator.of(context).push(
-      RouteHelper.createRoute(
-        () => OnboardingWizardPage(
-          onFinished: () {
-            Navigator.of(context).pop();
-          },
+  Future<void> _openRatingFlow(BuildContext context) async {
+    if (_isRatingFlowOpen) {
+      return;
+    }
+
+    setState(() {
+      _isRatingFlowOpen = true;
+    });
+
+    try {
+      await Navigator.of(context).push(
+        RouteHelper.createRoute(
+          () => OnboardingWizardPage(
+            mode: RatingFlowMode.continuous,
+            onFinished: () {
+              Navigator.of(context).pop();
+            },
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRatingFlowOpen = false;
+          _profileFuture = null;
+          _profileRatingsCount = null;
+        });
+      }
+    }
   }
 }

@@ -14,14 +14,19 @@ import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:mmobile/Widgets/Login.dart';
+import 'package:mmobile/Widgets/movies_list_page.dart';
 import 'package:mmobile/Widgets/recommendations_page.dart';
+import 'package:mmobile/Widgets/search_page.dart';
 import 'package:provider/provider.dart';
+
+enum RatingFlowMode { onboarding, continuous }
 
 class OnboardingWizardPage extends StatefulWidget {
   final VoidCallback onFinished;
   final VoidCallback? onExitStarted;
   final VoidCallback? onExitCompleted;
   final WidgetBuilder? recommendationsBuilder;
+  final RatingFlowMode mode;
 
   const OnboardingWizardPage({
     super.key,
@@ -29,6 +34,7 @@ class OnboardingWizardPage extends StatefulWidget {
     this.onExitStarted,
     this.onExitCompleted,
     this.recommendationsBuilder,
+    this.mode = RatingFlowMode.onboarding,
   });
 
   @override
@@ -42,9 +48,13 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   bool isRetryingStarterDeck = false;
   bool isSavingRating = false;
   bool isCompleting = false;
+  int _sessionRatedCount = 0;
+  String? _candidateLoadError;
   String? _expandedSynopsisMovieId;
 
   static const targetRatings = 10;
+
+  bool get _isContinuous => widget.mode == RatingFlowMode.continuous;
 
   @override
   void initState() {
@@ -55,9 +65,11 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         return;
       }
 
-      final userState = Provider.of<UserState>(context, listen: false);
-      if (userState.onboardingStage != OnboardingStage.rating) {
-        userState.setOnboardingStage(OnboardingStage.rating);
+      if (!_isContinuous) {
+        final userState = Provider.of<UserState>(context, listen: false);
+        if (userState.onboardingStage != OnboardingStage.rating) {
+          userState.setOnboardingStage(OnboardingStage.rating);
+        }
       }
     });
   }
@@ -74,7 +86,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     final ratedCount = _ratedCount(moviesState);
     final candidates = _candidates(moviesState);
     final profileCount = ratedCount.clamp(0, targetRatings);
-    final isComplete = profileCount >= targetRatings;
+    final isComplete = !_isContinuous && profileCount >= targetRatings;
 
     if (isComplete) {
       return _buildComplete(profileCount, false);
@@ -84,17 +96,32 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       return _buildStarterDeckUnavailable(
         moviesState.isStarterDeckRequested ||
             moviesState.isMoviesListsRequested,
-        profileCount,
+        ratedCount,
       );
     }
 
-    return _buildRatingStep(candidates.first, profileCount, candidates.length);
+    return _buildRatingStep(
+      candidates.first,
+      _isContinuous ? ratedCount : profileCount,
+      candidates.length,
+    );
   }
 
   Widget _buildStarterDeckUnavailable(bool listsRequested, int profileCount) {
     if (!listsRequested) {
       return _buildStarterDeckLoading(profileCount);
     }
+
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final title = _isContinuous
+        ? _candidateLoadError == null
+            ? 'No unrated picks ready'
+            : 'Rating picks unavailable'
+        : 'Starter movies unavailable';
+    final body = _isContinuous
+        ? _candidateLoadError ??
+            'MovieDiary could not find another trusted unrated title in your current picks. Retry the pool or choose another way to keep exploring.'
+        : 'MovieDiary could not load enough starter movies for the first rating flow. Try loading the deck again before continuing.';
 
     return Scaffold(
       backgroundColor: Md3Colors.background,
@@ -111,29 +138,29 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Md3Card(
+                  Md3Card(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.refresh_rounded,
+                        const Icon(
+                          Icons.explore_rounded,
                           color: Md3Colors.primary,
                           size: 48,
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Text(
-                          'Starter movies unavailable',
-                          style: TextStyle(
+                          title,
+                          style: const TextStyle(
                             color: Md3Colors.text,
                             fontSize: 28,
                             height: 1.08,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 10),
                         Text(
-                          'MovieDiary could not load enough starter movies for the first rating flow. Try loading the deck again before continuing.',
-                          style: TextStyle(
+                          body,
+                          style: const TextStyle(
                             color: Md3Colors.muted,
                             fontSize: 15,
                             height: 1.35,
@@ -144,7 +171,10 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildProgressCard(profileCount),
+                  if (_isContinuous)
+                    _buildContinuousRecoveryActions(moviesState, profileCount)
+                  else
+                    _buildProgressCard(profileCount),
                 ],
               ),
             ),
@@ -152,12 +182,16 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
               alignment: Alignment.bottomCenter,
               child: _buildBottomBar(
                 primaryText: isRetryingStarterDeck
-                    ? 'Loading Starter Movies'
-                    : 'Retry Starter Movies',
+                    ? 'Loading picks'
+                    : _isContinuous
+                        ? 'Retry unrated picks'
+                        : 'Retry Starter Movies',
                 primaryIcon: Icons.refresh_rounded,
                 onPrimary: isRetryingStarterDeck ? null : _retryStarterDeck,
-                secondaryText: 'Go to Discover',
-                onSecondary: _finishOnboarding,
+                secondaryText:
+                    _isContinuous ? 'Done for now' : 'Go to Discover',
+                onSecondary:
+                    _isContinuous ? _finishContinuous : _finishOnboarding,
               ),
             ),
           ],
@@ -281,7 +315,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildRatingHeader(profileCount),
+                  _buildRatingHeader(profileCount, currentMovie: movie),
                   const SizedBox(height: 16),
                   KeyedSubtree(
                     key: ValueKey(movie.id),
@@ -423,7 +457,11 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     return values.join('  /  ');
   }
 
-  Widget _buildRatingHeader(int profileCount) {
+  Widget _buildRatingHeader(int profileCount, {Movie? currentMovie}) {
+    if (_isContinuous) {
+      return _buildContinuousRatingHeader(profileCount, currentMovie);
+    }
+
     final progress = (profileCount / targetRatings).clamp(0.0, 1.0);
 
     return Column(
@@ -510,6 +548,105 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
               Md3Colors.primary,
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContinuousRatingHeader(
+    int profileCount,
+    Movie? currentMovie,
+  ) {
+    final sessionLabel = _sessionRatedCount == 1
+        ? '1 rated this session'
+        : '$_sessionRatedCount rated this session';
+    final profileLabel = profileCount == 1
+        ? 'MovieDNA is based on 1 rating.'
+        : 'MovieDNA is based on $profileCount ratings.';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Rate more',
+                  style: TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 28,
+                    height: 1.21,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (currentMovie != null)
+                IconButton(
+                  tooltip: 'Skip this title',
+                  onPressed: isSavingRating ? null : () => _skip(currentMovie),
+                  icon: const Icon(Icons.skip_next_rounded),
+                ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                onPressed: isSavingRating ? null : _finishContinuous,
+                child: const Text(
+                  'Done',
+                  style: TextStyle(
+                    color: Md3Colors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Text(
+          'Keep shaping your MovieDNA, one title at a time.',
+          style: TextStyle(
+            color: Md3Colors.muted,
+            fontSize: 15,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: Md3Colors.primarySoft,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                sessionLabel,
+                style: const TextStyle(
+                  color: Md3Colors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            Text(
+              profileLabel,
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -686,6 +823,80 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContinuousRecoveryActions(
+    MoviesState moviesState,
+    int profileCount,
+  ) {
+    final popularMoviesList = MovieListCurator.listForPurpose(
+      moviesState.externalMoviesLists,
+      CuratedMovieListPurpose.popularMovies,
+    );
+    final popularTvList = MovieListCurator.listForPurpose(
+      moviesState.externalMoviesLists,
+      CuratedMovieListPurpose.popularTv,
+    );
+    final hasPopularMovies = popularMoviesList != null &&
+        !MovieListCurator.isStalePopularSource(popularMoviesList);
+    final hasPopularTv = popularTvList != null &&
+        !MovieListCurator.isStalePopularSource(popularTvList);
+
+    return Md3Card(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            profileCount == 1
+                ? 'Your MovieDNA keeps its 1 saved rating.'
+                : 'Your MovieDNA keeps its $profileCount saved ratings.',
+            style: const TextStyle(
+              color: Md3Colors.text,
+              fontSize: 16,
+              height: 1.4,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Try Search or browse an exact TMDb popular list. You can return to Discover at any time.',
+            style: TextStyle(
+              color: Md3Colors.muted,
+              fontSize: 14,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: _openSearch,
+                icon: const Icon(Icons.search_rounded, size: 18),
+                label: const Text('Search'),
+              ),
+              TextButton.icon(
+                onPressed: hasPopularMovies
+                    ? () => _openPopular(CuratedMovieListPurpose.popularMovies)
+                    : null,
+                icon: const Icon(Icons.movie_outlined, size: 18),
+                label: const Text('Popular Movies'),
+              ),
+              TextButton.icon(
+                onPressed: hasPopularTv
+                    ? () => _openPopular(CuratedMovieListPurpose.popularTv)
+                    : null,
+                icon: const Icon(Icons.tv_rounded, size: 18),
+                label: const Text('Popular TV'),
+              ),
+            ],
           ),
         ],
       ),
@@ -1031,12 +1242,14 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   }
 
   List<Movie> _buildStarterPool(MoviesState moviesState) {
-    if (moviesState.starterDeckMovies.isNotEmpty) {
+    if (!_isContinuous && moviesState.starterDeckMovies.isNotEmpty) {
       return _balanceByEraAndType(moviesState.starterDeckMovies);
     }
 
     final lists = moviesState.externalMoviesLists;
     final sourceBuckets = <List<Movie>>[
+      if (_isContinuous && moviesState.starterDeckMovies.isNotEmpty)
+        moviesState.starterDeckMovies,
       MovieListCurator.moviesForPurpose(
         lists,
         CuratedMovieListPurpose.popularMovies,
@@ -1208,6 +1421,9 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     setState(() {
       _expandedSynopsisMovieId = null;
       isSavingRating = false;
+      if (_isContinuous) {
+        _sessionRatedCount++;
+      }
     });
     _resetCandidateViewport();
 
@@ -1220,6 +1436,13 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       _expandedSynopsisMovieId = null;
     });
     _resetCandidateViewport();
+  }
+
+  void _finishContinuous() {
+    if (isSavingRating) {
+      return;
+    }
+    widget.onFinished();
   }
 
   Future<void> _finishOnboarding() async {
@@ -1312,9 +1535,26 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
 
     setState(() {
       isRetryingStarterDeck = true;
+      _candidateLoadError = null;
     });
 
     try {
+      if (_isContinuous) {
+        final response = await serviceAgent.getStarterDeck(perBucket: 20);
+        final decodedBody = json.decode(response.body);
+        if (response.statusCode < 200 ||
+            response.statusCode >= 300 ||
+            decodedBody is! Iterable) {
+          throw const FormatException('Rating candidate response was invalid.');
+        }
+
+        final movies = decodedBody
+            .map((model) => Movie.fromJson(Map<String, dynamic>.from(model)))
+            .toList();
+        moviesState.setStarterDeckMovies(movies);
+        return;
+      }
+
       final response = await serviceAgent.getMoviesLists(userId);
       final decodedBody = json.decode(response.body);
       if (response.statusCode < 200 ||
@@ -1334,6 +1574,12 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       }
     } catch (error) {
       debugPrint('Starter deck retry failed: $error');
+      if (_isContinuous && mounted) {
+        setState(() {
+          _candidateLoadError =
+              'MovieDiary could not refresh rating picks. Check your connection and try again.';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -1346,6 +1592,37 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   void _openLogin() {
     Navigator.of(context).push(
       RouteHelper.createRoute(() => const Login()),
+    );
+  }
+
+  void _openSearch() {
+    Navigator.of(context).push(
+      RouteHelper.createRoute(() => const SearchStandalonePage()),
+    );
+  }
+
+  void _openPopular(CuratedMovieListPurpose purpose) {
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final list = MovieListCurator.listForPurpose(
+      moviesState.externalMoviesLists,
+      purpose,
+    );
+
+    if (list == null || MovieListCurator.isStalePopularSource(list)) {
+      MSnackBar.showSnackBar(
+        'That TMDb popular list is unavailable right now.',
+        false,
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      RouteHelper.createRoute(
+        () => MoviesListPage(
+          moviesList: list,
+          backTooltip: 'Back to Rate more',
+        ),
+      ),
     );
   }
 

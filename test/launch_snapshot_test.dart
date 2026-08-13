@@ -179,11 +179,8 @@ void main() {
       find.text("You're offline. Your saved movies are still here."),
       findsOneWidget,
     );
-    expect(find.text('Your taste profile'), findsOneWidget);
-    expect(
-      find.text('Ready · improves as you rate more'),
-      findsOneWidget,
-    );
+    expect(find.text('Your MovieDNA'), findsOneWidget);
+    expect(find.text('Early read · 11 ratings'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

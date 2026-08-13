@@ -472,6 +472,21 @@ class MyMoviesState extends State<MyMovies> {
     }
   }
 
+  void _openWatchlistFromDiscover() {
+    if (selectedNavigationIndex == 2) {
+      _myMoviesKey.currentState?.showWatchlist();
+      return;
+    }
+
+    selectNavigationTab(2);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || selectedNavigationIndex != 2) {
+        return;
+      }
+      _myMoviesKey.currentState?.showWatchlist();
+    });
+  }
+
   Future<void> _startRatingFromLibrary() async {
     final userState = Provider.of<UserState>(context, listen: false);
     await userState.setOnboardingStage(OnboardingStage.rating);
@@ -489,6 +504,7 @@ class MyMoviesState extends State<MyMovies> {
           isRefreshing: _refreshInFlight,
           onRetry: _refreshRemoteData,
           onOpenLists: () => selectNavigationTab(3),
+          onOpenWatchlist: _openWatchlistFromDiscover,
         ),
       1 => SearchPage(
           key: _searchKey,

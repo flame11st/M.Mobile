@@ -89,6 +89,176 @@ void main() {
   });
 
   testWidgets(
+      'continuous mode opens an unrated candidate without rewriting completion',
+      (tester) async {
+    final states = await _statesWithRatings(
+      50,
+      onboardingStage: OnboardingStage.completed,
+    );
+    states.movies.setStarterDeckMovies([
+      _movie(id: 'continuous-a', movieRate: MovieRate.notRated),
+      _movie(id: 'continuous-b', movieRate: MovieRate.notRated),
+    ]);
+    var finished = false;
+
+    await _pumpWizard(
+      tester,
+      states,
+      mode: RatingFlowMode.continuous,
+      onFinished: () => finished = true,
+    );
+
+    expect(find.text('Rate more'), findsOneWidget);
+    expect(find.text('Movie continuous-a'), findsOneWidget);
+    expect(find.text('Taste profile ready'), findsNothing);
+    expect(find.text('MovieDNA is based on 50 ratings.'), findsOneWidget);
+    expect(states.user.onboardingStage, OnboardingStage.completed);
+
+    await tester.tap(find.text('Liked'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('Movie continuous-b'), findsOneWidget);
+    expect(find.text('1 rated this session'), findsOneWidget);
+    expect(states.user.onboardingStage, OnboardingStage.completed);
+
+    await tester.tap(find.text('Done'));
+    await tester.pump();
+    expect(finished, isTrue);
+    expect(states.user.onboardingStage, OnboardingStage.completed);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    states.movies.dispose();
+  });
+
+  testWidgets('continuous skip paths do not count or repeat in-session',
+      (tester) async {
+    final states = await _statesWithRatings(
+      10,
+      onboardingStage: OnboardingStage.completed,
+    );
+    addTearDown(states.movies.dispose);
+    states.movies.setStarterDeckMovies([
+      _movie(id: 'skip-a', movieRate: MovieRate.notRated),
+      _movie(id: 'skip-b', movieRate: MovieRate.notRated),
+      _movie(id: 'skip-c', movieRate: MovieRate.notRated),
+    ]);
+
+    await _pumpWizard(
+      tester,
+      states,
+      mode: RatingFlowMode.continuous,
+    );
+
+    await tester.tap(find.text("Haven't seen it"));
+    await tester.pump();
+    expect(find.text('Movie skip-b'), findsOneWidget);
+    expect(find.text('0 rated this session'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Skip this title'));
+    await tester.pump();
+    expect(find.text('Movie skip-c'), findsOneWidget);
+    expect(find.text('Movie skip-a'), findsNothing);
+    expect(find.text('Movie skip-b'), findsNothing);
+    expect(find.text('0 rated this session'), findsOneWidget);
+    expect(states.user.onboardingStage, OnboardingStage.completed);
+  });
+
+  testWidgets('continuous ready accounts always enter an eligible candidate',
+      (tester) async {
+    for (final count in const [10, 50, 200]) {
+      final states = await _statesWithRatings(
+        count,
+        onboardingStage: OnboardingStage.completed,
+      );
+      states.movies.setStarterDeckMovies([
+        _movie(id: 'ready-$count', movieRate: MovieRate.notRated),
+      ]);
+
+      await _pumpWizard(
+        tester,
+        states,
+        mode: RatingFlowMode.continuous,
+      );
+
+      expect(find.text('Movie ready-$count'), findsOneWidget);
+      expect(find.text('Taste profile ready'), findsNothing);
+      expect(states.user.onboardingStage, OnboardingStage.completed);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      states.movies.dispose();
+    }
+  });
+
+  testWidgets('continuous exhausted state is truthful and escapable',
+      (tester) async {
+    final states = await _statesWithRatings(
+      200,
+      onboardingStage: OnboardingStage.completed,
+    );
+    addTearDown(states.movies.dispose);
+    states.movies.markStarterDeckRequestFinished();
+    states.movies.markMoviesListsRequestFinished();
+
+    await _pumpWizard(
+      tester,
+      states,
+      mode: RatingFlowMode.continuous,
+    );
+
+    expect(find.text('No unrated picks ready'), findsOneWidget);
+    expect(find.text('Retry unrated picks'), findsOneWidget);
+    expect(find.text('Search'), findsOneWidget);
+    expect(find.text('Popular Movies'), findsOneWidget);
+    expect(find.text('Popular TV'), findsOneWidget);
+    expect(find.text('Done for now'), findsOneWidget);
+    expect(find.text('Taste profile ready'), findsNothing);
+    expect(states.user.onboardingStage, OnboardingStage.completed);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('continuous UI stays lightweight on medium and large phones',
+      (tester) async {
+    final states = await _statesWithRatings(
+      50,
+      onboardingStage: OnboardingStage.completed,
+    );
+    addTearDown(states.movies.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    states.movies.setStarterDeckMovies([
+      _movie(
+        id: 'responsive-continuous',
+        movieRate: MovieRate.notRated,
+        overview: List.filled(
+          4,
+          'A useful synopsis remains readable while optional rating controls stay within reach.',
+        ).join(' '),
+      ),
+    ]);
+
+    for (final size in const [Size(390, 844), Size(430, 932)]) {
+      for (final scale in const [1.0, 1.3]) {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.binding.setSurfaceSize(size);
+        await _pumpWizard(
+          tester,
+          states,
+          mode: RatingFlowMode.continuous,
+          textScale: scale,
+          viewportSize: size,
+        );
+
+        expect(find.text('Rate more'), findsOneWidget);
+        expect(find.byTooltip('Skip this title'), findsOneWidget);
+        expect(find.text('Done'), findsOneWidget);
+        expect(find.text('0 rated this session'), findsOneWidget);
+        expect(find.byKey(const Key('rating-action-tray')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+    }
+  });
+
+  testWidgets(
       'process recreation excludes rated movies from a fresh starter deck',
       (tester) async {
     final states = await _statesWithRatings(1);
@@ -300,18 +470,21 @@ void main() {
   });
 }
 
-Future<_TestStates> _statesWithRatings(int count) async {
+Future<_TestStates> _statesWithRatings(
+  int count, {
+  String onboardingStage = OnboardingStage.rating,
+}) async {
   FlutterSecureStorage.setMockInitialValues({
     'token': 'guest-access',
     'refreshToken': 'guest-refresh',
     'userId': 'guest-onboarding-test',
     'isIncognitoMode': 'true',
-    'onboardingStage': OnboardingStage.rating,
+    'onboardingStage': onboardingStage,
   });
   const storage = FlutterSecureStorage();
   final user = UserState(storage: storage);
   await user.initialization;
-  await user.setOnboardingStage(OnboardingStage.rating);
+  await user.setOnboardingStage(onboardingStage);
   final movies = MoviesState(storage: storage);
   await movies.cacheInitialization;
   movies.setInitialUserMovies([
@@ -329,6 +502,7 @@ Future<void> _pumpWizard(
   VoidCallback? onExitStarted,
   VoidCallback? onExitCompleted,
   WidgetBuilder? recommendationsBuilder,
+  RatingFlowMode mode = RatingFlowMode.onboarding,
   double textScale = 1,
   Size? viewportSize,
 }) async {
@@ -352,6 +526,7 @@ Future<void> _pumpWizard(
         home: RepaintBoundary(
           key: const Key('onboarding-golden'),
           child: OnboardingWizardPage(
+            mode: mode,
             onFinished: onFinished ?? () {},
             onExitStarted: onExitStarted,
             onExitCompleted: onExitCompleted,

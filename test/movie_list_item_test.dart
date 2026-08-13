@@ -107,6 +107,74 @@ void main() {
     semanticsHandle.dispose();
   });
 
+  testWidgets('watchlist action aligns with the content column at normal width',
+      (tester) async {
+    final states = await _testStates();
+    addTearDown(states.movies.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+
+    await _pumpRow(
+      tester,
+      states,
+      movieId: 'watchlist',
+      mode: MovieCardMode.watchlist,
+      textScale: 1,
+    );
+
+    final titleLeft = tester.getTopLeft(find.text('The Matrix')).dx;
+    final actionLeft = tester
+        .getTopLeft(find.byKey(const Key('movie-card-mark-watched-action')))
+        .dx;
+    expect(actionLeft, closeTo(titleLeft, 0.5));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('row action sheet dismisses by scrim close back and drag',
+      (tester) async {
+    final states = await _testStates();
+    addTearDown(states.movies.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+
+    Future<void> openActions() async {
+      await _pumpRow(
+        tester,
+        states,
+        movieId: 'browse',
+        mode: MovieCardMode.browse,
+        textScale: 1,
+      );
+      await tester.tap(find.byTooltip('Movie actions'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Md3BottomSheetSurface), findsOneWidget);
+    }
+
+    await openActions();
+    await tester.tapAt(const Offset(8, 8));
+    await tester.pumpAndSettle();
+    expect(find.byType(Md3BottomSheetSurface), findsNothing);
+
+    await openActions();
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Md3BottomSheetSurface), findsNothing);
+
+    await openActions();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(Md3BottomSheetSurface), findsNothing);
+
+    await openActions();
+    await tester.drag(
+      find.byKey(const Key('md3-bottom-sheet-drag-handle')),
+      const Offset(0, 96),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(Md3BottomSheetSurface), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('browse row adds directly to an existing personal list',
       (tester) async {
     final states = await _testStates();

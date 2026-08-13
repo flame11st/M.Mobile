@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
+import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Variables/variables.dart';
@@ -12,6 +13,7 @@ import 'Providers/movies_state.dart';
 import 'Providers/user_state.dart';
 import 'Shared/m_movies_animated_list.dart';
 import 'Shared/md3_ui.dart';
+import 'movie_list_item.dart';
 
 class MovieList extends StatefulWidget {
   final VoidCallback onOpenDiscover;
@@ -39,51 +41,76 @@ class MovieListState extends State<MovieList>
   final _watchlistScrollController = ScrollController();
   final _viewedScrollController = ScrollController();
   final _filterScrollController = ScrollController();
+  final _scaffoldKey = GlobalKey();
   int _activeTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(vsync: this, length: 2)
-      ..addListener(_syncActiveTab);
+      ..addListener(_syncTabProgress);
+    tabController.animation?.addListener(_syncTabProgress);
   }
 
   @override
   void dispose() {
     AdManager.hideBanner();
-    tabController
-      ..removeListener(_syncActiveTab)
-      ..dispose();
+    tabController.removeListener(_syncTabProgress);
+    tabController.animation?.removeListener(_syncTabProgress);
+    tabController.dispose();
     _watchlistScrollController.dispose();
     _viewedScrollController.dispose();
     _filterScrollController.dispose();
     super.dispose();
   }
 
-  void _syncActiveTab() {
-    final nextIndex = tabController.index;
+  void _syncTabProgress() {
+    if (!mounted) {
+      return;
+    }
+
+    final animationValue =
+        tabController.animation?.value ?? tabController.index.toDouble();
+    final nextIndex = tabController.indexIsChanging
+        ? tabController.index
+        : animationValue >= 0.5
+            ? 1
+            : 0;
+    _setActiveTab(nextIndex);
+  }
+
+  void _setActiveTab(int nextIndex) {
     if (nextIndex == _activeTabIndex || !mounted) {
       return;
     }
 
     setState(() => _activeTabIndex = nextIndex);
     Provider.of<MoviesState>(context, listen: false)
-        .setCurrentTabIndex(nextIndex);
+        .setCurrentTabIndex(nextIndex, notify: false);
   }
 
   void _selectTab(int index) {
-    if (index == _activeTabIndex) {
+    final animationValue =
+        tabController.animation?.value ?? tabController.index.toDouble();
+    final isSettledOnTarget = !tabController.indexIsChanging &&
+        tabController.index == index &&
+        (animationValue - index).abs() < 0.001;
+
+    if (isSettledOnTarget) {
       unawaited(handleActiveTabTap());
       return;
     }
 
-    setState(() => _activeTabIndex = index);
-    Provider.of<MoviesState>(context, listen: false).setCurrentTabIndex(index);
+    _setActiveTab(index);
     tabController.animateTo(
       index,
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
     );
+  }
+
+  void showWatchlist() {
+    _selectTab(0);
   }
 
   Future<void> handleActiveTabTap() async {
@@ -101,11 +128,26 @@ class MovieListState extends State<MovieList>
     );
   }
 
+  Widget _buildLibraryItem(
+    Movie movie,
+    Animation<double> animation, {
+    required MovieCardMode mode,
+  }) {
+    return SizeTransition(
+      key: ValueKey<String>('library-${mode.name}-${movie.id}'),
+      sizeFactor: animation,
+      child: MovieListItem(
+        movie: movie,
+        shouldRequestReview: true,
+        mode: mode,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final globalKey = GlobalKey();
     if (ModalRoute.of(context)?.isCurrent ?? true) {
-      MyGlobals.activeKey = globalKey;
+      MyGlobals.activeKey = _scaffoldKey;
     }
 
     final moviesState = Provider.of<MoviesState>(context);
@@ -129,7 +171,7 @@ class MovieListState extends State<MovieList>
     final showRefreshBanner = widget.refreshError != null && hasCachedLibrary;
 
     return Scaffold(
-      key: globalKey,
+      key: _scaffoldKey,
       resizeToAvoidBottomInset: false,
       backgroundColor: Md3Colors.background,
       body: SafeArea(
@@ -240,12 +282,15 @@ class MovieListState extends State<MovieList>
     MoviesState moviesState,
     List<Movie> allViewedMovies,
   ) {
+    final advancedViewedMovies = allViewedMovies
+        .where(moviesState.matchesViewedAdvancedFilters)
+        .toList(growable: false);
     final counts = <int, int>{
       MovieRate.liked: 0,
       MovieRate.okay: 0,
       MovieRate.notLiked: 0,
     };
-    for (final movie in allViewedMovies) {
+    for (final movie in advancedViewedMovies) {
       if (counts.containsKey(movie.movieRate)) {
         counts[movie.movieRate] = counts[movie.movieRate]! + 1;
       }
@@ -254,58 +299,95 @@ class MovieListState extends State<MovieList>
     final selectedRates = moviesState.selectedRates;
     final allSelected = selectedRates.length == 3;
 
-    return Semantics(
-      container: true,
-      label: 'Viewed opinion filters',
-      child: SingleChildScrollView(
-        key: const Key('viewed-filter-scroll'),
-        controller: _filterScrollController,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            _ViewedFilterChip(
-              key: const Key('viewed-filter-all'),
-              label: 'All',
-              count: allViewedMovies.length,
-              selected: allSelected,
-              selectedBackground: Md3Colors.primary,
-              selectedForeground: Colors.white,
-              onTap: moviesState.selectAllViewedRates,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              key: const Key('viewed-filter-scroll'),
+              controller: _filterScrollController,
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _ViewedFilterChip(
+                    key: const Key('viewed-filter-all'),
+                    label: 'All',
+                    count: advancedViewedMovies.length,
+                    selected: allSelected,
+                    selectedBackground: Md3Colors.primary,
+                    selectedForeground: Colors.white,
+                    onTap: moviesState.selectAllViewedRates,
+                  ),
+                  const SizedBox(width: 8),
+                  _ViewedFilterChip(
+                    key: const Key('viewed-filter-liked'),
+                    label: 'Liked',
+                    count: counts[MovieRate.liked]!,
+                    selected:
+                        !allSelected && selectedRates.contains(MovieRate.liked),
+                    selectedBackground: const Color(0xffe8f4ed),
+                    selectedForeground: Md3Colors.success,
+                    onTap: moviesState.changeLikedOnlyFilter,
+                  ),
+                  const SizedBox(width: 8),
+                  _ViewedFilterChip(
+                    key: const Key('viewed-filter-okay'),
+                    label: 'Okay',
+                    count: counts[MovieRate.okay]!,
+                    selected:
+                        !allSelected && selectedRates.contains(MovieRate.okay),
+                    selectedBackground: const Color(0xfffff4e4),
+                    selectedForeground: Md3Colors.warning,
+                    onTap: moviesState.changeOkayOnlyFilter,
+                  ),
+                  const SizedBox(width: 8),
+                  _ViewedFilterChip(
+                    key: const Key('viewed-filter-disliked'),
+                    label: 'Disliked',
+                    count: counts[MovieRate.notLiked]!,
+                    selected: !allSelected &&
+                        selectedRates.contains(MovieRate.notLiked),
+                    selectedBackground: const Color(0xfffceaec),
+                    selectedForeground: Md3Colors.danger,
+                    onTap: moviesState.changeNotLikedOnlyFilter,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
-            _ViewedFilterChip(
-              key: const Key('viewed-filter-liked'),
-              label: 'Liked',
-              count: counts[MovieRate.liked]!,
-              selected: !allSelected && selectedRates.contains(MovieRate.liked),
-              selectedBackground: const Color(0xffe8f4ed),
-              selectedForeground: Md3Colors.success,
-              onTap: moviesState.changeLikedOnlyFilter,
-            ),
-            const SizedBox(width: 8),
-            _ViewedFilterChip(
-              key: const Key('viewed-filter-okay'),
-              label: 'Okay',
-              count: counts[MovieRate.okay]!,
-              selected: !allSelected && selectedRates.contains(MovieRate.okay),
-              selectedBackground: const Color(0xfffff4e4),
-              selectedForeground: Md3Colors.warning,
-              onTap: moviesState.changeOkayOnlyFilter,
-            ),
-            const SizedBox(width: 8),
-            _ViewedFilterChip(
-              key: const Key('viewed-filter-disliked'),
-              label: 'Disliked',
-              count: counts[MovieRate.notLiked]!,
-              selected:
-                  !allSelected && selectedRates.contains(MovieRate.notLiked),
-              selectedBackground: const Color(0xfffceaec),
-              selectedForeground: Md3Colors.danger,
-              onTap: moviesState.changeNotLikedOnlyFilter,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          _ViewedAdvancedFilterButton(
+            key: const Key('viewed-advanced-filters'),
+            activeCount: moviesState.viewedAdvancedFilterCount,
+            summary: moviesState.viewedAdvancedFilterSummary,
+            onTap: () => unawaited(_showViewedAdvancedFilters(moviesState)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showViewedAdvancedFilters(MoviesState moviesState) async {
+    await showMd3BottomSheet<void>(
+      context: context,
+      useSafeArea: false,
+      builder: (sheetContext) => _ViewedAdvancedFiltersSheet(
+        genres: moviesState.viewedGenreOptions,
+        initialMediaType: moviesState.viewedMediaTypeFilter,
+        initialGenres: moviesState.viewedGenreFilters,
+        viewedCount: moviesState.userMovies
+            .where((movie) => MovieRate.isViewed(movie.movieRate))
+            .length,
+        onApply: ({
+          required MovieType? mediaType,
+          required Set<String> genres,
+        }) {
+          moviesState.applyViewedAdvancedFilters(
+            mediaType: mediaType,
+            genres: genres,
+          );
+        },
       ),
     );
   }
@@ -425,7 +507,17 @@ class MovieListState extends State<MovieList>
     }
     if (moviesState.watchlistMovies.isNotEmpty) {
       return MMoviesAnimatedList(
-        buildItemFunction: moviesState.buildItem,
+        buildItemFunction: (
+          Movie movie,
+          Animation<double> animation, {
+          bool isPremium = false,
+          required BuildContext context,
+        }) =>
+            _buildLibraryItem(
+          movie,
+          animation,
+          mode: MovieCardMode.watchlist,
+        ),
         isPremium: userState.isPremium,
         listKey: moviesState.watchlistKey,
         movies: moviesState.watchlistMovies,
@@ -466,7 +558,17 @@ class MovieListState extends State<MovieList>
     }
     if (moviesState.viewedMovies.isNotEmpty) {
       return MMoviesAnimatedList(
-        buildItemFunction: moviesState.buildItem,
+        buildItemFunction: (
+          Movie movie,
+          Animation<double> animation, {
+          bool isPremium = false,
+          required BuildContext context,
+        }) =>
+            _buildLibraryItem(
+          movie,
+          animation,
+          mode: MovieCardMode.viewed,
+        ),
         isPremium: userState.isPremium,
         listKey: moviesState.viewedListKey,
         movies: moviesState.viewedMovies,
@@ -537,14 +639,21 @@ class MovieListState extends State<MovieList>
 
   Widget _buildFilteredEmptyState(MoviesState moviesState) {
     final selectedRates = moviesState.selectedRates;
-    final label = selectedRates.length == 1
+    final opinionLabel = selectedRates.length == 1
         ? switch (selectedRates.first) {
             MovieRate.liked => 'Liked',
             MovieRate.okay => 'Okay',
             MovieRate.notLiked => 'Disliked',
             _ => 'matching',
           }
-        : 'matching';
+        : 'Viewed';
+    final hasAdvancedFilters = moviesState.hasViewedAdvancedFilters;
+    final title = hasAdvancedFilters
+        ? 'No Viewed titles match'
+        : 'No $opinionLabel ratings yet';
+    final body = hasAdvancedFilters
+        ? '$opinionLabel titles do not match ${moviesState.viewedAdvancedFilterSummary}. Clear the advanced filters or choose another opinion.'
+        : 'Choose another opinion or return to your full Viewed history.';
 
     return _buildTopAnchoredState(
       scrollController: _viewedScrollController,
@@ -574,7 +683,7 @@ class MovieListState extends State<MovieList>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No $label ratings yet',
+                  title,
                   style: const TextStyle(
                     color: Md3Colors.text,
                     fontSize: 22,
@@ -583,9 +692,9 @@ class MovieListState extends State<MovieList>
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Choose another opinion or return to your full Viewed history.',
-                  style: TextStyle(
+                Text(
+                  body,
+                  style: const TextStyle(
                     color: Md3Colors.muted,
                     fontSize: 15,
                     height: 1.44,
@@ -594,17 +703,23 @@ class MovieListState extends State<MovieList>
                 ),
                 const SizedBox(height: 4),
                 TextButton.icon(
-                  key: const Key('viewed-filter-show-all'),
+                  key: Key(
+                    hasAdvancedFilters
+                        ? 'viewed-filter-clear-advanced'
+                        : 'viewed-filter-show-all',
+                  ),
                   style: TextButton.styleFrom(
                     minimumSize: const Size(44, 44),
                     padding: const EdgeInsets.symmetric(horizontal: 0),
                     foregroundColor: Md3Colors.primary,
                   ),
-                  onPressed: moviesState.selectAllViewedRates,
+                  onPressed: hasAdvancedFilters
+                      ? moviesState.clearViewedAdvancedFilters
+                      : moviesState.selectAllViewedRates,
                   icon: const Icon(Icons.filter_list_off_rounded, size: 20),
-                  label: const Text(
-                    'Show all',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  label: Text(
+                    hasAdvancedFilters ? 'Clear advanced filters' : 'Show all',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -796,6 +911,435 @@ class _ViewedFilterChip extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ViewedAdvancedFilterButton extends StatelessWidget {
+  final int activeCount;
+  final String summary;
+  final VoidCallback onTap;
+
+  const _ViewedAdvancedFilterButton({
+    super.key,
+    required this.activeCount,
+    required this.summary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final active = activeCount > 0;
+    final foreground = active ? Md3Colors.primary : Md3Colors.text;
+    final semanticsLabel = active
+        ? 'Advanced filters, $activeCount active, $summary'
+        : 'Advanced filters, none active';
+
+    return Semantics(
+      button: true,
+      selected: active,
+      label: semanticsLabel,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: semanticsLabel,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                height: 40,
+                width: 40,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.symmetric(vertical: 2),
+                decoration: BoxDecoration(
+                  color: active ? Md3Colors.primarySoft : Md3Colors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: active ? Md3Colors.primary : Md3Colors.border,
+                  ),
+                  boxShadow: active
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x100f253d),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(Icons.tune_rounded, size: 18, color: foreground),
+                    if (active)
+                      Positioned(
+                        right: -6,
+                        top: -6,
+                        child: Container(
+                          key: const Key('viewed-advanced-filter-count'),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: Md3Colors.primary,
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(color: Md3Colors.surface),
+                          ),
+                          child: Text(
+                            '$activeCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewedAdvancedFiltersSheet extends StatefulWidget {
+  final List<String> genres;
+  final MovieType? initialMediaType;
+  final Set<String> initialGenres;
+  final int viewedCount;
+  final void Function({
+    required MovieType? mediaType,
+    required Set<String> genres,
+  }) onApply;
+
+  const _ViewedAdvancedFiltersSheet({
+    required this.genres,
+    required this.initialMediaType,
+    required this.initialGenres,
+    required this.viewedCount,
+    required this.onApply,
+  });
+
+  @override
+  State<_ViewedAdvancedFiltersSheet> createState() =>
+      _ViewedAdvancedFiltersSheetState();
+}
+
+class _ViewedAdvancedFiltersSheetState
+    extends State<_ViewedAdvancedFiltersSheet> {
+  MovieType? _mediaType;
+  late final Set<String> _genres;
+
+  @override
+  void initState() {
+    super.initState();
+    _mediaType = widget.initialMediaType;
+    _genres = Set<String>.of(widget.initialGenres);
+  }
+
+  void _toggleGenre(String genre) {
+    setState(() {
+      if (!_genres.add(genre)) {
+        _genres.remove(genre);
+      }
+    });
+  }
+
+  void _clearDraft() {
+    setState(() {
+      _mediaType = null;
+      _genres.clear();
+    });
+  }
+
+  void _apply() {
+    widget.onApply(
+      mediaType: _mediaType,
+      genres: Set<String>.of(_genres),
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final availableHeight = mediaQuery.size.height -
+        mediaQuery.viewPadding.top -
+        mediaQuery.viewPadding.bottom;
+    final sheetHeight = (availableHeight * 0.82).clamp(360.0, 720.0).toDouble();
+    final hasDraftFilters = _mediaType != null || _genres.isNotEmpty;
+
+    return Container(
+      key: const Key('viewed-advanced-filter-sheet'),
+      height: sheetHeight,
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      decoration: BoxDecoration(
+        color: Md3Colors.surface,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Md3Colors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x260f253d),
+            blurRadius: 28,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Md3Colors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Advanced filters',
+                          style: TextStyle(
+                            color: Md3Colors.text,
+                            fontSize: 22,
+                            height: 1.23,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Refine ${widget.viewedCount} Viewed titles. Filters reset when MovieDiary restarts.',
+                          style: const TextStyle(
+                            color: Md3Colors.muted,
+                            fontSize: 14,
+                            height: 1.4,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    key: const Key('viewed-advanced-filter-close'),
+                    tooltip: 'Close without applying',
+                    style: IconButton.styleFrom(
+                      foregroundColor: Md3Colors.muted,
+                      minimumSize: const Size(44, 44),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            Expanded(
+              child: SingleChildScrollView(
+                key: const Key('viewed-advanced-filter-scroll'),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Media type',
+                      style: TextStyle(
+                        color: Md3Colors.text,
+                        fontSize: 16,
+                        height: 1.25,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _ViewedAdvancedChoice(
+                          key: const Key('viewed-media-all'),
+                          label: 'All',
+                          icon: Icons.auto_awesome_mosaic_outlined,
+                          selected: _mediaType == null,
+                          onTap: () => setState(() => _mediaType = null),
+                        ),
+                        _ViewedAdvancedChoice(
+                          key: const Key('viewed-media-movies'),
+                          label: 'Movies',
+                          icon: Icons.movie_outlined,
+                          selected: _mediaType == MovieType.movie,
+                          onTap: () =>
+                              setState(() => _mediaType = MovieType.movie),
+                        ),
+                        _ViewedAdvancedChoice(
+                          key: const Key('viewed-media-tv'),
+                          label: 'TV',
+                          icon: Icons.tv_rounded,
+                          selected: _mediaType == MovieType.tv,
+                          onTap: () =>
+                              setState(() => _mediaType = MovieType.tv),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Genres',
+                      style: TextStyle(
+                        color: Md3Colors.text,
+                        fontSize: 16,
+                        height: 1.25,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Choose any that fit. A title can match any selected genre.',
+                      style: TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 14,
+                        height: 1.4,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (widget.genres.isEmpty)
+                      Container(
+                        key: const Key('viewed-genres-empty'),
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Md3Colors.surfaceMuted,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Md3Colors.border),
+                        ),
+                        child: const Text(
+                          'No genre details are available in Viewed yet.',
+                          style: TextStyle(
+                            color: Md3Colors.muted,
+                            fontSize: 14,
+                            height: 1.4,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final genre in widget.genres)
+                            _ViewedAdvancedChoice(
+                              key: ValueKey<String>(
+                                'viewed-genre-${genre.toLowerCase()}',
+                              ),
+                              label: genre,
+                              selected: _genres.contains(genre),
+                              onTap: () => _toggleGenre(genre),
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              decoration: const BoxDecoration(
+                color: Md3Colors.surface,
+                border: Border(top: BorderSide(color: Md3Colors.border)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const Key('viewed-advanced-filter-clear'),
+                      onPressed: hasDraftFilters ? _clearDraft : null,
+                      child: const Text('Clear all'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      key: const Key('viewed-advanced-filter-apply'),
+                      onPressed: _apply,
+                      child: const Text('Apply filters'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewedAdvancedChoice extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ViewedAdvancedChoice({
+    super.key,
+    required this.label,
+    this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? Md3Colors.primary : Md3Colors.text;
+
+    return FilterChip(
+      label: Text(label),
+      avatar: icon == null ? null : Icon(icon, size: 18),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      showCheckmark: icon == null,
+      checkmarkColor: Md3Colors.primary,
+      backgroundColor: Md3Colors.surface,
+      selectedColor: Md3Colors.primarySoft,
+      side: BorderSide(
+        color: selected ? Md3Colors.primary : Md3Colors.border,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      visualDensity: VisualDensity.standard,
+      labelStyle: TextStyle(
+        color: foreground,
+        fontSize: 14,
+        height: 1.2,
+        fontWeight: FontWeight.w700,
       ),
     );
   }

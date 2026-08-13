@@ -424,12 +424,13 @@ Future<T?> showMd3BottomSheet<T>({
   required WidgetBuilder builder,
   bool isDismissible = true,
   bool enableDrag = true,
+  bool useSafeArea = true,
 }) {
   FocusManager.instance.primaryFocus?.unfocus();
 
   return showModalBottomSheet<T>(
     context: context,
-    useSafeArea: true,
+    useSafeArea: useSafeArea,
     isScrollControlled: true,
     isDismissible: isDismissible,
     enableDrag: enableDrag,
@@ -453,6 +454,7 @@ Future<T?> showMd3BottomSheet<T>({
         padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
         child: Align(
           alignment: Alignment.bottomCenter,
+          heightFactor: 1,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: 640,
@@ -504,18 +506,83 @@ class Md3BottomSheetSurface extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (showDragHandle) ...[
-                Container(
-                  width: 36,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Md3Colors.border,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
+                const _Md3BottomSheetDragHandle(),
                 const SizedBox(height: 16),
               ],
               child,
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Md3BottomSheetDragHandle extends StatefulWidget {
+  const _Md3BottomSheetDragHandle();
+
+  @override
+  State<_Md3BottomSheetDragHandle> createState() =>
+      _Md3BottomSheetDragHandleState();
+}
+
+class _Md3BottomSheetDragHandleState extends State<_Md3BottomSheetDragHandle> {
+  static const _dismissDistance = 56.0;
+  double _downwardDrag = 0;
+  bool _dismissed = false;
+
+  void _handleDragStart(DragStartDetails details) {
+    _downwardDrag = 0;
+    _dismissed = false;
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    _downwardDrag = (_downwardDrag + details.delta.dy).clamp(
+      0,
+      double.infinity,
+    );
+    if (_downwardDrag >= _dismissDistance) {
+      _dismiss();
+    }
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    if ((details.primaryVelocity ?? 0) > 350) {
+      _dismiss();
+    }
+    _downwardDrag = 0;
+  }
+
+  void _dismiss() {
+    if (_dismissed || !mounted) {
+      return;
+    }
+    _dismissed = true;
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Drag down to close',
+      child: GestureDetector(
+        key: const Key('md3-bottom-sheet-drag-handle'),
+        behavior: HitTestBehavior.opaque,
+        onVerticalDragStart: _handleDragStart,
+        onVerticalDragUpdate: _handleDragUpdate,
+        onVerticalDragEnd: _handleDragEnd,
+        child: SizedBox(
+          width: 64,
+          height: 5,
+          child: Center(
+            child: Container(
+              width: 36,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Md3Colors.border,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
           ),
         ),
       ),

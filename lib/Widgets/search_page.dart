@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Helpers/rating_helper.dart';
+import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/movie_list_item.dart';
@@ -38,6 +39,7 @@ class SearchPage extends StatefulWidget {
   final bool showBottomNavigationClearance;
   final bool handlesBackNavigation;
   final VoidCallback? onExitRequested;
+  final MoviesList? originatingPersonalList;
   final MovieSearchFetcher? fetcher;
   final PopularSearchFetcher? suggestionFetcher;
   final SearchSuggestionStore? suggestionStore;
@@ -52,6 +54,7 @@ class SearchPage extends StatefulWidget {
     this.showBottomNavigationClearance = true,
     this.handlesBackNavigation = true,
     this.onExitRequested,
+    this.originatingPersonalList,
     this.fetcher,
     this.suggestionFetcher,
     this.suggestionStore,
@@ -70,6 +73,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class SearchPageState extends State<SearchPage> {
+  static const _contentTopGap = 16.0;
   static const _recentSearchesKey = 'movieDiaryRecentSuccessfulSearches';
   static const _popularSearchesKey = 'movieDiaryPopularSearches';
   static const _popularSearchesUpdatedAtKey =
@@ -94,6 +98,9 @@ class SearchPageState extends State<SearchPage> {
   DateTime? _lastSuggestionSuccessAt;
   DateTime? _lastSuggestionAttemptAt;
   Timer? _automaticSuggestionRetryTimer;
+  Timer? _keyboardDismissalBackGuardTimer;
+  bool _consumeBackAfterKeyboardDismissal = false;
+  bool _searchFieldWasFocused = false;
   int _suggestionRequestId = 0;
   int _automaticSuggestionRetryIndex = 0;
   int? _lastRememberedRequestId;
@@ -101,6 +108,8 @@ class SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     super.initState();
+    _searchFieldWasFocused = _focusNode.hasFocus;
+    _focusNode.addListener(_handleFocusChanged);
     _searchController = MovieSearchStateController(
       fetcher: widget.fetcher ?? _fetchSearch,
     )..addListener(_handleSearchStateChanged);
@@ -156,11 +165,13 @@ class SearchPageState extends State<SearchPage> {
   void dispose() {
     _suggestionRequestId += 1;
     _automaticSuggestionRetryTimer?.cancel();
+    _keyboardDismissalBackGuardTimer?.cancel();
     _appLifecycleListener.dispose();
     _searchController
       ..removeListener(_handleSearchStateChanged)
       ..dispose();
     _queryController.dispose();
+    _focusNode.removeListener(_handleFocusChanged);
     _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -178,6 +189,22 @@ class SearchPageState extends State<SearchPage> {
       statusCode: response.statusCode,
       body: response.body,
     );
+  }
+
+  void _handleFocusChanged() {
+    if (_searchFieldWasFocused && !_focusNode.hasFocus) {
+      _consumeBackAfterKeyboardDismissal = true;
+      _keyboardDismissalBackGuardTimer?.cancel();
+      _keyboardDismissalBackGuardTimer = Timer(
+        const Duration(milliseconds: 300),
+        () => _consumeBackAfterKeyboardDismissal = false,
+      );
+    }
+    _searchFieldWasFocused = _focusNode.hasFocus;
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<MovieSearchTransportResponse> _fetchPopularSearchSuggestions() async {
@@ -235,6 +262,9 @@ class SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final state = _searchController.state;
+    final isNested = widget.onExitRequested != null;
+    final keyboardVisible =
+        _focusNode.hasFocus || MediaQuery.viewInsetsOf(context).bottom > 0;
 
     final content = ColoredBox(
       color: Md3Colors.background,
@@ -244,25 +274,16 @@ class SearchPageState extends State<SearchPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Search',
-                style: TextStyle(
-                  color: Md3Colors.text,
-                  fontSize: 32,
-                  height: 1.19,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
+            _buildHeader(isNested: isNested),
             const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Find movies and TV shows to watch, rate, or save.',
-                style: TextStyle(
+                widget.originatingPersonalList == null
+                    ? 'Find movies and TV shows to watch, rate, or save.'
+                    : 'Add movies and TV shows to '
+                        '“${widget.originatingPersonalList!.name}”.',
+                style: const TextStyle(
                   color: Md3Colors.muted,
                   fontSize: 16,
                   height: 1.44,
@@ -282,7 +303,7 @@ class SearchPageState extends State<SearchPage> {
     }
 
     return PopScope(
-      canPop: false,
+      canPop: isNested && !keyboardVisible,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
           return;
@@ -290,6 +311,62 @@ class SearchPageState extends State<SearchPage> {
         _handleBack();
       },
       child: content,
+    );
+  }
+
+  Widget _buildHeader({required bool isNested}) {
+    const title = Text(
+      'Search',
+      style: TextStyle(
+        color: Md3Colors.text,
+        fontSize: 32,
+        height: 1.19,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -0.5,
+      ),
+    );
+
+    if (!isNested) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: title,
+      );
+    }
+
+    final destination = widget.originatingPersonalList?.name.trim();
+    final tooltip = destination == null || destination.isEmpty
+        ? 'Back'
+        : 'Back to $destination';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: IconButton(
+              key: const ValueKey('standalone-search-back'),
+              tooltip: tooltip,
+              style: IconButton.styleFrom(
+                backgroundColor: Md3Colors.surface,
+                foregroundColor: Md3Colors.primary,
+                minimumSize: const Size(48, 48),
+                maximumSize: const Size(48, 48),
+                padding: EdgeInsets.zero,
+                side: const BorderSide(color: Md3Colors.border),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: widget.onExitRequested,
+              icon: const Icon(Icons.arrow_back_rounded, size: 22),
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Expanded(child: title),
+        ],
+      ),
     );
   }
 
@@ -455,7 +532,12 @@ class SearchPageState extends State<SearchPage> {
       key: const ValueKey('search-landing'),
       controller: _scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        _contentTopGap,
+        16,
+        bottomPadding,
+      ),
       children: sections,
     );
   }
@@ -465,7 +547,7 @@ class SearchPageState extends State<SearchPage> {
       key: ValueKey('search-loading-${state.requestId}'),
       controller: _scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.fromLTRB(0, 10, 0, bottomPadding),
+      padding: EdgeInsets.fromLTRB(0, _contentTopGap, 0, bottomPadding),
       children: [
         Semantics(
           liveRegion: true,
@@ -486,7 +568,10 @@ class SearchPageState extends State<SearchPage> {
       key: ValueKey('search-results-${state.requestId}'),
       controller: _scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.only(top: 8, bottom: bottomPadding),
+      padding: EdgeInsets.only(
+        top: _contentTopGap,
+        bottom: bottomPadding,
+      ),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -504,6 +589,7 @@ class SearchPageState extends State<SearchPage> {
           MovieListItem(
             key: ValueKey('search-result-${movie.id}'),
             movie: movie,
+            preferredPersonalList: widget.originatingPersonalList,
           ),
       ],
     );
@@ -514,7 +600,12 @@ class SearchPageState extends State<SearchPage> {
       key: ValueKey('search-empty-${state.requestId}'),
       controller: _scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        _contentTopGap,
+        16,
+        bottomPadding,
+      ),
       children: [
         Md3Card(
           child: Column(
@@ -574,7 +665,12 @@ class SearchPageState extends State<SearchPage> {
       key: key,
       controller: _scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        _contentTopGap,
+        16,
+        bottomPadding,
+      ),
       children: [
         Md3Card(
           child: Column(
@@ -645,6 +741,22 @@ class SearchPageState extends State<SearchPage> {
   void _handleBack() {
     if (_focusNode.hasFocus || MediaQuery.viewInsetsOf(context).bottom > 0) {
       _focusNode.unfocus();
+      _consumeBackAfterKeyboardDismissal = false;
+      _keyboardDismissalBackGuardTimer?.cancel();
+      return;
+    }
+
+    // Some Android IMEs clear focus immediately before Flutter receives the
+    // route-pop callback. Consume that same Back event instead of letting it
+    // dismiss both the keyboard and this nested Search route.
+    if (_consumeBackAfterKeyboardDismissal) {
+      _consumeBackAfterKeyboardDismissal = false;
+      _keyboardDismissalBackGuardTimer?.cancel();
+      return;
+    }
+
+    if (widget.onExitRequested != null) {
+      widget.onExitRequested!.call();
       return;
     }
 
@@ -965,7 +1077,24 @@ class SearchPageState extends State<SearchPage> {
 }
 
 class SearchStandalonePage extends StatelessWidget {
-  const SearchStandalonePage({super.key});
+  final MoviesList? originatingPersonalList;
+  final MovieSearchFetcher? fetcher;
+  final PopularSearchFetcher? suggestionFetcher;
+  final SearchSuggestionStore? suggestionStore;
+  final List<Duration> automaticSuggestionRetryDelays;
+
+  const SearchStandalonePage({
+    super.key,
+    this.originatingPersonalList,
+    this.fetcher,
+    this.suggestionFetcher,
+    this.suggestionStore,
+    this.automaticSuggestionRetryDelays = const [
+      Duration(seconds: 8),
+      Duration(seconds: 30),
+      Duration(minutes: 2),
+    ],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -974,6 +1103,11 @@ class SearchStandalonePage extends StatelessWidget {
       resizeToAvoidBottomInset: true,
       body: SearchPage(
         showBottomNavigationClearance: false,
+        originatingPersonalList: originatingPersonalList,
+        fetcher: fetcher,
+        suggestionFetcher: suggestionFetcher,
+        suggestionStore: suggestionStore,
+        automaticSuggestionRetryDelays: automaticSuggestionRetryDelays,
         onExitRequested: () => Navigator.of(context).maybePop(),
       ),
     );

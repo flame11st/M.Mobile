@@ -44,6 +44,8 @@ class _MovieDiaryRootNavigationShellState
 
   @override
   Widget build(BuildContext context) {
+    final softwareKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return PopScope(
       canPop: widget.selectedIndex == 0,
       onPopInvokedWithResult: (didPop, result) => _handleBack(didPop),
@@ -61,15 +63,16 @@ class _MovieDiaryRootNavigationShellState
                 children: widget.tabs,
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: MoviesBottomNavigationBar(
-                selectedIndex: widget.selectedIndex,
-                onTabSelected: widget.onTabSelected,
+            if (!softwareKeyboardVisible)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: MoviesBottomNavigationBar(
+                  selectedIndex: widget.selectedIndex,
+                  onTabSelected: widget.onTabSelected,
+                ),
               ),
-            ),
           ],
         ),
       ),

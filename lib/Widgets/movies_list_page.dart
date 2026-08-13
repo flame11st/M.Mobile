@@ -18,8 +18,13 @@ import 'Shared/m_movies_animated_list.dart';
 
 class MoviesListPage extends StatefulWidget {
   final MoviesList moviesList;
+  final String? backTooltip;
 
-  const MoviesListPage({super.key, required this.moviesList});
+  const MoviesListPage({
+    super.key,
+    required this.moviesList,
+    this.backTooltip,
+  });
 
   @override
   State<StatefulWidget> createState() {
@@ -137,6 +142,37 @@ class MovieListPageState extends State<MoviesListPage> {
     MSnackBar.showSnackBar('Renamed to “$newName”.', true);
   }
 
+  Future<void> _openSearch() async {
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+
+    await Navigator.of(context).push(
+      RouteHelper.createRoute(
+        () => SearchStandalonePage(
+          originatingPersonalList: moviesList,
+        ),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    final listStillExists = moviesState.personalMoviesLists.any(
+      (list) => identical(list, moviesList),
+    );
+    if (!listStillExists) {
+      final removedListName = moviesList.name;
+      Navigator.of(context).pop();
+      MSnackBar.showSnackBar(
+        '“$removedListName” is no longer available.',
+        false,
+      );
+      return;
+    }
+
+    setState(() {});
+  }
+
   Widget getBody() {
     final bottomPadding = Md3NavigationMetrics.bottomMargin(context) + 24;
 
@@ -191,11 +227,7 @@ class MovieListPageState extends State<MoviesListPage> {
                   Md3PrimaryButton(
                     text: 'Search Movies or TV Shows',
                     icon: Icons.search_rounded,
-                    onPressed: () => Navigator.of(context).push(
-                      RouteHelper.createRoute(
-                        () => const SearchStandalonePage(),
-                      ),
-                    ),
+                    onPressed: _openSearch,
                   ),
                 ],
               ),
@@ -283,6 +315,14 @@ class MovieListPageState extends State<MoviesListPage> {
               backgroundColor: Md3Colors.background,
               foregroundColor: Md3Colors.text,
               elevation: 0,
+              automaticallyImplyLeading: widget.backTooltip == null,
+              leading: widget.backTooltip == null
+                  ? null
+                  : IconButton(
+                      tooltip: widget.backTooltip,
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
               title: headingField,
             ),
             body: Container(key: globalKey, child: getBody())));

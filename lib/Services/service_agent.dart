@@ -174,10 +174,17 @@ class ServiceAgent {
   }
 
   Future<RecommendationDiscoverySession?> createDiscoverySession(
-      String userId,
-      MovieType movieType,
-      RecommendationDiscoveryLevel discoveryLevel,
-      int pageSize) async {
+    String userId,
+    MovieType movieType,
+    RecommendationDiscoveryLevel discoveryLevel,
+    int pageSize, {
+    String? previousSessionId,
+    Iterable<String> excludedMovieIds = const [],
+  }) async {
+    final excludedIds = excludedMovieIds
+        .where((movieId) => movieId.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
     final response = await post(
         'Recommendations/CreateDiscoverySession',
         jsonEncode({
@@ -185,6 +192,9 @@ class ServiceAgent {
           'MovieType': movieType.index,
           'DiscoveryLevel': discoveryLevel.index,
           'PageSize': pageSize,
+          if (previousSessionId != null && previousSessionId.isNotEmpty)
+            'PreviousSessionId': previousSessionId,
+          if (excludedIds.isNotEmpty) 'ExcludedMovieIds': excludedIds,
         }));
 
     if (response.statusCode != 200) {

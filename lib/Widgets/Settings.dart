@@ -607,7 +607,7 @@ class SettingsState extends State<Settings> {
                   children: [
                     Text(
                       userState.isIncognitoMode
-                          ? 'Trying MovieDiary first'
+                          ? 'Using MovieDiary without an account'
                           : 'Signed in${userState.user != null && userState.user!.name.isNotEmpty ? ' as ${userState.user!.name}' : ''}',
                       style: const TextStyle(
                         color: Md3Colors.text,
@@ -619,7 +619,7 @@ class SettingsState extends State<Settings> {
                     const SizedBox(height: 6),
                     Text(
                       userState.isIncognitoMode
-                          ? 'You can keep rating movies without an account. Sign in when you want your Watchlist and Viewed history synced.'
+                          ? 'Ratings, Watchlist, and Viewed stay with this guest profile on this device. Sign in to sync them with your account.'
                           : (userState.user?.email.isNotEmpty ?? false)
                               ? userState.user!.email
                               : 'Your MovieDiary account is active on this device.',
@@ -731,6 +731,7 @@ class SettingsState extends State<Settings> {
     );
 
     final premiumField = Md3Card(
+      key: const Key('settingsPremiumCard'),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final useTrailingButton = constraints.maxWidth >= 480 &&
@@ -761,9 +762,9 @@ class SettingsState extends State<Settings> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Premium',
-                      style: TextStyle(
+                    Text(
+                      userState.isPremium ? 'Premium active' : 'Premium',
+                      style: const TextStyle(
                         color: Md3Colors.text,
                         fontSize: 16,
                         height: 1.31,
@@ -773,7 +774,7 @@ class SettingsState extends State<Settings> {
                     const SizedBox(height: 4),
                     Text(
                       userState.isPremium
-                          ? 'Premium is active on this device.'
+                          ? 'Ads are removed for this MovieDiary profile.'
                           : 'Support MovieDiary and remove ads.',
                       style: const TextStyle(
                         color: Md3Colors.muted,
@@ -787,16 +788,21 @@ class SettingsState extends State<Settings> {
             ],
           );
           final plansButton = SizedBox(
+            key: const Key('settingsPremiumAction'),
             width: useTrailingButton ? 124 : double.infinity,
             child: _buildTonalButton(
               context: context,
-              text: userState.isPremium ? 'Included' : 'View plans',
+              text: 'View plans',
               onPressed: () {
                 Navigator.of(context)
-                    .push(RouteHelper.createRoute(() => Premium()));
+                    .push(RouteHelper.createRoute(() => const Premium()));
               },
             ),
           );
+
+          if (userState.isPremium) {
+            return copy;
+          }
 
           if (useTrailingButton) {
             return Row(
@@ -1131,8 +1137,10 @@ class SettingsState extends State<Settings> {
                         userMoviesCountField,
                         _buildSectionTitle('Purchases'),
                         premiumField,
-                        const SizedBox(height: 12),
-                        _buildRestorePurchasesCard(context),
+                        if (!userState.isPremium) ...[
+                          const SizedBox(height: 12),
+                          _buildRestorePurchasesCard(context),
+                        ],
                       ],
                     )),
               ),
