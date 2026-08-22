@@ -29,6 +29,33 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def signingEnvironment = [
+        storeFile    : System.getenv('MOVIEDIARY_ANDROID_STORE_FILE'),
+        storePassword: System.getenv('MOVIEDIARY_ANDROID_STORE_PASSWORD'),
+        keyAlias     : System.getenv('MOVIEDIARY_ANDROID_KEY_ALIAS'),
+        keyPassword  : System.getenv('MOVIEDIARY_ANDROID_KEY_PASSWORD'),
+]
+signingEnvironment.each { key, value ->
+    if (value != null && !value.trim().isEmpty()) {
+        keystoreProperties[key] = value
+    }
+}
+
+def requiredSigningKeys = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']
+def missingSigningKeys = requiredSigningKeys.findAll {
+    def value = keystoreProperties[it]
+    value == null || value.toString().trim().isEmpty()
+}
+def releaseTaskRequested = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains('release')
+}
+if (releaseTaskRequested && !missingSigningKeys.isEmpty()) {
+    throw new GradleException(
+            "Release signing is incomplete. Provide android/key.properties or " +
+                    "the MOVIEDIARY_ANDROID_* environment variables. Missing: " +
+                    missingSigningKeys.join(', '))
+}
+
 android {
     namespace "com.flame.moviediary"
     compileSdkVersion 36

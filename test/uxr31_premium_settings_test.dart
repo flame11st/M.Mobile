@@ -188,6 +188,39 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Premium purchase errors never expose technical store details',
+      (tester) async {
+    final states = await _states();
+    final store = _FakePremiumStore(
+      product: const PremiumStoreProduct(
+        id: 'premium_purchase',
+        localizedPrice: r'$4.99',
+      ),
+    );
+    addTearDown(states.movies.dispose);
+    addTearDown(store.dispose);
+
+    await tester.pumpWidget(_app(states, home: Premium(store: store)));
+    await tester.pumpAndSettle();
+
+    store.emit(const PremiumPurchaseUpdate(
+      PremiumPurchaseStatus.error,
+      message: 'PlatformException(store_error, request token=private)',
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Purchase not completed'), findsOneWidget);
+    expect(
+      find.text(
+        'Your app store did not complete the purchase. Check your connection and try again.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('PlatformException'), findsNothing);
+    expect(find.textContaining('token=private'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<_TestStates> _states({bool premium = false}) async {

@@ -6,11 +6,13 @@ import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Enums/recommendation_discovery_level.dart';
 import 'package:mmobile/Helpers/ad_manager.dart';
+import 'package:mmobile/Helpers/ad_policy.dart';
 import 'package:mmobile/Helpers/rating_helper.dart';
 import 'package:mmobile/Helpers/route_helper.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/recommendation_discovery_session.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
@@ -73,8 +75,13 @@ class RecommendationsPage extends StatefulWidget {
 }
 
 class RecommendationsPageState extends State<RecommendationsPage> {
+  static const _mutationTimeout = Duration(seconds: 12);
+  static const _deckMotionDuration = Duration(milliseconds: 200);
+
   late final ServiceAgent serviceAgent;
   final pageController = PageController();
+  final Md3PosterPrefetchController _posterPrefetchController =
+      Md3PosterPrefetchController();
 
   GlobalKey? globalKey;
   List<Movie> recommendedMovies = <Movie>[];
@@ -101,7 +108,9 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   _RecommendationRequest? _retryRequest;
   final Map<String, _DeckMemory> _deckMemories = {};
   int _requestToken = 0;
+  int _deckRevision = 0;
   final Set<String> _savingMovieIds = <String>{};
+  String? _scheduledPosterPrefetchKey;
 
   bool get isDeckStale =>
       recommendedMovies.isNotEmpty &&
@@ -125,6 +134,8 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   @override
   void dispose() {
     _requestToken++;
+    _deckRevision++;
+    _posterPrefetchController.dispose();
     pageController.dispose();
     super.dispose();
   }
@@ -175,6 +186,11 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     final request = retryRequest ??
         _buildRecommendationRequest(reset: reset, refresh: refresh);
     final requestToken = ++_requestToken;
+    if (reset) {
+      _deckRevision++;
+      _scheduledPosterPrefetchKey = null;
+      _posterPrefetchController.cancel();
+    }
 
     setState(() {
       isLoading = true;
@@ -197,12 +213,26 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         failureKind = null;
       }
     });
+    _scheduleNextRecommendationPoster();
 
     final userState = Provider.of<UserState>(context, listen: false);
-    if (!userState.isPremium && userState.aiRequestsCount % 3 == 0) {
-      AdManager.showInterstitialAd();
+    if (reset) {
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.recommendationStarted,
+        parameters: {
+          ProductAnalyticsParameter.mediaType:
+              request.movieType == MovieType.tv ? 'tv' : 'movie',
+          ProductAnalyticsParameter.discoveryMode:
+              _discoveryLevelLabel(request.discoveryLevel).toLowerCase(),
+          ProductAnalyticsParameter.entryPoint: retryRequest != null
+              ? 'retry'
+              : request.isRefresh
+                  ? 'refresh'
+                  : 'start',
+          ProductAnalyticsParameter.sourceSurface: 'recommendations',
+        },
+      ));
     }
-
     RecommendationDiscoverySession? session;
     String? error;
     RecommendationFailureKind? requestFailure;
@@ -283,6 +313,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         }
       }
     });
+    _scheduleNextRecommendationPoster();
 
     if (error != null && !reset) {
       MSnackBar.showSnackBar(error, false);
@@ -290,6 +321,43 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
     if (movies.isNotEmpty) {
       await userState.increaseAiRequestsCount();
+      if (reset) {
+        final analyticsParameters = <ProductAnalyticsParameter, Object?>{
+          ProductAnalyticsParameter.mediaType:
+              request.movieType == MovieType.tv ? 'tv' : 'movie',
+          ProductAnalyticsParameter.discoveryMode:
+              _discoveryLevelLabel(request.discoveryLevel).toLowerCase(),
+          ProductAnalyticsParameter.resultCount: movies.length,
+          ProductAnalyticsParameter.sourceSurface: 'recommendations',
+          if (validSessionId)
+            ProductAnalyticsParameter.recommendationSessionId:
+                session.sessionId,
+        };
+        final generatedEvent = ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.recommendationGenerated,
+          parameters: analyticsParameters,
+          transitionId: validSessionId ? session.sessionId : null,
+        );
+        unawaited(generatedEvent.then((_) {
+          return AdManager.recordCompletedAction(
+            AdPlacement.recommendationCompletion,
+            isPremium: userState.isPremium,
+          );
+        }));
+        unawaited(ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.recommendationViewed,
+          parameters: analyticsParameters,
+          transitionId: validSessionId ? session.sessionId : null,
+        ));
+      }
+    }
+
+    if (reset && movies.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && pageController.hasClients) {
+          pageController.jumpToPage(0);
+        }
+      });
     }
   }
 
@@ -365,12 +433,123 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
   void maybeLoadNextPage(int index) {
     currentIndex = index;
+    _scheduleNextRecommendationPoster();
+
+    if (index == recommendedMovies.length - 1 && !hasMore) {
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.recommendationDeckCompleted,
+        parameters: {
+          ProductAnalyticsParameter.resultCount: recommendedMovies.length,
+          ProductAnalyticsParameter.position: index + 1,
+          ProductAnalyticsParameter.sourceSurface: 'recommendations',
+          if (sessionId != null)
+            ProductAnalyticsParameter.recommendationSessionId: sessionId,
+        },
+        transitionId: sessionId,
+      ));
+    }
 
     if (!hasMore || isLoading || recommendedMovies.length - index > 3) {
       return;
     }
 
     _getRecommendations(reset: false);
+  }
+
+  void _scheduleNextRecommendationPoster() {
+    final movies = List<Movie>.unmodifiable(recommendedMovies);
+    final index = currentIndex;
+    final revision = _deckRevision;
+    final prefetchKey =
+        'recommendations:$revision:${sessionId ?? 'pending'}:$index:${movies.length}';
+    if (_scheduledPosterPrefetchKey == prefetchKey) {
+      return;
+    }
+    _scheduledPosterPrefetchKey = prefetchKey;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          revision != _deckRevision ||
+          _scheduledPosterPrefetchKey != prefetchKey) {
+        return;
+      }
+      _posterPrefetchController.prefetchNext(
+        context,
+        movies: movies,
+        currentIndex: index,
+        deckKey: prefetchKey,
+        logicalWidth: 152,
+        logicalHeight: 228,
+      );
+    });
+  }
+
+  Future<void> _moveToIndex(int targetIndex) async {
+    if (!mounted || !pageController.hasClients) {
+      return;
+    }
+
+    final boundedIndex =
+        targetIndex.clamp(0, recommendedMovies.length - 1).toInt();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      pageController.jumpToPage(boundedIndex);
+      return;
+    }
+
+    await pageController.animateToPage(
+      boundedIndex,
+      duration: _deckMotionDuration,
+      curve: Curves.easeOut,
+    );
+  }
+
+  Future<void> _moveToNext(int index) async {
+    if (isLoading || _savingMovieIds.isNotEmpty) {
+      return;
+    }
+
+    if (index < recommendedMovies.length - 1) {
+      await _moveToIndex(index + 1);
+      return;
+    }
+
+    if (!hasMore) {
+      return;
+    }
+
+    final previousLength = recommendedMovies.length;
+    await _getRecommendations(reset: false);
+    if (!mounted ||
+        currentIndex != index ||
+        recommendedMovies.length <= previousLength) {
+      return;
+    }
+
+    await _moveToIndex(index + 1);
+  }
+
+  Future<void> _advanceAfterAction(Movie movie) async {
+    if (!mounted ||
+        currentIndex >= recommendedMovies.length ||
+        recommendedMovies[currentIndex].id != movie.id) {
+      return;
+    }
+
+    final index = currentIndex;
+    if (index < recommendedMovies.length - 1) {
+      await _moveToIndex(index + 1);
+      return;
+    }
+
+    if (hasMore) {
+      final previousLength = recommendedMovies.length;
+      await _getRecommendations(reset: false);
+      if (mounted &&
+          currentIndex == index &&
+          recommendedMovies.length > previousLength) {
+        await _moveToIndex(index + 1);
+      }
+    }
   }
 
   void cancelRecommendationRequest() {
@@ -399,7 +578,8 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   Widget build(BuildContext context) {
     final userState = Provider.of<UserState>(context, listen: false);
     final isFullPageLoading = isLoading && !isPaging;
-    final showStickyCommand = !isFullPageLoading;
+    final showStickyCommand = !isFullPageLoading &&
+        (recommendedMovies.isEmpty || isDeckStale || alternativesExhausted);
     final safeBottom = MediaQuery.viewPaddingOf(context).bottom;
     final stickyBottom = safeBottom > 8 ? safeBottom : 8.0;
     final contentBottomPadding =
@@ -504,6 +684,37 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                         ),
                       ),
                     ),
+                  if (recommendedMovies.isNotEmpty && !isDeckStale)
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: PopupMenuButton<String>(
+                        key: const Key('recommendation-actions-menu'),
+                        tooltip: 'Recommendation actions',
+                        enabled: !isLoading,
+                        onSelected: (value) {
+                          if (value == 'refresh') {
+                            _getRecommendations(refresh: true);
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem<String>(
+                            value: 'refresh',
+                            child: Row(
+                              children: [
+                                Icon(Icons.refresh_rounded),
+                                SizedBox(width: Md3Spacing.x12),
+                                Text('Refresh deck'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        icon: const Icon(
+                          Icons.more_horiz_rounded,
+                          color: Md3Colors.text,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -526,24 +737,41 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   }
 
   Widget buildFilterBar(BuildContext context) {
-    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.25;
+    final useStackedFilters =
+        largeText && MediaQuery.sizeOf(context).width >= 390;
 
     return Semantics(
       container: true,
       label: 'Recommendation filters',
       child: SizedBox(
         key: const Key('recommendation-filter-bar'),
-        height: 52,
+        height: useStackedFilters ? 100 : 52,
         child: Md3LiquidGlass(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(4),
-          borderRadius: BorderRadius.circular(24),
-          blur: 20,
-          tint: const Color(0xccffffff),
-          borderColor: const Color(0xffe9edf2),
+          margin: const EdgeInsets.symmetric(horizontal: Md3Spacing.x16),
+          padding: const EdgeInsets.all(Md3Spacing.x4),
+          borderRadius: BorderRadius.circular(Md3Radius.card),
+          blur: Md3NavigationMetrics.compactGlassBlur,
+          tint: Md3Colors.glassTint,
+          borderColor: Md3Colors.glassBorderSubtle,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 290;
+
+              if (useStackedFilters) {
+                return Column(
+                  children: [
+                    Expanded(child: _buildTypeSegment(compact: true)),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: _buildDiscoveryStyleMenu(
+                        compact: false,
+                        labelOnly: true,
+                      ),
+                    ),
+                  ],
+                );
+              }
 
               return Row(
                 children: [
@@ -553,9 +781,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                         : constraints.maxWidth < 290
                             ? 5
                             : 4,
-                    child: _buildTypeSegment(
-                      compact: compact || largeText,
-                    ),
+                    child: _buildTypeSegment(compact: compact || largeText),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -576,10 +802,10 @@ class RecommendationsPageState extends State<RecommendationsPage> {
 
   Widget _buildTypeSegment({required bool compact}) {
     return Container(
-      height: 44,
+      height: Md3Targets.minimum,
       decoration: BoxDecoration(
         color: Md3Colors.surfaceMuted,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(Md3Radius.button),
       ),
       child: Row(
         children: [
@@ -620,15 +846,17 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         color: Colors.transparent,
         child: InkWell(
           onTap: isLoading ? null : () => setSelectedType(type),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(Md3Radius.button),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : Md3Durations.standard,
             curve: Curves.easeOut,
-            height: 44,
+            height: Md3Targets.minimum,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected ? Md3Colors.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(Md3Radius.button),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -711,7 +939,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           ),
           decoration: BoxDecoration(
             color: Md3Colors.surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(Md3Radius.button),
             border: Border.all(color: Md3Colors.border),
           ),
           child: Row(
@@ -739,14 +967,12 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                   ),
                 ),
               ],
-              if (!labelOnly) ...[
-                const SizedBox(width: 2),
-                const Icon(
-                  Icons.expand_more_rounded,
-                  size: 18,
-                  color: Md3Colors.muted,
-                ),
-              ],
+              const SizedBox(width: 2),
+              const Icon(
+                Icons.expand_more_rounded,
+                size: 18,
+                color: Md3Colors.muted,
+              ),
             ],
           ),
         ),
@@ -964,7 +1190,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                 ),
                 const SizedBox(height: 16),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(Md3Radius.pill),
                   child: const LinearProgressIndicator(
                     minHeight: 8,
                     color: Md3Colors.primary,
@@ -990,7 +1216,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                       foregroundColor: Md3Colors.primary,
                       side: const BorderSide(color: Md3Colors.border),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(Md3Radius.button),
                       ),
                       backgroundColor: Colors.white,
                     ),
@@ -1024,22 +1250,155 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
           children: [
             if (isPartialDeck) _buildPartialDeckNotice(),
+            _buildDeckNavigator(index),
+            const SizedBox(height: 12),
             _buildRecommendationCard(context, recommendedMovies[index], index),
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                '${index + 1} of ${recommendedMovies.length}${hasMore ? '+' : ''}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Md3Colors.muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildDeckNavigator(int index) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final stackProgress = textScale >= 1.6;
+    final actionInFlight = _savingMovieIds.isNotEmpty;
+    final canGoPrevious = index > 0 && !isLoading && !actionInFlight;
+    final canGoNext = (index < recommendedMovies.length - 1 || hasMore) &&
+        !isLoading &&
+        !actionInFlight;
+    final progress = Semantics(
+      key: const Key('recommendation-progress'),
+      liveRegion: true,
+      label:
+          'Recommendation ${index + 1} of ${recommendedMovies.length} loaded${hasMore ? '. More recommendations are available' : ''}.',
+      child: ExcludeSemantics(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${index + 1} of ${recommendedMovies.length}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Md3Colors.text,
+                fontSize: 14,
+                height: 18 / 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            if (hasMore)
+              const Text(
+                'More available',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Md3Colors.muted,
+                  fontSize: 11,
+                  height: 14 / 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+    final previous = _buildDeckMoveButton(
+      key: const Key('recommendation-previous'),
+      label: 'Previous',
+      icon: Icons.arrow_back_rounded,
+      showIcon: !stackProgress,
+      onPressed: canGoPrevious ? () => _moveToIndex(index - 1) : null,
+    );
+    final next = _buildDeckMoveButton(
+      key: const Key('recommendation-next'),
+      label: 'Next',
+      icon: Icons.arrow_forward_rounded,
+      showIcon: !stackProgress,
+      iconAfterLabel: true,
+      onPressed: canGoNext ? () => _moveToNext(index) : null,
+    );
+
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: 'Recommendation deck navigation',
+      child: Md3Card(
+        color: Md3Colors.surface,
+        padding: const EdgeInsets.all(Md3Spacing.x8),
+        child: stackProgress
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  progress,
+                  const SizedBox(height: Md3Spacing.x8),
+                  Row(
+                    children: [
+                      Expanded(child: previous),
+                      const SizedBox(width: Md3Spacing.x8),
+                      Expanded(child: next),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(child: previous),
+                  SizedBox(width: 96, child: progress),
+                  Expanded(child: next),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildDeckMoveButton({
+    required Key key,
+    required String label,
+    required IconData icon,
+    required bool showIcon,
+    required VoidCallback? onPressed,
+    bool iconAfterLabel = false,
+  }) {
+    final labelWidget = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.fade,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+    );
+    final iconWidget = Icon(icon, size: 18);
+
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: label,
+      child: OutlinedButton(
+        key: key,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Md3Colors.primary,
+          disabledForegroundColor: Md3Colors.muted,
+          minimumSize: const Size(44, 44),
+          padding: const EdgeInsets.symmetric(horizontal: Md3Spacing.x8),
+          side: const BorderSide(color: Md3Colors.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Md3Radius.button),
+          ),
+        ),
+        onPressed: onPressed,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showIcon && !iconAfterLabel) ...[
+              iconWidget,
+              const SizedBox(width: 4),
+            ],
+            Flexible(child: labelWidget),
+            if (showIcon && iconAfterLabel) ...[
+              const SizedBox(width: 4),
+              iconWidget,
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -1091,9 +1450,8 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         : movie.duration > 0
             ? '${movie.duration} min'
             : '';
-    final reason = movie.recommendationReason?.trim().isNotEmpty == true
-        ? movie.recommendationReason!.trim()
-        : 'A strong fit for the taste profile you have been building in MovieDiary.';
+    final reason = _recommendationReason(movie);
+    final matchLabel = _recommendationMatchLabel(movie);
 
     final isSaving = _savingMovieIds.contains(movie.id);
 
@@ -1132,24 +1490,33 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (movie.recommendationMatchPercent > 0)
-                      MediaQuery.textScalerOf(context).scale(1) > 1.3
-                          ? Text(
-                              '${movie.recommendationMatchPercent}% match',
-                              style: const TextStyle(
-                                color: Md3Colors.primary,
-                                fontSize: 13,
-                                height: 18 / 13,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            )
-                          : Md3Chip(
-                              text:
-                                  '${movie.recommendationMatchPercent}% match',
-                              icon: Icons.auto_awesome_rounded,
-                              active: true,
+                    if (matchLabel != null) ...[
+                      Semantics(
+                        label: 'Recommendation fit: $matchLabel',
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 16,
+                              color: Md3Colors.primary,
                             ),
-                    const SizedBox(height: 12),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                matchLabel,
+                                style: const TextStyle(
+                                  color: Md3Colors.primary,
+                                  fontSize: 13,
+                                  height: 18 / 13,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Text(
                       [
                         '${movie.releaseDate.year}',
@@ -1194,7 +1561,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           ),
           const SizedBox(height: 20),
           const Text(
-            "Why you'll like it",
+            'Why this pick',
             style: TextStyle(
               color: Md3Colors.text,
               fontSize: 20,
@@ -1203,16 +1570,22 @@ class RecommendationsPageState extends State<RecommendationsPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            reason,
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 16,
-              height: 23 / 16,
+          Semantics(
+            container: true,
+            label: 'Why this pick: $reason',
+            child: ExcludeSemantics(
+              child: Text(
+                reason,
+                style: const TextStyle(
+                  color: Md3Colors.muted,
+                  fontSize: 16,
+                  height: 23 / 16,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),
-          _buildRecommendationPrimaryAction(context, movie, isSaving),
+          _buildRecommendationPrimaryAction(context, movie, index, isSaving),
           if (!MovieRate.isViewed(movie.movieRate)) ...[
             const SizedBox(height: 8),
             _buildSeenAlreadyAction(context, movie, isSaving),
@@ -1240,6 +1613,52 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     );
   }
 
+  String? _recommendationMatchLabel(Movie movie) {
+    final label = movie.recommendationMatchLabel?.trim();
+    if (label?.isNotEmpty == true) {
+      return label;
+    }
+
+    return movie.recommendationMatchPercent > 0 ? 'Worth exploring' : null;
+  }
+
+  String _recommendationReason(Movie movie) {
+    const fallback =
+        'This recommendation comes from an earlier deck. Its saved reason is unavailable.';
+    final reason =
+        movie.recommendationReason?.replaceAll(RegExp(r'\s+'), ' ').trim() ??
+            '';
+    const unsafeTerms = <String>[
+      'system prompt',
+      'ignore previous',
+      'ignore all instructions',
+      'chain of thought',
+      'language model',
+      'openai',
+      'prompt version',
+      'score version',
+      'recommendationpromptversion',
+      'recommendationscoreversion',
+      'you may enjoy',
+      'perfect for fans',
+      'based on your preferences',
+      'a strong fit for your',
+      'slightly broader lane',
+      'quality wildcard',
+      'higher-upside adventurous pick',
+      'taste profile you have been building',
+    ];
+    final normalized = reason.toLowerCase();
+
+    if (reason.isEmpty ||
+        reason.length > 320 ||
+        unsafeTerms.any(normalized.contains)) {
+      return fallback;
+    }
+
+    return reason;
+  }
+
   Widget _buildSeenAlreadyAction(
     BuildContext context,
     Movie movie,
@@ -1253,7 +1672,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           foregroundColor: Md3Colors.primary,
           side: const BorderSide(color: Md3Colors.border),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(Md3Radius.button),
           ),
           backgroundColor: Colors.white,
         ),
@@ -1270,13 +1689,44 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   Widget _buildRecommendationPrimaryAction(
     BuildContext context,
     Movie movie,
+    int index,
     bool isSaving,
   ) {
     if (movie.movieRate == MovieRate.addedToWatchlist) {
-      return const Md3PrimaryButton(
-        text: 'In Watchlist',
-        icon: Icons.bookmark_added_rounded,
-        tonal: true,
+      final canContinue =
+          (index < recommendedMovies.length - 1 || hasMore) && !isSaving;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Md3PrimaryButton(
+            text: 'Saved',
+            icon: Icons.bookmark_added_rounded,
+            tonal: true,
+          ),
+          if (index < recommendedMovies.length - 1 || hasMore) ...[
+            const SizedBox(height: Md3Spacing.x8),
+            SizedBox(
+              width: double.infinity,
+              height: Md3Targets.minimum,
+              child: OutlinedButton.icon(
+                key: Key('recommendation-saved-next-${movie.id}'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Md3Colors.primary,
+                  side: const BorderSide(color: Md3Colors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Md3Radius.button),
+                  ),
+                ),
+                onPressed: canContinue ? () => _moveToNext(index) : null,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: const Text(
+                  'Next',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ],
       );
     }
 
@@ -1312,6 +1762,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     final userState = Provider.of<UserState>(context, listen: false);
     final messenger = ScaffoldMessenger.of(context);
     final previousRate = movie.movieRate;
+    final deckRevision = _deckRevision;
 
     setState(() => _savingMovieIds.add(movie.id));
 
@@ -1329,11 +1780,13 @@ class RecommendationsPageState extends State<RecommendationsPage> {
           throw const HttpException('Signed-in movie update is unavailable.');
         }
 
-        final response = await serviceAgent.rateMovie(
-          movie.id,
-          userId,
-          MovieRate.addedToWatchlist,
-        );
+        final response = await serviceAgent
+            .rateMovie(
+              movie.id,
+              userId,
+              MovieRate.addedToWatchlist,
+            )
+            .timeout(_mutationTimeout);
         if (response.statusCode < 200 || response.statusCode >= 300) {
           throw HttpException(
             'Movie update failed with ${response.statusCode}.',
@@ -1347,6 +1800,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         userState.isIncognitoMode,
         movie,
       );
+      movie.movieRate = previousRate;
       if (!mounted) {
         return;
       }
@@ -1366,29 +1820,164 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     }
 
     setState(() => _savingMovieIds.remove(movie.id));
+    if (deckRevision != _deckRevision) {
+      return;
+    }
+    unawaited(trackMovieStateTransition(
+      movieId: movie.id,
+      previousRate: previousRate,
+      nextRate: MovieRate.addedToWatchlist,
+      sourceSurface: 'recommendations',
+    ));
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.recommendationWatchlistAdded,
+      parameters: {
+        ProductAnalyticsParameter.movieId: movie.id,
+        ProductAnalyticsParameter.sourceSurface: 'recommendations',
+        if (sessionId != null)
+          ProductAnalyticsParameter.recommendationSessionId: sessionId,
+      },
+      transitionId: sessionId == null ? null : '$sessionId:${movie.id}',
+    ));
     MSnackBar.showWithMessenger(
       messenger,
-      'Added to Watchlist.',
+      'Saved to Watchlist.',
       true,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(seconds: 4),
+      actionLabel: 'Undo',
+      onAction: () => unawaited(
+        _undoWatchlistSave(
+          movie: movie,
+          previousRate: previousRate,
+          deckRevision: deckRevision,
+          messenger: messenger,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _undoWatchlistSave({
+    required Movie movie,
+    required int previousRate,
+    required int deckRevision,
+    required ScaffoldMessengerState messenger,
+  }) async {
+    if (!mounted ||
+        deckRevision != _deckRevision ||
+        _savingMovieIds.contains(movie.id) ||
+        movie.movieRate != MovieRate.addedToWatchlist) {
+      return;
+    }
+
+    final moviesState = Provider.of<MoviesState>(context, listen: false);
+    final userState = Provider.of<UserState>(context, listen: false);
+    setState(() => _savingMovieIds.add(movie.id));
+
+    try {
+      await moviesState.changeMovieRate(
+        movie.id,
+        previousRate,
+        userState.isIncognitoMode,
+        movie,
+      );
+      movie.movieRate = previousRate;
+
+      if (!userState.isIncognitoMode) {
+        final userId = userState.userId;
+        if (userId == null || userId.isEmpty || ServiceAgent.state == null) {
+          throw const HttpException('Signed-in movie update is unavailable.');
+        }
+
+        final response = await serviceAgent
+            .rateMovie(movie.id, userId, previousRate)
+            .timeout(_mutationTimeout);
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw HttpException(
+            'Movie update failed with ${response.statusCode}.',
+          );
+        }
+      }
+    } catch (_) {
+      await moviesState.changeMovieRate(
+        movie.id,
+        MovieRate.addedToWatchlist,
+        userState.isIncognitoMode,
+        movie,
+      );
+      movie.movieRate = MovieRate.addedToWatchlist;
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _savingMovieIds.remove(movie.id));
+      MSnackBar.showWithMessenger(
+        messenger,
+        'Couldnâ€™t undo the Watchlist save. Try again.',
+        false,
+        duration: const Duration(milliseconds: 2500),
+      );
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _savingMovieIds.remove(movie.id));
+    unawaited(trackMovieStateTransition(
+      movieId: movie.id,
+      previousRate: MovieRate.addedToWatchlist,
+      nextRate: previousRate,
+      sourceSurface: 'recommendations',
+    ));
+    MSnackBar.showWithMessenger(
+      messenger,
+      'Removed from Watchlist.',
+      true,
+      duration: const Duration(milliseconds: 1800),
     );
   }
 
   Future<void> _markSeenAlready(BuildContext context, Movie movie) async {
-    await showMarkWatchedBottomSheet(
+    if (_savingMovieIds.contains(movie.id)) {
+      return;
+    }
+
+    final deckRevision = _deckRevision;
+    setState(() => _savingMovieIds.add(movie.id));
+    final savedRate = await showMarkWatchedBottomSheet(
       context: context,
       movie: movie,
+      sourceSurface: 'recommendations',
+      recommendationSessionId: sessionId,
+      serviceAgent: serviceAgent,
     );
 
     if (!mounted) {
       return;
     }
 
-    setState(() {});
+    if (savedRate != null && deckRevision == _deckRevision) {
+      await _advanceAfterAction(movie);
+    }
+
+    if (mounted) {
+      setState(() => _savingMovieIds.remove(movie.id));
+    }
   }
 
-  void _openMovieDetails(BuildContext context, Movie movie) {
-    Navigator.of(context).push(
+  Future<void> _openMovieDetails(BuildContext context, Movie movie) async {
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.recommendationDetailsOpened,
+      parameters: {
+        ProductAnalyticsParameter.movieId: movie.id,
+        ProductAnalyticsParameter.sourceSurface: 'recommendations',
+        if (sessionId != null)
+          ProductAnalyticsParameter.recommendationSessionId: sessionId,
+      },
+      transitionId: sessionId == null ? null : '$sessionId:${movie.id}',
+    ));
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) => MovieListItemExpanded(
           movie: movie,
@@ -1397,6 +1986,9 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         ),
       ),
     );
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _openRatingFlow(BuildContext context) {
@@ -1437,12 +2029,12 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         key: const Key('recommendation-sticky-command-bar'),
         height: 68,
         child: Md3LiquidGlass(
-          margin: const EdgeInsets.symmetric(horizontal: 12),
-          padding: const EdgeInsets.all(8),
-          borderRadius: BorderRadius.circular(24),
-          blur: 20,
-          tint: const Color(0xccffffff),
-          borderColor: const Color(0xffe9edf2),
+          margin: const EdgeInsets.symmetric(horizontal: Md3Spacing.x12),
+          padding: const EdgeInsets.all(Md3Spacing.x8),
+          borderRadius: BorderRadius.circular(Md3Radius.card),
+          blur: Md3NavigationMetrics.compactGlassBlur,
+          tint: Md3Colors.glassTint,
+          borderColor: Md3Colors.glassBorderSubtle,
           child: SizedBox(
             height: 52,
             width: double.infinity,
@@ -1454,7 +2046,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                 disabledBackgroundColor: Md3Colors.primarySoft,
                 disabledForegroundColor: Md3Colors.muted,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(Md3Radius.button),
                 ),
               ),
               onPressed: isButtonDisabled ? null : _runPrimaryCommand,

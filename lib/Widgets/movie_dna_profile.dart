@@ -2,6 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Objects/user_taste_profile.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 
+const _movieDnaReadLevels = [
+  'Early read',
+  'Developing profile',
+  'Strong read',
+  'Very strong read',
+];
+
+int movieDnaTraitLimit(int ratingsCount) {
+  return ratingsCount < 50 ? 3 : (ratingsCount < 150 ? 4 : 5);
+}
+
+String movieDnaProfileReadLabel(int ratingsCount) {
+  return _movieDnaReadLevels[_movieDnaRatingsTier(ratingsCount)];
+}
+
+int _movieDnaRatingsTier(int ratingsCount) {
+  if (ratingsCount < 25) return 0;
+  if (ratingsCount < 50) return 1;
+  if (ratingsCount < 150) return 2;
+  return 3;
+}
+
+String _movieDnaInsightReadLabel(
+  MovieDnaInsight insight,
+  int ratingsCount,
+) {
+  final evidenceTier = switch (insight.positiveEvidenceCount) {
+    < 5 => 0,
+    < 10 => 1,
+    < 20 => 2,
+    _ => 3,
+  };
+  var tier = evidenceTier < _movieDnaRatingsTier(ratingsCount)
+      ? evidenceTier
+      : _movieDnaRatingsTier(ratingsCount);
+  if (tier > 0 &&
+      insight.counterEvidenceCount > 0 &&
+      insight.counterEvidenceCount * 2 >= insight.positiveEvidenceCount) {
+    tier--;
+  }
+  return _movieDnaReadLevels[tier];
+}
+
 class MovieDnaTraitPreview extends StatelessWidget {
   final List<MovieDnaInsight> insights;
   final List<String> fallbackLabels;
@@ -33,10 +76,9 @@ class MovieDnaTraitPreview extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 32),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: index == 0
-                    ? Md3Colors.primarySoft
-                    : const Color(0xfff3f5f7),
-                borderRadius: BorderRadius.circular(16),
+                color:
+                    index == 0 ? Md3Colors.primarySoft : Md3Colors.neutralSoft,
+                borderRadius: BorderRadius.circular(Md3Radius.input),
                 border: Border.all(
                   color: index == 0
                       ? Md3Colors.primary.withValues(alpha: 0.14)
@@ -71,7 +113,9 @@ class MovieDnaDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final insights = profile.insights.take(5).toList();
+    final insights = profile.insights
+        .take(movieDnaTraitLimit(profile.ratingsCount))
+        .toList();
     return Column(
       key: const Key('moviedna-details'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,12 +132,15 @@ class MovieDnaDetails extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           for (var index = 0; index < insights.length; index++) ...[
-            _MovieDnaInsightRow(insight: insights[index]),
+            _MovieDnaInsightRow(
+              insight: insights[index],
+              ratingsCount: profile.ratingsCount,
+            ),
             if (index != insights.length - 1) const SizedBox(height: 8),
           ],
         ],
         if (profile.recommendationAdvice.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: Md3Spacing.x16),
           const Text(
             'For your next deck',
             style: TextStyle(
@@ -158,7 +205,7 @@ class MovieDnaDetails extends StatelessWidget {
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Md3Colors.primary,
-                minimumSize: const Size(44, 44),
+                minimumSize: const Size.square(Md3Targets.minimum),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 textStyle: const TextStyle(
                   fontSize: 12,
@@ -195,13 +242,17 @@ class MovieDnaDetails extends StatelessWidget {
 
 class _MovieDnaInsightRow extends StatelessWidget {
   final MovieDnaInsight insight;
+  final int ratingsCount;
 
-  const _MovieDnaInsightRow({required this.insight});
+  const _MovieDnaInsightRow({
+    required this.insight,
+    required this.ratingsCount,
+  });
 
   @override
   Widget build(BuildContext context) {
     final evidence = <String>[
-      '${insight.confidencePercent}% confidence',
+      _movieDnaInsightReadLabel(insight, ratingsCount),
       '${insight.positiveEvidenceCount} ${insight.positiveEvidenceCount == 1 ? 'like' : 'likes'}',
       if (insight.counterEvidenceCount > 0)
         '${insight.counterEvidenceCount} ${insight.counterEvidenceCount == 1 ? 'dislike' : 'dislikes'}',
@@ -221,8 +272,8 @@ class _MovieDnaInsightRow extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xfff7f9fb),
-          borderRadius: BorderRadius.circular(16),
+          color: Md3Colors.surfaceMuted,
+          borderRadius: BorderRadius.circular(Md3Radius.input),
           border: Border.all(color: Md3Colors.border),
         ),
         child: Row(
@@ -233,7 +284,7 @@ class _MovieDnaInsightRow extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: Md3Colors.primarySoft,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(Md3Radius.medium),
               ),
               child: Icon(
                 _iconForCategory(insight.category),

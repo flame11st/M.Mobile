@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:provider/provider.dart';
 
 const _premiumProductId = 'premium_purchase';
@@ -147,6 +148,12 @@ class _PremiumState extends State<Premium> {
   @override
   void initState() {
     super.initState();
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.premiumViewed,
+      parameters: const {
+        ProductAnalyticsParameter.sourceSurface: 'premium',
+      },
+    ));
     _store = widget.store ?? InAppPurchasePremiumStore();
     _purchaseSubscription = _store.purchaseUpdates.listen(
       _handlePurchaseUpdate,
@@ -255,6 +262,15 @@ class _PremiumState extends State<Premium> {
 
     try {
       final started = await _store.purchase(product);
+      if (started) {
+        unawaited(ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.premiumStarted,
+          parameters: const {
+            ProductAnalyticsParameter.sourceSurface: 'premium',
+            ProductAnalyticsParameter.premiumState: 'not_owned',
+          },
+        ));
+      }
       if (!started && mounted) {
         setState(() {
           _purchaseRequestPending = false;
@@ -505,11 +521,7 @@ class _PremiumState extends State<Premium> {
     if (_lastPurchaseUpdate?.status == PremiumPurchaseStatus.cancelled) {
       return 'Nothing was charged. You can try again whenever you are ready.';
     }
-    final message = _lastPurchaseUpdate?.message?.trim() ?? '';
-    if (message.isEmpty) {
-      return 'Your app store did not complete the purchase. Check your connection and try again.';
-    }
-    return 'Your app store did not complete the purchase. $message';
+    return 'Your app store did not complete the purchase. Check your connection and try again.';
   }
 
   Widget _buildPrimaryChrome() {

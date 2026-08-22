@@ -13,7 +13,6 @@ class MBoxShadow {
     BoxShadow(
         color: Colors.black.withOpacity(0.8),
         offset: const Offset(0.0, 0.1),
-        blurRadius: 0.25
-    ),
+        blurRadius: 0.25),
   ];
 }

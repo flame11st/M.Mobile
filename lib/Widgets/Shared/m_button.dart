@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class MButton extends StatelessWidget {
@@ -34,7 +33,8 @@ class MButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contextValue = parentContext != null ? parentContext! : context;
-    final color = textColor ?? Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
+    final color = textColor ??
+        Theme.of(contextValue).hintColor.withOpacity(active ? 1 : 0.3);
     const defaultBorderRadius = 25.0;
 
     return Container(
@@ -50,7 +50,8 @@ class MButton extends StatelessWidget {
           ],
           borderRadius: BorderRadius.circular(
               borderRadius != null ? borderRadius! : defaultBorderRadius),
-          color: backgroundColor ?? Theme.of(contextValue).cardColor.withOpacity(0.95),
+          color: backgroundColor ??
+              Theme.of(contextValue).cardColor.withOpacity(0.95),
         ),
         child: MaterialButton(
           padding: const EdgeInsets.all(0),

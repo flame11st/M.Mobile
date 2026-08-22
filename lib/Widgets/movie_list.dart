@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Enums/movie_type.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/empty_movies_card.dart';
@@ -54,7 +53,6 @@ class MovieListState extends State<MovieList>
 
   @override
   void dispose() {
-    AdManager.hideBanner();
     tabController.removeListener(_syncTabProgress);
     tabController.animation?.removeListener(_syncTabProgress);
     tabController.dispose();
@@ -152,17 +150,6 @@ class MovieListState extends State<MovieList>
 
     final moviesState = Provider.of<MoviesState>(context);
     final userState = Provider.of<UserState>(context);
-
-    if (!userState.isIncognitoMode &&
-        !userState.premiumPurchasedIncognito &&
-        (userState.user == null || !userState.user!.premiumPurchased)) {
-      if (ModalRoute.of(context)?.isCurrent ?? true) {
-        AdManager.showBanner();
-      }
-    } else if (AdManager.bannerVisible) {
-      AdManager.bannerVisible = false;
-      AdManager.hideBanner();
-    }
 
     final allViewedMovies = moviesState.userMovies
         .where((movie) => MovieRate.isViewed(movie.movieRate))
@@ -348,8 +335,8 @@ class MovieListState extends State<MovieList>
                     count: counts[MovieRate.notLiked]!,
                     selected: !allSelected &&
                         selectedRates.contains(MovieRate.notLiked),
-                    selectedBackground: const Color(0xfffceaec),
-                    selectedForeground: Md3Colors.danger,
+                    selectedBackground: Md3Colors.dislikedSoft,
+                    selectedForeground: Md3Colors.disliked,
                     onTap: moviesState.changeNotLikedOnlyFilter,
                   ),
                 ],

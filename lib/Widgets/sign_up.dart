@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Variables/validators.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
@@ -36,6 +39,13 @@ class SignUpState extends State<SignUp> {
     final userState = Provider.of<UserState>(context, listen: false);
     final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.signInStarted,
+      parameters: const {
+        ProductAnalyticsParameter.authMethod: 'create_account',
+        ProductAnalyticsParameter.sourceSurface: 'sign_up',
+      },
+    ));
 
     final incognitoUserId = userState.isIncognitoMode &&
             userState.userId != null &&
@@ -54,6 +64,13 @@ class SignUpState extends State<SignUp> {
     if (response.statusCode == 200) {
       await userState.processLoginResponse(response.body, false);
       await userState.setOnboardingCompleted(true);
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.signInCompleted,
+        parameters: const {
+          ProductAnalyticsParameter.authMethod: 'create_account',
+          ProductAnalyticsParameter.sourceSurface: 'sign_up',
+        },
+      ));
 
       if (!mounted) return;
 

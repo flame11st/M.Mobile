@@ -28,7 +28,11 @@ class Movie {
   double imdbRate;
   int imdbVotes;
   int recommendationMatchPercent;
+  String? recommendationMatchLabel;
+  double recommendationRankScore;
   String? recommendationReason;
+  String? recommendationScoreVersion;
+  String? recommendationPromptVersion;
   DateTime? recommendationGeneratedAt;
   RecommendationDiscoveryLevel? recommendationDiscoveryLevel;
 
@@ -57,7 +61,11 @@ class Movie {
     imdbRate = updatedMovie.imdbRate;
     imdbVotes = updatedMovie.imdbVotes;
     recommendationMatchPercent = updatedMovie.recommendationMatchPercent;
+    recommendationMatchLabel = updatedMovie.recommendationMatchLabel;
+    recommendationRankScore = updatedMovie.recommendationRankScore;
     recommendationReason = updatedMovie.recommendationReason;
+    recommendationScoreVersion = updatedMovie.recommendationScoreVersion;
+    recommendationPromptVersion = updatedMovie.recommendationPromptVersion;
     recommendationGeneratedAt = updatedMovie.recommendationGeneratedAt;
     recommendationDiscoveryLevel = updatedMovie.recommendationDiscoveryLevel;
     updated = updatedMovie.updated;
@@ -87,7 +95,11 @@ class Movie {
       required this.imdbRate,
       required this.imdbVotes,
       this.recommendationMatchPercent = 0,
+      this.recommendationMatchLabel,
+      this.recommendationRankScore = 0,
       this.recommendationReason,
+      this.recommendationScoreVersion,
+      this.recommendationPromptVersion,
       this.recommendationGeneratedAt,
       this.recommendationDiscoveryLevel,
       this.updated});
@@ -142,7 +154,12 @@ class Movie {
         imdbRate: imdbRate,
         imdbVotes: json['imdbVotes'],
         recommendationMatchPercent: json['recommendationMatchPercent'] ?? 0,
+        recommendationMatchLabel: _readRecommendationMatchLabel(json),
+        recommendationRankScore:
+            (json['recommendationRankScore'] as num?)?.toDouble() ?? 0,
         recommendationReason: json['recommendationReason'],
+        recommendationScoreVersion: json['recommendationScoreVersion'],
+        recommendationPromptVersion: json['recommendationPromptVersion'],
         recommendationGeneratedAt:
             DateTime.tryParse('${json['recommendationGeneratedAt'] ?? ''}'),
         recommendationDiscoveryLevel:
@@ -175,12 +192,28 @@ class Movie {
         'imdbRate': imdbRate,
         'imdbVotes': imdbVotes,
         'recommendationMatchPercent': recommendationMatchPercent,
+        'recommendationMatchLabel': recommendationMatchLabel,
+        'recommendationRankScore': recommendationRankScore,
         'recommendationReason': recommendationReason,
+        'recommendationScoreVersion': recommendationScoreVersion,
+        'recommendationPromptVersion': recommendationPromptVersion,
         'recommendationGeneratedAt':
             recommendationGeneratedAt?.toIso8601String(),
         'recommendationDiscoveryLevel': recommendationDiscoveryLevel?.index,
         'updated': updated?.toIso8601String()
       };
+
+  static String? _readRecommendationMatchLabel(Map<String, dynamic> json) {
+    final label = '${json['recommendationMatchLabel'] ?? ''}'.trim();
+    if (label.isNotEmpty) {
+      return label;
+    }
+
+    final legacyPercent = json['recommendationMatchPercent'] as num?;
+    return legacyPercent != null && legacyPercent > 0
+        ? 'Worth exploring'
+        : null;
+  }
 
   static int getMovieRating(int likedVotes, int dislikedVotes) {
     final result = likedVotes + dislikedVotes != 0

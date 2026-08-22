@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/m_dialog.dart';
@@ -62,25 +64,22 @@ class MovieListItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          margin: const EdgeInsets.symmetric(
+            horizontal: Md3Spacing.x12,
+            vertical: 6,
+          ),
           decoration: BoxDecoration(
             color: Md3Colors.surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(Md3Radius.card),
             border: Border.all(color: Md3Colors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0f172231),
-                blurRadius: 18,
-                offset: Offset(0, 6),
-              ),
-            ],
+            boxShadow: Md3Shadows.contentCard,
           ),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(Md3Radius.card),
             clipBehavior: Clip.antiAlias,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(Md3Spacing.x12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -89,16 +88,16 @@ class MovieListItem extends StatelessWidget {
                     children: [
                       InkWell(
                         excludeFromSemantics: true,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(Md3Radius.poster),
                         onTap: () => _openDetails(context, currentMovie),
                         child: Md3MoviePoster(
                           movie: currentMovie,
                           width: posterWidth,
                           height: posterHeight,
-                          borderRadius: 12,
+                          borderRadius: Md3Radius.poster,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: Md3Spacing.x12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +110,9 @@ class MovieListItem extends StatelessWidget {
                               onTap: () => _openDetails(context, currentMovie),
                               child: InkWell(
                                 excludeFromSemantics: true,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(
+                                  Md3Radius.medium,
+                                ),
                                 onTap: () =>
                                     _openDetails(context, currentMovie),
                                 child: _MovieCardContent(
@@ -121,7 +122,7 @@ class MovieListItem extends StatelessWidget {
                               ),
                             ),
                             if (isWatchlist && !wrapsPrimaryAction) ...[
-                              const SizedBox(height: 12),
+                              const SizedBox(height: Md3Spacing.x12),
                               ConstrainedBox(
                                 constraints:
                                     const BoxConstraints(maxWidth: 184),
@@ -139,7 +140,7 @@ class MovieListItem extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Md3Spacing.x8),
                       _CardIconAction(
                         tooltip: 'Movie actions',
                         onPressed: () =>
@@ -148,7 +149,7 @@ class MovieListItem extends StatelessWidget {
                     ],
                   ),
                   if (isWatchlist && wrapsPrimaryAction) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Md3Spacing.x12),
                     _MarkWatchedButton(
                       key: const Key('movie-card-mark-watched-action'),
                       onPressed: () =>
@@ -611,6 +612,12 @@ class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
       return;
     }
 
+    unawaited(trackMovieStateTransition(
+      movieId: currentMovie.id,
+      previousRate: previousRate,
+      nextRate: MovieRate.addedToWatchlist,
+      sourceSurface: 'movie_actions',
+    ));
     navigator.pop();
     MSnackBar.showWithMessenger(
       messenger,
@@ -985,6 +992,13 @@ class _ListChoiceState extends State<_ListChoice> {
       return;
     }
 
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.personalListItemAdded,
+      parameters: {
+        ProductAnalyticsParameter.movieId: widget.movie.id,
+        ProductAnalyticsParameter.sourceSurface: 'movie_actions',
+      },
+    ));
     navigator.pop();
     MSnackBar.showWithMessenger(
       messenger,
@@ -1017,7 +1031,7 @@ class _RemoveFromListActionState extends State<_RemoveFromListAction> {
       label: 'Remove from ${widget.moviesList.name}',
       detail: 'Keep the movie status, but remove it from this list.',
       icon: Icons.remove_circle_outline_rounded,
-      color: Md3Colors.danger,
+      color: Md3Colors.destructive,
       busy: _submitting,
       onTap: _submitting ? null : _remove,
     );
@@ -1222,7 +1236,7 @@ class _MetadataPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: Md3Colors.surfaceMuted,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(Md3Radius.pill),
         border: Border.all(color: Md3Colors.border),
       ),
       child: Text(

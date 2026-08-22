@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
@@ -16,8 +15,6 @@ class MAddToListButton extends StatelessWidget {
   final Movie movie;
   final MoviesList? moviesList;
   final bool fromMenu;
-  final bannerVisible = AdManager.bannerVisible;
-
   MAddToListButton(
       {required this.movie, this.moviesList, this.fromMenu = false});
 

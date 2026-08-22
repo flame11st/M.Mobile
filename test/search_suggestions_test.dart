@@ -237,6 +237,16 @@ void main() {
       expect(find.text('Arrival'), findsOneWidget);
     });
 
+    test('canonical recent title replaces case variants and stays bounded', () {
+      expect(
+        mergeRecentSearchSuggestions(
+          '  Spider-Man  ',
+          const ['spider-man', 'Arrival', 'Dune', 'Heat', 'Alien', 'Up'],
+        ),
+        const ['Spider-Man', 'Arrival', 'Dune', 'Heat', 'Alien', 'Up'],
+      );
+    });
+
     testWidgets('timeout maps to the explicit suggestion error state',
         (tester) async {
       final pending = Completer<MovieSearchTransportResponse>();

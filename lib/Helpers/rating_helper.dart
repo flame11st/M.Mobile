@@ -10,7 +10,7 @@ class RatingHelper {
 
     for (var movie in movies) {
       final userMoviesList =
-      moviesState.userMovies.where((um) => um.id == movie.id);
+          moviesState.userMovies.where((um) => um.id == movie.id);
 
       if (userMoviesList.isNotEmpty) {
         movie.movieRate = userMoviesList.first.movieRate;

@@ -11,6 +11,8 @@ import 'package:mmobile/Objects/user_taste_profile.dart';
 class ServiceAgent {
   static dynamic state;
   static String baseUrl = "";
+  static final Map<String, Future<http.Response>> _inFlightGets = {};
+  static Future<bool>? _inFlightTokenRefresh;
   static const configuredBaseUrl =
       String.fromEnvironment('MOVIEDIARY_API_BASE_URL');
   static const baseUrlTimeout = Duration(seconds: 5);
@@ -18,13 +20,14 @@ class ServiceAgent {
   final functionUriAWS =
       "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/GetMovieDiaryVariables";
   static bool showLoadingAd = false;
+  final http.Client? client;
   final String baseUrlLocal = kDebugMode
       ? (Platform.isAndroid
           ? "http://10.0.2.2:5000/"
           : "http://localhost:5000/")
       : "http://51.81.79.14/";
 
-  ServiceAgent() {
+  ServiceAgent({this.client}) {
     if (baseUrl.isEmpty) setBaseUrl();
   }
 
@@ -147,6 +150,46 @@ class ServiceAgent {
   getUserRecommendationsHistory(String userId) {
     return get(
         'Recommendations/GetUserMoviesRecommendationsHistory?userId=$userId');
+  }
+
+  getRecommendationHistoryBatches(
+    String userId, {
+    int cursor = 0,
+    int pageSize = 12,
+  }) {
+    return get(Uri(
+      path: 'Recommendations/GetRecommendationHistoryBatches',
+      queryParameters: {
+        'userId': userId,
+        'cursor': '$cursor',
+        'pageSize': '$pageSize',
+      },
+    ).toString());
+  }
+
+  getRecommendationHistoryBatchDetail(String userId, String batchId) {
+    return get(Uri(
+      path: 'Recommendations/GetRecommendationHistoryBatchDetail',
+      queryParameters: {
+        'userId': userId,
+        'batchId': batchId,
+      },
+    ).toString());
+  }
+
+  getLegacyRecommendationHistory(
+    String userId, {
+    int cursor = 0,
+    int pageSize = 20,
+  }) {
+    return get(Uri(
+      path: 'Recommendations/GetLegacyRecommendationHistory',
+      queryParameters: {
+        'userId': userId,
+        'cursor': '$cursor',
+        'pageSize': '$pageSize',
+      },
+    ).toString());
   }
 
   Future<UserTasteProfile> getUserTasteProfile(String userId) async {
@@ -306,6 +349,13 @@ class ServiceAgent {
     return get('movies/GetPopularSearches?limit=$limit&days=$days');
   }
 
+  ingestProductAnalytics(List<Map<String, dynamic>> events) {
+    return post(
+      'Analytics/Ingest',
+      jsonEncode({'events': events}),
+    );
+  }
+
   rateMovie(String movieId, String userId, int movieRate) {
     return post(
         'User/RateMovie',
@@ -365,7 +415,7 @@ class ServiceAgent {
         }));
   }
 
-  get(String uri) async {
+  Future<http.Response> get(String uri) async {
     var baseUri = baseUrl;
 
     if (baseUri == "") {
@@ -378,10 +428,30 @@ class ServiceAgent {
           HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
     }
 
-    var fullUri = Uri.parse(baseUri + uri);
-    var response = await http.get(fullUri, headers: headers).timeout(
-          requestTimeout,
-        );
+    final fullUri = Uri.parse(baseUri + uri);
+    final authorization = headers[HttpHeaders.authorizationHeader] ?? '';
+    final clientKey = client == null ? 'default' : identityHashCode(client);
+    final requestKey = '$clientKey|$authorization|$fullUri';
+    final existingRequest = _inFlightGets[requestKey];
+    if (existingRequest != null) {
+      return existingRequest;
+    }
+
+    late final Future<http.Response> request;
+    request = _performGet(fullUri, headers).whenComplete(() {
+      if (identical(_inFlightGets[requestKey], request)) {
+        _inFlightGets.remove(requestKey);
+      }
+    });
+    _inFlightGets[requestKey] = request;
+    return request;
+  }
+
+  Future<http.Response> _performGet(
+    Uri fullUri,
+    Map<String, String> headers,
+  ) async {
+    var response = await _sendGet(fullUri, headers).timeout(requestTimeout);
 
     if (response.statusCode == 401) {
       headers.clear();
@@ -392,17 +462,22 @@ class ServiceAgent {
               HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
         }
 
-        response =
-            await http.get(Uri.parse(baseUri + uri), headers: headers).timeout(
-                  requestTimeout,
-                );
+        response = await _sendGet(fullUri, headers).timeout(requestTimeout);
       }
     }
 
     return response;
   }
 
-  post(String uri, postData) async {
+  Future<http.Response> _sendGet(
+    Uri uri,
+    Map<String, String> headers,
+  ) {
+    return client?.get(uri, headers: headers) ??
+        http.get(uri, headers: headers);
+  }
+
+  Future<http.Response> post(String uri, Object? postData) async {
     var baseUri = baseUrl;
 
     if (baseUri == "") {
@@ -415,21 +490,40 @@ class ServiceAgent {
           HttpHeaders.authorizationHeader, () => "Bearer ${state?.token}");
     }
 
-    var response = await http
-        .post(Uri.parse(baseUri + uri), body: postData, headers: headers)
+    var response = await (client?.post(
+              Uri.parse(baseUri + uri),
+              body: postData,
+              headers: headers,
+            ) ??
+            http.post(
+              Uri.parse(baseUri + uri),
+              body: postData,
+              headers: headers,
+            ))
         .timeout(
-          requestTimeout,
-        );
+      requestTimeout,
+    );
 
     if (response.statusCode == 401) {
       bool isTokenRefreshed = await refreshAccessToken();
       if (isTokenRefreshed) {
-        response = await http.post(Uri.parse(baseUri + uri),
-            body: postData,
-            headers: <String, String>{
-              'Content-Type': 'application/json; charset=UTF-8',
-              HttpHeaders.authorizationHeader: "Bearer ${state?.token}"
-            }).timeout(
+        response = await (client?.post(
+                  Uri.parse(baseUri + uri),
+                  body: postData,
+                  headers: <String, String>{
+                    'Content-Type': 'application/json; charset=UTF-8',
+                    HttpHeaders.authorizationHeader: "Bearer ${state?.token}"
+                  },
+                ) ??
+                http.post(
+                  Uri.parse(baseUri + uri),
+                  body: postData,
+                  headers: <String, String>{
+                    'Content-Type': 'application/json; charset=UTF-8',
+                    HttpHeaders.authorizationHeader: "Bearer ${state?.token}"
+                  },
+                ))
+            .timeout(
           requestTimeout,
         );
       }
@@ -438,19 +532,36 @@ class ServiceAgent {
     return response;
   }
 
-  Future<bool> refreshAccessToken() async {
+  Future<bool> refreshAccessToken() {
+    final existingRefresh = _inFlightTokenRefresh;
+    if (existingRefresh != null) {
+      return existingRefresh;
+    }
+
+    late final Future<bool> refresh;
+    refresh = _refreshAccessToken().whenComplete(() {
+      if (identical(_inFlightTokenRefresh, refresh)) {
+        _inFlightTokenRefresh = null;
+      }
+    });
+    _inFlightTokenRefresh = refresh;
+    return refresh;
+  }
+
+  Future<bool> _refreshAccessToken() async {
     var baseUri = baseUrl;
 
     if (baseUri == "") {
       baseUri = await getBaseUrl();
     }
 
-    var response = await http
-        .get(Uri.parse(
-            '${baseUri}Identity/RefreshTokenMobile?token=${state?.refreshToken}'))
-        .timeout(
-          requestTimeout,
-        );
+    var response = await _sendGet(
+      Uri.parse(
+          '${baseUri}Identity/RefreshTokenMobile?token=${state?.refreshToken}'),
+      const {},
+    ).timeout(
+      requestTimeout,
+    );
 
     if (response.statusCode == 200) {
       final responseData = json.decode(response.body);

@@ -18,7 +18,7 @@ void main() {
       greaterThanOrEqualTo(4.5),
     );
     expect(
-      _contrastRatio(Colors.white, Md3Colors.danger),
+      _contrastRatio(Colors.white, Md3Colors.destructive),
       greaterThanOrEqualTo(4.5),
     );
   });

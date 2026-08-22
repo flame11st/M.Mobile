@@ -13,15 +13,241 @@ class Md3Colors {
   static const background = Color(0xfff7f8fa);
   static const surface = Color(0xffffffff);
   static const surfaceMuted = Color(0xfff0f3f6);
+  static const skeleton = Color(0xffedf1f5);
+  static const skeletonHighlight = Color(0xfff8fafc);
   static const primary = Color(0xff244f7d);
   static const primarySoft = Color(0xffe6eef7);
+  static const primarySoftStrong = Color(0xffe8f0fb);
   static const accent = Color(0xffdca44f);
   static const text = Color(0xff172231);
   static const muted = Color(0xff667284);
   static const border = Color(0xffdfe5eb);
   static const success = Color(0xff287a50);
   static const warning = Color(0xffa96716);
-  static const danger = Color(0xffb93a46);
+  static const destructive = Color(0xffb93a46);
+  static const error = destructive;
+
+  // Opinion colors describe taste, not destructive actions or system errors.
+  static const liked = success;
+  static const okay = warning;
+  static const disliked = Color(0xff8f5060);
+  static const likedSoft = Color(0xffe9f7ef);
+  static const okaySoft = Color(0xfffff4dc);
+  static const dislikedSoft = Color(0xfff7e9ed);
+  static const watchlistSoft = primarySoftStrong;
+  static const neutralSoft = Color(0xfff3f4f6);
+
+  // Backward-compatible alias for older call sites. New code should choose the
+  // explicit `error`, `destructive`, or `disliked` semantic role.
+  static const danger = destructive;
+
+  static const glassTint = Color(0xc7ffffff);
+  static const glassBorder = Color(0xd9ffffff);
+  static const navigationGlassBorder = Color(0xb8ffffff);
+  static const navigationSelectionBorder = Color(0xd1ffffff);
+  static const glassBorderSubtle = Color(0xffe9edf2);
+  static const scrim = Color(0x7a000000);
+}
+
+/// MovieDiary's 4-point-compatible spacing scale.
+///
+/// Prefer the semantic aliases for page, card, control, and section layout;
+/// the numeric scale remains available for component-specific geometry.
+class Md3Spacing {
+  const Md3Spacing._();
+
+  static const double x4 = 4;
+  static const double x8 = 8;
+  static const double x12 = 12;
+  static const double x16 = 16;
+  static const double x20 = 20;
+  static const double x24 = 24;
+  static const double x32 = 32;
+  static const double x40 = 40;
+  static const double x48 = 48;
+
+  static const double screenCompact = x16;
+  static const double screen = x24;
+  static const double cardCompact = x16;
+  static const double card = x20;
+  static const double controlGap = x12;
+  static const double sectionGap = x32;
+}
+
+/// Shape roles shared by controls and surfaces.
+class Md3Radius {
+  const Md3Radius._();
+
+  static const double small = 8;
+  static const double medium = 12;
+  static const double input = 16;
+  static const double poster = 16;
+  static const double button = 20;
+  static const double navigationSelection = 22;
+  static const double card = 24;
+  static const double navigation = 28;
+  static const double sheet = 32;
+  static const double pill = 999;
+}
+
+/// Minimum interactive geometry. Primary controls use 48; compact controls
+/// may use 44 when their surrounding layout remains fully tappable.
+class Md3Targets {
+  const Md3Targets._();
+
+  static const double minimum = 44;
+  static const double primary = 48;
+}
+
+/// Type roles used by the app theme and shared components.
+class Md3Typography {
+  const Md3Typography._();
+
+  static const pageTitle = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 32,
+    height: 38 / 32,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
+  static const pageTitleCompact = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 28,
+    height: 34 / 28,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
+  static const sectionTitle = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 24,
+    height: 29 / 24,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
+  static const sectionTitleCompact = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 22,
+    height: 27 / 22,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
+  static const cardTitle = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 20,
+    height: 25 / 20,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0,
+  );
+  static const title = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 16,
+    height: 23 / 16,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0,
+  );
+  static const titleCompact = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 14,
+    height: 20 / 14,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0,
+  );
+  static const body = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 16,
+    height: 23 / 16,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0,
+  );
+  static const bodyCompact = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 14,
+    height: 20 / 14,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0,
+  );
+  static const metadata = TextStyle(
+    color: Md3Colors.muted,
+    fontSize: 13,
+    height: 18 / 13,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0,
+  );
+  static const label = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 14,
+    height: 20 / 14,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0,
+  );
+  static const labelCompact = TextStyle(
+    color: Md3Colors.text,
+    fontSize: 13,
+    height: 18 / 13,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0,
+  );
+  static const navigationLabel = TextStyle(
+    color: Md3Colors.muted,
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0,
+  );
+}
+
+/// Restrained depth roles. Content cards stay opaque and use `contentCard`;
+/// glass shadows are reserved for navigation, filters, and sticky actions.
+class Md3Shadows {
+  const Md3Shadows._();
+
+  static const contentCardColor = Color(0x14172231);
+  static const contentCard = <BoxShadow>[
+    BoxShadow(
+      color: contentCardColor,
+      blurRadius: 24,
+      offset: Offset(0, 8),
+    ),
+  ];
+  static const sheet = <BoxShadow>[
+    BoxShadow(
+      color: Color(0x260f253d),
+      blurRadius: 24,
+      offset: Offset(0, 12),
+    ),
+  ];
+  static const glass = <BoxShadow>[
+    BoxShadow(
+      color: Color(0x160f253d),
+      blurRadius: 24,
+      offset: Offset(0, 10),
+    ),
+  ];
+  static const navigation = <BoxShadow>[
+    BoxShadow(
+      color: Color(0x24102a43),
+      blurRadius: 28,
+      offset: Offset(0, 14),
+    ),
+  ];
+  static const navigationSelection = <BoxShadow>[
+    BoxShadow(
+      color: Color(0x14244f7d),
+      blurRadius: 12,
+      offset: Offset(0, 6),
+    ),
+  ];
+}
+
+/// Motion timing roles. Components must resolve these to [Duration.zero]
+/// when reduced motion is requested.
+class Md3Durations {
+  const Md3Durations._();
+
+  static const quick = Duration(milliseconds: 120);
+  static const feedback = Duration(milliseconds: 160);
+  static const standard = Duration(milliseconds: 180);
+  static const emphasis = Duration(milliseconds: 240);
+  static const shimmer = Duration(milliseconds: 1200);
 }
 
 class MovieDiaryTheme {
@@ -35,110 +261,26 @@ class MovieDiaryTheme {
       onSecondary: Md3Colors.text,
       surface: Md3Colors.surface,
       onSurface: Md3Colors.text,
-      error: Md3Colors.danger,
+      error: Md3Colors.error,
       onError: Colors.white,
       outline: Md3Colors.border,
-      shadow: Color(0x14172231),
+      shadow: Md3Shadows.contentCardColor,
     );
     const textTheme = TextTheme(
-      displayLarge: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 32,
-        height: 38 / 32,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0,
-      ),
-      displayMedium: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 32,
-        height: 38 / 32,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0,
-      ),
-      displaySmall: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 28,
-        height: 34 / 28,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0,
-      ),
-      headlineLarge: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 24,
-        height: 29 / 24,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0,
-      ),
-      headlineMedium: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 24,
-        height: 29 / 24,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0,
-      ),
-      headlineSmall: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 22,
-        height: 27 / 22,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0,
-      ),
-      titleLarge: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 20,
-        height: 25 / 20,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0,
-      ),
-      titleMedium: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 16,
-        height: 23 / 16,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0,
-      ),
-      titleSmall: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 14,
-        height: 20 / 14,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0,
-      ),
-      bodyLarge: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 16,
-        height: 23 / 16,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0,
-      ),
-      bodyMedium: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 14,
-        height: 20 / 14,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0,
-      ),
-      bodySmall: TextStyle(
-        color: Md3Colors.muted,
-        fontSize: 13,
-        height: 18 / 13,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0,
-      ),
-      labelLarge: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 14,
-        height: 20 / 14,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0,
-      ),
-      labelMedium: TextStyle(
-        color: Md3Colors.text,
-        fontSize: 13,
-        height: 18 / 13,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0,
-      ),
+      displayLarge: Md3Typography.pageTitle,
+      displayMedium: Md3Typography.pageTitle,
+      displaySmall: Md3Typography.pageTitleCompact,
+      headlineLarge: Md3Typography.sectionTitle,
+      headlineMedium: Md3Typography.sectionTitle,
+      headlineSmall: Md3Typography.sectionTitleCompact,
+      titleLarge: Md3Typography.cardTitle,
+      titleMedium: Md3Typography.title,
+      titleSmall: Md3Typography.titleCompact,
+      bodyLarge: Md3Typography.body,
+      bodyMedium: Md3Typography.bodyCompact,
+      bodySmall: Md3Typography.metadata,
+      labelLarge: Md3Typography.label,
+      labelMedium: Md3Typography.labelCompact,
     );
 
     return ThemeData(
@@ -161,21 +303,15 @@ class MovieDiaryTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
-          color: Md3Colors.text,
-          fontSize: 20,
-          height: 25 / 20,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0,
-        ),
+        titleTextStyle: Md3Typography.cardTitle,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size.square(Md3Targets.primary),
           backgroundColor: Md3Colors.primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(Md3Radius.button),
           ),
           textStyle: const TextStyle(
             fontSize: 16,
@@ -186,17 +322,17 @@ class MovieDiaryTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size.square(Md3Targets.primary),
           foregroundColor: Md3Colors.primary,
           side: const BorderSide(color: Md3Colors.border),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(Md3Radius.button),
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          minimumSize: const Size(44, 44),
+          minimumSize: const Size.square(Md3Targets.minimum),
           foregroundColor: Md3Colors.primary,
           textStyle: const TextStyle(
             fontSize: 14,
@@ -209,19 +345,19 @@ class MovieDiaryTheme {
         filled: true,
         fillColor: Md3Colors.surface,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          horizontal: Md3Spacing.x16,
+          vertical: Md3Spacing.x12,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Md3Radius.input),
           borderSide: const BorderSide(color: Md3Colors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Md3Radius.input),
           borderSide: const BorderSide(color: Md3Colors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Md3Radius.input),
           borderSide: const BorderSide(
             color: Md3Colors.primary,
             width: 2,
@@ -249,15 +385,26 @@ class MovieDiaryTheme {
 
 class Md3Layout {
   static double pageHorizontalInset(BuildContext context) {
-    return MediaQuery.sizeOf(context).width >= 600 ? 24 : 16;
+    return MediaQuery.sizeOf(context).width >= 600
+        ? Md3Spacing.screen
+        : Md3Spacing.screenCompact;
   }
 }
 
 class Md3NavigationMetrics {
   static const double dockHeight = 72;
-  static const double minimumBottomMargin = 8;
-  static const double maximumBottomMargin = 12;
-  static const double contentClearance = 12;
+  static const double minimumBottomMargin = Md3Spacing.x8;
+  static const double maximumBottomMargin = Md3Spacing.x12;
+  static const double contentClearance = Md3Spacing.x12;
+  static const double horizontalMargin = Md3Spacing.x12;
+  static const double itemHorizontalPadding = 2;
+  static const double itemVerticalPadding = 6;
+  static const double itemMinimumHeight = 56;
+  static const double iconSize = 22;
+  static const double labelGap = Md3Spacing.x4;
+  static const double labelSize = 11;
+  static const double glassBlur = 28;
+  static const double compactGlassBlur = 20;
 
   static double bottomMargin(BuildContext context) {
     final safeBottom = MediaQuery.viewPaddingOf(context).bottom;
@@ -302,9 +449,9 @@ class Md3Page extends StatelessWidget {
           padding: padding ??
               EdgeInsets.fromLTRB(
                 Md3Layout.pageHorizontalInset(context),
-                18,
+                Md3Spacing.x20,
                 Md3Layout.pageHorizontalInset(context),
-                24,
+                Md3Spacing.x24,
               ),
           child: child,
         ),
@@ -324,11 +471,11 @@ class Md3Card extends StatelessWidget {
   const Md3Card({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(Md3Spacing.card),
     this.margin = EdgeInsets.zero,
     this.color = Md3Colors.surface,
     this.onTap,
-    this.borderRadius = 24,
+    this.borderRadius = Md3Radius.card,
   });
 
   @override
@@ -341,13 +488,7 @@ class Md3Card extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: Md3Colors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14172231),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-        ],
+        boxShadow: Md3Shadows.contentCard,
       ),
       child: child,
     );
@@ -379,17 +520,13 @@ class Md3LiquidGlass extends StatelessWidget {
     required this.child,
     this.margin = EdgeInsets.zero,
     this.padding = EdgeInsets.zero,
-    this.borderRadius = const BorderRadius.all(Radius.circular(28)),
-    this.blur = 28,
-    this.tint = const Color(0xb8ffffff),
-    this.borderColor = const Color(0xd9ffffff),
-    this.shadows = const [
-      BoxShadow(
-        color: Color(0x160f253d),
-        blurRadius: 24,
-        offset: Offset(0, 10),
-      ),
-    ],
+    this.borderRadius = const BorderRadius.all(
+      Radius.circular(Md3Radius.navigation),
+    ),
+    this.blur = Md3NavigationMetrics.glassBlur,
+    this.tint = Md3Colors.glassTint,
+    this.borderColor = Md3Colors.glassBorder,
+    this.shadows = Md3Shadows.glass,
   });
 
   @override
@@ -435,12 +572,11 @@ Future<T?> showMd3BottomSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.48),
+    barrierColor: Md3Colors.scrim,
     builder: (sheetContext) {
       final mediaQuery = MediaQuery.of(sheetContext);
-      final motionDuration = mediaQuery.disableAnimations
-          ? Duration.zero
-          : const Duration(milliseconds: 180);
+      final motionDuration =
+          mediaQuery.disableAnimations ? Duration.zero : Md3Durations.standard;
       final availableHeight = (mediaQuery.size.height -
               mediaQuery.viewInsets.bottom -
               mediaQuery.viewPadding.top -
@@ -477,26 +613,30 @@ class Md3BottomSheetSurface extends StatelessWidget {
   const Md3BottomSheetSurface({
     super.key,
     required this.child,
-    this.contentPadding = const EdgeInsets.fromLTRB(20, 16, 20, 20),
+    this.contentPadding = const EdgeInsets.fromLTRB(
+      Md3Spacing.x20,
+      Md3Spacing.x16,
+      Md3Spacing.x20,
+      Md3Spacing.x20,
+    ),
     this.showDragHandle = true,
-    this.borderRadius = 24,
+    this.borderRadius = Md3Radius.sheet,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      margin: const EdgeInsets.fromLTRB(
+        Md3Spacing.x12,
+        0,
+        Md3Spacing.x12,
+        Md3Spacing.x12,
+      ),
       decoration: BoxDecoration(
         color: Md3Colors.surface,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: Md3Colors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x260f253d),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
+        boxShadow: Md3Shadows.sheet,
       ),
       child: SafeArea(
         top: false,
@@ -507,7 +647,7 @@ class Md3BottomSheetSurface extends StatelessWidget {
             children: [
               if (showDragHandle) ...[
                 const _Md3BottomSheetDragHandle(),
-                const SizedBox(height: 16),
+                const SizedBox(height: Md3Spacing.x16),
               ],
               child,
             ],
@@ -580,7 +720,7 @@ class _Md3BottomSheetDragHandleState extends State<_Md3BottomSheetDragHandle> {
               height: 5,
               decoration: BoxDecoration(
                 color: Md3Colors.border,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(Md3Radius.pill),
               ),
             ),
           ),
@@ -605,15 +745,18 @@ class Md3SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 32, 2, 12),
+      padding: const EdgeInsets.fromLTRB(
+        2,
+        Md3Spacing.sectionGap,
+        2,
+        Md3Spacing.x12,
+      ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                color: Md3Colors.text,
-                fontSize: 24,
+              style: Md3Typography.sectionTitle.copyWith(
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -665,7 +808,7 @@ class _Md3ExpandableTextState extends State<Md3ExpandableText> {
         final canExpand = textPainter.didExceedMaxLines;
         final duration = MediaQuery.disableAnimationsOf(context)
             ? Duration.zero
-            : const Duration(milliseconds: 160);
+            : Md3Durations.feedback;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,17 +826,17 @@ class _Md3ExpandableTextState extends State<Md3ExpandableText> {
               ),
             ),
             if (canExpand) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: Md3Spacing.x4),
               Semantics(
                 button: true,
                 label: _expanded ? 'Collapse full story' : 'Expand full story',
                 excludeSemantics: true,
                 child: SizedBox(
-                  height: 44,
+                  height: Md3Targets.minimum,
                   child: TextButton.icon(
                     key: const Key('expandable-text-toggle'),
                     style: TextButton.styleFrom(
-                      minimumSize: const Size(44, 44),
+                      minimumSize: const Size.square(Md3Targets.minimum),
                       padding: EdgeInsets.zero,
                       alignment: Alignment.centerLeft,
                     ),
@@ -733,12 +876,12 @@ class Md3PrimaryButton extends StatelessWidget {
     this.icon,
     this.onPressed,
     this.tonal = false,
-    this.height = 48,
+    this.height = Md3Targets.primary,
   });
 
   @override
   Widget build(BuildContext context) {
-    final background = tonal ? const Color(0xffe8f0fb) : Md3Colors.primary;
+    final background = tonal ? Md3Colors.primarySoftStrong : Md3Colors.primary;
     final foreground = tonal ? Md3Colors.primary : Colors.white;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final effectiveHeight = textScale > 1.3 ? height.clamp(64, 72) : height;
@@ -751,7 +894,7 @@ class Md3PrimaryButton extends StatelessWidget {
           backgroundColor: background,
           foregroundColor: foreground,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(Md3Radius.button),
           ),
         ),
         onPressed: onPressed,
@@ -759,15 +902,17 @@ class Md3PrimaryButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon ?? Icons.arrow_forward_rounded, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: Md3Spacing.x8),
             Flexible(
               child: Text(
                 text,
                 maxLines: 2,
                 overflow: TextOverflow.fade,
                 textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                style: Md3Typography.title.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
@@ -801,14 +946,14 @@ class Md3Chip extends StatelessWidget {
       button: isInteractive,
       selected: isInteractive ? active : null,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(Md3Radius.pill),
         onTap: onTap,
         child: Container(
-          height: isInteractive ? 44 : 34,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: isInteractive ? Md3Targets.minimum : 34,
+          padding: const EdgeInsets.symmetric(horizontal: Md3Spacing.x12),
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(Md3Radius.pill),
             border: Border.all(
               color: active ? Md3Colors.primary : Md3Colors.border,
             ),
@@ -846,7 +991,7 @@ class Md3SkeletonBox extends StatefulWidget {
     super.key,
     this.width,
     this.height,
-    this.radius = 16,
+    this.radius = Md3Radius.input,
     this.margin = EdgeInsets.zero,
   });
 
@@ -864,7 +1009,7 @@ class _Md3SkeletonBoxState extends State<Md3SkeletonBox>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: Md3Durations.shimmer,
     );
   }
 
@@ -907,7 +1052,7 @@ class _Md3SkeletonBoxState extends State<Md3SkeletonBox>
               height: widget.height,
               margin: widget.margin,
               decoration: BoxDecoration(
-                color: const Color(0xffedf1f5),
+                color: Md3Colors.skeleton,
                 borderRadius: BorderRadius.circular(widget.radius),
                 gradient: _animationsDisabled
                     ? null
@@ -915,11 +1060,11 @@ class _Md3SkeletonBoxState extends State<Md3SkeletonBox>
                         begin: Alignment(slide - 1, -0.4),
                         end: Alignment(slide + 1, 0.4),
                         colors: const [
-                          Color(0xffedf1f5),
-                          Color(0xffedf1f5),
-                          Color(0xfff8fafc),
-                          Color(0xffedf1f5),
-                          Color(0xffedf1f5),
+                          Md3Colors.skeleton,
+                          Md3Colors.skeleton,
+                          Md3Colors.skeletonHighlight,
+                          Md3Colors.skeleton,
+                          Md3Colors.skeleton,
                         ],
                         stops: const [0, 0.34, 0.5, 0.66, 1],
                       ),
@@ -948,15 +1093,15 @@ class Md3ListSkeletonCard extends StatelessWidget {
     this.rows = 3,
     this.posterWidth = 72,
     this.posterHeight = 108,
-    this.cardPadding = 12,
+    this.cardPadding = Md3Spacing.x12,
     this.itemSpacing = 0,
     this.showTrailing = true,
-    this.trailingSize = 44,
+    this.trailingSize = Md3Targets.minimum,
     this.cardMargin = const EdgeInsets.symmetric(
-      horizontal: 12,
+      horizontal: Md3Spacing.x12,
       vertical: 6,
     ),
-    this.cardRadius = 20,
+    this.cardRadius = Md3Radius.button,
   });
 
   @override
@@ -975,13 +1120,7 @@ class Md3ListSkeletonCard extends StatelessWidget {
               color: Md3Colors.surface,
               borderRadius: BorderRadius.circular(cardRadius),
               border: Border.all(color: Md3Colors.border),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0f172231),
-                  blurRadius: 18,
-                  offset: Offset(0, 6),
-                ),
-              ],
+              boxShadow: Md3Shadows.contentCard,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -989,9 +1128,9 @@ class Md3ListSkeletonCard extends StatelessWidget {
                 Md3SkeletonBox(
                   width: posterWidth,
                   height: posterHeight,
-                  radius: 12,
+                  radius: Md3Radius.medium,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: Md3Spacing.x12),
                 Expanded(
                   child: SizedBox(
                     height: posterHeight,
@@ -1019,11 +1158,11 @@ class Md3ListSkeletonCard extends StatelessWidget {
                   ),
                 ),
                 if (showTrailing) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Md3Spacing.x12),
                   Md3SkeletonBox(
                     width: trailingSize,
                     height: trailingSize,
-                    radius: 16,
+                    radius: Md3Radius.input,
                   ),
                 ],
               ],
@@ -1174,7 +1313,7 @@ class _Md3ProgressiveNetworkImageState
             }
             return TweenAnimationBuilder<double>(
               key: const Key('md3-progressive-image-loaded'),
-              duration: const Duration(milliseconds: 160),
+              duration: Md3Durations.feedback,
               curve: Curves.easeOut,
               tween: Tween(begin: 0, end: 1),
               builder: (context, opacity, image) => Opacity(
@@ -1204,6 +1343,117 @@ class _Md3ProgressiveNetworkImageState
   }
 }
 
+typedef Md3PosterPrefetchProviderBuilder = ImageProvider<Object> Function(
+  String imageUrl,
+  int cacheWidth,
+  int cacheHeight,
+);
+
+/// Keeps exactly one next-poster decode warm without retaining stale decks.
+class Md3PosterPrefetchController {
+  Md3PosterPrefetchController({
+    Md3PosterPrefetchProviderBuilder? providerBuilder,
+  }) : _providerBuilder = providerBuilder ?? _defaultProviderBuilder;
+
+  final Md3PosterPrefetchProviderBuilder _providerBuilder;
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+  String? _targetKey;
+  bool _disposed = false;
+
+  void prefetchNext(
+    BuildContext context, {
+    required List<Movie> movies,
+    required int currentIndex,
+    required String deckKey,
+    double logicalWidth = 112,
+    double logicalHeight = 168,
+  }) {
+    if (_disposed ||
+        !context.mounted ||
+        currentIndex < 0 ||
+        currentIndex + 1 >= movies.length) {
+      cancel();
+      return;
+    }
+
+    final movie = movies[currentIndex + 1];
+    final imageUrl = _posterImageUrl(movie.posterPath);
+    if (imageUrl == null) {
+      cancel();
+      return;
+    }
+
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth =
+        (logicalWidth * pixelRatio).round().clamp(1, 2048).toInt();
+    final cacheHeight =
+        (logicalHeight * pixelRatio).round().clamp(1, 3072).toInt();
+    final nextTarget =
+        '$deckKey|${movie.id}|$imageUrl|$cacheWidth:$cacheHeight';
+    if (_targetKey == nextTarget) {
+      return;
+    }
+
+    cancel();
+    _targetKey = nextTarget;
+    final provider = _providerBuilder(imageUrl, cacheWidth, cacheHeight);
+    final stream = provider.resolve(
+      createLocalImageConfiguration(
+        context,
+        size: Size(logicalWidth, logicalHeight),
+      ),
+    );
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (image, synchronousCall) => _complete(stream, listener),
+      onError: (error, stackTrace) => _complete(stream, listener),
+    );
+    _stream = stream;
+    _listener = listener;
+    stream.addListener(listener);
+  }
+
+  void _complete(ImageStream stream, ImageStreamListener listener) {
+    stream.removeListener(listener);
+    if (identical(_stream, stream)) {
+      _stream = null;
+      _listener = null;
+    }
+  }
+
+  void cancel() {
+    final stream = _stream;
+    final listener = _listener;
+    if (stream != null && listener != null) {
+      stream.removeListener(listener);
+    }
+    _stream = null;
+    _listener = null;
+    _targetKey = null;
+  }
+
+  void dispose() {
+    if (_disposed) {
+      return;
+    }
+    cancel();
+    _disposed = true;
+  }
+
+  static ImageProvider<Object> _defaultProviderBuilder(
+    String imageUrl,
+    int cacheWidth,
+    int cacheHeight,
+  ) {
+    return CachedNetworkImageProvider(
+      imageUrl,
+      maxWidth: cacheWidth,
+      maxHeight: cacheHeight,
+    );
+  }
+}
+
 class Md3MoviePoster extends StatefulWidget {
   final Movie movie;
   final double width;
@@ -1218,7 +1468,7 @@ class Md3MoviePoster extends StatefulWidget {
     required this.movie,
     required this.width,
     required this.height,
-    this.borderRadius = 16,
+    this.borderRadius = Md3Radius.poster,
     this.hydrateMissingPoster = true,
     this.metadataLoader,
     this.imageProvider,
@@ -1306,7 +1556,7 @@ class _PosterFallback extends StatelessWidget {
     required this.width,
     required this.height,
     required this.title,
-    this.borderRadius = 16,
+    this.borderRadius = Md3Radius.poster,
   });
 
   @override
@@ -1360,7 +1610,7 @@ class _PosterFallback extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: Md3Spacing.x8),
                         const Text(
                           'No poster',
                           textAlign: TextAlign.center,
@@ -1425,12 +1675,12 @@ class Md3ProviderLogo extends StatelessWidget {
       imageUrl: _providerImageUrl(logoPath),
       width: size,
       height: size,
-      borderRadius: 10,
+      borderRadius: Md3Radius.medium,
       imageProvider: imageProvider,
       placeholder: Md3SkeletonBox(
         width: size,
         height: size,
-        radius: 10,
+        radius: Md3Radius.medium,
       ),
       fallback: _ProviderFallback(
         providerName: providerName,
@@ -1462,7 +1712,7 @@ class _ProviderFallback extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Md3Colors.surfaceMuted,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(Md3Radius.medium),
         border: Border.all(color: Md3Colors.border),
       ),
       child: initial == null
@@ -1496,12 +1746,23 @@ class Md3ProviderSkeletonList extends StatelessWidget {
         children: List.generate(
           rows,
           (index) => Padding(
-            padding: EdgeInsets.only(bottom: index == rows - 1 ? 0 : 12),
+            padding: EdgeInsets.only(
+              bottom: index == rows - 1 ? 0 : Md3Spacing.x12,
+            ),
             child: const Row(
               children: [
-                Md3SkeletonBox(width: 40, height: 40, radius: 10),
-                SizedBox(width: 12),
-                Expanded(child: Md3SkeletonBox(height: 16, radius: 8)),
+                Md3SkeletonBox(
+                  width: 40,
+                  height: 40,
+                  radius: Md3Radius.medium,
+                ),
+                SizedBox(width: Md3Spacing.x12),
+                Expanded(
+                  child: Md3SkeletonBox(
+                    height: Md3Spacing.x16,
+                    radius: Md3Radius.small,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1634,12 +1895,12 @@ class Md3HorizontalMovieCard extends StatelessWidget {
 
     return Md3Card(
       onTap: onTap,
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(Md3Spacing.x12),
+      margin: const EdgeInsets.only(bottom: Md3Spacing.x12),
       child: Row(
         children: [
           Md3MoviePoster(movie: movie, width: 58, height: 86),
-          const SizedBox(width: 12),
+          const SizedBox(width: Md3Spacing.x12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1666,7 +1927,7 @@ class Md3HorizontalMovieCard extends StatelessWidget {
                   ),
                 ),
                 if (movie.rating > 0) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Md3Spacing.x8),
                   Text(
                     'Audience score ${movie.rating}%',
                     style: const TextStyle(
@@ -1680,7 +1941,7 @@ class Md3HorizontalMovieCard extends StatelessWidget {
             ),
           ),
           if (trailing != null) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: Md3Spacing.x8),
             trailing!,
           ],
         ],
@@ -1700,35 +1961,35 @@ class Md3OpinionBadge extends StatelessWidget {
       MovieRate.liked => (
           'Liked',
           Icons.favorite_rounded,
-          Md3Colors.success,
-          const Color(0xffe9f7ef)
+          Md3Colors.liked,
+          Md3Colors.likedSoft
         ),
       MovieRate.okay => (
           'Okay',
           Icons.sentiment_satisfied_alt_rounded,
-          Md3Colors.warning,
-          const Color(0xfffff4dc)
+          Md3Colors.okay,
+          Md3Colors.okaySoft
         ),
       MovieRate.notLiked => (
           'Disliked',
           Icons.block_rounded,
-          Md3Colors.danger,
-          const Color(0xffffecef)
+          Md3Colors.disliked,
+          Md3Colors.dislikedSoft
         ),
       MovieRate.addedToWatchlist => (
           'Watchlist',
           Icons.bookmark_rounded,
           Md3Colors.primary,
-          const Color(0xffe8f0fb)
+          Md3Colors.watchlistSoft
         ),
-      _ => ('New', Icons.add_rounded, Md3Colors.muted, const Color(0xfff3f4f6)),
+      _ => ('New', Icons.add_rounded, Md3Colors.muted, Md3Colors.neutralSoft),
     };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: data.$4,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(Md3Radius.pill),
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,

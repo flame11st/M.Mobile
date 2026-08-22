@@ -1,37 +1,74 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:provider/provider.dart';
 
-Future<void> showMarkWatchedBottomSheet({
+Future<int?> showMarkWatchedBottomSheet({
   required BuildContext context,
   required Movie movie,
+  String sourceSurface = 'watchlist',
+  String? recommendationSessionId,
+  ServiceAgent? serviceAgent,
 }) {
-  return showMd3BottomSheet<void>(
+  unawaited(ProductAnalytics.instance.track(
+    ProductAnalyticsEventName.markWatchedStarted,
+    parameters: {
+      ProductAnalyticsParameter.movieId: movie.id,
+      ProductAnalyticsParameter.sourceSurface: sourceSurface,
+      if (recommendationSessionId != null)
+        ProductAnalyticsParameter.recommendationSessionId:
+            recommendationSessionId,
+    },
+  ));
+  return showMd3BottomSheet<int>(
     context: context,
-    builder: (context) => MarkWatchedBottomSheet(movie: movie),
+    builder: (context) => MarkWatchedBottomSheet(
+      movie: movie,
+      sourceSurface: sourceSurface,
+      recommendationSessionId: recommendationSessionId,
+      serviceAgent: serviceAgent,
+    ),
   );
 }
 
 class MarkWatchedBottomSheet extends StatefulWidget {
   final Movie movie;
+  final String sourceSurface;
+  final String? recommendationSessionId;
+  final ServiceAgent? serviceAgent;
 
-  const MarkWatchedBottomSheet({super.key, required this.movie});
+  const MarkWatchedBottomSheet({
+    super.key,
+    required this.movie,
+    this.sourceSurface = 'watchlist',
+    this.recommendationSessionId,
+    this.serviceAgent,
+  });
 
   @override
   State<MarkWatchedBottomSheet> createState() => _MarkWatchedBottomSheetState();
 }
 
 class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
-  final ServiceAgent _serviceAgent = ServiceAgent();
+  static const _mutationTimeout = Duration(seconds: 12);
+
+  late final ServiceAgent _serviceAgent;
   int? _savingRate;
+
+  @override
+  void initState() {
+    super.initState();
+    _serviceAgent = widget.serviceAgent ?? ServiceAgent();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +132,7 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
           _OpinionButton(
             label: 'Disliked',
             icon: Icons.block_rounded,
-            color: Md3Colors.danger,
+            color: Md3Colors.disliked,
             busy: _savingRate == MovieRate.notLiked,
             enabled: _savingRate == null,
             onPressed: () => _rate(MovieRate.notLiked),
@@ -128,7 +165,6 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
       return;
     }
 
-    setState(() => _savingRate = movieRate);
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final moviesState = Provider.of<MoviesState>(context, listen: false);
@@ -137,7 +173,23 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
         moviesState.userMovies.where((movie) => movie.id == widget.movie.id);
     final currentMovie =
         matchingMovies.isNotEmpty ? matchingMovies.first : widget.movie;
-    final previousRate = currentMovie.movieRate;
+    final snapshot = moviesState.captureMovieState(
+      currentMovie.id,
+      currentMovie,
+    );
+
+    if (!moviesState.beginMovieMutation(currentMovie.id)) {
+      MSnackBar.showWithMessenger(
+        messenger,
+        '${currentMovie.title} is already being updated.',
+        false,
+      );
+      return;
+    }
+
+    setState(() => _savingRate = movieRate);
+    var didSave = false;
+    var savedRevision = moviesState.movieMutationRevision(currentMovie.id);
 
     try {
       await moviesState.changeMovieRate(
@@ -145,6 +197,9 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
         movieRate,
         userState.isIncognitoMode,
         currentMovie,
+        persistImmediately: true,
+        awaitAnonymousSyncPersistence: true,
+        commitRatingState: false,
       );
 
       if (!userState.isIncognitoMode) {
@@ -153,24 +208,31 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
           throw const HttpException('Signed-in movie update is unavailable.');
         }
 
-        final response = await _serviceAgent.rateMovie(
-          currentMovie.id,
-          userId,
-          movieRate,
-        );
+        final response = await _serviceAgent
+            .rateMovie(
+              currentMovie.id,
+              userId,
+              movieRate,
+            )
+            .timeout(_mutationTimeout);
         if (response.statusCode < 200 || response.statusCode >= 300) {
           throw HttpException(
             'Movie update failed with ${response.statusCode}.',
           );
         }
       }
+      moviesState.commitRatingStateMutation();
+      savedRevision = moviesState.movieMutationRevision(currentMovie.id);
+      didSave = true;
     } catch (_) {
-      await moviesState.changeMovieRate(
-        currentMovie.id,
-        previousRate,
+      await moviesState.restoreMovieState(
+        snapshot,
         userState.isIncognitoMode,
         currentMovie,
+        commitRatingState: false,
       );
+      widget.movie.movieRate = snapshot.movieRate;
+      widget.movie.updated = snapshot.updated;
 
       if (!mounted) {
         return;
@@ -184,21 +246,182 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
         duration: const Duration(milliseconds: 2500),
       );
       return;
+    } finally {
+      moviesState.endMovieMutation(currentMovie.id);
     }
 
-    if (!mounted) {
+    if (!didSave || !mounted) {
       return;
     }
 
+    unawaited(trackMovieStateTransition(
+      movieId: currentMovie.id,
+      previousRate: snapshot.movieRate,
+      nextRate: movieRate,
+      sourceSurface: widget.sourceSurface,
+    ));
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.markWatchedCompleted,
+      parameters: {
+        ProductAnalyticsParameter.movieId: currentMovie.id,
+        ProductAnalyticsParameter.opinionState:
+            MovieRate.opinionLabel(movieRate).toLowerCase(),
+        ProductAnalyticsParameter.sourceSurface: widget.sourceSurface,
+        if (widget.recommendationSessionId != null)
+          ProductAnalyticsParameter.recommendationSessionId:
+              widget.recommendationSessionId,
+      },
+    ));
+    if (widget.sourceSurface == 'recommendations') {
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.recommendationSeenAlready,
+        parameters: {
+          ProductAnalyticsParameter.movieId: currentMovie.id,
+          ProductAnalyticsParameter.opinionState:
+              MovieRate.opinionLabel(movieRate).toLowerCase(),
+          ProductAnalyticsParameter.sourceSurface: 'recommendations',
+          if (widget.recommendationSessionId != null)
+            ProductAnalyticsParameter.recommendationSessionId:
+                widget.recommendationSessionId,
+        },
+        transitionId: widget.recommendationSessionId == null
+            ? null
+            : '${widget.recommendationSessionId}:${currentMovie.id}',
+      ));
+    }
+
     final savedAsLabel = MovieRate.opinionLabel(movieRate);
-    navigator.pop();
+    final sourceSurface = widget.sourceSurface;
+    final visibleMovie = widget.movie;
+    navigator.pop(movieRate);
     MSnackBar.showWithMessenger(
       messenger,
-      'Moved to Viewed. Saved as $savedAsLabel.',
+      'Moved to Viewed · Rated $savedAsLabel',
       true,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(seconds: 4),
+      actionLabel: 'Undo',
+      onAction: () => unawaited(
+        _undoMarkWatched(
+          moviesState: moviesState,
+          userState: userState,
+          serviceAgent: _serviceAgent,
+          messenger: messenger,
+          movie: currentMovie,
+          visibleMovie: visibleMovie,
+          snapshot: snapshot,
+          savedRate: movieRate,
+          savedRevision: savedRevision,
+          sourceSurface: sourceSurface,
+        ),
+      ),
     );
   }
+}
+
+Future<void> _undoMarkWatched({
+  required MoviesState moviesState,
+  required UserState userState,
+  required ServiceAgent serviceAgent,
+  required ScaffoldMessengerState messenger,
+  required Movie movie,
+  required Movie visibleMovie,
+  required MovieStateSnapshot snapshot,
+  required int savedRate,
+  required int savedRevision,
+  required String sourceSurface,
+}) async {
+  if (!moviesState.beginMovieMutation(movie.id)) {
+    MSnackBar.showWithMessenger(
+      messenger,
+      '${movie.title} is already being updated. The saved rating was kept.',
+      false,
+    );
+    return;
+  }
+
+  var didUndo = false;
+  try {
+    final matchingMovies =
+        moviesState.userMovies.where((item) => item.id == movie.id);
+    final currentMovie = matchingMovies.isEmpty ? movie : matchingMovies.first;
+    if (moviesState.movieMutationRevision(movie.id) != savedRevision ||
+        currentMovie.movieRate != savedRate) {
+      MSnackBar.showWithMessenger(
+        messenger,
+        '${movie.title} changed after Mark Watched. Its current state was kept.',
+        false,
+      );
+      return;
+    }
+
+    await moviesState.restoreMovieState(
+      snapshot,
+      userState.isIncognitoMode,
+      currentMovie,
+      commitRatingState: false,
+    );
+    visibleMovie.movieRate = snapshot.movieRate;
+    visibleMovie.updated = snapshot.updated;
+
+    if (!userState.isIncognitoMode) {
+      final userId = userState.userId;
+      if (userId == null || userId.isEmpty || ServiceAgent.state == null) {
+        throw const HttpException('Signed-in movie update is unavailable.');
+      }
+
+      final response = await serviceAgent
+          .rateMovie(movie.id, userId, snapshot.movieRate)
+          .timeout(_MarkWatchedBottomSheetState._mutationTimeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException(
+          'Movie update failed with ${response.statusCode}.',
+        );
+      }
+    }
+
+    moviesState.commitRatingStateMutation();
+    didUndo = true;
+  } catch (_) {
+    await moviesState.changeMovieRate(
+      movie.id,
+      savedRate,
+      userState.isIncognitoMode,
+      movie,
+      persistImmediately: true,
+      awaitAnonymousSyncPersistence: true,
+      commitRatingState: false,
+    );
+    visibleMovie.movieRate = savedRate;
+    MSnackBar.showWithMessenger(
+      messenger,
+      'Couldn’t undo. ${movie.title} remains in Viewed as ${MovieRate.opinionLabel(savedRate)}.',
+      false,
+    );
+  } finally {
+    moviesState.endMovieMutation(movie.id);
+  }
+
+  if (!didUndo) {
+    return;
+  }
+
+  unawaited(trackMovieStateTransition(
+    movieId: movie.id,
+    previousRate: savedRate,
+    nextRate: snapshot.movieRate,
+    sourceSurface: sourceSurface,
+  ));
+  final restoredLabel = snapshot.movieRate == MovieRate.addedToWatchlist
+      ? 'Restored to Watchlist.'
+      : snapshot.movieRate == MovieRate.notRated
+          ? 'Removed the rating.'
+          : 'Restored as ${MovieRate.opinionLabel(snapshot.movieRate)}.';
+  MSnackBar.showWithMessenger(
+    messenger,
+    'Undo complete · $restoredLabel',
+    true,
+    duration: const Duration(milliseconds: 2200),
+  );
 }
 
 class _OpinionButton extends StatelessWidget {

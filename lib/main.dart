@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:provider/provider.dart';
 
 import 'Widgets/Providers/movies_state.dart';
@@ -11,6 +13,10 @@ import 'Widgets/m_home.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
+  unawaited(ProductAnalytics.instance.initialize());
 
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);

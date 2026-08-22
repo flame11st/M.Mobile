@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/m_icon_button.dart';
@@ -31,16 +34,20 @@ class MIconRateButton extends StatelessWidget {
       required this.movie,
       required this.movieRate});
 
-  rateMovie(String movieId, int movieRate, MoviesState moviesState,
+  Future<bool> rateMovie(String movieId, int movieRate, MoviesState moviesState,
       UserState userState) async {
-    moviesState.changeMovieRate(
+    await moviesState.changeMovieRate(
         movieId, movieRate, userState.isIncognitoMode, movie);
 
     if (!userState.isIncognitoMode) {
       if (ServiceAgent.state != null) {
-        await serviceAgent.rateMovie(movieId, userState.userId!, movieRate);
+        final response =
+            await serviceAgent.rateMovie(movieId, userState.userId!, movieRate);
+        return response.statusCode >= 200 && response.statusCode < 300;
       }
+      return false;
     }
+    return true;
   }
 
   @override
@@ -61,7 +68,16 @@ class MIconRateButton extends StatelessWidget {
       onPressedCallback: () async {
         final navigator = Navigator.of(context);
 
-        await rateMovie(movie.id, movieRate, moviesState, userState);
+        final transitionSucceeded =
+            await rateMovie(movie.id, movieRate, moviesState, userState);
+        if (transitionSucceeded) {
+          unawaited(trackMovieStateTransition(
+            movieId: movie.id,
+            previousRate: previousMovieRate,
+            nextRate: movieRate,
+            sourceSurface: fromSearch ? 'search' : 'movie_actions',
+          ));
+        }
 
         if (closeParentOnRate && navigator.canPop()) {
           navigator.pop();

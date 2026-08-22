@@ -8,12 +8,15 @@ class MTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText( text: TextSpan(
-          style: Theme.of(context).textTheme.bodyLarge,
-          children: <TextSpan>[
-            TextSpan(text: subtitleText + ': ', style: Theme.of(context).textTheme.displayMedium),
-            TextSpan(text: bodyText),
-          ],
-        ));
+    return RichText(
+        text: TextSpan(
+      style: Theme.of(context).textTheme.bodyLarge,
+      children: <TextSpan>[
+        TextSpan(
+            text: subtitleText + ': ',
+            style: Theme.of(context).textTheme.displayMedium),
+        TextSpan(text: bodyText),
+      ],
+    ));
   }
 }

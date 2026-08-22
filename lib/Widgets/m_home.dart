@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
 import 'package:provider/provider.dart';
 import 'loading_animation.dart';
@@ -52,9 +53,12 @@ class MHomeState extends State<MHome> with RestorationMixin {
       }
 
       MSnackBar.showSnackBar("Premium features successfully unlocked", true);
-    } else if (purchase.status == PurchaseStatus.error &&
-        purchase.error!.details != "") {
-      MSnackBar.showSnackBar(purchases.first.error!.details, false);
+      unawaited(_trackPremiumCompletion(purchase, 'purchased'));
+    } else if (purchase.status == PurchaseStatus.error) {
+      MSnackBar.showSnackBar(
+        'Your app store did not complete the purchase. Please try again.',
+        false,
+      );
     } else if (purchase.status == PurchaseStatus.pending) {
       MSnackBar.showSnackBar(
           "Your request is being processed. It can take a while", true);
@@ -67,9 +71,25 @@ class MHomeState extends State<MHome> with RestorationMixin {
       }
 
       MSnackBar.showSnackBar("Premium features successfully restored", true);
+      unawaited(_trackPremiumCompletion(purchase, 'restored'));
     } else {
       MSnackBar.showSnackBar("Not available now. Please try later", false);
     }
+  }
+
+  Future<void> _trackPremiumCompletion(
+    PurchaseDetails purchase,
+    String outcome,
+  ) {
+    return ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.premiumCompleted,
+      parameters: {
+        ProductAnalyticsParameter.outcomeCategory: outcome,
+        ProductAnalyticsParameter.premiumState: 'owned',
+        ProductAnalyticsParameter.sourceSurface: 'premium',
+      },
+      transitionId: purchase.purchaseID,
+    );
   }
 
   @override
@@ -136,6 +156,7 @@ class MHomeState extends State<MHome> with RestorationMixin {
       ),
       child: MaterialApp(
           title: 'MovieDiary',
+          debugShowCheckedModeBanner: false,
           restorationScopeId: 'movieDiaryApp',
           home: Stack(
             children: <Widget>[
@@ -163,6 +184,7 @@ class MHomeState extends State<MHome> with RestorationMixin {
     _anonymousBootstrapError = null;
     Future.microtask(() async {
       try {
+        final wasAlreadyStarted = userState.onboardingStarted;
         final created = await userState
             .ensureAnonymousProfile()
             .timeout(_anonymousBootstrapTimeout);
@@ -171,6 +193,15 @@ class MHomeState extends State<MHome> with RestorationMixin {
         }
 
         await userState.setOnboardingStage(OnboardingStage.rating);
+        if (!wasAlreadyStarted) {
+          await ProductAnalytics.instance.track(
+            ProductAnalyticsEventName.onboardingStarted,
+            parameters: const {
+              ProductAnalyticsParameter.sourceSurface: 'onboarding',
+            },
+            transitionId: userState.userId,
+          );
+        }
       } catch (error) {
         debugPrint('Anonymous bootstrap failed: $error');
         if (!mounted) {

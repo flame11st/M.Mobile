@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Enums/movie_list_type.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:mmobile/Widgets/movies_list_page.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
@@ -540,6 +540,13 @@ class MoviesListsPageState extends State<MoviesListsPage>
       return;
     }
 
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.personalListCreated,
+      parameters: const {
+        ProductAnalyticsParameter.sourceSurface: 'lists',
+      },
+    ));
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -644,16 +651,6 @@ class MoviesListsPageState extends State<MoviesListsPage>
 
     return Scaffold(
       backgroundColor: Md3Colors.background,
-      appBar: AdManager.bannerVisible && AdManager.bannersReady
-          ? AppBar(
-              title: Center(
-                child: AdManager.getBannerWidget(AdManager.listsBannerAd),
-              ),
-              automaticallyImplyLeading: false,
-              elevation: 0,
-              backgroundColor: Md3Colors.background,
-            )
-          : null,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -1258,7 +1255,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                   borderSide: BorderSide(
                     color: duplicateError == null
                         ? Md3Colors.border
-                        : Md3Colors.danger,
+                        : Md3Colors.error,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -1266,7 +1263,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                   borderSide: BorderSide(
                     color: duplicateError == null
                         ? Md3Colors.primary
-                        : Md3Colors.danger,
+                        : Md3Colors.error,
                     width: 1.4,
                   ),
                 ),
@@ -1283,7 +1280,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                       child: Text(
                         duplicateError ?? '',
                         style: const TextStyle(
-                          color: Md3Colors.danger,
+                          color: Md3Colors.error,
                           fontSize: 13,
                           height: 1.38,
                           fontWeight: FontWeight.w600,
@@ -1336,10 +1333,10 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                   key: const Key('create-list-request-error'),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Md3Colors.danger.withValues(alpha: 0.08),
+                    color: Md3Colors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: Md3Colors.danger.withValues(alpha: 0.24),
+                      color: Md3Colors.error.withValues(alpha: 0.24),
                     ),
                   ),
                   child: Row(
@@ -1347,7 +1344,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                     children: [
                       const Icon(
                         Icons.cloud_off_rounded,
-                        color: Md3Colors.danger,
+                        color: Md3Colors.error,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -1355,7 +1352,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                         child: Text(
                           _requestError!,
                           style: const TextStyle(
-                            color: Md3Colors.danger,
+                            color: Md3Colors.error,
                             fontSize: 14,
                             height: 1.4,
                             fontWeight: FontWeight.w600,

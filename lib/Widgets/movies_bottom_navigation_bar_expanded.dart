@@ -20,8 +20,13 @@ class MoviesBottomNavigationBarExpanded extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Md3LiquidGlass(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        borderRadius: BorderRadius.circular(24),
+        margin: const EdgeInsets.fromLTRB(
+          Md3Spacing.x12,
+          0,
+          Md3Spacing.x12,
+          Md3Spacing.x12,
+        ),
+        borderRadius: BorderRadius.circular(Md3Radius.card),
         child: SizedBox(
           height: 100,
           child: MovieRateButtons(

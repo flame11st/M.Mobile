@@ -17,6 +17,24 @@ void main() {
   });
 
   group('MovieSearchStateController', () {
+    test('successful response preserves the canonical display query', () async {
+      final controller = _controller(
+        fetcher: (_, __) async => MovieSearchTransportResponse(
+          statusCode: 200,
+          canonicalQuery: 'Spider-Man',
+          body: _movieResponse(title: 'Spider-Man').body,
+        ),
+      );
+      addTearDown(controller.dispose);
+
+      controller.onQueryChanged('spoder man');
+      await _waitForTerminalState(controller);
+
+      expect(controller.state.phase, MovieSearchPhase.results);
+      expect(controller.state.query, 'spoder man');
+      expect(controller.state.canonicalQuery, 'Spider-Man');
+    });
+
     test('rapid query changes ignore a stale response', () async {
       final firstResponse = Completer<MovieSearchTransportResponse>();
       final controller = _controller(
@@ -31,9 +49,9 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.onQueryChanged('Blade Runner');
-      await _waitForRequestStart();
+      await _waitForRequestStart(controller);
       controller.onQueryChanged('Matrix');
-      await _waitForTerminalState();
+      await _waitForTerminalState(controller);
 
       expect(controller.state.phase, MovieSearchPhase.results);
       expect(controller.state.query, 'Matrix');
@@ -53,7 +71,7 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.onQueryChanged('Arrival');
-      await _waitForTerminalState();
+      await _waitForTerminalState(controller);
 
       expect(controller.state.phase, MovieSearchPhase.results);
       expect(controller.state.movies.single.title, 'Arrival');
@@ -70,7 +88,7 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.onQueryChanged('nonsense title');
-      await _waitForTerminalState();
+      await _waitForTerminalState(controller);
 
       expect(controller.state.phase, MovieSearchPhase.empty);
       expect(controller.state.query, 'nonsense title');
@@ -86,7 +104,7 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.onQueryChanged('Matrix');
-      await _waitForTerminalState();
+      await _waitForTerminalState(controller);
 
       expect(controller.state.phase, MovieSearchPhase.error);
       expect(controller.state.message, contains('could not read'));
@@ -103,7 +121,7 @@ void main() {
         addTearDown(controller.dispose);
 
         controller.onQueryChanged('Matrix');
-        await _waitForTerminalState();
+        await _waitForTerminalState(controller);
 
         expect(controller.state.phase, MovieSearchPhase.error);
         expect(controller.state.message, isNot(contains('localhost')));
@@ -121,7 +139,11 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.onQueryChanged('Blade Runner');
-      await Future<void>.delayed(const Duration(milliseconds: 35));
+      await _waitForState(
+        controller,
+        (state) => state.phase == MovieSearchPhase.timeout,
+        description: 'search request to time out',
+      );
 
       expect(controller.state.phase, MovieSearchPhase.timeout);
       expect(controller.state.query, 'Blade Runner');
@@ -151,12 +173,12 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.onQueryChanged('  Toy Story  ');
-      await _waitForTerminalState();
+      await _waitForTerminalState(controller);
       final failedRequestId = controller.state.requestId;
       expect(controller.state.phase, MovieSearchPhase.error);
 
       controller.retry();
-      await _waitForTerminalState();
+      await _waitForTerminalState(controller);
 
       expect(controller.state.phase, MovieSearchPhase.results);
       expect(controller.state.requestId, greaterThan(failedRequestId));
@@ -171,13 +193,44 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.onQueryChanged('Matrix');
-      await _waitForRequestStart();
+      await _waitForRequestStart(controller);
       controller.cancelForTabExit();
       response.complete(_movieResponse(title: 'The Matrix'));
       await Future<void>.delayed(const Duration(milliseconds: 5));
 
       expect(controller.state.phase, MovieSearchPhase.loading);
       expect(controller.state.movies, isEmpty);
+    });
+
+    test('state wait timeout reports the last phase and query', () async {
+      final response = Completer<MovieSearchTransportResponse>();
+      final controller = _controller(fetcher: (_, __) => response.future);
+      addTearDown(controller.dispose);
+
+      controller.onQueryChanged('Unfinished search');
+      await _waitForRequestStart(controller);
+
+      await expectLater(
+        _waitForState(
+          controller,
+          (state) => state.phase == MovieSearchPhase.results,
+          description: 'a deliberately unreachable result',
+          timeout: const Duration(milliseconds: 5),
+        ),
+        throwsA(
+          isA<TimeoutException>()
+              .having(
+                (error) => error.message.toString(),
+                'message',
+                contains('Last phase: MovieSearchPhase.loading'),
+              )
+              .having(
+                (error) => error.message.toString(),
+                'message',
+                contains('query: Unfinished search'),
+              ),
+        ),
+      );
     });
   });
 }
@@ -194,12 +247,47 @@ MovieSearchStateController _controller({
   );
 }
 
-Future<void> _waitForRequestStart() {
-  return Future<void>.delayed(const Duration(milliseconds: 4));
+Future<void> _waitForRequestStart(MovieSearchStateController controller) {
+  return _waitForState(
+    controller,
+    (state) => state.phase != MovieSearchPhase.debouncing,
+    description: 'search request to start',
+  );
 }
 
-Future<void> _waitForTerminalState() {
-  return Future<void>.delayed(const Duration(milliseconds: 12));
+Future<void> _waitForTerminalState(MovieSearchStateController controller) {
+  return _waitForState(
+    controller,
+    (state) => const {
+      MovieSearchPhase.results,
+      MovieSearchPhase.empty,
+      MovieSearchPhase.timeout,
+      MovieSearchPhase.error,
+    }.contains(state.phase),
+    description: 'search request to reach a terminal state',
+  );
+}
+
+Future<void> _waitForState(
+  MovieSearchStateController controller,
+  bool Function(MovieSearchState state) predicate, {
+  required String description,
+  Duration timeout = const Duration(seconds: 2),
+}) async {
+  final stopwatch = Stopwatch()..start();
+  while (!predicate(controller.state) && stopwatch.elapsed < timeout) {
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+  }
+
+  final state = controller.state;
+  if (!predicate(state)) {
+    throw TimeoutException(
+      'Timed out waiting for $description after $timeout. '
+      'Last phase: ${state.phase}; query: ${state.query}; '
+      'request ID: ${state.requestId}.',
+      timeout,
+    );
+  }
 }
 
 MovieSearchTransportResponse _movieResponse({required String title}) {

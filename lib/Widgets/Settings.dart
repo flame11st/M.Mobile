@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mmobile/Helpers/route_helper.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
@@ -171,7 +170,7 @@ class SettingsState extends State<Settings> {
 
     return Md3Card(
       key: key,
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: Md3Spacing.x12),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final stackHeader = constraints.maxWidth < 360 || textScale > 1.3;
@@ -653,7 +652,6 @@ class SettingsState extends State<Settings> {
                   onPressed: () {
                     userState.logout();
                     moviesState.logout();
-                    AdManager.hideBanner();
                     Navigator.of(context).maybePop();
                   },
                   icon: const Icon(Entypo.logout, size: 18),
@@ -838,7 +836,7 @@ class SettingsState extends State<Settings> {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Md3Spacing.x4),
           Text(
             userMoviesCount == 0
                 ? 'Start building your MovieDiary by saving titles to Watchlist or rating movies you have seen.'
@@ -906,7 +904,7 @@ class SettingsState extends State<Settings> {
                 icon: const Icon(Icons.delete_outline_rounded, size: 18),
                 label: const Text('Clear library'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Md3Colors.danger,
+                  foregroundColor: Md3Colors.destructive,
                   textStyle: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 14,
@@ -1029,7 +1027,7 @@ class SettingsState extends State<Settings> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Md3Spacing.x12),
           SizedBox(
             height: MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 56 : 44,
             child: OutlinedButton.icon(
@@ -1037,10 +1035,10 @@ class SettingsState extends State<Settings> {
               icon: const Icon(Icons.delete_outline_rounded, size: 18),
               label: const Text('Delete account'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Md3Colors.danger,
-                side: const BorderSide(color: Md3Colors.danger),
+                foregroundColor: Md3Colors.destructive,
+                side: const BorderSide(color: Md3Colors.destructive),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(Md3Radius.button),
                 ),
                 textStyle: const TextStyle(
                   fontSize: 15,
@@ -1086,16 +1084,6 @@ class SettingsState extends State<Settings> {
 
     return Scaffold(
         backgroundColor: Md3Colors.background,
-        appBar: AdManager.bannerVisible && AdManager.bannersReady
-            ? AppBar(
-                title: Center(
-                  child: AdManager.getBannerWidget(AdManager.settingsBannerAd),
-                ),
-                automaticallyImplyLeading: false,
-                elevation: 0.7,
-              )
-            : PreferredSize(
-                preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
             backgroundColor: Md3Colors.background,
             appBar: AppBar(

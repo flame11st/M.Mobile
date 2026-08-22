@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mmobile/Objects/movies_list.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Variables/validators.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
@@ -77,6 +79,12 @@ class LoginState extends State<Login> {
     if (created) {
       if (!wasAlreadyAnonymous) {
         await userState.setOnboardingSkipped(true);
+        unawaited(ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.onboardingSkipped,
+          parameters: const {
+            ProductAnalyticsParameter.sourceSurface: 'login',
+          },
+        ));
       }
       loaderState.setIsLoaderVisible(false);
       if (mounted && Navigator.of(context).canPop()) {
@@ -92,6 +100,13 @@ class LoginState extends State<Login> {
   signInWithGoogle() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.signInStarted,
+      parameters: const {
+        ProductAnalyticsParameter.authMethod: 'google',
+        ProductAnalyticsParameter.sourceSurface: 'login',
+      },
+    ));
 
     final GoogleSignInAccount? googleSignInAccount =
         await googleSignIn.signIn();
@@ -112,7 +127,7 @@ class LoginState extends State<Login> {
             incognitoUserId: incognitoUserId);
 
     if (response.statusCode == 200) {
-      await processLoginResponse(response.body, true);
+      await processLoginResponse(response.body, true, 'google');
     } else {
       loaderState.setIsLoaderVisible(false);
       MSnackBar.showSnackBar('Sign in with Google failed', false);
@@ -121,6 +136,13 @@ class LoginState extends State<Login> {
 
   Future<void> signInWithApple() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.signInStarted,
+      parameters: const {
+        ProductAnalyticsParameter.authMethod: 'apple',
+        ProductAnalyticsParameter.sourceSurface: 'login',
+      },
+    ));
 
     AuthorizationCredentialAppleID credential;
     try {
@@ -166,7 +188,7 @@ class LoginState extends State<Login> {
         incognitoUserId: _currentIncognitoUserId());
 
     if (response.statusCode == 200) {
-      await processLoginResponse(response.body, true);
+      await processLoginResponse(response.body, true, 'apple');
     } else {
       loaderState.setIsLoaderVisible(false);
       MSnackBar.showSnackBar('Apple sign in failed', false);
@@ -189,6 +211,13 @@ class LoginState extends State<Login> {
   login() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.signInStarted,
+      parameters: const {
+        ProductAnalyticsParameter.authMethod: 'email',
+        ProductAnalyticsParameter.sourceSurface: 'login',
+      },
+    ));
 
     var response = await serviceAgent.login(
       emailController.text,
@@ -197,7 +226,7 @@ class LoginState extends State<Login> {
     );
 
     if (response.statusCode == 200) {
-      await processLoginResponse(response.body, false);
+      await processLoginResponse(response.body, false, 'email');
     } else {
       loaderState.setIsLoaderVisible(false);
 
@@ -323,7 +352,7 @@ class LoginState extends State<Login> {
                         errorMessage!,
                         key: const Key('passwordResetError'),
                         style: const TextStyle(
-                          color: Md3Colors.danger,
+                          color: Md3Colors.error,
                           fontSize: 14,
                           height: 1.4,
                           fontWeight: FontWeight.w700,
@@ -359,14 +388,21 @@ class LoginState extends State<Login> {
     resetEmailController.dispose();
   }
 
-  processLoginResponse(
-      String response, bool isSignedInWithThirdPartyServices) async {
+  processLoginResponse(String response, bool isSignedInWithThirdPartyServices,
+      String authMethod) async {
     final userState = Provider.of<UserState>(context, listen: false);
     final loaderState = Provider.of<LoaderState>(context, listen: false);
 
     await userState.processLoginResponse(
         response, isSignedInWithThirdPartyServices);
     await userState.setOnboardingCompleted(true);
+    unawaited(ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.signInCompleted,
+      parameters: {
+        ProductAnalyticsParameter.authMethod: authMethod,
+        ProductAnalyticsParameter.sourceSurface: 'login',
+      },
+    ));
     loaderState.setIsLoaderVisible(false);
 
     if (mounted && Navigator.of(context).canPop()) {

@@ -32,6 +32,13 @@
 /android/build/
 /ios/Flutter/ephemeral/
 
+# Local release credentials and signing state
+/android/key.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+
 # Local QA artifacts
 /qa-screenshots/
 /smoke-screenshots/

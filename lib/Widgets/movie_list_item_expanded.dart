@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movie_watch_provider_group.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/Shared/movie_rate_buttons.dart';
@@ -38,6 +40,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   late Future<MovieWatchProviderGroup> whereToWatchFuture;
   final serviceAgent = ServiceAgent();
   bool showAllWatchProviders = false;
+  bool _whereToWatchViewedTracked = false;
   static const _providerTimeout = Duration(seconds: 12);
 
   @override
@@ -47,18 +50,36 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   }
 
   Future<MovieWatchProviderGroup> _loadWhereToWatch() {
-    if (widget.watchProviderLoader != null) {
-      return widget.watchProviderLoader!().timeout(_providerTimeout);
-    }
+    final request = widget.watchProviderLoader != null
+        ? widget.watchProviderLoader!().timeout(_providerTimeout)
+        : serviceAgent
+            .getWhereToWatchGrouped(widget.movie.id, 'US')
+            .timeout(_providerTimeout);
 
-    return serviceAgent
-        .getWhereToWatchGrouped(widget.movie.id, 'US')
-        .timeout(_providerTimeout);
+    return request.then((group) {
+      if (!_whereToWatchViewedTracked) {
+        _whereToWatchViewedTracked = true;
+        final resultCount =
+            group.stream.length + group.rent.length + group.buy.length;
+        unawaited(ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.whereToWatchViewed,
+          parameters: {
+            ProductAnalyticsParameter.movieId: widget.movie.id,
+            ProductAnalyticsParameter.resultCount: resultCount,
+            ProductAnalyticsParameter.outcomeCategory:
+                resultCount == 0 ? 'empty' : 'available',
+            ProductAnalyticsParameter.sourceSurface: 'movie_details',
+          },
+        ));
+      }
+      return group;
+    });
   }
 
   void _retryWhereToWatch() {
     setState(() {
       showAllWatchProviders = false;
+      _whereToWatchViewedTracked = false;
       whereToWatchFuture = _loadWhereToWatch();
     });
   }
@@ -101,16 +122,6 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          actions: [
-            if (AdManager.bannerVisible && AdManager.bannersReady)
-              SizedBox(
-                width: 320,
-                child: Center(
-                  child:
-                      AdManager.getBannerWidget(AdManager.itemExpandedBannerAd),
-                ),
-              ),
-          ],
         ),
         body: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(

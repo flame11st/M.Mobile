@@ -3,11 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Objects/user.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:provider/provider.dart';
 import 'movie_list.dart';
 import 'discover_page.dart';
@@ -65,6 +65,15 @@ class MyMoviesState extends State<MyMovies> {
     selectedNavigationIndex =
         widget.initialNavigationIndex.clamp(0, _visitedTabs.length - 1);
     _visitedTabs[selectedNavigationIndex] = true;
+
+    if (selectedNavigationIndex == 0) {
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.discoverViewed,
+        parameters: const {
+          ProductAnalyticsParameter.sourceSurface: 'root_tab',
+        },
+      ));
+    }
 
     Future.microtask(() {
       if (mounted) {
@@ -450,6 +459,14 @@ class MyMoviesState extends State<MyMovies> {
       _visitedTabs[index] = true;
     });
     widget.onNavigationIndexChanged?.call(index);
+    if (index == 0) {
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.discoverViewed,
+        parameters: const {
+          ProductAnalyticsParameter.sourceSurface: 'root_tab',
+        },
+      ));
+    }
   }
 
   void _handleActiveTabTap(int index) {
@@ -546,10 +563,6 @@ class MyMoviesState extends State<MyMovies> {
         userState.launchDestination == LaunchDestination.rateMovies ||
             _retainOnboardingDuringExit;
 
-    if (shouldShowOnboarding && AdManager.bannerVisible) {
-      Future.microtask(AdManager.hideBanner);
-    }
-
     if (shouldShowOnboarding) {
       return OnboardingWizardPage(
         onExitStarted: () {
@@ -583,22 +596,15 @@ class MyMoviesState extends State<MyMovies> {
       );
     }
 
-    final showAds = selectedNavigationIndex != 0 &&
-        AdManager.bannerVisible &&
-        AdManager.bannersReady;
-
     final myMoviesWidget = MovieDiaryRootNavigationShell(
       selectedIndex: selectedNavigationIndex,
       tabs: List<Widget>.generate(5, _buildRootTab),
       onTabSelected: selectNavigationTab,
       resizeToAvoidBottomInset: selectedNavigationIndex == 1,
-      appBar: showAds
-          ? AppBar(
-              title:
-                  Center(child: AdManager.getBannerWidget(AdManager.bannerAd)),
-              elevation: 0.7,
-            )
-          : PreferredSize(preferredSize: const Size(0, 0), child: Container()),
+      appBar: PreferredSize(
+        preferredSize: const Size(0, 0),
+        child: Container(),
+      ),
     );
     return myMoviesWidget;
   }

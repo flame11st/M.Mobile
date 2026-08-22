@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttericon/font_awesome5_icons.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
@@ -94,7 +97,7 @@ class MovieRateButtons extends StatelessWidget {
               child: _RateAction(
                 label: 'Disliked',
                 icon: FontAwesome5.ban,
-                color: Md3Colors.danger,
+                color: Md3Colors.disliked,
                 active: currentMovie.movieRate == MovieRate.notLiked,
                 onTap: () => _rate(context, currentMovie, MovieRate.notLiked),
               ),
@@ -147,12 +150,24 @@ class MovieRateButtons extends StatelessWidget {
       currentMovie,
     );
 
+    var transitionSucceeded = userState.isIncognitoMode;
     if (!userState.isIncognitoMode && ServiceAgent.state != null) {
-      await ServiceAgent().rateMovie(
+      final response = await ServiceAgent().rateMovie(
         currentMovie.id,
         userState.userId!,
         nextMovieRate,
       );
+      transitionSucceeded =
+          response.statusCode >= 200 && response.statusCode < 300;
+    }
+
+    if (transitionSucceeded) {
+      unawaited(trackMovieStateTransition(
+        movieId: currentMovie.id,
+        previousRate: previousMovieRate,
+        nextRate: nextMovieRate,
+        sourceSurface: fromSearch == true ? 'search' : 'movie_actions',
+      ));
     }
 
     if (closeParentOnRate && navigator.canPop()) {

@@ -16,18 +16,17 @@ class MoviesBottomNavigationBar extends StatelessWidget {
     final bottomMargin = Md3NavigationMetrics.bottomMargin(context);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(12, 0, 12, bottomMargin),
+      padding: EdgeInsets.fromLTRB(
+        Md3NavigationMetrics.horizontalMargin,
+        0,
+        Md3NavigationMetrics.horizontalMargin,
+        bottomMargin,
+      ),
       child: Md3LiquidGlass(
-        borderRadius: BorderRadius.circular(28),
-        tint: Colors.white.withValues(alpha: 0.78),
-        borderColor: Colors.white.withValues(alpha: 0.72),
-        shadows: [
-          BoxShadow(
-            color: const Color(0xff102a43).withValues(alpha: 0.14),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(Md3Radius.navigation),
+        tint: Md3Colors.glassTint,
+        borderColor: Md3Colors.navigationGlassBorder,
+        shadows: Md3Shadows.navigation,
         child: SizedBox(
           height: Md3NavigationMetrics.dockHeight,
           child: Row(
@@ -116,45 +115,48 @@ class _NavItem extends StatelessWidget {
         selected: selected,
         label: '$label tab, ${index + 1} of 5',
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Md3NavigationMetrics.itemHorizontalPadding,
+            vertical: Md3NavigationMetrics.itemVerticalPadding,
+          ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(
+                Md3Radius.navigationSelection,
+              ),
               onTap: onTap,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : Md3Durations.standard,
                 curve: Curves.easeOutCubic,
-                constraints: const BoxConstraints(minHeight: 56),
+                constraints: const BoxConstraints(
+                  minHeight: Md3NavigationMetrics.itemMinimumHeight,
+                ),
                 decoration: BoxDecoration(
                   color: selected
                       ? Md3Colors.primarySoft.withValues(alpha: 0.96)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(
+                    Md3Radius.navigationSelection,
+                  ),
                   border: selected
                       ? Border.all(
-                          color: Colors.white.withValues(alpha: 0.82),
+                          color: Md3Colors.navigationSelectionBorder,
                         )
                       : null,
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: Md3Colors.primary.withValues(alpha: 0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ]
-                      : null,
+                  boxShadow: selected ? Md3Shadows.navigationSelection : null,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       selected ? selectedIcon ?? icon : icon,
-                      size: 22,
+                      size: Md3NavigationMetrics.iconSize,
                       color: foreground,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Md3NavigationMetrics.labelGap),
                     SizedBox(
                       width: double.infinity,
                       child: MediaQuery.withClampedTextScaling(
@@ -165,9 +167,8 @@ class _NavItem extends StatelessWidget {
                           maxLines: 1,
                           softWrap: false,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: Md3Typography.navigationLabel.copyWith(
                             color: foreground,
-                            fontSize: 11,
                             fontWeight:
                                 selected ? FontWeight.w800 : FontWeight.w700,
                           ),

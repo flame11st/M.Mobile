@@ -41,6 +41,9 @@ class MoviesState with ChangeNotifier {
   bool _pendingAnonymousRatingSyncsLoaded = false;
   bool _isAnonymousRatingSyncInFlight = false;
   bool _isAnonymousRatingSyncBackoffScheduled = false;
+  final Set<String> _activeMovieMutationIds = <String>{};
+  final Map<String, int> _movieMutationRevisions = <String, int>{};
+  int _ratingStateVersion = 0;
 
   List<Movie> cachedUserMovies = [];
   List<Movie> userMovies = [];
@@ -110,6 +113,43 @@ class MoviesState with ChangeNotifier {
   bool hasCachedUserMoviesSnapshot = false;
   int get pendingAnonymousRatingSyncCount =>
       _pendingAnonymousRatingSyncs.length;
+  int get ratingStateVersion => _ratingStateVersion;
+
+  bool beginMovieMutation(String movieId) {
+    if (movieId.isEmpty || _activeMovieMutationIds.contains(movieId)) {
+      return false;
+    }
+    _activeMovieMutationIds.add(movieId);
+    return true;
+  }
+
+  void endMovieMutation(String movieId) {
+    _activeMovieMutationIds.remove(movieId);
+  }
+
+  bool isMovieMutationActive(String movieId) {
+    return _activeMovieMutationIds.contains(movieId);
+  }
+
+  int movieMutationRevision(String movieId) {
+    return _movieMutationRevisions[movieId] ?? 0;
+  }
+
+  void commitRatingStateMutation() {
+    _ratingStateVersion += 1;
+    notifyListeners();
+  }
+
+  MovieStateSnapshot captureMovieState(String movieId, Movie fallbackMovie) {
+    final index = userMovies.indexWhere((movie) => movie.id == movieId);
+    final currentMovie = index == -1 ? fallbackMovie : userMovies[index];
+    return MovieStateSnapshot(
+      movieId: movieId,
+      movieRate: currentMovie.movieRate,
+      updated: currentMovie.updated,
+      userMoviesIndex: index,
+    );
+  }
 
   Future<void> _initializeCache() async {
     await Future.wait([
@@ -1144,21 +1184,42 @@ class MoviesState with ChangeNotifier {
     return result;
   }
 
-  changeMovieRate(
-      String movieId, int movieRate, bool isIncognitoMode, Movie movie,
-      {bool updateListRatings = true}) async {
+  Future<void> changeMovieRate(
+    String movieId,
+    int movieRate,
+    bool isIncognitoMode,
+    Movie movie, {
+    bool updateListRatings = true,
+    bool persistImmediately = false,
+    bool awaitAnonymousSyncPersistence = false,
+    bool commitRatingState = true,
+  }) async {
     Movie movieToRate;
-    var foundMovies = userMovies.where((m) => m.id == movieId);
+    final foundMovies = userMovies.where((m) => m.id == movieId);
+    final previousRate =
+        foundMovies.isEmpty ? movie.movieRate : foundMovies.first.movieRate;
 
-    if ((movie.actors.isNotEmpty ||
+    if (foundMovies.isNotEmpty) {
+      movieToRate = foundMovies.first;
+      if ((movieToRate.actors.isEmpty &&
+              movieToRate.directors.isEmpty &&
+              movieToRate.genres.isEmpty) &&
+          (movie.actors.isNotEmpty ||
+              movie.directors.isNotEmpty ||
+              movie.genres.isNotEmpty)) {
+        final savedRate = movieToRate.movieRate;
+        final savedUpdated = movieToRate.updated;
+        movieToRate.updateMovie(movie);
+        movieToRate.movieRate = savedRate;
+        movieToRate.updated = savedUpdated;
+      }
+    } else if ((movie.actors.isNotEmpty ||
         movie.directors.isNotEmpty ||
         movie.genres.isNotEmpty)) {
       movieToRate = movie;
-    } else if (foundMovies.isEmpty) {
+    } else {
       final moviesResponse = await serviceAgent.getMovie(movieId);
       movieToRate = Movie.fromJson(json.decode(moviesResponse.body));
-    } else {
-      movieToRate = foundMovies.first;
     }
 
     if (foundMovies.isEmpty) {
@@ -1179,15 +1240,81 @@ class MoviesState with ChangeNotifier {
       setRateToMovieInLists(movieId, movieRate);
     }
 
+    if (!identical(movie, movieToRate)) {
+      movie.movieRate = movieToRate.movieRate;
+      movie.updated = movieToRate.updated;
+      movie.likedVotes = movieToRate.likedVotes;
+      movie.dislikedVotes = movieToRate.dislikedVotes;
+      movie.allVotes = movieToRate.allVotes;
+      movie.rating = movieToRate.rating;
+    }
+
     refreshMovies();
     refreshDates();
     setGenres();
 
-    _scheduleUserMoviesCacheWrite();
+    if (persistImmediately) {
+      _movieCacheWriteTimer?.cancel();
+      await _writeUserMoviesCache(List<Movie>.of(userMovies));
+    } else {
+      _scheduleUserMoviesCacheWrite();
+    }
     _notifyRatedMoviesCountChanged(userMovies);
 
     if (isIncognitoMode) {
-      unawaited(queueAnonymousRatingSync(movieId, movieRate));
+      final queuedSync = queueAnonymousRatingSync(movieId, movieRate);
+      if (awaitAnonymousSyncPersistence) {
+        await queuedSync;
+      } else {
+        unawaited(queuedSync);
+      }
+    }
+
+    if (previousRate != movieRate) {
+      _movieMutationRevisions[movieId] = movieMutationRevision(movieId) + 1;
+      if (commitRatingState) {
+        commitRatingStateMutation();
+      }
+    }
+  }
+
+  Future<void> restoreMovieState(
+    MovieStateSnapshot snapshot,
+    bool isIncognitoMode,
+    Movie movie, {
+    bool commitRatingState = true,
+  }) async {
+    await changeMovieRate(
+      snapshot.movieId,
+      snapshot.movieRate,
+      isIncognitoMode,
+      movie,
+      persistImmediately: true,
+      awaitAnonymousSyncPersistence: true,
+      commitRatingState: false,
+    );
+
+    if (snapshot.existedInUserMovies) {
+      final currentIndex =
+          userMovies.indexWhere((item) => item.id == snapshot.movieId);
+      if (currentIndex != -1) {
+        final restoredMovie = userMovies.removeAt(currentIndex);
+        final targetIndex =
+            snapshot.userMoviesIndex.clamp(0, userMovies.length).toInt();
+        restoredMovie.updated = snapshot.updated;
+        userMovies.insert(targetIndex, restoredMovie);
+        movie.updated = snapshot.updated;
+      }
+    }
+
+    refreshMovies();
+    refreshDates();
+    setGenres();
+    _movieCacheWriteTimer?.cancel();
+    await _writeUserMoviesCache(List<Movie>.of(userMovies));
+    _notifyRatedMoviesCountChanged(userMovies);
+    if (commitRatingState) {
+      commitRatingStateMutation();
     }
   }
 
@@ -1398,4 +1525,20 @@ class _PendingAnonymousRatingSync {
         'attempts': attempts,
         'updatedAt': updatedAt.toIso8601String(),
       };
+}
+
+class MovieStateSnapshot {
+  const MovieStateSnapshot({
+    required this.movieId,
+    required this.movieRate,
+    required this.updated,
+    required this.userMoviesIndex,
+  });
+
+  final String movieId;
+  final int movieRate;
+  final DateTime? updated;
+  final int userMoviesIndex;
+
+  bool get existedInUserMovies => userMoviesIndex >= 0;
 }

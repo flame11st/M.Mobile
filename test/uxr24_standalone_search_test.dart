@@ -12,6 +12,7 @@ import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/movies_list_page.dart';
+import 'package:mmobile/Widgets/movie_list_item.dart';
 import 'package:mmobile/Widgets/search_page.dart';
 import 'package:mmobile/Widgets/search_state.dart';
 import 'package:provider/provider.dart';
@@ -221,6 +222,40 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pump(const Duration(milliseconds: 800));
   });
+
+  testWidgets('long Search results build lazily and keep stable movie keys',
+      (tester) async {
+    final harness = await _Harness.create();
+    addTearDown(harness.dispose);
+    await _configureMediumPhone(tester);
+    final results = List<Movie>.generate(
+      100,
+      (index) => _matrixMovie(
+        id: 'result-$index',
+        title: 'Result $index',
+      ),
+    );
+
+    await tester.pumpWidget(harness.app());
+    await harness.openSearch(tester, results: results);
+    await tester.enterText(find.byType(TextField), 'results');
+    await tester.pump(const Duration(milliseconds: 451));
+    await tester.pump(const Duration(milliseconds: 601));
+    await tester.pumpAndSettle();
+
+    expect(find.text('100 results'), findsOneWidget);
+    expect(find.byType(MovieListItem).evaluate().length, lessThan(20));
+    expect(find.byKey(const ValueKey('search-result-result-99')), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('search-result-result-99')),
+      900,
+      scrollable: find.byType(Scrollable).last,
+      maxScrolls: 120,
+    );
+    expect(find.text('Result 99'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _configureMediumPhone(
@@ -311,7 +346,10 @@ class _Harness {
     );
   }
 
-  Future<void> openSearch(WidgetTester tester) async {
+  Future<void> openSearch(
+    WidgetTester tester, {
+    List<Movie>? results,
+  }) async {
     unawaited(
       navigatorKey.currentState!.push(
         MaterialPageRoute<void>(
@@ -325,7 +363,11 @@ class _Harness {
             automaticSuggestionRetryDelays: const [],
             fetcher: (_, __) async => MovieSearchTransportResponse(
               statusCode: 200,
-              body: jsonEncode([_matrixMovie().toJson()]),
+              body: jsonEncode(
+                (results ?? [_matrixMovie()])
+                    .map((movie) => movie.toJson())
+                    .toList(),
+              ),
             ),
           ),
         ),
@@ -352,10 +394,13 @@ class _MemorySuggestionStore implements SearchSuggestionStore {
   }
 }
 
-Movie _matrixMovie() {
+Movie _matrixMovie({
+  String id = 'matrix',
+  String title = 'The Matrix',
+}) {
   return Movie(
-    id: 'matrix',
-    title: 'The Matrix',
+    id: id,
+    title: title,
     overview: 'A hacker discovers the truth about his world.',
     tagline: 'Free your mind.',
     posterPath: '',

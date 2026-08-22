@@ -21,6 +21,7 @@ class MovieSearchState {
   final int requestId;
   final List<Movie> movies;
   final String? message;
+  final String? canonicalQuery;
 
   const MovieSearchState({
     required this.phase,
@@ -28,6 +29,7 @@ class MovieSearchState {
     required this.requestId,
     this.movies = const [],
     this.message,
+    this.canonicalQuery,
   });
 
   const MovieSearchState.landing()
@@ -35,17 +37,20 @@ class MovieSearchState {
         query = '',
         requestId = 0,
         movies = const [],
-        message = null;
+        message = null,
+        canonicalQuery = null;
 }
 
 @immutable
 class MovieSearchTransportResponse {
   final int statusCode;
   final String body;
+  final String? canonicalQuery;
 
   const MovieSearchTransportResponse({
     required this.statusCode,
     required this.body,
+    this.canonicalQuery,
   });
 }
 
@@ -283,10 +288,16 @@ class MovieSearchStateController extends ChangeNotifier {
         query: query,
         requestId: requestId,
         movies: movies,
+        canonicalQuery: _cleanCanonicalQuery(response.canonicalQuery),
       ),
       announcement:
           '${movies.length} result${movies.length == 1 ? '' : 's'} found',
     );
+  }
+
+  String? _cleanCanonicalQuery(String? value) {
+    final normalized = value?.trim().replaceAll(RegExp(r'\s+'), ' ');
+    return normalized == null || normalized.length < 2 ? null : normalized;
   }
 
   Future<void> _waitForMinimumLoading(

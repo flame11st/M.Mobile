@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_list_type.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Helpers/route_helper.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
@@ -274,7 +273,7 @@ class MovieListPageState extends State<MoviesListPage> {
                   leading: Icon(
                     Icons.delete_outline_rounded,
                     size: 24,
-                    color: Md3Colors.danger,
+                    color: Md3Colors.destructive,
                   ),
                   title: Text('Remove list'),
                 ),
@@ -300,15 +299,6 @@ class MovieListPageState extends State<MoviesListPage> {
 
     return Scaffold(
         backgroundColor: Md3Colors.background,
-        appBar: AdManager.bannerVisible && AdManager.bannersReady
-            ? AppBar(
-                title: Center(
-                  child: AdManager.getBannerWidget(AdManager.listBannerAd),
-                ),
-                elevation: 0.7,
-                automaticallyImplyLeading: false)
-            : PreferredSize(
-                preferredSize: const Size(0, 0), child: Container()),
         body: Scaffold(
             backgroundColor: Md3Colors.background,
             appBar: AppBar(

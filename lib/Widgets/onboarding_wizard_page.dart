@@ -9,6 +9,7 @@ import 'package:mmobile/Helpers/route_helper.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
@@ -45,12 +46,15 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   final serviceAgent = ServiceAgent();
   final skippedIds = <String>{};
   final ScrollController _scrollController = ScrollController();
+  final Md3PosterPrefetchController _posterPrefetchController =
+      Md3PosterPrefetchController();
   bool isRetryingStarterDeck = false;
   bool isSavingRating = false;
   bool isCompleting = false;
   int _sessionRatedCount = 0;
   String? _candidateLoadError;
   String? _expandedSynopsisMovieId;
+  String? _scheduledPosterPrefetchKey;
 
   static const targetRatings = 10;
 
@@ -67,15 +71,33 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
 
       if (!_isContinuous) {
         final userState = Provider.of<UserState>(context, listen: false);
+        final wasAlreadyStarted = userState.onboardingStarted;
         if (userState.onboardingStage != OnboardingStage.rating) {
           userState.setOnboardingStage(OnboardingStage.rating);
         }
+        if (!wasAlreadyStarted) {
+          unawaited(ProductAnalytics.instance.track(
+            ProductAnalyticsEventName.onboardingStarted,
+            parameters: const {
+              ProductAnalyticsParameter.sourceSurface: 'onboarding',
+            },
+            transitionId: userState.userId,
+          ));
+        }
       }
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.ratingStarted,
+        parameters: {
+          ProductAnalyticsParameter.sourceSurface:
+              _isContinuous ? 'rate_more' : 'onboarding',
+        },
+      ));
     });
   }
 
   @override
   void dispose() {
+    _posterPrefetchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -87,6 +109,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     final candidates = _candidates(moviesState);
     final profileCount = ratedCount.clamp(0, targetRatings);
     final isComplete = !_isContinuous && profileCount >= targetRatings;
+    _scheduleNextCandidatePoster(isComplete ? const <Movie>[] : candidates);
 
     if (isComplete) {
       return _buildComplete(profileCount, false);
@@ -105,6 +128,28 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       _isContinuous ? ratedCount : profileCount,
       candidates.length,
     );
+  }
+
+  void _scheduleNextCandidatePoster(List<Movie> candidates) {
+    final prefetchKey = candidates.length > 1
+        ? '${widget.mode.name}:${candidates[0].id}:${candidates[1].id}'
+        : '${widget.mode.name}:none';
+    if (_scheduledPosterPrefetchKey == prefetchKey) {
+      return;
+    }
+    _scheduledPosterPrefetchKey = prefetchKey;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _scheduledPosterPrefetchKey != prefetchKey) {
+        return;
+      }
+      _posterPrefetchController.prefetchNext(
+        context,
+        movies: candidates,
+        currentIndex: 0,
+        deckKey: prefetchKey,
+      );
+    });
   }
 
   Widget _buildStarterDeckUnavailable(bool listsRequested, int profileCount) {
@@ -958,7 +1003,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                       movie: movie,
                       label: 'Disliked',
                       icon: Icons.thumb_down_alt_rounded,
-                      feedbackColor: const Color(0xffb93a46),
+                      feedbackColor: Md3Colors.disliked,
                       height: 64,
                       onPressed: isSavingRating
                           ? null
@@ -1005,7 +1050,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                       movie: movie,
                       label: 'Disliked',
                       icon: Icons.thumb_down_alt_rounded,
-                      feedbackColor: const Color(0xffb93a46),
+                      feedbackColor: Md3Colors.disliked,
                       height: 52,
                       onPressed: isSavingRating
                           ? null
@@ -1370,6 +1415,12 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   Future<void> _rate(Movie movie, int movieRate) async {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
+    final beforeRatedCount = _ratedCount(moviesState);
+    final matchingMovies =
+        moviesState.userMovies.where((candidate) => candidate.id == movie.id);
+    final previousRate = matchingMovies.isEmpty
+        ? movie.movieRate
+        : matchingMovies.first.movieRate;
 
     if (isSavingRating) {
       return;
@@ -1426,6 +1477,34 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       }
     });
     _resetCandidateViewport();
+
+    final afterRatedCount = _ratedCount(moviesState);
+    unawaited(trackMovieStateTransition(
+      movieId: movie.id,
+      previousRate: previousRate,
+      nextRate: movieRate,
+      sourceSurface: _isContinuous ? 'rate_more' : 'onboarding',
+    ));
+    if (beforeRatedCount < 5 && afterRatedCount >= 5) {
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.rating5Complete,
+        parameters: {
+          ProductAnalyticsParameter.ratingCount: afterRatedCount,
+          ProductAnalyticsParameter.sourceSurface: 'rating_flow',
+        },
+        transitionId: '${userState.userId}:5',
+      ));
+    }
+    if (beforeRatedCount < targetRatings && afterRatedCount >= targetRatings) {
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.rating10Complete,
+        parameters: {
+          ProductAnalyticsParameter.ratingCount: afterRatedCount,
+          ProductAnalyticsParameter.sourceSurface: 'rating_flow',
+        },
+        transitionId: '${userState.userId}:10',
+      ));
+    }
 
     MSnackBar.showSnackBar('"${movie.title}" saved', true);
   }
@@ -1496,6 +1575,13 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         await userState.setOnboardingCompleted(true);
       } else {
         await userState.setOnboardingSkipped(true);
+        unawaited(ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.onboardingSkipped,
+          parameters: const {
+            ProductAnalyticsParameter.sourceSurface: 'onboarding',
+          },
+          transitionId: userState.userId,
+        ));
       }
       return true;
     } catch (error) {

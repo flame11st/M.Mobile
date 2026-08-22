@@ -1,4 +1,1 @@
-enum MovieListType {
-    external,
-    personal
-}
+enum MovieListType { external, personal }

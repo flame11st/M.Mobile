@@ -319,6 +319,66 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'next-poster prefetch is bounded, deduplicated, and replaced with the deck',
+      (tester) async {
+    var providerBuilds = 0;
+    final controller = Md3PosterPrefetchController(
+      providerBuilder: (imageUrl, cacheWidth, cacheHeight) {
+        providerBuilds++;
+        return _PendingImageProvider(
+          '$imageUrl@$cacheWidth:$cacheHeight:$providerBuilds',
+        );
+      },
+    );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      _testApp(
+        const SizedBox(key: Key('prefetch-context')),
+      ),
+    );
+    final context = tester.element(find.byKey(const Key('prefetch-context')));
+    final firstDeck = [
+      _movie(id: 'first', posterPath: '/first.jpg'),
+      _movie(id: 'second', posterPath: '/second.jpg'),
+    ];
+
+    controller.prefetchNext(
+      context,
+      movies: firstDeck,
+      currentIndex: 0,
+      deckKey: 'deck-a',
+    );
+    controller.prefetchNext(
+      context,
+      movies: firstDeck,
+      currentIndex: 0,
+      deckKey: 'deck-a',
+    );
+    expect(providerBuilds, 1);
+
+    controller.prefetchNext(
+      context,
+      movies: [
+        firstDeck.first,
+        _movie(id: 'replacement', posterPath: '/replacement.jpg'),
+      ],
+      currentIndex: 0,
+      deckKey: 'deck-b',
+    );
+    expect(providerBuilds, 2);
+
+    controller.prefetchNext(
+      context,
+      movies: const [],
+      currentIndex: 0,
+      deckKey: 'empty',
+    );
+    expect(providerBuilds, 2);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Widget _testApp(

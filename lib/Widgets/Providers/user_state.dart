@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/launch_snapshot.dart';
 import 'package:mmobile/Objects/user.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 
 export 'package:mmobile/Objects/launch_snapshot.dart'
     show LaunchDestination, OnboardingStage;
@@ -117,6 +119,7 @@ class UserState with ChangeNotifier {
       }
 
       isAppLoaded = true;
+      await AdManager.setPremiumStatus(isPremium == true);
       await _persistLaunchSnapshot();
       notifyListeners();
       return;
@@ -128,6 +131,11 @@ class UserState with ChangeNotifier {
     }
 
     isAppLoaded = true;
+    if (!isIncognitoMode && _hasStoredCredentials()) {
+      await ProductAnalytics.instance.setAuthenticatedUser(userId);
+    }
+    await AdManager.setPremiumStatus(isPremium == true);
+    unawaited(ProductAnalytics.instance.flush());
     await _persistLaunchSnapshot();
     notifyListeners();
   }
@@ -156,6 +164,7 @@ class UserState with ChangeNotifier {
     await storage.write(key: "user", value: jsonEncode(user));
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
+    await AdManager.setPremiumStatus(isPremium == true);
     await _persistLaunchSnapshot();
     notifyListeners();
   }
@@ -168,8 +177,9 @@ class UserState with ChangeNotifier {
   }
 
   Future<void> setPremium(bool value) async {
+    await AdManager.setPremiumStatus(value);
     if (isIncognitoMode) {
-      premiumPurchasedIncognito = true;
+      premiumPurchasedIncognito = value;
 
       await storage.write(
           key: "premiumPurchasedIncognito",
@@ -282,6 +292,7 @@ class UserState with ChangeNotifier {
     await processLoginResponse(response.body, false);
     isIncognitoMode = true;
     isUserAuthorizedOrInIncognitoMode = true;
+    await ProductAnalytics.instance.clearAuthenticatedUser();
 
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
@@ -323,6 +334,7 @@ class UserState with ChangeNotifier {
         isSignedInWithThirdPartyServices, showTutorial);
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
+    await ProductAnalytics.instance.setAuthenticatedUser(userId);
     await _persistLaunchSnapshot();
 
     try {
@@ -347,6 +359,9 @@ class UserState with ChangeNotifier {
     userRequested = false;
     user = null;
     userId = null;
+
+    await AdManager.setPremiumStatus(false);
+    await ProductAnalytics.instance.clearAuthenticatedUser();
 
     await clearStorage();
   }

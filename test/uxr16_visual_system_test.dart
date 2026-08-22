@@ -12,7 +12,10 @@ void main() {
     expect(theme.colorScheme.primaryContainer, Md3Colors.primarySoft);
     expect(theme.colorScheme.secondary, Md3Colors.accent);
     expect(theme.colorScheme.surface, Md3Colors.surface);
-    expect(theme.colorScheme.error, Md3Colors.danger);
+    expect(theme.colorScheme.error, Md3Colors.error);
+    expect(Md3Colors.disliked, isNot(Md3Colors.destructive));
+    expect(Md3Spacing.screen, 24);
+    expect(Md3Radius.card, 24);
     expect(theme.textTheme.displayLarge?.fontSize, 32);
     expect(theme.textTheme.headlineMedium?.fontSize, 24);
     expect(theme.textTheme.bodyLarge?.fontSize, 16);

@@ -8,11 +8,20 @@ class MSnackBar {
     bool isSuccess, {
     BuildContext? context,
     Duration duration = const Duration(milliseconds: 2500),
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     context ??= MyGlobals.activeKey?.currentContext;
 
     if (context != null) {
-      show(context, text, isSuccess, duration: duration);
+      show(
+        context,
+        text,
+        isSuccess,
+        duration: duration,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      );
     }
   }
 
@@ -22,6 +31,8 @@ class MSnackBar {
     bool isSuccess, {
     Duration duration = const Duration(milliseconds: 2500),
     double bottomMargin = 12,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     showWithMessenger(
       ScaffoldMessenger.of(context),
@@ -29,6 +40,8 @@ class MSnackBar {
       isSuccess,
       duration: duration,
       bottomMargin: bottomMargin,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
   }
 
@@ -38,6 +51,8 @@ class MSnackBar {
     bool isSuccess, {
     Duration duration = const Duration(milliseconds: 2500),
     double bottomMargin = 12,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -60,7 +75,14 @@ class MSnackBar {
           ),
         ),
         duration: duration,
-        backgroundColor: isSuccess ? Md3Colors.success : Md3Colors.danger,
+        action: actionLabel == null || onAction == null
+            ? null
+            : SnackBarAction(
+                label: actionLabel,
+                textColor: Colors.white,
+                onPressed: onAction,
+              ),
+        backgroundColor: isSuccess ? Md3Colors.success : Md3Colors.error,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.fromLTRB(12, 0, 12, bottomMargin),
         shape: RoundedRectangleBorder(

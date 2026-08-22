@@ -5,6 +5,13 @@ import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/movie_dna_profile.dart';
 
 void main() {
+  test('MovieDNA profile trust labels follow rating evidence bands', () {
+    expect(movieDnaProfileReadLabel(10), 'Early read');
+    expect(movieDnaProfileReadLabel(25), 'Developing profile');
+    expect(movieDnaProfileReadLabel(50), 'Strong read');
+    expect(movieDnaProfileReadLabel(150), 'Very strong read');
+  });
+
   testWidgets('MovieDNA preview stays concise and exposes top traits', (
     tester,
   ) async {
@@ -44,8 +51,19 @@ void main() {
 
     expect(find.byKey(const Key('moviedna-details')), findsOneWidget);
     expect(find.text('What your ratings reveal'), findsOneWidget);
-    expect(find.textContaining('91% confidence · 28 likes · 3 dislikes'),
+    expect(find.textContaining('Very strong read · 28 likes · 3 dislikes'),
         findsOneWidget);
+    expect(find.textContaining('%'), findsNothing);
+    expect(
+      tester
+          .getSemantics(
+            find.byKey(
+              const ValueKey('moviedna-insight-superhero-stories'),
+            ),
+          )
+          .label,
+      isNot(contains('%')),
+    );
     expect(find.text('For your next deck'), findsOneWidget);
     final rateMore = find.text('Rate more');
     await tester.ensureVisible(rateMore);
@@ -58,11 +76,34 @@ void main() {
         greaterThanOrEqualTo(44));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('MovieDNA detail count follows the 3, 4, and 5 trait bands', (
+    tester,
+  ) async {
+    for (final testCase in const [(10, 3), (50, 4), (150, 5)]) {
+      final profile = _profileWithRatings(testCase.$1);
+      await _pumpMovieDna(
+        tester,
+        textScale: 1,
+        profile: profile,
+      );
+
+      for (var index = 0; index < _profile.insights.length; index++) {
+        expect(
+          find.byKey(
+            ValueKey('moviedna-insight-${_profile.insights[index].key}'),
+          ),
+          index < testCase.$2 ? findsOneWidget : findsNothing,
+        );
+      }
+    }
+  });
 }
 
 Future<void> _pumpMovieDna(
   WidgetTester tester, {
   required double textScale,
+  UserTasteProfile profile = _profile,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -79,9 +120,9 @@ Future<void> _pumpMovieDna(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MovieDnaTraitPreview(insights: _profile.insights),
+              MovieDnaTraitPreview(insights: profile.insights),
               const SizedBox(height: 16),
-              MovieDnaDetails(profile: _profile, onRateMore: () {}),
+              MovieDnaDetails(profile: profile, onRateMore: () {}),
             ],
           ),
         ),
@@ -89,6 +130,19 @@ Future<void> _pumpMovieDna(
     ),
   );
   await tester.pump();
+}
+
+UserTasteProfile _profileWithRatings(int ratingsCount) {
+  return UserTasteProfile(
+    isReady: true,
+    isGenerated: true,
+    ratingsCount: ratingsCount,
+    movieRatingsCount: (ratingsCount * 0.7).round(),
+    tvRatingsCount: ratingsCount - (ratingsCount * 0.7).round(),
+    profileConfidencePercent: 94,
+    recommendationAdvice: _profile.recommendationAdvice,
+    insights: _profile.insights,
+  );
 }
 
 const _profile = UserTasteProfile(
@@ -144,6 +198,17 @@ const _profile = UserTasteProfile(
       positiveEvidenceCount: 45,
       counterEvidenceCount: 4,
       supportingTitles: ['Arrival', 'Blade Runner 2049'],
+    ),
+    MovieDnaInsight(
+      key: 'epic-runtime',
+      label: 'Epic-runtime fan',
+      description:
+          'Long-form stories repeatedly earn your strongest reactions.',
+      category: 'mood_pacing',
+      confidencePercent: 84,
+      positiveEvidenceCount: 24,
+      counterEvidenceCount: 2,
+      supportingTitles: ['Dune', 'The Godfather'],
     ),
   ],
 );

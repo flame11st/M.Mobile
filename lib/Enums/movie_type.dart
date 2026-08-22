@@ -1,4 +1,1 @@
-enum MovieType {
-    movie,
-    tv
-}
+enum MovieType { movie, tv }

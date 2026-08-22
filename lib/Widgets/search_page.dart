@@ -7,11 +7,33 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Helpers/rating_helper.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/movie_list_item.dart';
 import 'package:mmobile/Widgets/search_state.dart';
 
 typedef PopularSearchFetcher = Future<MovieSearchTransportResponse> Function();
+
+List<String> mergeRecentSearchSuggestions(
+  String canonicalQuery,
+  Iterable<String> existing, {
+  int limit = 6,
+}) {
+  final normalized = canonicalQuery.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (limit < 1) {
+    return const [];
+  }
+  if (normalized.length < 2) {
+    return existing.take(limit).toList(growable: false);
+  }
+
+  return [
+    normalized,
+    ...existing.where(
+      (item) => item.toLowerCase() != normalized.toLowerCase(),
+    ),
+  ].take(limit).toList(growable: false);
+}
 
 abstract interface class SearchSuggestionStore {
   Future<String?> read(String key);
@@ -104,6 +126,8 @@ class SearchPageState extends State<SearchPage> {
   int _suggestionRequestId = 0;
   int _automaticSuggestionRetryIndex = 0;
   int? _lastRememberedRequestId;
+  int? _lastAnalyticsStartedRequestId;
+  int? _lastAnalyticsTerminalRequestId;
 
   @override
   void initState() {
@@ -184,10 +208,21 @@ class SearchPageState extends State<SearchPage> {
     final response = isAdvanced
         ? await _serviceAgent.advancedSearch(encodedQuery)
         : await _serviceAgent.search(encodedQuery);
+    final encodedCanonicalQuery =
+        response.headers['x-moviediary-canonical-query'];
+    String? canonicalQuery;
+    if (encodedCanonicalQuery != null && encodedCanonicalQuery.isNotEmpty) {
+      try {
+        canonicalQuery = Uri.decodeComponent(encodedCanonicalQuery);
+      } catch (_) {
+        canonicalQuery = null;
+      }
+    }
 
     return MovieSearchTransportResponse(
       statusCode: response.statusCode,
       body: response.body,
+      canonicalQuery: canonicalQuery,
     );
   }
 
@@ -233,6 +268,32 @@ class SearchPageState extends State<SearchPage> {
         state.phase == MovieSearchPhase.timeout ||
         state.phase == MovieSearchPhase.error;
 
+    if (state.phase == MovieSearchPhase.loading &&
+        state.requestId != _lastAnalyticsStartedRequestId) {
+      _lastAnalyticsStartedRequestId = state.requestId;
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.searchStarted,
+        parameters: const {
+          ProductAnalyticsParameter.sourceSurface: 'search',
+        },
+      ));
+    }
+
+    if ((state.phase == MovieSearchPhase.results ||
+            state.phase == MovieSearchPhase.empty) &&
+        state.requestId != _lastAnalyticsTerminalRequestId) {
+      _lastAnalyticsTerminalRequestId = state.requestId;
+      unawaited(ProductAnalytics.instance.track(
+        state.phase == MovieSearchPhase.results
+            ? ProductAnalyticsEventName.searchSuccess
+            : ProductAnalyticsEventName.searchNoResults,
+        parameters: {
+          ProductAnalyticsParameter.resultCount: state.movies.length,
+          ProductAnalyticsParameter.sourceSurface: 'search',
+        },
+      ));
+    }
+
     if (isTerminal) {
       _focusNode.unfocus();
     }
@@ -240,7 +301,9 @@ class SearchPageState extends State<SearchPage> {
     if (state.phase == MovieSearchPhase.results &&
         state.requestId != _lastRememberedRequestId) {
       _lastRememberedRequestId = state.requestId;
-      unawaited(_rememberRecentSuccessfulSearch(state.query));
+      unawaited(
+        _rememberRecentSuccessfulSearch(state.canonicalQuery ?? state.query),
+      );
     }
 
     setState(() {});
@@ -564,7 +627,7 @@ class SearchPageState extends State<SearchPage> {
   Widget _buildResults(MovieSearchState state, double bottomPadding) {
     RatingHelper.refreshMoviesRating(state.movies, context);
 
-    return ListView(
+    return ListView.builder(
       key: ValueKey('search-results-${state.requestId}'),
       controller: _scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -572,26 +635,30 @@ class SearchPageState extends State<SearchPage> {
         top: _contentTopGap,
         bottom: bottomPadding,
       ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Text(
-            '${state.movies.length} result${state.movies.length == 1 ? '' : 's'}',
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 13,
-              height: 1.38,
-              fontWeight: FontWeight.w700,
+      itemCount: state.movies.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              '${state.movies.length} result${state.movies.length == 1 ? '' : 's'}',
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 13,
+                height: 1.38,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ),
-        for (final movie in state.movies)
-          MovieListItem(
-            key: ValueKey('search-result-${movie.id}'),
-            movie: movie,
-            preferredPersonalList: widget.originatingPersonalList,
-          ),
-      ],
+          );
+        }
+
+        final movie = state.movies[index - 1];
+        return MovieListItem(
+          key: ValueKey('search-result-${movie.id}'),
+          movie: movie,
+          preferredPersonalList: widget.originatingPersonalList,
+        );
+      },
     );
   }
 
@@ -676,7 +743,7 @@ class SearchPageState extends State<SearchPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: Md3Colors.danger, size: 28),
+              Icon(icon, color: Md3Colors.error, size: 28),
               const SizedBox(height: 12),
               Text(
                 title,
@@ -1007,18 +1074,11 @@ class SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _rememberRecentSuccessfulSearch(String query) async {
-    final normalized = query.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (normalized.length < 2) {
+    final existing = await _loadRecentSuccessfulSearches();
+    final updated = mergeRecentSearchSuggestions(query, existing);
+    if (updated.isEmpty || updated.first.length < 2) {
       return;
     }
-
-    final existing = await _loadRecentSuccessfulSearches();
-    final updated = [
-      normalized,
-      ...existing.where(
-        (item) => item.toLowerCase() != normalized.toLowerCase(),
-      ),
-    ].take(6).toList(growable: false);
 
     if (mounted) {
       setState(() {
@@ -1327,7 +1387,7 @@ class _SuggestionStatusCard extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: isError ? Md3Colors.danger : Md3Colors.primary,
+            color: isError ? Md3Colors.error : Md3Colors.primary,
             size: 28,
           ),
           const SizedBox(height: 12),

@@ -56,9 +56,7 @@ class FilterIcon extends StatelessWidget {
                   ),
                 Text(
                   text!,
-                  style: TextStyle(
-                      color: fontColor,
-                      fontSize: textSize ?? 15),
+                  style: TextStyle(color: fontColor, fontSize: textSize ?? 15),
                 )
               ],
             )));

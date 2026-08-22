@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Objects/user_taste_profile.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
@@ -47,6 +49,7 @@ class DiscoverPageState extends State<DiscoverPage> {
   Future<UserTasteProfile>? _profileFuture;
   String? _profileUserId;
   int? _profileRatingsCount;
+  int? _profileRatingStateVersion;
   bool _isRetryingLists = false;
   bool _isTasteProfileExpanded = false;
   bool _isRatingFlowOpen = false;
@@ -96,7 +99,11 @@ class DiscoverPageState extends State<DiscoverPage> {
       CuratedMovieListPurpose.popularTv,
     );
     final watchlistMovies = moviesState.watchlistMovies.take(5).toList();
-    final profileFuture = _getProfileFuture(userState, ratedMovies);
+    final profileFuture = _getProfileFuture(
+      userState,
+      ratedMovies,
+      moviesState.ratingStateVersion,
+    );
     final hasStarterMovies = _hasStarterMovies(moviesState);
 
     return Md3Page(
@@ -516,7 +523,7 @@ class DiscoverPageState extends State<DiscoverPage> {
           if (isReady && !hasDetails) ...[
             const SizedBox(height: 8),
             Text(
-              _confidenceLabel(profile, ratedCount: ratedCount),
+              _profileReadLabel(ratedCount),
               style: const TextStyle(
                 color: Md3Colors.muted,
                 fontSize: 12,
@@ -572,7 +579,7 @@ class DiscoverPageState extends State<DiscoverPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      _confidenceLabel(profile, ratedCount: ratedCount),
+                      _profileReadLabel(ratedCount),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -594,9 +601,19 @@ class DiscoverPageState extends State<DiscoverPage> {
                       ),
                     ),
                     onPressed: () {
+                      final expanding = !_isTasteProfileExpanded;
                       setState(() {
-                        _isTasteProfileExpanded = !_isTasteProfileExpanded;
+                        _isTasteProfileExpanded = expanding;
                       });
+                      if (expanding) {
+                        unawaited(ProductAnalytics.instance.track(
+                          ProductAnalyticsEventName.movieDnaExpanded,
+                          parameters: {
+                            ProductAnalyticsParameter.ratingCount: ratedCount,
+                            ProductAnalyticsParameter.sourceSurface: 'discover',
+                          },
+                        ));
+                      }
                     },
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -912,22 +929,8 @@ class DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  String _confidenceLabel(
-    UserTasteProfile? profile, {
-    required int ratedCount,
-  }) {
-    if (profile == null || profile.profileConfidencePercent <= 0) {
-      return 'Early read · $ratedCount ratings';
-    }
-
-    final confidence = profile.profileConfidencePercent;
-    if (confidence >= 85) {
-      return 'Strong read · $confidence%';
-    }
-    if (confidence >= 65) {
-      return 'Developing read · $confidence%';
-    }
-    return 'Early read · $confidence%';
+  String _profileReadLabel(int ratedCount) {
+    return '${movieDnaProfileReadLabel(ratedCount)} · $ratedCount ratings';
   }
 
   String _ratingsBasis(UserTasteProfile profile) {
@@ -1014,11 +1017,11 @@ class DiscoverPageState extends State<DiscoverPage> {
       liveRegion: true,
       label: 'You are offline. Your saved movies are still here.',
       child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
+        constraints: const BoxConstraints(minHeight: Md3Targets.primary),
         padding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
         decoration: BoxDecoration(
           color: const Color(0xfffff7e8),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(Md3Radius.small),
           border: Border.all(
             color: Md3Colors.warning.withValues(alpha: 0.22),
           ),
@@ -1043,8 +1046,8 @@ class DiscoverPageState extends State<DiscoverPage> {
               ),
             ),
             SizedBox(
-              width: 44,
-              height: 44,
+              width: Md3Targets.minimum,
+              height: Md3Targets.minimum,
               child: IconButton(
                 tooltip: 'Retry connection',
                 onPressed: widget.isRefreshing || widget.onRetry == null
@@ -1075,6 +1078,7 @@ class DiscoverPageState extends State<DiscoverPage> {
   Future<UserTasteProfile>? _getProfileFuture(
     UserState userState,
     List<Movie> ratedMovies,
+    int ratingStateVersion,
   ) {
     final userId = userState.userId;
     if (userId == null || userId.isEmpty) {
@@ -1087,9 +1091,11 @@ class DiscoverPageState extends State<DiscoverPage> {
     }
     if (_profileFuture == null ||
         _profileUserId != userId ||
-        _profileRatingsCount != ratingsCount) {
+        _profileRatingsCount != ratingsCount ||
+        _profileRatingStateVersion != ratingStateVersion) {
       _profileUserId = userId;
       _profileRatingsCount = ratingsCount;
+      _profileRatingStateVersion = ratingStateVersion;
       _profileFuture = _loadTasteProfile(userId, ratedMovies);
     }
 
@@ -1275,8 +1281,7 @@ class DiscoverPageState extends State<DiscoverPage> {
             insight.description.isNotEmpty &&
             insight.description.length <= 160 &&
             insight.positiveEvidenceCount >= 3 &&
-            insight.positiveEvidenceCount > insight.counterEvidenceCount &&
-            insight.confidencePercent >= 45)
+            insight.positiveEvidenceCount > insight.counterEvidenceCount)
         .take(5)
         .toList();
   }

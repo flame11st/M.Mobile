@@ -382,7 +382,7 @@ class _Md3DialogFrame extends StatelessWidget {
                     error!,
                     key: const Key('movieDiaryDialogError'),
                     style: const TextStyle(
-                      color: Md3Colors.danger,
+                      color: Md3Colors.error,
                       fontSize: 14,
                       height: 20 / 14,
                       fontWeight: FontWeight.w700,
@@ -452,7 +452,7 @@ class _Md3DialogActions extends StatelessWidget {
           if (states.contains(WidgetState.disabled)) {
             return Md3Colors.border;
           }
-          return destructive ? Md3Colors.danger : Md3Colors.primary;
+          return destructive ? Md3Colors.destructive : Md3Colors.primary;
         }),
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
