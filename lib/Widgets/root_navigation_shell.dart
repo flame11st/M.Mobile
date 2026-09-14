@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'movies_bottom_navigation_bar.dart';
+import 'Shared/m_snack_bar.dart';
 
 class MovieDiaryRootNavigationShell extends StatefulWidget {
   final int selectedIndex;
   final List<Widget> tabs;
   final ValueChanged<int> onTabSelected;
+  final int backNavigationIndex;
   final PreferredSizeWidget? appBar;
   final bool resizeToAvoidBottomInset;
 
@@ -14,6 +16,7 @@ class MovieDiaryRootNavigationShell extends StatefulWidget {
     required this.selectedIndex,
     required this.tabs,
     required this.onTabSelected,
+    this.backNavigationIndex = 0,
     this.appBar,
     this.resizeToAvoidBottomInset = false,
   }) : assert(tabs.length == 5);
@@ -27,6 +30,13 @@ class _MovieDiaryRootNavigationShellState
     extends State<MovieDiaryRootNavigationShell> {
   final _pageStorageBucket = PageStorageBucket();
 
+  void _selectTab(int index) {
+    if (index != widget.selectedIndex) {
+      MSnackBar.clearActionFeedback();
+    }
+    widget.onTabSelected(index);
+  }
+
   void _handleBack(bool didPop) {
     if (didPop) {
       return;
@@ -38,7 +48,7 @@ class _MovieDiaryRootNavigationShellState
     }
 
     if (widget.selectedIndex != 0) {
-      widget.onTabSelected(0);
+      _selectTab(widget.backNavigationIndex);
     }
   }
 
@@ -47,7 +57,7 @@ class _MovieDiaryRootNavigationShellState
     final softwareKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return PopScope(
-      canPop: widget.selectedIndex == 0,
+      canPop: widget.selectedIndex == widget.backNavigationIndex,
       onPopInvokedWithResult: (didPop, result) => _handleBack(didPop),
       child: Scaffold(
         resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
@@ -70,7 +80,7 @@ class _MovieDiaryRootNavigationShellState
                 bottom: 0,
                 child: MoviesBottomNavigationBar(
                   selectedIndex: widget.selectedIndex,
-                  onTabSelected: widget.onTabSelected,
+                  onTabSelected: _selectTab,
                 ),
               ),
           ],

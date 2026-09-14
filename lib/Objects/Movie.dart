@@ -27,6 +27,10 @@ class Movie {
   int seasonsCount;
   double imdbRate;
   int imdbVotes;
+  String? scoreSource;
+  double? scoreValue;
+  String? scoreScale;
+  int? scoreCount;
   int recommendationMatchPercent;
   String? recommendationMatchLabel;
   double recommendationRankScore;
@@ -60,6 +64,10 @@ class Movie {
     seasonsCount = updatedMovie.seasonsCount;
     imdbRate = updatedMovie.imdbRate;
     imdbVotes = updatedMovie.imdbVotes;
+    scoreSource = updatedMovie.scoreSource;
+    scoreValue = updatedMovie.scoreValue;
+    scoreScale = updatedMovie.scoreScale;
+    scoreCount = updatedMovie.scoreCount;
     recommendationMatchPercent = updatedMovie.recommendationMatchPercent;
     recommendationMatchLabel = updatedMovie.recommendationMatchLabel;
     recommendationRankScore = updatedMovie.recommendationRankScore;
@@ -94,6 +102,10 @@ class Movie {
       required this.seasonsCount,
       required this.imdbRate,
       required this.imdbVotes,
+      this.scoreSource,
+      this.scoreValue,
+      this.scoreScale,
+      this.scoreCount,
       this.recommendationMatchPercent = 0,
       this.recommendationMatchLabel,
       this.recommendationRankScore = 0,
@@ -124,6 +136,11 @@ class Movie {
 
     int likedVotes = json['likedVotes'];
     int dislikedVotes = json['unlikedVotes'];
+    final movieDiaryVoteCount = likedVotes + dislikedVotes;
+    final explicitScoreSource = _nullableString(json['scoreSource']);
+    final explicitScoreValue = (json['scoreValue'] as num?)?.toDouble();
+    final explicitScoreScale = _nullableString(json['scoreScale']);
+    final explicitScoreCount = (json['scoreCount'] as num?)?.toInt();
     //
     // if (json['title'] == 'The Grand Budapest Hotel') {
     //   likedVotes = 103000;
@@ -153,6 +170,33 @@ class Movie {
         inProduction: json['inProduction'],
         imdbRate: imdbRate,
         imdbVotes: json['imdbVotes'],
+        scoreSource: explicitScoreSource ??
+            (movieDiaryVoteCount > 0
+                ? 'MovieDiary'
+                : imdbRate > 0 && json['imdbVotes'] > 0
+                    ? 'IMDb'
+                    : null),
+        scoreValue: explicitScoreSource != null
+            ? explicitScoreValue
+            : movieDiaryVoteCount > 0
+                ? getMovieRating(likedVotes, dislikedVotes).toDouble()
+                : imdbRate > 0 && json['imdbVotes'] > 0
+                    ? imdbRate
+                    : null,
+        scoreScale: explicitScoreSource != null
+            ? explicitScoreScale
+            : movieDiaryVoteCount > 0
+                ? 'percent'
+                : imdbRate > 0 && json['imdbVotes'] > 0
+                    ? '10'
+                    : null,
+        scoreCount: explicitScoreSource != null
+            ? explicitScoreCount
+            : movieDiaryVoteCount > 0
+                ? movieDiaryVoteCount
+                : imdbRate > 0 && json['imdbVotes'] > 0
+                    ? json['imdbVotes']
+                    : null,
         recommendationMatchPercent: json['recommendationMatchPercent'] ?? 0,
         recommendationMatchLabel: _readRecommendationMatchLabel(json),
         recommendationRankScore:
@@ -191,6 +235,10 @@ class Movie {
         'inProduction': inProduction,
         'imdbRate': imdbRate,
         'imdbVotes': imdbVotes,
+        'scoreSource': scoreSource,
+        'scoreValue': scoreValue,
+        'scoreScale': scoreScale,
+        'scoreCount': scoreCount,
         'recommendationMatchPercent': recommendationMatchPercent,
         'recommendationMatchLabel': recommendationMatchLabel,
         'recommendationRankScore': recommendationRankScore,
@@ -213,6 +261,13 @@ class Movie {
     return legacyPercent != null && legacyPercent > 0
         ? 'Worth exploring'
         : null;
+  }
+
+  static String? _nullableString(dynamic value) {
+    final normalized = '${value ?? ''}'.trim();
+    return normalized.isEmpty || normalized.toLowerCase() == 'null'
+        ? null
+        : normalized;
   }
 
   static int getMovieRating(int likedVotes, int dislikedVotes) {

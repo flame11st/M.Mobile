@@ -17,9 +17,9 @@ class MoviesState with ChangeNotifier {
     FlutterSecureStorage? storage,
     ServiceAgent? serviceAgent,
     ValueChanged<int>? onRatedMoviesCountChanged,
-  })  : storage = storage ?? const FlutterSecureStorage(),
-        serviceAgent = serviceAgent ?? ServiceAgent(),
-        _onRatedMoviesCountChanged = onRatedMoviesCountChanged {
+  }) : storage = storage ?? const FlutterSecureStorage(),
+       serviceAgent = serviceAgent ?? ServiceAgent(),
+       _onRatedMoviesCountChanged = onRatedMoviesCountChanged {
     cacheInitialization = _initializeCache();
   }
 
@@ -100,9 +100,9 @@ class MoviesState with ChangeNotifier {
       }
     }
 
-    final result = genresByKey.values.toList(growable: false)
-      ..sort(
-          (left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+    final result = genresByKey.values.toList(
+      growable: false,
+    )..sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
     return result;
   }
 
@@ -124,7 +124,9 @@ class MoviesState with ChangeNotifier {
   }
 
   void endMovieMutation(String movieId) {
-    _activeMovieMutationIds.remove(movieId);
+    if (_activeMovieMutationIds.remove(movieId)) {
+      notifyListeners();
+    }
   }
 
   bool isMovieMutationActive(String movieId) {
@@ -171,8 +173,9 @@ class MoviesState with ChangeNotifier {
   Future<void> setCachedUserMovies() async {
     String? storedMovies;
     try {
-      storedMovies =
-          await storage.read(key: 'movies').timeout(_cacheReadTimeout);
+      storedMovies = await storage
+          .read(key: 'movies')
+          .timeout(_cacheReadTimeout);
     } catch (error) {
       debugPrint('Movie cache read skipped: $error');
     }
@@ -193,8 +196,9 @@ class MoviesState with ChangeNotifier {
     }
 
     try {
-      final movies =
-          iterableMovies.map((model) => Movie.fromJson(model)).toList();
+      final movies = iterableMovies
+          .map((model) => Movie.fromJson(model))
+          .toList();
       hasCachedUserMoviesSnapshot = true;
       if (userMovies.isEmpty) {
         cachedUserMovies = movies;
@@ -245,8 +249,9 @@ class MoviesState with ChangeNotifier {
 
     for (var i = 0; i < userMovies.length; i++) {
       var movie = userMovies[i];
-      var existedMovies =
-          this.userMovies.where((element) => element.id == movie.id);
+      var existedMovies = this.userMovies.where(
+        (element) => element.id == movie.id,
+      );
 
       if (existedMovies.isNotEmpty) {
         if (shouldSetRate) {
@@ -274,8 +279,9 @@ class MoviesState with ChangeNotifier {
     }
 
     if (storedPersonalMoviesLists != null) {
-      var personalMoviesListValue =
-          getMoviesListFromJson(storedPersonalMoviesLists);
+      var personalMoviesListValue = getMoviesListFromJson(
+        storedPersonalMoviesLists,
+      );
 
       if (personalMoviesListValue != null) {
         setPersonalMoviesLists(personalMoviesListValue);
@@ -387,10 +393,7 @@ class MoviesState with ChangeNotifier {
 
   Future<void> _writePersonalMoviesListsCache(List<MoviesList> lists) async {
     try {
-      await storage.write(
-        key: 'personalMoviesLists',
-        value: jsonEncode(lists),
-      );
+      await storage.write(key: 'personalMoviesLists', value: jsonEncode(lists));
     } catch (error) {
       debugPrint('Personal movies list cache write skipped: $error');
     }
@@ -433,8 +436,8 @@ class MoviesState with ChangeNotifier {
     final userState = ServiceAgent.state;
     final targetUserId =
         userState?.userId != null && userState!.userId!.isNotEmpty
-            ? userState.userId
-            : null;
+        ? userState.userId
+        : null;
     final updatedSync = _PendingAnonymousRatingSync(
       movieId: movieId,
       movieRate: movieRate,
@@ -464,20 +467,20 @@ class MoviesState with ChangeNotifier {
 
     _pendingAnonymousRatingSyncPersistence =
         _pendingAnonymousRatingSyncPersistence.then((_) async {
-      try {
-        if (syncSnapshot.isEmpty) {
-          await storage.delete(key: _pendingAnonymousRatingSyncsKey);
-          return;
-        }
+          try {
+            if (syncSnapshot.isEmpty) {
+              await storage.delete(key: _pendingAnonymousRatingSyncsKey);
+              return;
+            }
 
-        await storage.write(
-          key: _pendingAnonymousRatingSyncsKey,
-          value: jsonEncode(syncSnapshot),
-        );
-      } catch (error) {
-        debugPrint('Guest rating sync queue write skipped: $error');
-      }
-    });
+            await storage.write(
+              key: _pendingAnonymousRatingSyncsKey,
+              value: jsonEncode(syncSnapshot),
+            );
+          } catch (error) {
+            debugPrint('Guest rating sync queue write skipped: $error');
+          }
+        });
 
     await _pendingAnonymousRatingSyncPersistence;
   }
@@ -582,10 +585,7 @@ class MoviesState with ChangeNotifier {
       debugPrint(
         'Guest rating sync queued retry: ${_pendingAnonymousRatingSyncs.length} pending; retry in ${retryDelay.inSeconds}s. Last failure: $failure',
       );
-      _scheduleAnonymousRatingSync(
-        delay: retryDelay,
-        isBackoff: true,
-      );
+      _scheduleAnonymousRatingSync(delay: retryDelay, isBackoff: true);
       return false;
     }
 
@@ -633,15 +633,15 @@ class MoviesState with ChangeNotifier {
     final attempts = _pendingAnonymousRatingSyncs.isEmpty
         ? 0
         : _pendingAnonymousRatingSyncs
-            .map((sync) => sync.attempts)
-            .reduce((value, element) => value > element ? value : element);
+              .map((sync) => sync.attempts)
+              .reduce((value, element) => value > element ? value : element);
     final seconds = attempts <= 1
         ? 5
         : attempts == 2
-            ? 15
-            : attempts == 3
-                ? 45
-                : 120;
+        ? 15
+        : attempts == 3
+        ? 45
+        : 120;
 
     final delay = Duration(seconds: seconds);
     return delay > _anonymousRatingSyncMaxDelay
@@ -753,8 +753,9 @@ class MoviesState with ChangeNotifier {
   }
 
   renameMoviesList(String oldName, String newName) async {
-    final list =
-        personalMoviesLists.singleWhere((element) => element.name == oldName);
+    final list = personalMoviesLists.singleWhere(
+      (element) => element.name == oldName,
+    );
 
     list.name = newName;
 
@@ -775,8 +776,9 @@ class MoviesState with ChangeNotifier {
 
   void removeMoviesListEntry(MoviesList list) {
     final previousLength = personalMoviesLists.length;
-    personalMoviesLists =
-        personalMoviesLists.where((entry) => !identical(entry, list)).toList();
+    personalMoviesLists = personalMoviesLists
+        .where((entry) => !identical(entry, list))
+        .toList();
     if (personalMoviesLists.length == previousLength) {
       return;
     }
@@ -786,9 +788,13 @@ class MoviesState with ChangeNotifier {
   }
 
   addMovieToPersonalList(String listName, Movie movie) {
-    final list =
-        personalMoviesLists.singleWhere((element) => element.name == listName);
+    final list = personalMoviesLists.singleWhere(
+      (element) => element.name == listName,
+    );
 
+    if (list.listMovies.any((entry) => entry.id == movie.id)) {
+      return;
+    }
     list.listMovies.add(movie);
 
     _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
@@ -797,10 +803,19 @@ class MoviesState with ChangeNotifier {
   }
 
   removeMovieFromPersonalList(String listName, Movie movie) {
-    final list =
-        personalMoviesLists.singleWhere((element) => element.name == listName);
+    final list = personalMoviesLists.singleWhere(
+      (element) => element.name == listName,
+    );
 
-    removeMovieFromList(movie, list.listMovies, MyGlobals.personalListsKey);
+    final index = list.listMovies.indexWhere((entry) => entry.id == movie.id);
+    if (index == -1) {
+      return;
+    }
+    removeMovieFromList(
+      list.listMovies[index],
+      list.listMovies,
+      MyGlobals.personalListsKey,
+    );
 
     _schedulePersonalMoviesListsCacheWrite(personalMoviesLists);
 
@@ -822,10 +837,7 @@ class MoviesState with ChangeNotifier {
 
     for (var element in genresList) {
       if (!genres.any((genre) => genre.value == element)) {
-        genres.add(DropdownMenuItem(
-          value: element,
-          child: Text(element),
-        ));
+        genres.add(DropdownMenuItem(value: element, child: Text(element)));
       }
     }
   }
@@ -935,9 +947,7 @@ class MoviesState with ChangeNotifier {
   String get viewedAdvancedFilterSummary {
     final parts = <String>[];
     if (_viewedMediaTypeFilter != null) {
-      parts.add(
-        _viewedMediaTypeFilter == MovieType.movie ? 'Movies' : 'TV',
-      );
+      parts.add(_viewedMediaTypeFilter == MovieType.movie ? 'Movies' : 'TV');
     }
     if (_viewedGenreFilters.isNotEmpty) {
       parts.add(
@@ -1064,7 +1074,8 @@ class MoviesState with ChangeNotifier {
     return dateFrom != null &&
         dateFrom!
                 .difference(
-                    dateMin!.subtract(const Duration(hours: 23, minutes: 59)))
+                  dateMin!.subtract(const Duration(hours: 23, minutes: 59)),
+                )
                 .inDays !=
             0;
   }
@@ -1080,8 +1091,11 @@ class MoviesState with ChangeNotifier {
     notifyListeners();
   }
 
-  void refreshMoviesList(List<Movie> moviesList, List<Movie> actualMoviesList,
-      GlobalKey<AnimatedListState> key) {
+  void refreshMoviesList(
+    List<Movie> moviesList,
+    List<Movie> actualMoviesList,
+    GlobalKey<AnimatedListState> key,
+  ) {
     var moviesToAdd = [];
     var moviesToRemove = [];
 
@@ -1108,11 +1122,13 @@ class MoviesState with ChangeNotifier {
 
   List<Movie> getWatchlistMovies() {
     var result = userMovies
-        .where((movie) =>
-            movie.movieRate == MovieRate.addedToWatchlist &&
-            (selectedTypes.isEmpty ||
-                selectedTypes.contains(movie.movieType)) &&
-            (selectedGenre == null || movie.genres.contains(selectedGenre)))
+        .where(
+          (movie) =>
+              movie.movieRate == MovieRate.addedToWatchlist &&
+              (selectedTypes.isEmpty ||
+                  selectedTypes.contains(movie.movieType)) &&
+              (selectedGenre == null || movie.genres.contains(selectedGenre)),
+        )
         .toList();
 
     return result;
@@ -1127,10 +1143,13 @@ class MoviesState with ChangeNotifier {
 
     if (isDateFromSelected() || isDateToSelected()) {
       filteredMovies = allViewedMovies
-          .where((movie) =>
-              movie.updated!
-                  .isAfter(dateFrom!.subtract(const Duration(minutes: 1))) &&
-              movie.updated!.isBefore(dateTo!.add(const Duration(days: 1))))
+          .where(
+            (movie) =>
+                movie.updated!.isAfter(
+                  dateFrom!.subtract(const Duration(minutes: 1)),
+                ) &&
+                movie.updated!.isBefore(dateTo!.add(const Duration(days: 1))),
+          )
           .toList();
     } else {
       filteredMovies = allViewedMovies;
@@ -1173,12 +1192,14 @@ class MoviesState with ChangeNotifier {
     }
 
     var result = userMovies
-        .where((movie) =>
-            (selectedTypes.isEmpty ||
-                selectedTypes.contains(movie.movieType)) &&
-            selectedRates.contains(movie.movieRate) &&
-            (selectedGenre == null || movie.genres.contains(selectedGenre)) &&
-            matchesViewedAdvancedFilters(movie))
+        .where(
+          (movie) =>
+              (selectedTypes.isEmpty ||
+                  selectedTypes.contains(movie.movieType)) &&
+              selectedRates.contains(movie.movieRate) &&
+              (selectedGenre == null || movie.genres.contains(selectedGenre)) &&
+              matchesViewedAdvancedFilters(movie),
+        )
         .toList();
 
     return result;
@@ -1196,8 +1217,9 @@ class MoviesState with ChangeNotifier {
   }) async {
     Movie movieToRate;
     final foundMovies = userMovies.where((m) => m.id == movieId);
-    final previousRate =
-        foundMovies.isEmpty ? movie.movieRate : foundMovies.first.movieRate;
+    final previousRate = foundMovies.isEmpty
+        ? movie.movieRate
+        : foundMovies.first.movieRate;
 
     if (foundMovies.isNotEmpty) {
       movieToRate = foundMovies.first;
@@ -1295,16 +1317,20 @@ class MoviesState with ChangeNotifier {
     );
 
     if (snapshot.existedInUserMovies) {
-      final currentIndex =
-          userMovies.indexWhere((item) => item.id == snapshot.movieId);
-      if (currentIndex != -1) {
-        final restoredMovie = userMovies.removeAt(currentIndex);
-        final targetIndex =
-            snapshot.userMoviesIndex.clamp(0, userMovies.length).toInt();
-        restoredMovie.updated = snapshot.updated;
-        userMovies.insert(targetIndex, restoredMovie);
-        movie.updated = snapshot.updated;
-      }
+      final currentIndex = userMovies.indexWhere(
+        (item) => item.id == snapshot.movieId,
+      );
+      final restoredMovie = currentIndex == -1
+          ? movie
+          : userMovies.removeAt(currentIndex);
+      final targetIndex = snapshot.userMoviesIndex
+          .clamp(0, userMovies.length)
+          .toInt();
+      restoredMovie.movieRate = snapshot.movieRate;
+      restoredMovie.updated = snapshot.updated;
+      userMovies.insert(targetIndex, restoredMovie);
+      movie.movieRate = snapshot.movieRate;
+      movie.updated = snapshot.updated;
     }
 
     refreshMovies();
@@ -1375,15 +1401,22 @@ class MoviesState with ChangeNotifier {
     movieToAdd.movieRate = movieRate;
   }
 
-  void addMovieToList(Movie movieToAdd, List<Movie> moviesList,
-      GlobalKey<AnimatedListState> key, int index) {
+  void addMovieToList(
+    Movie movieToAdd,
+    List<Movie> moviesList,
+    GlobalKey<AnimatedListState> key,
+    int index,
+  ) {
     if (key.currentState != null) key.currentState?.insertItem(index);
 
     moviesList.insert(index, movieToAdd);
   }
 
-  void removeMovieFromList(Movie movieToRemove, List<Movie> moviesList,
-      GlobalKey<AnimatedListState>? key) {
+  void removeMovieFromList(
+    Movie movieToRemove,
+    List<Movie> moviesList,
+    GlobalKey<AnimatedListState>? key,
+  ) {
     final index = moviesList.indexOf(movieToRemove);
 
     if (index == -1) return;
@@ -1394,8 +1427,8 @@ class MoviesState with ChangeNotifier {
       final mode = identical(key, watchlistKey)
           ? MovieCardMode.watchlist
           : identical(key, viewedListKey)
-              ? MovieCardMode.viewed
-              : MovieCardMode.personalList;
+          ? MovieCardMode.viewed
+          : MovieCardMode.personalList;
       return SizeTransition(
         key: ValueKey<String>('library-${mode.name}-${movieToRemove.id}'),
         sizeFactor: animation,
@@ -1445,10 +1478,12 @@ class MoviesState with ChangeNotifier {
   }
 
   clear() async {
-    getWatchlistMovies().forEach((element) =>
-        removeMovieFromList(element, watchlistMovies, watchlistKey));
+    getWatchlistMovies().forEach(
+      (element) => removeMovieFromList(element, watchlistMovies, watchlistKey),
+    );
     getViewedMovies().forEach(
-        (element) => removeMovieFromList(element, viewedMovies, viewedListKey));
+      (element) => removeMovieFromList(element, viewedMovies, viewedListKey),
+    );
 
     watchlistMovies.clear();
     viewedMovies.clear();
@@ -1519,12 +1554,12 @@ class _PendingAnonymousRatingSync {
   }
 
   Map<String, dynamic> toJson() => {
-        'movieId': movieId,
-        'movieRate': movieRate,
-        'userId': userId,
-        'attempts': attempts,
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'movieId': movieId,
+    'movieRate': movieRate,
+    'userId': userId,
+    'attempts': attempts,
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 }
 
 class MovieStateSnapshot {

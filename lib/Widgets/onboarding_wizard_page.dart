@@ -76,22 +76,27 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
           userState.setOnboardingStage(OnboardingStage.rating);
         }
         if (!wasAlreadyStarted) {
-          unawaited(ProductAnalytics.instance.track(
-            ProductAnalyticsEventName.onboardingStarted,
-            parameters: const {
-              ProductAnalyticsParameter.sourceSurface: 'onboarding',
-            },
-            transitionId: userState.userId,
-          ));
+          unawaited(
+            ProductAnalytics.instance.track(
+              ProductAnalyticsEventName.onboardingStarted,
+              parameters: const {
+                ProductAnalyticsParameter.sourceSurface: 'onboarding',
+              },
+              transitionId: userState.userId,
+            ),
+          );
         }
       }
-      unawaited(ProductAnalytics.instance.track(
-        ProductAnalyticsEventName.ratingStarted,
-        parameters: {
-          ProductAnalyticsParameter.sourceSurface:
-              _isContinuous ? 'rate_more' : 'onboarding',
-        },
-      ));
+      unawaited(
+        ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.ratingStarted,
+          parameters: {
+            ProductAnalyticsParameter.sourceSurface: _isContinuous
+                ? 'rate_more'
+                : 'onboarding',
+          },
+        ),
+      );
     });
   }
 
@@ -160,12 +165,12 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final title = _isContinuous
         ? _candidateLoadError == null
-            ? 'No unrated picks ready'
-            : 'Rating picks unavailable'
+              ? 'No unrated picks ready'
+              : 'Rating picks unavailable'
         : 'Starter movies unavailable';
     final body = _isContinuous
         ? _candidateLoadError ??
-            'MovieDiary could not find another trusted unrated title in your current picks. Retry the pool or choose another way to keep exploring.'
+              'MovieDiary could not find another trusted unrated title in your current picks. Retry the pool or choose another way to keep exploring.'
         : 'MovieDiary could not load enough starter movies for the first rating flow. Try loading the deck again before continuing.';
 
     return Scaffold(
@@ -229,14 +234,16 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                 primaryText: isRetryingStarterDeck
                     ? 'Loading picks'
                     : _isContinuous
-                        ? 'Retry unrated picks'
-                        : 'Retry Starter Movies',
+                    ? 'Retry unrated picks'
+                    : 'Retry Starter Movies',
                 primaryIcon: Icons.refresh_rounded,
                 onPrimary: isRetryingStarterDeck ? null : _retryStarterDeck,
-                secondaryText:
-                    _isContinuous ? 'Done for now' : 'Go to Discover',
-                onSecondary:
-                    _isContinuous ? _finishContinuous : _finishOnboarding,
+                secondaryText: _isContinuous
+                    ? 'Done for now'
+                    : 'Go to Discover',
+                onSecondary: _isContinuous
+                    ? _finishContinuous
+                    : _finishOnboarding,
               ),
             ),
           ],
@@ -280,7 +287,10 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                               ),
                               SizedBox(height: 18),
                               Md3SkeletonBox(
-                                  width: 118, height: 34, radius: 17),
+                                width: 118,
+                                height: 34,
+                                radius: 17,
+                              ),
                             ],
                           ),
                         ),
@@ -448,8 +458,9 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                                 ),
                                 onPressed: () {
                                   setState(() {
-                                    _expandedSynopsisMovieId =
-                                        synopsisExpanded ? null : movie.id;
+                                    _expandedSynopsisMovieId = synopsisExpanded
+                                        ? null
+                                        : movie.id;
                                   });
                                 },
                                 child: Text(
@@ -485,10 +496,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: _buildRatingTray(movie),
-      ),
+      bottomNavigationBar: SafeArea(top: false, child: _buildRatingTray(movie)),
     );
   }
 
@@ -554,10 +562,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                   }
                 },
                 itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'skip',
-                    child: Text('Skip for now'),
-                  ),
+                  PopupMenuItem(value: 'skip', child: Text('Skip for now')),
                 ],
               ),
             ],
@@ -588,20 +593,15 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
           child: LinearProgressIndicator(
             minHeight: 6,
             value: progress,
-            backgroundColor: const Color(0xffdfe5eb),
-            valueColor: const AlwaysStoppedAnimation<Color>(
-              Md3Colors.primary,
-            ),
+            backgroundColor: Md3Colors.border,
+            valueColor: const AlwaysStoppedAnimation<Color>(Md3Colors.primary),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildContinuousRatingHeader(
-    int profileCount,
-    Movie? currentMovie,
-  ) {
+  Widget _buildContinuousRatingHeader(int profileCount, Movie? currentMovie) {
     final sessionLabel = _sessionRatedCount == 1
         ? '1 rated this session'
         : '$_sessionRatedCount rated this session';
@@ -793,18 +793,19 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                 primaryText: isCompleting
                     ? 'Saving your profile'
                     : profileCount >= targetRatings
-                        ? 'Get Recommendations'
-                        : 'Go to Discover',
+                    ? 'Get Recommendations'
+                    : 'Go to Discover',
                 primaryIcon: profileCount >= targetRatings
                     ? Icons.bolt_rounded
                     : Icons.explore_rounded,
                 onPrimary: isCompleting
                     ? null
                     : profileCount >= targetRatings
-                        ? _openRecommendations
-                        : _finishOnboarding,
-                secondaryText:
-                    profileCount >= targetRatings ? 'Go to Discover' : 'Back',
+                    ? _openRecommendations
+                    : _finishOnboarding,
+                secondaryText: profileCount >= targetRatings
+                    ? 'Go to Discover'
+                    : 'Back',
                 onSecondary: isCompleting ? null : _finishOnboarding,
               ),
             ),
@@ -825,8 +826,10 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.psychology_alt_rounded,
-                  color: Md3Colors.primary),
+              const Icon(
+                Icons.psychology_alt_rounded,
+                color: Md3Colors.primary,
+              ),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
@@ -853,9 +856,10 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
             child: LinearProgressIndicator(
               minHeight: 9,
               value: progress,
-              backgroundColor: const Color(0xffe5e7eb),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Md3Colors.primary),
+              backgroundColor: Md3Colors.surfaceMuted,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Md3Colors.primary,
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -886,9 +890,11 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       moviesState.externalMoviesLists,
       CuratedMovieListPurpose.popularTv,
     );
-    final hasPopularMovies = popularMoviesList != null &&
+    final hasPopularMovies =
+        popularMoviesList != null &&
         !MovieListCurator.isStalePopularSource(popularMoviesList);
-    final hasPopularTv = popularTvList != null &&
+    final hasPopularTv =
+        popularTvList != null &&
         !MovieListCurator.isStalePopularSource(popularTvList);
 
     return Md3Card(
@@ -973,7 +979,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                       movie: movie,
                       label: 'Liked',
                       icon: Icons.favorite_rounded,
-                      feedbackColor: const Color(0xff287a50),
+                      feedbackColor: Md3Colors.liked,
                       height: 64,
                       onPressed: isSavingRating
                           ? null
@@ -986,7 +992,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                       movie: movie,
                       label: 'Okay',
                       icon: Icons.sentiment_satisfied_alt_rounded,
-                      feedbackColor: const Color(0xffa96716),
+                      feedbackColor: Md3Colors.okay,
                       height: 64,
                       onPressed: isSavingRating
                           ? null
@@ -1011,9 +1017,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: _unseenAction(movie, height: 64),
-                  ),
+                  Expanded(child: _unseenAction(movie, height: 64)),
                 ],
               ),
             ] else ...[
@@ -1024,7 +1028,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                       movie: movie,
                       label: 'Liked',
                       icon: Icons.favorite_rounded,
-                      feedbackColor: const Color(0xff287a50),
+                      feedbackColor: Md3Colors.liked,
                       height: 52,
                       onPressed: isSavingRating
                           ? null
@@ -1037,7 +1041,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
                       movie: movie,
                       label: 'Okay',
                       icon: Icons.sentiment_satisfied_alt_rounded,
-                      feedbackColor: const Color(0xffa96716),
+                      feedbackColor: Md3Colors.okay,
                       height: 52,
                       onPressed: isSavingRating
                           ? null
@@ -1121,9 +1125,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
             padding: const WidgetStatePropertyAll(
               EdgeInsets.symmetric(horizontal: 4),
             ),
-            backgroundColor: const WidgetStatePropertyAll(
-              Color(0xf2ffffff),
-            ),
+            backgroundColor: const WidgetStatePropertyAll(Color(0xf2ffffff)),
             foregroundColor: const WidgetStatePropertyAll(Md3Colors.primary),
             overlayColor: WidgetStatePropertyAll(
               feedbackColor.withValues(alpha: 0.16),
@@ -1215,7 +1217,7 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       decoration: BoxDecoration(
         color: Md3Colors.primarySoft,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xffc9d8ea)),
+        border: Border.all(color: Md3Colors.border),
       ),
       child: Text(
         key: const Key('starter-source-label'),
@@ -1328,18 +1330,20 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     ].where((bucket) => bucket.isNotEmpty).toList();
 
     if (sourceBuckets.isEmpty) {
-      sourceBuckets.addAll([
-        MovieListCurator.trustedFallbackByType(
-          lists,
-          MovieType.movie,
-          limit: 24,
-        ),
-        MovieListCurator.trustedFallbackByType(
-          lists,
-          MovieType.tv,
-          limit: 24,
-        ),
-      ].where((bucket) => bucket.isNotEmpty));
+      sourceBuckets.addAll(
+        [
+          MovieListCurator.trustedFallbackByType(
+            lists,
+            MovieType.movie,
+            limit: 24,
+          ),
+          MovieListCurator.trustedFallbackByType(
+            lists,
+            MovieType.tv,
+            limit: 24,
+          ),
+        ].where((bucket) => bucket.isNotEmpty),
+      );
     }
 
     final interleaved = _interleave(sourceBuckets);
@@ -1382,7 +1386,8 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     final classicTv = <Movie>[];
 
     for (final movie in movies) {
-      final isClassic = movie.releaseDate.year > 1 &&
+      final isClassic =
+          movie.releaseDate.year > 1 &&
           movie.releaseDate.year < DateTime.now().year - 15;
 
       if (movie.movieType == MovieType.tv) {
@@ -1392,20 +1397,24 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       }
     }
 
-    return _interleave([
-      recentMovies,
-      recentTv,
-      classicMovies,
-      classicTv,
-    ].where((bucket) => bucket.isNotEmpty).toList());
+    return _interleave(
+      [
+        recentMovies,
+        recentTv,
+        classicMovies,
+        classicTv,
+      ].where((bucket) => bucket.isNotEmpty).toList(),
+    );
   }
 
   int _ratedCount(MoviesState moviesState) {
     final localCount = moviesState.userMovies
         .where((movie) => MovieRate.isViewed(movie.movieRate))
         .length;
-    final cachedCount =
-        Provider.of<UserState>(context, listen: false).cachedRatedMoviesCount;
+    final cachedCount = Provider.of<UserState>(
+      context,
+      listen: false,
+    ).cachedRatedMoviesCount;
 
     return cachedCount != null && cachedCount > localCount
         ? cachedCount
@@ -1416,8 +1425,9 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
     final beforeRatedCount = _ratedCount(moviesState);
-    final matchingMovies =
-        moviesState.userMovies.where((candidate) => candidate.id == movie.id);
+    final matchingMovies = moviesState.userMovies.where(
+      (candidate) => candidate.id == movie.id,
+    );
     final previousRate = matchingMovies.isEmpty
         ? movie.movieRate
         : matchingMovies.first.movieRate;
@@ -1442,17 +1452,19 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       if (!userState.isIncognitoMode &&
           userState.userId != null &&
           userState.userId!.isNotEmpty) {
-        unawaited(serviceAgent
-            .rateMovie(movie.id, userState.userId!, movieRate)
-            .catchError((error) {
-          debugPrint('Onboarding rating background sync failed: $error');
-          if (mounted) {
-            MSnackBar.showSnackBar(
-              'Saved here. Sync will retry when the library refreshes.',
-              false,
-            );
-          }
-        }));
+        unawaited(
+          serviceAgent
+              .rateMovie(movie.id, userState.userId!, movieRate)
+              .catchError((error) {
+                debugPrint('Onboarding rating background sync failed: $error');
+                if (mounted) {
+                  MSnackBar.showSnackBar(
+                    'Saved here. Sync will retry when the library refreshes.',
+                    false,
+                  );
+                }
+              }),
+        );
       }
     } catch (error) {
       debugPrint('Onboarding rating failed: $error');
@@ -1479,31 +1491,37 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
     _resetCandidateViewport();
 
     final afterRatedCount = _ratedCount(moviesState);
-    unawaited(trackMovieStateTransition(
-      movieId: movie.id,
-      previousRate: previousRate,
-      nextRate: movieRate,
-      sourceSurface: _isContinuous ? 'rate_more' : 'onboarding',
-    ));
+    unawaited(
+      trackMovieStateTransition(
+        movieId: movie.id,
+        previousRate: previousRate,
+        nextRate: movieRate,
+        sourceSurface: _isContinuous ? 'rate_more' : 'onboarding',
+      ),
+    );
     if (beforeRatedCount < 5 && afterRatedCount >= 5) {
-      unawaited(ProductAnalytics.instance.track(
-        ProductAnalyticsEventName.rating5Complete,
-        parameters: {
-          ProductAnalyticsParameter.ratingCount: afterRatedCount,
-          ProductAnalyticsParameter.sourceSurface: 'rating_flow',
-        },
-        transitionId: '${userState.userId}:5',
-      ));
+      unawaited(
+        ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.rating5Complete,
+          parameters: {
+            ProductAnalyticsParameter.ratingCount: afterRatedCount,
+            ProductAnalyticsParameter.sourceSurface: 'rating_flow',
+          },
+          transitionId: '${userState.userId}:5',
+        ),
+      );
     }
     if (beforeRatedCount < targetRatings && afterRatedCount >= targetRatings) {
-      unawaited(ProductAnalytics.instance.track(
-        ProductAnalyticsEventName.rating10Complete,
-        parameters: {
-          ProductAnalyticsParameter.ratingCount: afterRatedCount,
-          ProductAnalyticsParameter.sourceSurface: 'rating_flow',
-        },
-        transitionId: '${userState.userId}:10',
-      ));
+      unawaited(
+        ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.rating10Complete,
+          parameters: {
+            ProductAnalyticsParameter.ratingCount: afterRatedCount,
+            ProductAnalyticsParameter.sourceSurface: 'rating_flow',
+          },
+          transitionId: '${userState.userId}:10',
+        ),
+      );
     }
 
     MSnackBar.showSnackBar('"${movie.title}" saved', true);
@@ -1575,13 +1593,15 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
         await userState.setOnboardingCompleted(true);
       } else {
         await userState.setOnboardingSkipped(true);
-        unawaited(ProductAnalytics.instance.track(
-          ProductAnalyticsEventName.onboardingSkipped,
-          parameters: const {
-            ProductAnalyticsParameter.sourceSurface: 'onboarding',
-          },
-          transitionId: userState.userId,
-        ));
+        unawaited(
+          ProductAnalytics.instance.track(
+            ProductAnalyticsEventName.onboardingSkipped,
+            parameters: const {
+              ProductAnalyticsParameter.sourceSurface: 'onboarding',
+            },
+            transitionId: userState.userId,
+          ),
+        );
       }
       return true;
     } catch (error) {
@@ -1676,15 +1696,13 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
   }
 
   void _openLogin() {
-    Navigator.of(context).push(
-      RouteHelper.createRoute(() => const Login()),
-    );
+    Navigator.of(context).push(RouteHelper.createRoute(() => const Login()));
   }
 
   void _openSearch() {
-    Navigator.of(context).push(
-      RouteHelper.createRoute(() => const SearchStandalonePage()),
-    );
+    Navigator.of(
+      context,
+    ).push(RouteHelper.createRoute(() => const SearchStandalonePage()));
   }
 
   void _openPopular(CuratedMovieListPurpose purpose) {
@@ -1704,10 +1722,8 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
 
     Navigator.of(context).push(
       RouteHelper.createRoute(
-        () => MoviesListPage(
-          moviesList: list,
-          backTooltip: 'Back to Rate more',
-        ),
+        () =>
+            MoviesListPage(moviesList: list, backTooltip: 'Back to Rate more'),
       ),
     );
   }
@@ -1718,7 +1734,8 @@ class _OnboardingWizardPageState extends State<OnboardingWizardPage> {
       return;
     }
 
-    final recommendationsPage = widget.recommendationsBuilder?.call(context) ??
+    final recommendationsPage =
+        widget.recommendationsBuilder?.call(context) ??
         const RecommendationsPage(autoStart: true);
     final route = RouteHelper.createRoute(() => recommendationsPage);
 

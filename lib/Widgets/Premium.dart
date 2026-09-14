@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:mmobile/Helpers/ad_policy.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
@@ -144,6 +145,7 @@ class _PremiumState extends State<Premium> {
   bool _storeUnavailable = false;
   bool _purchaseRequestPending = false;
   String? _restoreNote;
+  String? _purchaseAttemptId;
 
   @override
   void initState() {
@@ -154,6 +156,25 @@ class _PremiumState extends State<Premium> {
         ProductAnalyticsParameter.sourceSurface: 'premium',
       },
     ));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final userState = Provider.of<UserState>(context, listen: false);
+      if (userState.isPremium == true) {
+        return;
+      }
+      unawaited(userState.monetization.recordMonetizationInteraction(
+        MonetizationInteraction.premiumPrompt,
+      ));
+      unawaited(ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.premiumOfferShown,
+        parameters: const {
+          ProductAnalyticsParameter.isPremium: false,
+          ProductAnalyticsParameter.sourceSurface: 'premium',
+        },
+      ));
+    });
     _store = widget.store ?? InAppPurchasePremiumStore();
     _purchaseSubscription = _store.purchaseUpdates.listen(
       _handlePurchaseUpdate,
@@ -241,8 +262,17 @@ class _PremiumState extends State<Premium> {
     if (update.status == PremiumPurchaseStatus.purchased ||
         update.status == PremiumPurchaseStatus.restored) {
       unawaited(
-        Provider.of<UserState>(context, listen: false).setPremium(true),
+        Provider.of<UserState>(context, listen: false)
+            .activateLifetimePremiumFromStore(),
       );
+    } else if (update.status == PremiumPurchaseStatus.error ||
+        update.status == PremiumPurchaseStatus.cancelled) {
+      unawaited(_trackPurchaseFailure(
+        update.status == PremiumPurchaseStatus.cancelled
+            ? 'cancelled'
+            : 'provider_error',
+        stage: 'provider_callback',
+      ));
     }
   }
 
@@ -253,6 +283,7 @@ class _PremiumState extends State<Premium> {
     }
 
     setState(() {
+      _purchaseAttemptId = createProductAnalyticsId('premium_purchase');
       _purchaseRequestPending = true;
       _lastPurchaseUpdate = const PremiumPurchaseUpdate(
         PremiumPurchaseStatus.pending,
@@ -270,8 +301,20 @@ class _PremiumState extends State<Premium> {
             ProductAnalyticsParameter.premiumState: 'not_owned',
           },
         ));
+        unawaited(ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.premiumPurchaseStarted,
+          parameters: const {
+            ProductAnalyticsParameter.isPremium: false,
+            ProductAnalyticsParameter.sourceSurface: 'premium',
+          },
+          transitionId: _purchaseAttemptId,
+        ));
       }
       if (!started && mounted) {
+        unawaited(_trackPurchaseFailure(
+          'request_not_started',
+          stage: 'store_request',
+        ));
         setState(() {
           _purchaseRequestPending = false;
           _lastPurchaseUpdate = const PremiumPurchaseUpdate(
@@ -280,6 +323,10 @@ class _PremiumState extends State<Premium> {
         });
       }
     } catch (error) {
+      unawaited(_trackPurchaseFailure(
+        'exception',
+        stage: 'store_request',
+      ));
       if (!mounted) {
         return;
       }
@@ -291,6 +338,26 @@ class _PremiumState extends State<Premium> {
         );
       });
     }
+  }
+
+  Future<void> _trackPurchaseFailure(
+    String outcome, {
+    required String stage,
+  }) async {
+    final attemptId = _purchaseAttemptId;
+    if (attemptId == null) {
+      return;
+    }
+    await ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.premiumPurchaseFailed,
+      parameters: {
+        ProductAnalyticsParameter.isPremium: false,
+        ProductAnalyticsParameter.sourceSurface: 'premium',
+        ProductAnalyticsParameter.failureStage: stage,
+        ProductAnalyticsParameter.outcomeCategory: outcome,
+      },
+      transitionId: '$attemptId:failed',
+    );
   }
 
   Future<void> _restorePurchases() async {

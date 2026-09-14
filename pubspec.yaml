@@ -14,7 +14,8 @@ description: M.Mobile application.
 version: 3.0.1+96
 
 environment:
-  sdk: '>=3.4.4 <4.0.0'
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.44.3 <4.0.0'
 
 dependencies:
   flutter:

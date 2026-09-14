@@ -11,10 +11,13 @@ import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Objects/user_taste_profile.dart';
 import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Services/product_analytics.dart';
+import 'package:mmobile/Services/monetization_service.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
-import 'package:mmobile/Widgets/movie_list_item_expanded.dart';
+import 'package:mmobile/Widgets/Shared/native_ad_placement.dart';
+import 'package:mmobile/Widgets/Shared/movie_community_signal.dart';
+import 'package:mmobile/Widgets/movie_list_item.dart';
 import 'package:mmobile/Widgets/movie_dna_profile.dart';
 import 'package:mmobile/Widgets/movies_list_page.dart';
 import 'package:mmobile/Widgets/onboarding_wizard_page.dart';
@@ -30,6 +33,7 @@ class DiscoverPage extends StatefulWidget {
     this.onOpenLists,
     this.onOpenWatchlist,
     this.scrollController,
+    this.tasteProfileOverride,
   });
 
   final bool isOffline;
@@ -38,6 +42,7 @@ class DiscoverPage extends StatefulWidget {
   final VoidCallback? onOpenLists;
   final VoidCallback? onOpenWatchlist;
   final ScrollController? scrollController;
+  final Future<UserTasteProfile>? tasteProfileOverride;
 
   @override
   State<DiscoverPage> createState() => DiscoverPageState();
@@ -98,159 +103,168 @@ class DiscoverPageState extends State<DiscoverPage> {
       popularTvList,
       CuratedMovieListPurpose.popularTv,
     );
-    final watchlistMovies = moviesState.watchlistMovies.take(5).toList();
-    final profileFuture = _getProfileFuture(
-      userState,
-      ratedMovies,
-      moviesState.ratingStateVersion,
+    final visiblePopularMovies = popularMovies.take(5).toList(growable: false);
+    final visiblePopularTv = popularTv.take(5).toList(growable: false);
+    final nativePlacementBoundary = discoverNativePlacementBoundary(
+      popularMovieCount: visiblePopularMovies.length,
+      popularTvCount: visiblePopularTv.length,
     );
+    final watchlistMovies = moviesState.watchlistMovies.take(5).toList();
+    final profileFuture =
+        widget.tasteProfileOverride ??
+        _getProfileFuture(
+          userState,
+          ratedMovies,
+          moviesState.ratingStateVersion,
+        );
     final hasStarterMovies = _hasStarterMovies(moviesState);
 
-    return Md3Page(
-      scrollController: _scrollController,
-      includeBottomSafeArea: false,
-      padding: EdgeInsets.fromLTRB(
-        Md3Layout.pageHorizontalInset(context),
-        14,
-        Md3Layout.pageHorizontalInset(context),
-        Md3NavigationMetrics.contentBottomInset(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.isOffline) ...[
-            _buildOfflineBanner(),
-            const SizedBox(height: 12),
-          ],
-          FutureBuilder<UserTasteProfile>(
-            future: profileFuture,
-            builder: (context, snapshot) {
-              final effectiveRatedCount = _effectiveRatedCount(
-                ratedMovies.length,
-                userState.cachedRatedMoviesCount,
-                snapshot.data,
-              );
-              final progress = (effectiveRatedCount / 10).clamp(0.0, 1.0);
+    // Popular and Watchlist can contain the same movie in this one route.
+    // Keep shared cards but avoid duplicate list-route Hero tags.
+    return HeroMode(
+      enabled: false,
+      child: Md3Page(
+        scrollController: _scrollController,
+        includeBottomSafeArea: false,
+        padding: EdgeInsets.fromLTRB(
+          Md3Layout.pageHorizontalInset(context),
+          14,
+          Md3Layout.pageHorizontalInset(context),
+          Md3NavigationMetrics.contentBottomInset(context),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.isOffline) ...[
+              _buildOfflineBanner(),
+              const SizedBox(height: 12),
+            ],
+            FutureBuilder<UserTasteProfile>(
+              future: profileFuture,
+              builder: (context, snapshot) {
+                final effectiveRatedCount = _effectiveRatedCount(
+                  ratedMovies.length,
+                  userState.cachedRatedMoviesCount,
+                  snapshot.data,
+                );
+                final progress = (effectiveRatedCount / 10).clamp(0.0, 1.0);
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHero(
-                    context,
-                    effectiveRatedCount,
-                    snapshot.data,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildTasteProfileCard(
-                    context,
-                    effectiveRatedCount,
-                    progress,
-                    snapshot.data,
-                    snapshot.connectionState == ConnectionState.waiting,
-                    snapshot.hasError,
-                    hasStarterMovies,
-                    moviesState.isMoviesListsRequested,
-                  ),
-                ],
-              );
-            },
-          ),
-          _buildDiscoverSectionHeader(
-            title: 'Popular Movies',
-            actionText: popularMovies.isEmpty ? null : 'Show all',
-            onAction: popularMovies.isEmpty
-                ? null
-                : () => _openPopularList(
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHero(context, effectiveRatedCount, snapshot.data),
+                    const SizedBox(height: 10),
+                    _buildTasteProfileCard(
+                      context,
+                      effectiveRatedCount,
+                      progress,
+                      snapshot.data,
+                      snapshot.connectionState == ConnectionState.waiting,
+                      snapshot.hasError,
+                      hasStarterMovies,
+                      moviesState.isMoviesListsRequested,
+                    ),
+                  ],
+                );
+              },
+            ),
+            _buildDiscoverSectionHeader(
+              title: 'Popular Movies',
+              actionText: popularMovies.isEmpty ? null : 'Show all',
+              onAction: popularMovies.isEmpty
+                  ? null
+                  : () => _openPopularList(
                       context,
                       popularMoviesList!,
                       popularMovies,
                     ),
-          ),
-          if (popularMovies.isEmpty && !moviesState.isMoviesListsRequested)
-            const Md3ListSkeletonCard(
-              rows: 2,
-              posterWidth: 58,
-              posterHeight: 86,
-              cardPadding: 12,
-              itemSpacing: 12,
-              cardMargin: EdgeInsets.zero,
-              cardRadius: 24,
-            )
-          else if (popularMovies.isEmpty)
-            _buildPopularSourceState(
-              context,
-              sourceList: popularMoviesList,
-              purpose: CuratedMovieListPurpose.popularMovies,
-            )
-          else
-            ...popularMovies.take(5).map((movie) => Md3HorizontalMovieCard(
+            ),
+            if (popularMovies.isEmpty && !moviesState.isMoviesListsRequested)
+              const Md3ListSkeletonCard(
+                rows: 2,
+                posterWidth: 92,
+                posterHeight: 108,
+                cardPadding: 12,
+                itemSpacing: 12,
+                cardMargin: EdgeInsets.zero,
+                cardRadius: 24,
+              )
+            else if (popularMovies.isEmpty)
+              _buildPopularSourceState(
+                context,
+                sourceList: popularMoviesList,
+                purpose: CuratedMovieListPurpose.popularMovies,
+              )
+            else
+              ...visiblePopularMovies.map(
+                (movie) => MovieListItem(
                   movie: movie,
-                  onTap: () => _openMovie(context, movie),
-                  trailing: const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Md3Colors.muted,
-                  ),
-                )),
-          _buildDiscoverSectionHeader(
-            title: 'Popular TV',
-            actionText: popularTv.isEmpty ? null : 'Show all',
-            onAction: popularTv.isEmpty
-                ? null
-                : () => _openPopularList(
-                      context,
-                      popularTvList!,
-                      popularTv,
-                    ),
-          ),
-          if (popularTv.isEmpty && !moviesState.isMoviesListsRequested)
-            const Md3ListSkeletonCard(
-              rows: 2,
-              posterWidth: 58,
-              posterHeight: 86,
-              cardPadding: 12,
-              itemSpacing: 12,
-              cardMargin: EdgeInsets.zero,
-              cardRadius: 24,
-            )
-          else if (popularTv.isEmpty)
-            _buildPopularSourceState(
-              context,
-              sourceList: popularTvList,
-              purpose: CuratedMovieListPurpose.popularTv,
-            )
-          else
-            ...popularTv.take(5).map((movie) => Md3HorizontalMovieCard(
-                  movie: movie,
-                  onTap: () => _openMovie(context, movie),
-                  trailing: const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Md3Colors.muted,
-                  ),
-                )),
-          _buildDiscoverSectionHeader(
-            title: 'Your Watchlist',
-            actionText: widget.onOpenWatchlist == null ? null : 'View All',
-            actionSemanticsLabel: 'View all Your Watchlist movies',
-            onAction: widget.onOpenWatchlist,
-            keepInline: true,
-          ),
-          if (watchlistMovies.isEmpty)
-            _buildEmptyListCard(
-              'Your watchlist is ready',
-              'Add movies from Search or recommendations and they will appear here.',
-              Icons.bookmark_add_outlined,
-            )
-          else
-            ...watchlistMovies.map(
-              (movie) => Md3HorizontalMovieCard(
-                movie: movie,
-                onTap: () => _openMovie(context, movie),
-                trailing: const Md3OpinionBadge(
-                  movieRate: MovieRate.addedToWatchlist,
+                  margin: const EdgeInsets.only(bottom: Md3Spacing.x12),
+                  supplementaryContent: MovieCommunitySignal.forMovie(movie),
                 ),
               ),
+            if (nativePlacementBoundary ==
+                DiscoverNativePlacementBoundary.afterPopularMovies)
+              ManagedNativeAdPlacement(
+                key: const Key('discover-native-placement'),
+                placement: MonetizationPlacement.discoverNative,
+                surface: MonetizationSurface.discover,
+                contentPosition: visiblePopularMovies.length,
+                margin: const EdgeInsets.only(bottom: Md3Spacing.x12),
+              ),
+            _buildDiscoverSectionHeader(
+              title: 'Popular TV',
+              actionText: popularTv.isEmpty ? null : 'Show all',
+              onAction: popularTv.isEmpty
+                  ? null
+                  : () => _openPopularList(context, popularTvList!, popularTv),
             ),
-        ],
+            if (popularTv.isEmpty && !moviesState.isMoviesListsRequested)
+              const Md3ListSkeletonCard(
+                rows: 2,
+                posterWidth: 92,
+                posterHeight: 108,
+                cardPadding: 12,
+                itemSpacing: 12,
+                cardMargin: EdgeInsets.zero,
+                cardRadius: 24,
+              )
+            else if (popularTv.isEmpty)
+              _buildPopularSourceState(
+                context,
+                sourceList: popularTvList,
+                purpose: CuratedMovieListPurpose.popularTv,
+              )
+            else
+              ...visiblePopularTv.map(
+                (movie) => MovieListItem(
+                  movie: movie,
+                  margin: const EdgeInsets.only(bottom: Md3Spacing.x12),
+                  supplementaryContent: MovieCommunitySignal.forMovie(movie),
+                ),
+              ),
+            _buildDiscoverSectionHeader(
+              title: 'Your Watchlist',
+              actionText: widget.onOpenWatchlist == null ? null : 'View All',
+              actionSemanticsLabel: 'View all Your Watchlist movies',
+              onAction: widget.onOpenWatchlist,
+              keepInline: true,
+            ),
+            if (watchlistMovies.isEmpty)
+              _buildEmptyListCard(
+                'Your watchlist is ready',
+                'Add movies from Search or recommendations and they will appear here.',
+                Icons.bookmark_add_outlined,
+              )
+            else
+              ...watchlistMovies.map(
+                (movie) => MovieListItem(
+                  movie: movie,
+                  margin: const EdgeInsets.only(bottom: Md3Spacing.x12),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -294,8 +308,8 @@ class DiscoverPageState extends State<DiscoverPage> {
             isReady ? 'Discover' : "Find movies you'll love",
             style: const TextStyle(
               color: Md3Colors.text,
-              fontSize: 32,
-              height: 38 / 32,
+              fontSize: 34,
+              height: 41 / 34,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -330,36 +344,49 @@ class DiscoverPageState extends State<DiscoverPage> {
     final canRate = isReady || hasStarterMovies;
     final hasDetails =
         isReady && profile != null && _hasTasteProfileDetails(profile);
+    final presentedInsights = profile == null
+        ? const <MovieDnaInsight>[]
+        : movieDnaPresentationInsights(profile.insights);
+    final fallbackLabels = profile == null
+        ? const <String>[]
+        : _cleanProfileLabels([
+            ...profile.tastePillars,
+            ...profile.favoriteThemes,
+            ...profile.favoriteGenres,
+          ]);
+    final hasTraitPreview =
+        presentedInsights.isNotEmpty || fallbackLabels.isNotEmpty;
     final title = isReady
         ? 'Your MovieDNA'
         : hasProfileError
-            ? 'Taste profile unavailable'
-            : 'Build your taste profile';
+        ? 'Taste profile unavailable'
+        : 'Build your taste profile';
     final body = hasProfileError && isReady
         ? 'Based on $ratedCount rated ${ratedCount == 1 ? 'title' : 'titles'}. Connect to refresh your detailed taste signals.'
         : hasProfileError
-            ? 'MovieDiary could not refresh your taste profile. Your saved ratings are still here.'
-            : isReady
-                ? _profileSummary(profile, ratedCount)
-                : 'Rate $remaining more ${remaining == 1 ? 'title' : 'titles'} to unlock sharper recommendations.';
+        ? 'MovieDiary could not refresh your taste profile. Your saved ratings are still here.'
+        : isReady
+        ? _profileSummary(profile, ratedCount)
+        : 'Rate $remaining more ${remaining == 1 ? 'title' : 'titles'} to unlock sharper recommendations.';
     final ctaText = isReady
         ? 'Get Recommendations'
         : hasStarterMovies
-            ? 'Rate Movies'
-            : listsRequested
-                ? 'Retry Starter Movies'
-                : 'Loading Starter Movies';
+        ? 'Rate Movies'
+        : listsRequested
+        ? 'Retry Starter Movies'
+        : 'Loading Starter Movies';
 
     return Md3Card(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      key: const Key('moviedna-card'),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: Md3Colors.primarySoft,
                   borderRadius: BorderRadius.circular(12),
@@ -367,7 +394,7 @@ class DiscoverPageState extends State<DiscoverPage> {
                 child: const Icon(
                   Icons.insights_rounded,
                   color: Md3Colors.primary,
-                  size: 18,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 10),
@@ -387,33 +414,33 @@ class DiscoverPageState extends State<DiscoverPage> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            body,
-            style: const TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 16,
-              height: 23 / 16,
-            ),
-          ),
-          if (isReady && profile != null) ...[
-            const SizedBox(height: 10),
-            MovieDnaTraitPreview(
-              insights: profile.insights,
-              fallbackLabels: _cleanProfileLabels([
-                ...profile.tastePillars,
-                ...profile.favoriteThemes,
-                ...profile.favoriteGenres,
-              ]),
+          if (!isReady || hasProfileError || !hasTraitPreview) ...[
+            const SizedBox(height: 12),
+            Text(
+              body,
+              style: const TextStyle(
+                color: Md3Colors.muted,
+                fontSize: 16,
+                height: 23 / 16,
+              ),
             ),
           ],
-          const SizedBox(height: 12),
+          if (isReady && profile != null && hasTraitPreview) ...[
+            const SizedBox(height: 16),
+            MovieDnaTraitPreview(
+              insights: presentedInsights,
+              fallbackLabels: fallbackLabels,
+              maxTraits: MediaQuery.sizeOf(context).width < 430 ? 2 : 3,
+            ),
+          ],
+          SizedBox(height: isReady ? 16 : 12),
           if (isReady)
             _buildTasteProfileActionButton(
               text: _isRetryingLists ? 'Loading' : ctaText,
               icon: Icons.bolt_rounded,
               tonal: false,
               fillWidth: true,
+              height: 56,
               onPressed: _isRetryingLists
                   ? null
                   : () {
@@ -457,11 +484,13 @@ class DiscoverPageState extends State<DiscoverPage> {
                   textScaler: textScaler,
                   maxLines: 1,
                 )..layout();
-                final preferredActionWidth =
-                    (actionPainter.width + 50).clamp(112.0, 172.0);
+                final preferredActionWidth = (actionPainter.width + 50).clamp(
+                  112.0,
+                  172.0,
+                );
                 final useStackedLayout =
                     progressPainter.width + preferredActionWidth + 12 >
-                        constraints.maxWidth;
+                    constraints.maxWidth;
                 final action = _buildTasteProfileActionButton(
                   text: actionText,
                   icon: hasStarterMovies
@@ -477,7 +506,7 @@ class DiscoverPageState extends State<DiscoverPage> {
                             return;
                           }
 
-                          _openRatingFlow(context);
+                          _openRatingFlow(context, isReady: false);
                         },
                 );
 
@@ -497,9 +526,7 @@ class DiscoverPageState extends State<DiscoverPage> {
                   key: const Key('taste-progress-action-layout'),
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: _buildCompactProgress(progress, remaining),
-                    ),
+                    Expanded(child: _buildCompactProgress(progress, remaining)),
                     const SizedBox(width: 12),
                     action,
                   ],
@@ -536,11 +563,7 @@ class DiscoverPageState extends State<DiscoverPage> {
             const SizedBox(height: 10),
             const Row(
               children: [
-                Icon(
-                  Icons.sync_rounded,
-                  size: 16,
-                  color: Md3Colors.muted,
-                ),
+                Icon(Icons.sync_rounded, size: 16, color: Md3Colors.muted),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -570,76 +593,82 @@ class DiscoverPageState extends State<DiscoverPage> {
             ),
           ],
           if (hasDetails) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             const Divider(height: 1, color: Md3Colors.border),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _profileReadLabel(ratedCount),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Md3Colors.muted,
-                        fontSize: 12,
-                        height: 16 / 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: Md3Colors.primary,
-                      minimumSize: const Size(44, 44),
-                      padding: const EdgeInsets.only(left: 8),
-                      textStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    onPressed: () {
-                      final expanding = !_isTasteProfileExpanded;
-                      setState(() {
-                        _isTasteProfileExpanded = expanding;
-                      });
-                      if (expanding) {
-                        unawaited(ProductAnalytics.instance.track(
-                          ProductAnalyticsEventName.movieDnaExpanded,
-                          parameters: {
-                            ProductAnalyticsParameter.ratingCount: ratedCount,
-                            ProductAnalyticsParameter.sourceSurface: 'discover',
-                          },
-                        ));
-                      }
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Taste details'),
-                        const SizedBox(width: 4),
-                        Icon(
-                          _isTasteProfileExpanded
-                              ? Icons.expand_less_rounded
-                              : Icons.expand_more_rounded,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildTasteDetailsFooter(context, ratedCount),
             if (_isTasteProfileExpanded)
               profile.insights.isNotEmpty
                   ? MovieDnaDetails(
                       profile: profile,
-                      onRateMore: () => _openRatingFlow(context),
+                      onRateMore: () => _openRatingFlow(context, isReady: true),
                     )
                   : _buildExpandedProfileDetails(profile),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTasteDetailsFooter(BuildContext context, int ratedCount) {
+    final readLabel = Text(
+      _profileReadLabel(ratedCount),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: Md3Colors.muted,
+        fontSize: 12,
+        height: 16 / 12,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+    final detailsButton = TextButton(
+      style: TextButton.styleFrom(
+        foregroundColor: Md3Colors.primary,
+        minimumSize: const Size(44, 44),
+        padding: const EdgeInsets.only(left: 8),
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+      ),
+      onPressed: () {
+        final expanding = !_isTasteProfileExpanded;
+        setState(() {
+          _isTasteProfileExpanded = expanding;
+        });
+        if (expanding) {
+          unawaited(
+            ProductAnalytics.instance.track(
+              ProductAnalyticsEventName.movieDnaExpanded,
+              parameters: {
+                ProductAnalyticsParameter.ratingCount: ratedCount,
+                ProductAnalyticsParameter.sourceSurface: 'discover',
+              },
+            ),
+          );
+        }
+      },
+      child: Text(
+        _isTasteProfileExpanded ? 'Taste details  ▲' : 'Taste details  ▼',
+      ),
+    );
+    final scaledLabelSize = MediaQuery.textScalerOf(context).scale(13);
+
+    if (scaledLabelSize > 15) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          readLabel,
+          Align(alignment: Alignment.centerRight, child: detailsButton),
+        ],
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: Row(
+        children: [
+          Expanded(child: readLabel),
+          detailsButton,
         ],
       ),
     );
@@ -709,16 +738,14 @@ class DiscoverPageState extends State<DiscoverPage> {
           final actionPainter = TextPainter(
             text: TextSpan(
               text: actionText,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
             ),
             textDirection: Directionality.of(context),
             textScaler: textScaler,
             maxLines: 1,
           )..layout();
-          labelsCompete = titlePainter.width + actionPainter.width + 28 >
+          labelsCompete =
+              titlePainter.width + actionPainter.width + 28 >
               constraints.maxWidth;
         }
         final useStackedLayout = !keepInline && labelsCompete;
@@ -774,7 +801,7 @@ class DiscoverPageState extends State<DiscoverPage> {
           child: LinearProgressIndicator(
             minHeight: 6,
             value: progress,
-            backgroundColor: const Color(0xffe5e7eb),
+            backgroundColor: Md3Colors.surfaceMuted,
             valueColor: const AlwaysStoppedAnimation<Color>(Md3Colors.primary),
           ),
         ),
@@ -798,13 +825,14 @@ class DiscoverPageState extends State<DiscoverPage> {
     required IconData icon,
     required bool tonal,
     bool fillWidth = false,
+    double height = 48,
     required VoidCallback? onPressed,
   }) {
     final background = tonal ? Md3Colors.primarySoft : Md3Colors.primary;
     final foreground = tonal ? Md3Colors.primary : Colors.white;
     final button = SizedBox(
-      height: 48,
-      child: FilledButton.icon(
+      height: height,
+      child: FilledButton(
         style: FilledButton.styleFrom(
           backgroundColor: background,
           foregroundColor: foreground,
@@ -814,16 +842,22 @@ class DiscoverPageState extends State<DiscoverPage> {
           ),
         ),
         onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: FittedBox(
+        child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(
-            text,
-            maxLines: 1,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                text,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -897,7 +931,7 @@ class DiscoverPageState extends State<DiscoverPage> {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                onPressed: () => _openRatingFlow(context),
+                onPressed: () => _openRatingFlow(context, isReady: true),
                 child: const Text('Rate more'),
               ),
             ],
@@ -979,12 +1013,14 @@ class DiscoverPageState extends State<DiscoverPage> {
         .map(_cleanLocalTasteText)
         .where((value) => value.isNotEmpty)
         .where((value) => value.length <= 40)
-        .where((value) =>
-            value
-                .split(RegExp(r'\s+'))
-                .where((word) => word.isNotEmpty)
-                .length <=
-            maxWords)
+        .where(
+          (value) =>
+              value
+                  .split(RegExp(r'\s+'))
+                  .where((word) => word.isNotEmpty)
+                  .length <=
+              maxWords,
+        )
         .where((value) => allowNumbers || !RegExp(r'\d').hasMatch(value))
         .toSet()
         .toList();
@@ -997,8 +1033,8 @@ class DiscoverPageState extends State<DiscoverPage> {
   ) {
     final localOrCached =
         cachedRatedCount != null && cachedRatedCount > localRatedCount
-            ? cachedRatedCount
-            : localRatedCount;
+        ? cachedRatedCount
+        : localRatedCount;
     if (profile == null) {
       return localOrCached;
     }
@@ -1022,9 +1058,7 @@ class DiscoverPageState extends State<DiscoverPage> {
         decoration: BoxDecoration(
           color: const Color(0xfffff7e8),
           borderRadius: BorderRadius.circular(Md3Radius.small),
-          border: Border.all(
-            color: Md3Colors.warning.withValues(alpha: 0.22),
-          ),
+          border: Border.all(color: Md3Colors.warning.withValues(alpha: 0.22)),
         ),
         child: Row(
           children: [
@@ -1108,7 +1142,8 @@ class DiscoverPageState extends State<DiscoverPage> {
   ) async {
     try {
       final profile = _cleanTasteProfileForDisplay(
-          await serviceAgent.getUserTasteProfile(userId));
+        await serviceAgent.getUserTasteProfile(userId),
+      );
       if (_shouldUseLocalProfileFallback(profile, ratedMovies)) {
         return _buildLocalTasteProfile(ratedMovies, profile);
       }
@@ -1207,14 +1242,13 @@ class DiscoverPageState extends State<DiscoverPage> {
     final favoriteGenres = _topWeightedGenres(likedMovies, okayMovies);
     final dislikedGenres = _topGenres(dislikedMovies);
     final preferredDecades = _topWeightedDecades(likedMovies, okayMovies);
-    final movieRatingsCount =
-        ratedMovies.where((movie) => movie.movieType == MovieType.movie).length;
-    final tvRatingsCount =
-        ratedMovies.where((movie) => movie.movieType == MovieType.tv).length;
-    final summaryText = _localTasteSummary(
-      favoriteGenres,
-      preferredDecades,
-    );
+    final movieRatingsCount = ratedMovies
+        .where((movie) => movie.movieType == MovieType.movie)
+        .length;
+    final tvRatingsCount = ratedMovies
+        .where((movie) => movie.movieType == MovieType.tv)
+        .length;
+    final summaryText = _localTasteSummary(favoriteGenres, preferredDecades);
 
     return UserTasteProfile(
       isReady: true,
@@ -1274,14 +1308,16 @@ class DiscoverPageState extends State<DiscoverPage> {
             supportingTitles: supportingTitles,
           );
         })
-        .where((insight) =>
-            insight.label.isNotEmpty &&
-            insight.label.length <= 40 &&
-            insight.label.split(RegExp(r'\s+')).length <= 5 &&
-            insight.description.isNotEmpty &&
-            insight.description.length <= 160 &&
-            insight.positiveEvidenceCount >= 3 &&
-            insight.positiveEvidenceCount > insight.counterEvidenceCount)
+        .where(
+          (insight) =>
+              insight.label.isNotEmpty &&
+              insight.label.length <= 40 &&
+              insight.label.split(RegExp(r'\s+')).length <= 5 &&
+              insight.description.isNotEmpty &&
+              insight.description.length <= 160 &&
+              insight.positiveEvidenceCount >= 3 &&
+              insight.positiveEvidenceCount > insight.counterEvidenceCount,
+        )
         .take(5)
         .toList();
   }
@@ -1490,13 +1526,13 @@ class DiscoverPageState extends State<DiscoverPage> {
     final title = isStale
         ? 'TMDb $kind need refresh'
         : sourceList == null
-            ? 'TMDb $kind unavailable'
-            : 'TMDb $kind list is empty';
+        ? 'TMDb $kind unavailable'
+        : 'TMDb $kind list is empty';
     final body = isStale
         ? 'Refresh for the latest TMDb list.'
         : sourceList == null
-            ? 'The current TMDb list was not returned. MovieDiary alternatives stay separate.'
-            : 'TMDb returned no titles. Refresh to check again.';
+        ? 'The current TMDb list was not returned. MovieDiary alternatives stay separate.'
+        : 'TMDb returned no titles. Refresh to check again.';
     final isRefreshing = widget.isRefreshing || _isRetryingLists;
 
     return Md3Card(
@@ -1552,11 +1588,10 @@ class DiscoverPageState extends State<DiscoverPage> {
           Tooltip(
             message: isTv ? 'Retry popular TV' : 'Retry popular movies',
             child: TextButton(
-              key: ValueKey(
-                'discover-popular-retry-${isTv ? 'tv' : 'movies'}',
-              ),
-              onPressed:
-                  isRefreshing ? null : () => _retryPopularSources(context),
+              key: ValueKey('discover-popular-retry-${isTv ? 'tv' : 'movies'}'),
+              onPressed: isRefreshing
+                  ? null
+                  : () => _retryPopularSources(context),
               style: TextButton.styleFrom(
                 minimumSize: const Size(64, 44),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1592,8 +1627,9 @@ class DiscoverPageState extends State<DiscoverPage> {
   }
 
   bool _hasStarterMovies(MoviesState moviesState) {
-    return moviesState.externalMoviesLists
-            .any((list) => list.listMovies.isNotEmpty) ||
+    return moviesState.externalMoviesLists.any(
+          (list) => list.listMovies.isNotEmpty,
+        ) ||
         moviesState.watchlistMovies.isNotEmpty ||
         moviesState.userMovies.isNotEmpty;
   }
@@ -1640,18 +1676,10 @@ class DiscoverPageState extends State<DiscoverPage> {
     }
   }
 
-  void _openMovie(BuildContext context, Movie movie) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (ctx) => MovieListItemExpanded(
-          movie: movie,
-          imageUrl: 'https://moviediarystorage.blob.core.windows.net/movies',
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openRatingFlow(BuildContext context) async {
+  Future<void> _openRatingFlow(
+    BuildContext context, {
+    required bool isReady,
+  }) async {
     if (_isRatingFlowOpen) {
       return;
     }
@@ -1664,7 +1692,9 @@ class DiscoverPageState extends State<DiscoverPage> {
       await Navigator.of(context).push(
         RouteHelper.createRoute(
           () => OnboardingWizardPage(
-            mode: RatingFlowMode.continuous,
+            mode: isReady
+                ? RatingFlowMode.continuous
+                : RatingFlowMode.onboarding,
             onFinished: () {
               Navigator.of(context).pop();
             },

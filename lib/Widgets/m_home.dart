@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
 import 'package:provider/provider.dart';
@@ -22,10 +21,12 @@ class MHome extends StatefulWidget {
 
 class MHomeState extends State<MHome> with RestorationMixin {
   StreamSubscription<dynamic>? _subscription;
-  final serviceAgent = ServiceAgent();
   final _selectedRootTab = RestorableInt(0);
+  final NavigatorObserver _actionFeedbackNavigationObserver =
+      MSnackBar.createNavigationObserver();
   static const _anonymousBootstrapTimeout = Duration(seconds: 8);
   bool _anonymousBootstrapInFlight = false;
+  bool _productExperienceRecorded = false;
   String? _anonymousBootstrapError;
 
   @override
@@ -36,61 +37,78 @@ class MHomeState extends State<MHome> with RestorationMixin {
     registerForRestoration(_selectedRootTab, 'selectedRootTab');
   }
 
-  _handlePurchaseUpdates(List<PurchaseDetails> purchases) {
+  Future<void> _handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
     final userState = Provider.of<UserState>(context, listen: false);
 
     if (purchases.isEmpty) return;
 
-    final purchase = purchases.first;
-
-    if (purchase.status == PurchaseStatus.purchased) {
-      InAppPurchase.instance.completePurchase(purchases.first);
-
-      userState.setPremium(true);
-
-      if (!userState.isIncognitoMode) {
-        serviceAgent.setUserPremiumPurchased(userState.userId!, true);
+    for (final purchase in purchases.where(
+      (candidate) => candidate.productID == 'premium_purchase',
+    )) {
+      if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
+        await userState.activateLifetimePremiumFromStore();
+        if (purchase.pendingCompletePurchase) {
+          await InAppPurchase.instance.completePurchase(purchase);
+        }
+        final restored = purchase.status == PurchaseStatus.restored;
+        MSnackBar.showSnackBar(
+          restored
+              ? 'Premium features successfully restored'
+              : 'Premium features successfully unlocked',
+          true,
+        );
+        unawaited(
+          _trackPremiumCompletion(
+            purchase,
+            restored ? 'restored' : 'purchased',
+          ),
+        );
+      } else if (purchase.status == PurchaseStatus.error) {
+        MSnackBar.showSnackBar(
+          'Your app store did not complete the purchase. Please try again.',
+          false,
+        );
+      } else if (purchase.status == PurchaseStatus.pending) {
+        MSnackBar.showSnackBar(
+          'Your request is being processed. It can take a while',
+          true,
+        );
       }
-
-      MSnackBar.showSnackBar("Premium features successfully unlocked", true);
-      unawaited(_trackPremiumCompletion(purchase, 'purchased'));
-    } else if (purchase.status == PurchaseStatus.error) {
-      MSnackBar.showSnackBar(
-        'Your app store did not complete the purchase. Please try again.',
-        false,
-      );
-    } else if (purchase.status == PurchaseStatus.pending) {
-      MSnackBar.showSnackBar(
-          "Your request is being processed. It can take a while", true);
-    } else if (purchase.status == PurchaseStatus.restored &&
-        purchase.productID == 'premium_purchase') {
-      userState.setPremium(true);
-
-      if (!userState.isIncognitoMode) {
-        serviceAgent.setUserPremiumPurchased(userState.userId!, true);
-      }
-
-      MSnackBar.showSnackBar("Premium features successfully restored", true);
-      unawaited(_trackPremiumCompletion(purchase, 'restored'));
-    } else {
-      MSnackBar.showSnackBar("Not available now. Please try later", false);
     }
   }
 
   Future<void> _trackPremiumCompletion(
     PurchaseDetails purchase,
     String outcome,
-  ) {
-    return ProductAnalytics.instance.track(
+  ) async {
+    final transitionId = _purchaseTransitionId(purchase);
+    await ProductAnalytics.instance.track(
       ProductAnalyticsEventName.premiumCompleted,
       parameters: {
         ProductAnalyticsParameter.outcomeCategory: outcome,
         ProductAnalyticsParameter.premiumState: 'owned',
         ProductAnalyticsParameter.sourceSurface: 'premium',
       },
-      transitionId: purchase.purchaseID,
+      transitionId: transitionId,
+    );
+    await ProductAnalytics.instance.track(
+      outcome == 'restored'
+          ? ProductAnalyticsEventName.premiumRestored
+          : ProductAnalyticsEventName.premiumPurchaseCompleted,
+      parameters: {
+        ProductAnalyticsParameter.isPremium: true,
+        ProductAnalyticsParameter.premiumState: 'owned',
+        ProductAnalyticsParameter.sourceSurface: 'premium',
+        ProductAnalyticsParameter.outcomeCategory: outcome,
+      },
+      transitionId: '$transitionId:$outcome',
     );
   }
+
+  static String _purchaseTransitionId(PurchaseDetails purchase) =>
+      purchase.purchaseID ??
+      '${purchase.productID}:${purchase.transactionDate ?? purchase.status.name}';
 
   @override
   void initState() {
@@ -102,7 +120,7 @@ class MHomeState extends State<MHome> with RestorationMixin {
 
       final Stream purchaseUpdates = InAppPurchase.instance.purchaseStream;
       _subscription = purchaseUpdates.listen((purchases) {
-        _handlePurchaseUpdates(purchases);
+        unawaited(_handlePurchaseUpdates(purchases));
       });
     });
   }
@@ -125,6 +143,7 @@ class MHomeState extends State<MHome> with RestorationMixin {
     );
     if (userState.isAppLoaded) {
       if (userState.isUserAuthorizedOrInIncognitoMode) {
+        _recordProductExperienceAfterFrame(userState);
         widgetToReturn = MyMovies(
           initialNavigationIndex: _selectedRootTab.value,
           onNavigationIndexChanged: (index) {
@@ -158,6 +177,7 @@ class MHomeState extends State<MHome> with RestorationMixin {
           title: 'MovieDiary',
           debugShowCheckedModeBanner: false,
           restorationScopeId: 'movieDiaryApp',
+          navigatorObservers: [_actionFeedbackNavigationObserver],
           home: Stack(
             children: <Widget>[
               widgetToReturn,
@@ -173,6 +193,18 @@ class MHomeState extends State<MHome> with RestorationMixin {
             ),
           )),
     );
+  }
+
+  void _recordProductExperienceAfterFrame(UserState userState) {
+    if (_productExperienceRecorded) {
+      return;
+    }
+    _productExperienceRecorded = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(userState.monetization.markMeaningfulProductExperience());
+      }
+    });
   }
 
   void _bootstrapAnonymousOnboarding(UserState userState) {

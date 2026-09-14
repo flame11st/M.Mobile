@@ -15,8 +15,9 @@ import 'package:provider/provider.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('status surface is content-driven without shrink-to-fit copy',
-      (tester) async {
+  testWidgets('status surface is content-driven without shrink-to-fit copy', (
+    tester,
+  ) async {
     final movie = _movie();
     final states = await _testStates(movie);
     addTearDown(states.dispose);
@@ -51,11 +52,17 @@ void main() {
       ),
       findsNothing,
     );
+    for (final label in const ['liked', 'okay', 'disliked', 'watchlist']) {
+      final control = find.byKey(ValueKey('movie-status-$label'));
+      expect(control, findsOneWidget);
+      expect(tester.getSize(control).height, 80);
+    }
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('hero keeps full title and earns space with useful metadata',
-      (tester) async {
+  testWidgets('hero keeps full title and earns space with useful metadata', (
+    tester,
+  ) async {
     const title =
         'A Very Long Television Title That Must Remain Fully Readable';
     final movie = _movie(
@@ -88,15 +95,19 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: heroCard, matching: find.text('MovieDiary 91%')),
+      find.descendant(
+        of: heroCard,
+        matching: find.text('MD 91% (1,200) · IMDb 8.6'),
+      ),
       findsOneWidget,
     );
     expect(find.textContaining('4 seasons  /  Ended'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('provider groups use headings above a two-column phone grid',
-      (tester) async {
+  testWidgets('provider groups use headings above a two-column phone grid', (
+    tester,
+  ) async {
     final movie = _movie();
     final states = await _testStates(movie);
     addTearDown(states.dispose);
@@ -117,16 +128,21 @@ void main() {
     final second = find.byKey(const Key('provider-tile-2'));
 
     expect(
-        tester.getTopLeft(heading).dy, lessThan(tester.getTopLeft(first).dy));
+      tester.getTopLeft(heading).dy,
+      lessThan(tester.getTopLeft(first).dy),
+    );
     expect(
-        tester.getTopLeft(first).dy, closeTo(tester.getTopLeft(second).dy, 1));
+      tester.getTopLeft(first).dy,
+      closeTo(tester.getTopLeft(second).dy, 1),
+    );
     expect(tester.getSize(first).width, greaterThan(140));
     expect(tester.getSize(first).width, lessThan(170));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('provider disclosure preserves top four and expands all groups',
-      (tester) async {
+  testWidgets('provider disclosure preserves top four and expands all groups', (
+    tester,
+  ) async {
     final movie = _movie();
     final states = await _testStates(movie);
     addTearDown(states.dispose);
@@ -161,8 +177,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('long provider names fall back to a readable full-width tile',
-      (tester) async {
+  testWidgets('long provider names fall back to a readable full-width tile', (
+    tester,
+  ) async {
     final movie = _movie();
     final states = await _testStates(movie);
     addTearDown(states.dispose);
@@ -204,8 +221,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('provider error remains truthful and retry recovers',
-      (tester) async {
+  testWidgets('provider error remains truthful and retry recovers', (
+    tester,
+  ) async {
     final movie = _movie();
     final states = await _testStates(movie);
     addTearDown(states.dispose);
@@ -220,9 +238,7 @@ void main() {
       providerLoader: () {
         attempts++;
         if (attempts == 1) {
-          return Future<MovieWatchProviderGroup>.error(
-            StateError('offline'),
-          );
+          return Future<MovieWatchProviderGroup>.error(StateError('offline'));
         }
         return Future.value(_group(streamCount: 1));
       },
@@ -241,8 +257,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('provider loading and empty states remain bounded and truthful',
-      (tester) async {
+  testWidgets('provider loading and empty states remain bounded and truthful', (
+    tester,
+  ) async {
     final movie = _movie();
     final states = await _testStates(movie);
     addTearDown(states.dispose);
@@ -267,8 +284,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('details matrix has no overflow or clipped meaningful text',
-      (tester) async {
+  testWidgets('details matrix has no overflow or clipped meaningful text', (
+    tester,
+  ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final fixtures = [
       _movie(
@@ -375,7 +393,8 @@ Future<void> _pumpDetails(
         home: MovieListItemExpanded(
           movie: movie,
           imageUrl: '',
-          watchProviderLoader: providerLoader ??
+          watchProviderLoader:
+              providerLoader ??
               () => Future.value(providers ?? _group(streamCount: 1)),
         ),
       ),
@@ -425,6 +444,10 @@ Movie _movie({
     seasonsCount: seasonsCount,
     imdbRate: 8.6,
     imdbVotes: imdbVotes,
+    scoreSource: allVotes > 0 ? 'MovieDiary' : 'IMDb',
+    scoreValue: allVotes > 0 ? 91 : 8.6,
+    scoreScale: allVotes > 0 ? 'percent' : '10',
+    scoreCount: allVotes > 0 ? allVotes : imdbVotes,
   );
 }
 

@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Objects/movie.dart';
+import 'package:mmobile/Services/monetization_service.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/empty_movies_card.dart';
 import 'package:provider/provider.dart';
 
 import 'Providers/movies_state.dart';
-import 'Providers/user_state.dart';
 import 'Shared/m_movies_animated_list.dart';
 import 'Shared/md3_ui.dart';
+import 'Shared/native_ad_placement.dart';
 import 'movie_list_item.dart';
 
 class MovieList extends StatefulWidget {
@@ -72,8 +73,8 @@ class MovieListState extends State<MovieList>
     final nextIndex = tabController.indexIsChanging
         ? tabController.index
         : animationValue >= 0.5
-            ? 1
-            : 0;
+        ? 1
+        : 0;
     _setActiveTab(nextIndex);
   }
 
@@ -83,14 +84,17 @@ class MovieListState extends State<MovieList>
     }
 
     setState(() => _activeTabIndex = nextIndex);
-    Provider.of<MoviesState>(context, listen: false)
-        .setCurrentTabIndex(nextIndex, notify: false);
+    Provider.of<MoviesState>(
+      context,
+      listen: false,
+    ).setCurrentTabIndex(nextIndex, notify: false);
   }
 
   void _selectTab(int index) {
     final animationValue =
         tabController.animation?.value ?? tabController.index.toDouble();
-    final isSettledOnTarget = !tabController.indexIsChanging &&
+    final isSettledOnTarget =
+        !tabController.indexIsChanging &&
         tabController.index == index &&
         (animationValue - index).abs() < 0.001;
 
@@ -134,11 +138,43 @@ class MovieListState extends State<MovieList>
     return SizeTransition(
       key: ValueKey<String>('library-${mode.name}-${movie.id}'),
       sizeFactor: animation,
-      child: MovieListItem(
-        movie: movie,
-        shouldRequestReview: true,
-        mode: mode,
-      ),
+      child: MovieListItem(movie: movie, shouldRequestReview: true, mode: mode),
+    );
+  }
+
+  Widget _buildLibraryItemWithNativePlacement(
+    Movie movie,
+    Animation<double> animation, {
+    required MovieCardMode mode,
+    required int contentPosition,
+    required Set<int> nativePositions,
+  }) {
+    final isPlacement = nativePositions.contains(contentPosition);
+    final placement = switch (mode) {
+      MovieCardMode.watchlist => MonetizationPlacement.watchlistNative,
+      MovieCardMode.viewed => MonetizationPlacement.viewedNative,
+      _ => null,
+    };
+    final surface = switch (mode) {
+      MovieCardMode.watchlist => MonetizationSurface.watchlist,
+      MovieCardMode.viewed => MonetizationSurface.viewed,
+      _ => null,
+    };
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildLibraryItem(movie, animation, mode: mode),
+        if (isPlacement && placement != null && surface != null)
+          ManagedNativeAdPlacement(
+            key: ValueKey<String>(
+              'my-movies-${mode.name}-native-after-$contentPosition',
+            ),
+            placement: placement,
+            surface: surface,
+            contentPosition: contentPosition,
+          ),
+      ],
     );
   }
 
@@ -149,8 +185,6 @@ class MovieListState extends State<MovieList>
     }
 
     final moviesState = Provider.of<MoviesState>(context);
-    final userState = Provider.of<UserState>(context);
-
     final allViewedMovies = moviesState.userMovies
         .where((movie) => MovieRate.isViewed(movie.movieRate))
         .toList(growable: false);
@@ -175,8 +209,8 @@ class MovieListState extends State<MovieList>
                   key: Key('my-movies-page-title'),
                   style: TextStyle(
                     color: Md3Colors.text,
-                    fontSize: 32,
-                    height: 1.19,
+                    fontSize: 34,
+                    height: 41 / 34,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.7,
                   ),
@@ -201,12 +235,8 @@ class MovieListState extends State<MovieList>
               child: TabBarView(
                 controller: tabController,
                 children: [
-                  _buildWatchlistContent(moviesState, userState),
-                  _buildViewedContent(
-                    moviesState,
-                    userState,
-                    allViewedMovies,
-                  ),
+                  _buildWatchlistContent(moviesState),
+                  _buildViewedContent(moviesState, allViewedMovies),
                 ],
               ),
             ),
@@ -313,8 +343,8 @@ class MovieListState extends State<MovieList>
                     count: counts[MovieRate.liked]!,
                     selected:
                         !allSelected && selectedRates.contains(MovieRate.liked),
-                    selectedBackground: const Color(0xffe8f4ed),
-                    selectedForeground: Md3Colors.success,
+                    selectedBackground: Md3Colors.likedSoft,
+                    selectedForeground: Md3Colors.liked,
                     onTap: moviesState.changeLikedOnlyFilter,
                   ),
                   const SizedBox(width: 8),
@@ -324,8 +354,8 @@ class MovieListState extends State<MovieList>
                     count: counts[MovieRate.okay]!,
                     selected:
                         !allSelected && selectedRates.contains(MovieRate.okay),
-                    selectedBackground: const Color(0xfffff4e4),
-                    selectedForeground: Md3Colors.warning,
+                    selectedBackground: Md3Colors.okaySoft,
+                    selectedForeground: Md3Colors.okay,
                     onTap: moviesState.changeOkayOnlyFilter,
                   ),
                   const SizedBox(width: 8),
@@ -333,7 +363,8 @@ class MovieListState extends State<MovieList>
                     key: const Key('viewed-filter-disliked'),
                     label: 'Disliked',
                     count: counts[MovieRate.notLiked]!,
-                    selected: !allSelected &&
+                    selected:
+                        !allSelected &&
                         selectedRates.contains(MovieRate.notLiked),
                     selectedBackground: Md3Colors.dislikedSoft,
                     selectedForeground: Md3Colors.disliked,
@@ -366,15 +397,13 @@ class MovieListState extends State<MovieList>
         viewedCount: moviesState.userMovies
             .where((movie) => MovieRate.isViewed(movie.movieRate))
             .length,
-        onApply: ({
-          required MovieType? mediaType,
-          required Set<String> genres,
-        }) {
-          moviesState.applyViewedAdvancedFilters(
-            mediaType: mediaType,
-            genres: genres,
-          );
-        },
+        onApply:
+            ({required MovieType? mediaType, required Set<String> genres}) {
+              moviesState.applyViewedAdvancedFilters(
+                mediaType: mediaType,
+                genres: genres,
+              );
+            },
       ),
     );
   }
@@ -384,8 +413,8 @@ class MovieListState extends State<MovieList>
     final retry = widget.onRetry == null
         ? null
         : widget.isRefreshing
-            ? null
-            : () => unawaited(widget.onRetry!());
+        ? null
+        : () => unawaited(widget.onRetry!());
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -448,9 +477,7 @@ class MovieListState extends State<MovieList>
                               ),
                             )
                           : const Icon(Icons.refresh_rounded, size: 18),
-                      label: Text(
-                        widget.isRefreshing ? 'Refreshing' : 'Retry',
-                      ),
+                      label: Text(widget.isRefreshing ? 'Refreshing' : 'Retry'),
                     ),
                 ],
               ),
@@ -482,10 +509,7 @@ class MovieListState extends State<MovieList>
     );
   }
 
-  Widget _buildWatchlistContent(
-    MoviesState moviesState,
-    UserState userState,
-  ) {
+  Widget _buildWatchlistContent(MoviesState moviesState) {
     if (widget.isRefreshing && moviesState.userMovies.isEmpty) {
       return _buildLoadingRows();
     }
@@ -493,19 +517,30 @@ class MovieListState extends State<MovieList>
       return _buildTerminalRefreshError();
     }
     if (moviesState.watchlistMovies.isNotEmpty) {
+      final config = Provider.of<MonetizationService?>(context)?.config;
+      final plan = NativeContentInsertionPlan.forContentCount(
+        moviesState.watchlistMovies.length,
+        interval: config?.myMoviesNativeInterval ?? 10,
+        maximum: config?.myMoviesNativeMaximum ?? 0,
+      );
+      final positionsByMovieId = <String, int>{
+        for (var index = 0; index < moviesState.watchlistMovies.length; index++)
+          moviesState.watchlistMovies[index].id: index + 1,
+      };
+      final nativePositions = plan.contentPositions.toSet();
       return MMoviesAnimatedList(
-        buildItemFunction: (
-          Movie movie,
-          Animation<double> animation, {
-          bool isPremium = false,
-          required BuildContext context,
-        }) =>
-            _buildLibraryItem(
-          movie,
-          animation,
-          mode: MovieCardMode.watchlist,
-        ),
-        isPremium: userState.isPremium,
+        buildItemFunction:
+            (
+              Movie movie,
+              Animation<double> animation, {
+              required BuildContext context,
+            }) => _buildLibraryItemWithNativePlacement(
+              movie,
+              animation,
+              mode: MovieCardMode.watchlist,
+              contentPosition: positionsByMovieId[movie.id] ?? 0,
+              nativePositions: nativePositions,
+            ),
         listKey: moviesState.watchlistKey,
         movies: moviesState.watchlistMovies,
         scrollController: _watchlistScrollController,
@@ -534,7 +569,6 @@ class MovieListState extends State<MovieList>
 
   Widget _buildViewedContent(
     MoviesState moviesState,
-    UserState userState,
     List<Movie> allViewedMovies,
   ) {
     if (widget.isRefreshing && moviesState.userMovies.isEmpty) {
@@ -544,19 +578,30 @@ class MovieListState extends State<MovieList>
       return _buildTerminalRefreshError();
     }
     if (moviesState.viewedMovies.isNotEmpty) {
+      final config = Provider.of<MonetizationService?>(context)?.config;
+      final plan = NativeContentInsertionPlan.forContentCount(
+        moviesState.viewedMovies.length,
+        interval: config?.myMoviesNativeInterval ?? 10,
+        maximum: config?.myMoviesNativeMaximum ?? 0,
+      );
+      final positionsByMovieId = <String, int>{
+        for (var index = 0; index < moviesState.viewedMovies.length; index++)
+          moviesState.viewedMovies[index].id: index + 1,
+      };
+      final nativePositions = plan.contentPositions.toSet();
       return MMoviesAnimatedList(
-        buildItemFunction: (
-          Movie movie,
-          Animation<double> animation, {
-          bool isPremium = false,
-          required BuildContext context,
-        }) =>
-            _buildLibraryItem(
-          movie,
-          animation,
-          mode: MovieCardMode.viewed,
-        ),
-        isPremium: userState.isPremium,
+        buildItemFunction:
+            (
+              Movie movie,
+              Animation<double> animation, {
+              required BuildContext context,
+            }) => _buildLibraryItemWithNativePlacement(
+              movie,
+              animation,
+              mode: MovieCardMode.viewed,
+              contentPosition: positionsByMovieId[movie.id] ?? 0,
+              nativePositions: nativePositions,
+            ),
         listKey: moviesState.viewedListKey,
         movies: moviesState.viewedMovies,
         scrollController: _viewedScrollController,
@@ -595,12 +640,7 @@ class MovieListState extends State<MovieList>
         0,
         Md3NavigationMetrics.contentBottomInset(context),
       ),
-      children: const [
-        Md3ListSkeletonCard(
-          rows: 3,
-          trailingSize: 44,
-        ),
-      ],
+      children: const [Md3ListSkeletonCard(rows: 3, trailingSize: 44)],
     );
   }
 
@@ -757,7 +797,7 @@ class _LibrarySegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? Md3Colors.text : Md3Colors.muted;
+    final foreground = selected ? Md3Colors.primary : Md3Colors.muted;
 
     return Expanded(
       child: Semantics(
@@ -856,7 +896,7 @@ class _ViewedFilterChip extends StatelessWidget {
       onTap: onTap,
       excludeSemantics: true,
       child: SizedBox(
-        height: 44,
+        height: 48,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -865,7 +905,7 @@ class _ViewedFilterChip extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
-              height: 40,
+              height: 44,
               alignment: Alignment.center,
               margin: const EdgeInsets.symmetric(vertical: 2),
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1014,7 +1054,8 @@ class _ViewedAdvancedFiltersSheet extends StatefulWidget {
   final void Function({
     required MovieType? mediaType,
     required Set<String> genres,
-  }) onApply;
+  })
+  onApply;
 
   const _ViewedAdvancedFiltersSheet({
     required this.genres,
@@ -1057,17 +1098,15 @@ class _ViewedAdvancedFiltersSheetState
   }
 
   void _apply() {
-    widget.onApply(
-      mediaType: _mediaType,
-      genres: Set<String>.of(_genres),
-    );
+    widget.onApply(mediaType: _mediaType, genres: Set<String>.of(_genres));
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final availableHeight = mediaQuery.size.height -
+    final availableHeight =
+        mediaQuery.size.height -
         mediaQuery.viewPadding.top -
         mediaQuery.viewPadding.bottom;
     final sheetHeight = (availableHeight * 0.82).clamp(360.0, 720.0).toDouble();
@@ -1316,9 +1355,7 @@ class _ViewedAdvancedChoice extends StatelessWidget {
       checkmarkColor: Md3Colors.primary,
       backgroundColor: Md3Colors.surface,
       selectedColor: Md3Colors.primarySoft,
-      side: BorderSide(
-        color: selected ? Md3Colors.primary : Md3Colors.border,
-      ),
+      side: BorderSide(color: selected ? Md3Colors.primary : Md3Colors.border),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,

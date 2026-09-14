@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mmobile/Objects/user.dart';
+import 'package:mmobile/Services/ad_privacy_consent.dart';
+import 'package:mmobile/Services/monetization_service.dart';
 import 'package:mmobile/Widgets/Providers/loader_state.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
@@ -52,7 +54,9 @@ void main() {
       expect(find.text('Sign in to MovieDiary'), findsOneWidget);
       expect(find.text('Sign in with Google'), findsOneWidget);
       expect(find.text('Sign in with Apple'), findsNothing);
-      expect(find.byKey(const Key('forgotPasswordButton')), findsOneWidget);
+      expect(find.byKey(const Key('forgotPasswordButton')), findsNothing);
+      expect(find.text('Forgot password?'), findsNothing);
+      expect(find.textContaining('Reset your password'), findsNothing);
       expect(find.byKey(const Key('createAccountButton')), findsOneWidget);
       expect(
         find.byKey(const Key('continueWithoutAccountButton')),
@@ -69,9 +73,7 @@ void main() {
         tester.getTopLeft(find.byKey(const Key('createAccountButton'))).dy,
         lessThan(
           tester
-              .getTopLeft(
-                find.byKey(const Key('continueWithoutAccountButton')),
-              )
+              .getTopLeft(find.byKey(const Key('continueWithoutAccountButton')))
               .dy,
         ),
       );
@@ -108,53 +110,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Forgot password opens with a valid entered email prefilled',
-      (tester) async {
-    final states = await _guestStates();
-    addTearDown(states.movies.dispose);
-
-    await tester.pumpWidget(
-      _app(
-        states,
-        home: const Login(
-          platformOverride: TargetPlatform.android,
-          loadMovieLists: false,
-        ),
-      ),
-    );
-    await tester.pump();
-
-    await tester.enterText(
-      find.byKey(const Key('loginEmailField')),
-      'movie.fan@example.test',
-    );
-    await tester.ensureVisible(find.byKey(const Key('forgotPasswordButton')));
-    await tester.tap(find.byKey(const Key('forgotPasswordButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Reset your password'), findsOneWidget);
-    final resetField = tester.widget<TextFormField>(
-      find.byKey(const Key('passwordResetEmailField')),
-    );
-    expect(resetField.controller?.text, 'movie.fan@example.test');
-    expect(find.byKey(const Key('passwordResetSendButton')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('guest Settings uses compact sections and responsive purchases',
-      (tester) async {
+  testWidgets('guest Settings uses compact sections and responsive purchases', (
+    tester,
+  ) async {
     final states = await _guestStates();
     addTearDown(states.movies.dispose);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.binding.setSurfaceSize(const Size(320, 568));
 
-    await tester.pumpWidget(
-      _app(
-        states,
-        textScale: 2,
-        home: const Settings(),
-      ),
-    );
+    await tester.pumpWidget(_app(states, textScale: 2, home: const Settings()));
     await tester.pump();
 
     expect(find.text('Settings'), findsOneWidget);
@@ -177,49 +141,89 @@ void main() {
   });
 
   testWidgets(
-      'signed-in Settings account editors stay polished at text scale 2',
-      (tester) async {
-    final states = await _signedInStates();
-    addTearDown(states.movies.dispose);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.binding.setSurfaceSize(const Size(320, 568));
+    'signed-in Settings account editors stay polished at text scale 2',
+    (tester) async {
+      final states = await _signedInStates();
+      addTearDown(states.movies.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(320, 568));
 
-    await tester.pumpWidget(
-      _app(
-        states,
-        textScale: 2,
-        home: const Settings(),
-      ),
-    );
-    await tester.pump();
+      await tester.pumpWidget(
+        _app(states, textScale: 2, home: const Settings()),
+      );
+      await tester.pump();
 
-    expect(find.text('Signed in as R3 Acceptance Target'), findsOneWidget);
-    expect(find.byKey(const Key('settingsNameCard')), findsOneWidget);
-    expect(find.byKey(const Key('settingsEmailCard')), findsOneWidget);
-    expect(find.byKey(const Key('settingsPasswordCard')), findsOneWidget);
-    expect(find.byKey(const Key('settingsDeleteAccountCard')), findsOneWidget);
+      expect(find.text('Signed in as R3 Acceptance Target'), findsOneWidget);
+      expect(find.byKey(const Key('settingsNameCard')), findsOneWidget);
+      expect(find.byKey(const Key('settingsEmailCard')), findsOneWidget);
+      expect(find.byKey(const Key('settingsPasswordCard')), findsOneWidget);
+      expect(
+        find.byKey(const Key('settingsDeleteAccountCard')),
+        findsOneWidget,
+      );
 
-    final nameField = tester.widget<TextField>(
-      find.descendant(
-        of: find.byKey(const Key('settingsNameField')),
-        matching: find.byType(TextField),
-      ),
-    );
-    expect(nameField.decoration?.fillColor, Md3Colors.background);
+      final nameField = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('settingsNameField')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(nameField.decoration?.fillColor, Md3Colors.background);
 
-    for (final key in [
-      const Key('settingsEmailField'),
-      const Key('settingsOldPasswordField'),
-      const Key('settingsDeleteAccountButton'),
-    ]) {
-      await tester.ensureVisible(find.byKey(key));
-      await tester.pumpAndSettle();
+      for (final key in [
+        const Key('settingsEmailField'),
+        const Key('settingsOldPasswordField'),
+        const Key('settingsDeleteAccountButton'),
+      ]) {
+        await tester.ensureVisible(find.byKey(key));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'Settings reacts to authoritative privacy requirement without orphan spacing',
+    (tester) async {
+      final monetization = _PrivacyMonetizationService(required: false);
+      final states = await _guestStates(monetization: monetization);
+      addTearDown(states.movies.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+
+      await tester.pumpWidget(_app(states, home: const Settings()));
+      await tester.pump();
+
+      expect(find.byKey(const Key('settingsAdPrivacyCard')), findsNothing);
+      expect(find.text('Privacy'), findsNothing);
+      expect(
+        find.textContaining('Advertising choices are separate'),
+        findsNothing,
+      );
+
+      monetization.setPrivacyOptionsRequired(true);
+      await tester.pump();
+      expect(find.byKey(const Key('settingsAdPrivacyCard')), findsOneWidget);
+      expect(find.byKey(const Key('settingsAdPrivacyAction')), findsOneWidget);
+      expect(find.text('Privacy'), findsOneWidget);
+
+      await monetization.synchronizeEntitlement(
+        isPremium: true,
+        isResolved: true,
+      );
+      await tester.pump();
+      expect(find.byKey(const Key('settingsAdPrivacyCard')), findsOneWidget);
+
+      monetization.setPrivacyOptionsRequired(false);
+      await tester.pump();
+      expect(find.byKey(const Key('settingsAdPrivacyCard')), findsNothing);
+      expect(find.text('Privacy'), findsNothing);
       expect(tester.takeException(), isNull);
-    }
-  });
+    },
+  );
 }
 
-Future<_TestStates> _guestStates() async {
+Future<_TestStates> _guestStates({MonetizationService? monetization}) async {
   FlutterSecureStorage.setMockInitialValues({
     'token': 'guest-access',
     'refreshToken': 'guest-refresh',
@@ -227,16 +231,12 @@ Future<_TestStates> _guestStates() async {
     'isIncognitoMode': 'true',
   });
   const storage = FlutterSecureStorage();
-  final user = UserState(storage: storage);
+  final user = UserState(storage: storage, monetizationService: monetization);
   await user.initialization;
   final movies = MoviesState(storage: storage);
   await movies.cacheInitialization;
 
-  return _TestStates(
-    user: user,
-    movies: movies,
-    loader: LoaderState(),
-  );
+  return _TestStates(user: user, movies: movies, loader: LoaderState());
 }
 
 Future<_TestStates> _signedInStates() async {
@@ -262,18 +262,10 @@ Future<_TestStates> _signedInStates() async {
   final movies = MoviesState(storage: storage);
   await movies.cacheInitialization;
 
-  return _TestStates(
-    user: user,
-    movies: movies,
-    loader: LoaderState(),
-  );
+  return _TestStates(user: user, movies: movies, loader: LoaderState());
 }
 
-Widget _app(
-  _TestStates states, {
-  required Widget home,
-  double textScale = 1,
-}) {
+Widget _app(_TestStates states, {required Widget home, double textScale = 1}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<UserState>.value(value: states.user),
@@ -283,9 +275,9 @@ Widget _app(
     child: MaterialApp(
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScale),
-          ),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         );
       },
@@ -304,4 +296,48 @@ class _TestStates {
     required this.movies,
     required this.loader,
   });
+}
+
+class _PrivacyMonetizationService extends MonetizationService {
+  _PrivacyMonetizationService({required bool required}) : _required = required;
+
+  bool _required;
+  bool _premium = false;
+
+  void setPrivacyOptionsRequired(bool value) {
+    _required = value;
+    notifyListeners();
+  }
+
+  @override
+  bool get isPremium => _premium;
+
+  @override
+  bool get privacyOptionsRequired => _required;
+
+  @override
+  AdPrivacySnapshot get privacySnapshot => AdPrivacySnapshot(
+    targetingMode: AdTargetingMode.noAds,
+    platformConsentStatus: AdPlatformConsentStatus.obtained,
+    trackingAuthorization: AdTrackingAuthorization.notApplicable,
+    privacyOptionsRequired: _required,
+    eligibleThisSession: true,
+  );
+
+  @override
+  Future<void> synchronizeEntitlement({
+    required bool isPremium,
+    required bool isResolved,
+  }) async {
+    _premium = isPremium;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> beginEntitlementRefresh() =>
+      synchronizeEntitlement(isPremium: false, isResolved: false);
+
+  @override
+  Future<AdPrivacyOptionsResult> showPrivacyOptions() async =>
+      AdPrivacyOptionsResult.presented;
 }

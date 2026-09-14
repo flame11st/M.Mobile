@@ -37,10 +37,12 @@ class MovieRateButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final isTitledSheet = showTitle != null && showTitle!;
     final moviesState = Provider.of<MoviesState>(context);
-    final matchingMovies =
-        moviesState.userMovies.where((element) => element.id == movie.id);
-    final currentMovie =
-        matchingMovies.isNotEmpty ? matchingMovies.first : movie;
+    final matchingMovies = moviesState.userMovies.where(
+      (element) => element.id == movie.id,
+    );
+    final currentMovie = matchingMovies.isNotEmpty
+        ? matchingMovies.first
+        : movie;
 
     final content = Column(
       mainAxisSize: MainAxisSize.min,
@@ -77,22 +79,22 @@ class MovieRateButtons extends StatelessWidget {
               child: _RateAction(
                 label: 'Liked',
                 icon: Icons.favorite_rounded,
-                color: Md3Colors.success,
+                color: Md3Colors.liked,
                 active: currentMovie.movieRate == MovieRate.liked,
                 onTap: () => _rate(context, currentMovie, MovieRate.liked),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
               child: _RateAction(
                 label: 'Okay',
                 icon: Icons.sentiment_satisfied_alt_rounded,
-                color: Md3Colors.warning,
+                color: Md3Colors.okay,
                 active: currentMovie.movieRate == MovieRate.okay,
                 onTap: () => _rate(context, currentMovie, MovieRate.okay),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
               child: _RateAction(
                 label: 'Disliked',
@@ -102,18 +104,15 @@ class MovieRateButtons extends StatelessWidget {
                 onTap: () => _rate(context, currentMovie, MovieRate.notLiked),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
               child: _RateAction(
                 label: 'Watchlist',
                 icon: Icons.bookmark_rounded,
                 color: Md3Colors.primary,
                 active: currentMovie.movieRate == MovieRate.addedToWatchlist,
-                onTap: () => _rate(
-                  context,
-                  currentMovie,
-                  MovieRate.addedToWatchlist,
-                ),
+                onTap: () =>
+                    _rate(context, currentMovie, MovieRate.addedToWatchlist),
               ),
             ),
           ],
@@ -140,8 +139,9 @@ class MovieRateButtons extends StatelessWidget {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
     final previousMovieRate = currentMovie.movieRate;
-    final nextMovieRate =
-        previousMovieRate == selectedRate ? MovieRate.notRated : selectedRate;
+    final nextMovieRate = previousMovieRate == selectedRate
+        ? MovieRate.notRated
+        : selectedRate;
 
     await moviesState.changeMovieRate(
       currentMovie.id,
@@ -162,12 +162,14 @@ class MovieRateButtons extends StatelessWidget {
     }
 
     if (transitionSucceeded) {
-      unawaited(trackMovieStateTransition(
-        movieId: currentMovie.id,
-        previousRate: previousMovieRate,
-        nextRate: nextMovieRate,
-        sourceSurface: fromSearch == true ? 'search' : 'movie_actions',
-      ));
+      unawaited(
+        trackMovieStateTransition(
+          movieId: currentMovie.id,
+          previousRate: previousMovieRate,
+          nextRate: nextMovieRate,
+          sourceSurface: fromSearch == true ? 'search' : 'movie_actions',
+        ),
+      );
     }
 
     if (closeParentOnRate && navigator.canPop()) {
@@ -256,6 +258,7 @@ class _RateAction extends StatelessWidget {
     final borderColor = active ? color : Md3Colors.border;
 
     return Semantics(
+      key: ValueKey('movie-status-${label.toLowerCase()}'),
       button: true,
       selected: active,
       label: '$label status',
@@ -267,21 +270,13 @@ class _RateAction extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
-            height: 64,
+            height: 80,
             padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: borderColor, width: active ? 1.5 : 1),
-              boxShadow: active
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.22),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : const [],
+              boxShadow: const [],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -60,6 +60,7 @@ class SearchPage extends StatefulWidget {
   final bool isActive;
   final bool showBottomNavigationClearance;
   final bool handlesBackNavigation;
+  final bool allowRoutePop;
   final VoidCallback? onExitRequested;
   final MoviesList? originatingPersonalList;
   final MovieSearchFetcher? fetcher;
@@ -75,6 +76,7 @@ class SearchPage extends StatefulWidget {
     this.isActive = true,
     this.showBottomNavigationClearance = true,
     this.handlesBackNavigation = true,
+    this.allowRoutePop = true,
     this.onExitRequested,
     this.originatingPersonalList,
     this.fetcher,
@@ -366,7 +368,7 @@ class SearchPageState extends State<SearchPage> {
     }
 
     return PopScope(
-      canPop: isNested && !keyboardVisible,
+      canPop: isNested && widget.allowRoutePop && !keyboardVisible,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
           return;
@@ -382,8 +384,8 @@ class SearchPageState extends State<SearchPage> {
       'Search',
       style: TextStyle(
         color: Md3Colors.text,
-        fontSize: 32,
-        height: 1.19,
+        fontSize: 34,
+        height: 41 / 34,
         fontWeight: FontWeight.w900,
         letterSpacing: -0.5,
       ),

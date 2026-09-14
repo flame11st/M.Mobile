@@ -1,3 +1,4 @@
+import 'package:mmobile/Widgets/Shared/movie_status_control.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -47,8 +48,9 @@ void main() {
       await tester.pump();
       expect(find.text('Search'), findsOneWidget);
       expect(
-          tester.widget<TextField>(find.byType(TextField)).focusNode?.hasFocus,
-          isFalse);
+        tester.widget<TextField>(find.byType(TextField)).focusNode?.hasFocus,
+        isFalse,
+      );
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
@@ -84,6 +86,61 @@ void main() {
   );
 
   testWidgets(
+    'root Search arrow and system back exit without clearing retained state',
+    (tester) async {
+      final harness = await _Harness.create();
+      addTearDown(harness.dispose);
+      await _configureMediumPhone(tester);
+      var exitRequests = 0;
+
+      await tester.pumpWidget(
+        harness.app(
+          home: Scaffold(
+            body: SearchPage(
+              allowRoutePop: false,
+              onExitRequested: () => exitRequests += 1,
+              suggestionStore: _MemorySuggestionStore(),
+              suggestionFetcher: () async => const MovieSearchTransportResponse(
+                statusCode: 200,
+                body: '[]',
+              ),
+              automaticSuggestionRetryDelays: const [],
+              fetcher: (_, __) async => MovieSearchTransportResponse(
+                statusCode: 200,
+                body: jsonEncode([_matrixMovie().toJson()]),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('standalone-search-back')), findsOne);
+      expect(find.byTooltip('Back'), findsOne);
+      await tester.enterText(find.byType(TextField), 'Matrix');
+      await tester.pump(const Duration(milliseconds: 451));
+      await tester.pump(const Duration(milliseconds: 601));
+      expect(find.text('The Matrix'), findsOne);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(exitRequests, 0);
+      expect(find.text('The Matrix'), findsOne);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(exitRequests, 1);
+      expect(find.text('The Matrix'), findsOne);
+
+      await tester.tap(find.byKey(const ValueKey('standalone-search-back')));
+      await tester.pump();
+      expect(exitRequests, 2);
+      expect(find.text('The Matrix'), findsOne);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'originating list is the direct Add target and updates before return',
     (tester) async {
       final harness = await _Harness.create(
@@ -103,7 +160,7 @@ void main() {
       await harness.openSearch(tester);
       await _showMatrixResults(tester);
 
-      await tester.tap(find.byTooltip('Movie actions'));
+      await tester.tap(find.byType(MovieStatusControl));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Add to Favorites'));
       await tester.pumpAndSettle();
@@ -148,7 +205,7 @@ void main() {
 
       harness.movies.removeMoviesList('Favorites');
       await tester.pump();
-      await tester.tap(find.byTooltip('Movie actions'));
+      await tester.tap(find.byType(MovieStatusControl));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.text(
@@ -170,8 +227,9 @@ void main() {
     },
   );
 
-  testWidgets('renamed originating list stays the preferred target',
-      (tester) async {
+  testWidgets('renamed originating list stays the preferred target', (
+    tester,
+  ) async {
     final harness = await _Harness.create();
     addTearDown(harness.dispose);
     await _configureMediumPhone(tester);
@@ -182,7 +240,7 @@ void main() {
 
     await harness.movies.renameMoviesList('Favorites', 'Fresh Favorites');
     await tester.pump();
-    await tester.tap(find.byTooltip('Movie actions'));
+    await tester.tap(find.byType(MovieStatusControl));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Add to Fresh Favorites'));
     await tester.pumpAndSettle();
@@ -194,46 +252,43 @@ void main() {
   });
 
   testWidgets(
-      'empty list refreshes immediately after standalone Search returns',
-      (tester) async {
-    final harness = await _Harness.create();
-    addTearDown(harness.dispose);
-    await _configureMediumPhone(tester);
+    'empty list refreshes immediately after standalone Search returns',
+    (tester) async {
+      final harness = await _Harness.create();
+      addTearDown(harness.dispose);
+      await _configureMediumPhone(tester);
 
-    await tester.pumpWidget(
-      harness.app(
-        home: MoviesListPage(moviesList: harness.originatingList),
-      ),
-    );
-    expect(find.text('This list is empty'), findsOneWidget);
+      await tester.pumpWidget(
+        harness.app(home: MoviesListPage(moviesList: harness.originatingList)),
+      );
+      expect(find.text('This list is empty'), findsOneWidget);
 
-    await tester.tap(find.text('Search Movies or TV Shows'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.byTooltip('Back to Favorites'), findsOneWidget);
+      await tester.tap(find.text('Search Movies or TV Shows'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byTooltip('Back to Favorites'), findsOneWidget);
 
-    harness.movies.addMovieToPersonalList('Favorites', _matrixMovie());
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('standalone-search-back')));
-    await tester.pumpAndSettle();
+      harness.movies.addMovieToPersonalList('Favorites', _matrixMovie());
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('standalone-search-back')));
+      await tester.pumpAndSettle();
 
-    expect(find.text('This list is empty'), findsNothing);
-    expect(find.text('The Matrix'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pump(const Duration(milliseconds: 800));
-  });
+      expect(find.text('This list is empty'), findsNothing);
+      expect(find.text('The Matrix'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(milliseconds: 800));
+    },
+  );
 
-  testWidgets('long Search results build lazily and keep stable movie keys',
-      (tester) async {
+  testWidgets('long Search results build lazily and keep stable movie keys', (
+    tester,
+  ) async {
     final harness = await _Harness.create();
     addTearDown(harness.dispose);
     await _configureMediumPhone(tester);
     final results = List<Movie>.generate(
       100,
-      (index) => _matrixMovie(
-        id: 'result-$index',
-        title: 'Result $index',
-      ),
+      (index) => _matrixMovie(id: 'result-$index', title: 'Result $index'),
     );
 
     await tester.pumpWidget(harness.app());
@@ -258,9 +313,7 @@ void main() {
   });
 }
 
-Future<void> _configureMediumPhone(
-  WidgetTester tester,
-) async {
+Future<void> _configureMediumPhone(WidgetTester tester) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(390, 844);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -307,10 +360,7 @@ class _Harness {
       listMovies: [],
       movieListType: MovieListType.personal,
     );
-    await movies.setInitialMoviesLists([
-      originatingList,
-      ...additionalLists,
-    ]);
+    await movies.setInitialMoviesLists([originatingList, ...additionalLists]);
     return _Harness(
       user: user,
       movies: movies,
@@ -318,10 +368,7 @@ class _Harness {
     );
   }
 
-  Widget app({
-    double textScale = 1,
-    Widget? home,
-  }) {
+  Widget app({double textScale = 1, Widget? home}) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<UserState>.value(value: user),
@@ -338,28 +385,22 @@ class _Harness {
             child: child!,
           );
         },
-        home: home ??
-            const Scaffold(
-              body: Center(child: Text('Origin list route')),
-            ),
+        home:
+            home ??
+            const Scaffold(body: Center(child: Text('Origin list route'))),
       ),
     );
   }
 
-  Future<void> openSearch(
-    WidgetTester tester, {
-    List<Movie>? results,
-  }) async {
+  Future<void> openSearch(WidgetTester tester, {List<Movie>? results}) async {
     unawaited(
       navigatorKey.currentState!.push(
         MaterialPageRoute<void>(
           builder: (_) => SearchStandalonePage(
             originatingPersonalList: originatingList,
             suggestionStore: _MemorySuggestionStore(),
-            suggestionFetcher: () async => const MovieSearchTransportResponse(
-              statusCode: 200,
-              body: '[]',
-            ),
+            suggestionFetcher: () async =>
+                const MovieSearchTransportResponse(statusCode: 200, body: '[]'),
             automaticSuggestionRetryDelays: const [],
             fetcher: (_, __) async => MovieSearchTransportResponse(
               statusCode: 200,
@@ -394,10 +435,7 @@ class _MemorySuggestionStore implements SearchSuggestionStore {
   }
 }
 
-Movie _matrixMovie({
-  String id = 'matrix',
-  String title = 'The Matrix',
-}) {
+Movie _matrixMovie({String id = 'matrix', String title = 'The Matrix'}) {
   return Movie(
     id: id,
     title: title,

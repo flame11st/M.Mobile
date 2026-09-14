@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
+import 'package:mmobile/Objects/recommendation_discovery_session.dart';
 
 import 'service_agent.dart';
 
@@ -42,8 +43,36 @@ enum ProductAnalyticsEventName {
   premiumViewed('premium_viewed'),
   premiumStarted('premium_started'),
   premiumCompleted('premium_completed'),
+  nativeAdEligible('native_ad_eligible'),
+  nativeAdImpression('native_ad_impression'),
+  nativeAdClicked('native_ad_clicked'),
+  nativeAdFailed('native_ad_failed'),
+  interstitialEligible('interstitial_eligible'),
+  interstitialLoaded('interstitial_loaded'),
   interstitialShown('interstitial_shown'),
   interstitialClosed('interstitial_closed'),
+  interstitialFailed('interstitial_failed'),
+  interstitialSkippedFrequencyCap('interstitial_skipped_frequency_cap'),
+  interstitialSkippedNotLoaded('interstitial_skipped_not_loaded'),
+  rewardedOfferShown('rewarded_offer_shown'),
+  rewardedStarted('rewarded_started'),
+  rewardedCompleted('rewarded_completed'),
+  rewardedDismissed('rewarded_dismissed'),
+  rewardedFailed('rewarded_failed'),
+  rewardedCreditGranted('rewarded_credit_granted'),
+  rewardedCreditConsumed('rewarded_credit_consumed'),
+  rewardedCreditRestored('rewarded_credit_restored'),
+  recommendationFreeDeckUsed('recommendation_free_deck_used'),
+  recommendationLimitReached('recommendation_limit_reached'),
+  recommendationAllowanceConfigResolved(
+    'recommendation_allowance_config_resolved',
+  ),
+  premiumOfferShown('premium_offer_shown'),
+  premiumPurchaseStarted('premium_purchase_started'),
+  premiumPurchaseCompleted('premium_purchase_completed'),
+  premiumPurchaseFailed('premium_purchase_failed'),
+  premiumRestored('premium_restored'),
+  adRevenuePaid('ad_revenue_paid'),
   userExitAfterAd('user_exit_after_ad');
 
   const ProductAnalyticsEventName(this.wireName);
@@ -70,12 +99,267 @@ enum ProductAnalyticsParameter {
   entryPoint('entry_point'),
   authMethod('auth_method'),
   adPlacement('ad_placement'),
+  placement('placement'),
+  isPremium('is_premium'),
+  deckNumberToday('deck_number_today'),
+  interstitialCountSession('interstitial_count_session'),
+  interstitialCountDay('interstitial_count_day'),
+  recommendationMode('recommendation_mode'),
+  revenueMicros('revenue_micros'),
+  currencyCode('currency_code'),
+  adFormat('ad_format'),
+  failureStage('failure_stage'),
+  monetizationId('monetization_id'),
+  meteringEnabled('metering_enabled'),
+  rolloutConfigurationAvailable('rollout_configuration_available'),
+  rolloutConfigurationSchemaVersion('rollout_configuration_schema_version'),
+  rolloutConfigurationOutcome('rollout_configuration_outcome'),
   platform('platform'),
   appVersion('app_version');
 
   const ProductAnalyticsParameter(this.wireName);
 
   final String wireName;
+}
+
+/// Additive schema-v1 rules for the monetization workstream.
+///
+/// Existing UXR43 event names and parameters remain valid. New provider,
+/// allowance, credit, and purchase outcomes use this stricter subset so a
+/// future SDK integration cannot leak movie preferences or free-form payloads.
+abstract final class MonetizationAnalyticsContract {
+  static const eventNames = <ProductAnalyticsEventName>{
+    ProductAnalyticsEventName.nativeAdEligible,
+    ProductAnalyticsEventName.nativeAdImpression,
+    ProductAnalyticsEventName.nativeAdClicked,
+    ProductAnalyticsEventName.nativeAdFailed,
+    ProductAnalyticsEventName.interstitialEligible,
+    ProductAnalyticsEventName.interstitialLoaded,
+    ProductAnalyticsEventName.interstitialShown,
+    ProductAnalyticsEventName.interstitialClosed,
+    ProductAnalyticsEventName.interstitialFailed,
+    ProductAnalyticsEventName.interstitialSkippedFrequencyCap,
+    ProductAnalyticsEventName.interstitialSkippedNotLoaded,
+    ProductAnalyticsEventName.rewardedOfferShown,
+    ProductAnalyticsEventName.rewardedStarted,
+    ProductAnalyticsEventName.rewardedCompleted,
+    ProductAnalyticsEventName.rewardedDismissed,
+    ProductAnalyticsEventName.rewardedFailed,
+    ProductAnalyticsEventName.rewardedCreditGranted,
+    ProductAnalyticsEventName.rewardedCreditConsumed,
+    ProductAnalyticsEventName.rewardedCreditRestored,
+    ProductAnalyticsEventName.recommendationFreeDeckUsed,
+    ProductAnalyticsEventName.recommendationLimitReached,
+    ProductAnalyticsEventName.recommendationAllowanceConfigResolved,
+    ProductAnalyticsEventName.premiumOfferShown,
+    ProductAnalyticsEventName.premiumPurchaseStarted,
+    ProductAnalyticsEventName.premiumPurchaseCompleted,
+    ProductAnalyticsEventName.premiumPurchaseFailed,
+    ProductAnalyticsEventName.premiumRestored,
+    ProductAnalyticsEventName.adRevenuePaid,
+  };
+
+  static const allowedParameters = <ProductAnalyticsParameter>{
+    ProductAnalyticsParameter.placement,
+    ProductAnalyticsParameter.adPlacement,
+    ProductAnalyticsParameter.isPremium,
+    ProductAnalyticsParameter.premiumState,
+    ProductAnalyticsParameter.deckNumberToday,
+    ProductAnalyticsParameter.interstitialCountSession,
+    ProductAnalyticsParameter.interstitialCountDay,
+    ProductAnalyticsParameter.recommendationMode,
+    ProductAnalyticsParameter.discoveryMode,
+    ProductAnalyticsParameter.mediaType,
+    ProductAnalyticsParameter.recommendationSessionId,
+    ProductAnalyticsParameter.sourceSurface,
+    ProductAnalyticsParameter.outcomeCategory,
+    ProductAnalyticsParameter.providerCategory,
+    ProductAnalyticsParameter.revenueMicros,
+    ProductAnalyticsParameter.currencyCode,
+    ProductAnalyticsParameter.adFormat,
+    ProductAnalyticsParameter.failureStage,
+    ProductAnalyticsParameter.monetizationId,
+    ProductAnalyticsParameter.meteringEnabled,
+    ProductAnalyticsParameter.rolloutConfigurationAvailable,
+    ProductAnalyticsParameter.rolloutConfigurationSchemaVersion,
+    ProductAnalyticsParameter.rolloutConfigurationOutcome,
+    ProductAnalyticsParameter.platform,
+    ProductAnalyticsParameter.appVersion,
+  };
+
+  static const requiredParameters =
+      <ProductAnalyticsEventName, Set<ProductAnalyticsParameter>>{
+    ProductAnalyticsEventName.nativeAdEligible: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.nativeAdImpression: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.nativeAdClicked: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.nativeAdFailed: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.failureStage,
+    },
+    ProductAnalyticsEventName.interstitialEligible: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.monetizationId,
+    },
+    ProductAnalyticsEventName.interstitialLoaded: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.monetizationId,
+    },
+    ProductAnalyticsEventName.interstitialShown: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.interstitialCountSession,
+      ProductAnalyticsParameter.interstitialCountDay,
+      ProductAnalyticsParameter.monetizationId,
+    },
+    ProductAnalyticsEventName.interstitialClosed: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.interstitialCountSession,
+      ProductAnalyticsParameter.interstitialCountDay,
+      ProductAnalyticsParameter.monetizationId,
+    },
+    ProductAnalyticsEventName.interstitialFailed: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.failureStage,
+      ProductAnalyticsParameter.monetizationId,
+    },
+    ProductAnalyticsEventName.interstitialSkippedFrequencyCap: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.interstitialSkippedNotLoaded: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.monetizationId,
+    },
+    ProductAnalyticsEventName.rewardedOfferShown: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.rewardedStarted: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.rewardedCompleted: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.rewardedDismissed: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.rewardedFailed: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.failureStage,
+    },
+    ProductAnalyticsEventName.rewardedCreditGranted: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.rewardedCreditConsumed: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.rewardedCreditRestored: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+    },
+    ProductAnalyticsEventName.recommendationFreeDeckUsed: {
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.deckNumberToday,
+      ProductAnalyticsParameter.recommendationMode,
+      ProductAnalyticsParameter.mediaType,
+    },
+    ProductAnalyticsEventName.recommendationLimitReached: {
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.deckNumberToday,
+      ProductAnalyticsParameter.recommendationMode,
+      ProductAnalyticsParameter.mediaType,
+    },
+    ProductAnalyticsEventName.recommendationAllowanceConfigResolved: {
+      ProductAnalyticsParameter.meteringEnabled,
+      ProductAnalyticsParameter.rolloutConfigurationAvailable,
+      ProductAnalyticsParameter.rolloutConfigurationSchemaVersion,
+      ProductAnalyticsParameter.rolloutConfigurationOutcome,
+    },
+    ProductAnalyticsEventName.premiumOfferShown: {
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.sourceSurface,
+    },
+    ProductAnalyticsEventName.premiumPurchaseStarted: {
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.sourceSurface,
+    },
+    ProductAnalyticsEventName.premiumPurchaseCompleted: {
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.sourceSurface,
+    },
+    ProductAnalyticsEventName.premiumPurchaseFailed: {
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.sourceSurface,
+    },
+    ProductAnalyticsEventName.premiumRestored: {
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.sourceSurface,
+    },
+    ProductAnalyticsEventName.adRevenuePaid: {
+      ProductAnalyticsParameter.placement,
+      ProductAnalyticsParameter.isPremium,
+      ProductAnalyticsParameter.revenueMicros,
+      ProductAnalyticsParameter.currencyCode,
+      ProductAnalyticsParameter.adFormat,
+      ProductAnalyticsParameter.monetizationId,
+    },
+  };
+
+  static const exactlyOnceEvents = <ProductAnalyticsEventName>{
+    ProductAnalyticsEventName.nativeAdImpression,
+    ProductAnalyticsEventName.nativeAdClicked,
+    ProductAnalyticsEventName.interstitialLoaded,
+    ProductAnalyticsEventName.interstitialShown,
+    ProductAnalyticsEventName.interstitialClosed,
+    ProductAnalyticsEventName.rewardedCompleted,
+    ProductAnalyticsEventName.rewardedCreditGranted,
+    ProductAnalyticsEventName.rewardedCreditConsumed,
+    ProductAnalyticsEventName.rewardedCreditRestored,
+    ProductAnalyticsEventName.recommendationFreeDeckUsed,
+    ProductAnalyticsEventName.recommendationAllowanceConfigResolved,
+    ProductAnalyticsEventName.premiumPurchaseCompleted,
+    ProductAnalyticsEventName.premiumRestored,
+    ProductAnalyticsEventName.adRevenuePaid,
+  };
+
+  static bool accepts(
+    ProductAnalyticsEventName event,
+    Set<ProductAnalyticsParameter> parameters, {
+    required String? transitionId,
+  }) {
+    if (!eventNames.contains(event)) {
+      return true;
+    }
+    if (!allowedParameters.containsAll(parameters)) {
+      return false;
+    }
+    if (!(parameters.containsAll(requiredParameters[event] ?? const {}))) {
+      return false;
+    }
+    return !exactlyOnceEvents.contains(event) ||
+        (transitionId != null && transitionId.isNotEmpty);
+  }
 }
 
 abstract interface class ProductAnalyticsStorage {
@@ -206,6 +490,14 @@ class ProductAnalytics {
     String? transitionId,
   }) async {
     try {
+      if (!MonetizationAnalyticsContract.accepts(
+        name,
+        parameters.keys.toSet(),
+        transitionId: transitionId,
+      )) {
+        _diagnose('rejected ${name.wireName}: invalid monetization contract');
+        return false;
+      }
       await initialize();
       return await _enqueue(
         name,
@@ -425,6 +717,69 @@ class ProductAnalytics {
       debugPrint('ProductAnalytics: $message');
     }
   }
+}
+
+String createProductAnalyticsId(String prefix) =>
+    ProductAnalytics._secureId(prefix);
+
+Future<void> trackRewardedCreditTransitions(
+  RecommendationAllowance? allowance, {
+  ProductAnalytics? analytics,
+}) async {
+  if (allowance == null || allowance.rewardedCreditTransitions.isEmpty) {
+    return;
+  }
+  final target = analytics ?? ProductAnalytics.instance;
+  for (final transition in allowance.rewardedCreditTransitions) {
+    final event = switch (transition.type) {
+      'granted' => ProductAnalyticsEventName.rewardedCreditGranted,
+      'consumed' => ProductAnalyticsEventName.rewardedCreditConsumed,
+      'restored' => ProductAnalyticsEventName.rewardedCreditRestored,
+      _ => null,
+    };
+    if (event == null || transition.transitionId.isEmpty) {
+      continue;
+    }
+    await target.track(
+      event,
+      parameters: {
+        ProductAnalyticsParameter.placement: 'extra_recommendation_rewarded',
+        ProductAnalyticsParameter.isPremium: allowance.isPremium,
+        ProductAnalyticsParameter.monetizationId: transition.transitionId,
+        ProductAnalyticsParameter.outcomeCategory: transition.type,
+      },
+      transitionId: transition.transitionId,
+    );
+  }
+}
+
+Future<void> trackRecommendationAllowanceConfiguration(
+  RecommendationAllowance? allowance, {
+  ProductAnalytics? analytics,
+}) async {
+  if (allowance == null) {
+    return;
+  }
+  final transitionId = [
+    'allowance-config',
+    allowance.rolloutConfigurationOutcome,
+    allowance.rolloutConfigurationSchemaVersion,
+    allowance.meteringEnabled,
+    allowance.rolloutConfigurationAvailable,
+  ].join(':');
+  await (analytics ?? ProductAnalytics.instance).track(
+    ProductAnalyticsEventName.recommendationAllowanceConfigResolved,
+    parameters: {
+      ProductAnalyticsParameter.meteringEnabled: allowance.meteringEnabled,
+      ProductAnalyticsParameter.rolloutConfigurationAvailable:
+          allowance.rolloutConfigurationAvailable,
+      ProductAnalyticsParameter.rolloutConfigurationSchemaVersion:
+          allowance.rolloutConfigurationSchemaVersion,
+      ProductAnalyticsParameter.rolloutConfigurationOutcome:
+          allowance.rolloutConfigurationOutcome,
+    },
+    transitionId: transitionId,
+  );
 }
 
 Future<void> trackMovieStateTransition({

@@ -8,6 +8,7 @@ import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
 import 'package:mmobile/Objects/user.dart';
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/ad_privacy_consent.dart';
 import 'package:mmobile/Variables/validators.dart';
 import 'package:mmobile/Variables/variables.dart';
 import 'package:mmobile/Widgets/Login.dart';
@@ -52,6 +53,7 @@ class SettingsState extends State<Settings> {
   bool changePasswordButtonActive = false;
   bool showRemoveUserButtons = false;
   bool showClearMoviesButtons = false;
+  bool _privacyOptionsOpening = false;
 
   int userMoviesCount = 0;
 
@@ -86,7 +88,11 @@ class SettingsState extends State<Settings> {
   }
 
   Widget _buildSummaryMetric(
-      String label, String value, Color accent, IconData icon) {
+    String label,
+    String value,
+    Color accent,
+    IconData icon,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -148,10 +154,7 @@ class SettingsState extends State<Settings> {
           maxLines: 2,
           overflow: TextOverflow.fade,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-          ),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
       ),
     );
@@ -238,7 +241,8 @@ class SettingsState extends State<Settings> {
   }
 
   setNameButtonActive() {
-    var nameButtonActive = _formNameKey.currentState != null &&
+    var nameButtonActive =
+        _formNameKey.currentState != null &&
         _formNameKey.currentState!.validate() &&
         nameController.text != initialUserName;
 
@@ -250,7 +254,8 @@ class SettingsState extends State<Settings> {
   }
 
   setEmailButtonActive() {
-    var emailButtonActive = _formEmailKey.currentState != null &&
+    var emailButtonActive =
+        _formEmailKey.currentState != null &&
         _formEmailKey.currentState!.validate() &&
         emailController.text != initialUserEmail;
 
@@ -264,9 +269,9 @@ class SettingsState extends State<Settings> {
   setChangePasswordButtonActive() {
     var changePasswordButtonActive =
         _formChangePasswordKey.currentState!.validate() &&
-            newPasswordController.text.isNotEmpty &&
-            oldPasswordController.text.isNotEmpty &&
-            confirmPasswordController.text.isNotEmpty;
+        newPasswordController.text.isNotEmpty &&
+        oldPasswordController.text.isNotEmpty &&
+        confirmPasswordController.text.isNotEmpty;
 
     if (this.changePasswordButtonActive != changePasswordButtonActive) {
       setState(() {
@@ -298,10 +303,7 @@ class SettingsState extends State<Settings> {
             color: Md3Colors.primarySoft,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Icon(
-            Icons.refresh_rounded,
-            color: Md3Colors.primary,
-          ),
+          child: const Icon(Icons.refresh_rounded, color: Md3Colors.primary),
         ),
         const SizedBox(width: 12),
         const Expanded(
@@ -337,7 +339,8 @@ class SettingsState extends State<Settings> {
       padding: const EdgeInsets.all(16),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useTrailingButton = constraints.maxWidth >= 568 &&
+          final useTrailingButton =
+              constraints.maxWidth >= 568 &&
               MediaQuery.textScalerOf(context).scale(1) <= 1.3;
           final restoreButton = SizedBox(
             width: useTrailingButton ? 96 : double.infinity,
@@ -360,11 +363,110 @@ class SettingsState extends State<Settings> {
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [copy, const SizedBox(height: 12), restoreButton],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAdPrivacyCard(BuildContext context, UserState userState) {
+    final copy = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Md3Colors.primarySoft,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.privacy_tip_outlined,
+            color: Md3Colors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              copy,
-              const SizedBox(height: 12),
-              restoreButton,
+              Text(
+                'Ad privacy choices',
+                style: TextStyle(
+                  color: Md3Colors.text,
+                  fontSize: 16,
+                  height: 1.31,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Review available advertising privacy choices. MovieDiary stays fully usable with limited or no ads.',
+                style: TextStyle(
+                  color: Md3Colors.muted,
+                  fontSize: 14,
+                  height: 1.43,
+                ),
+              ),
             ],
+          ),
+        ),
+      ],
+    );
+
+    return Md3Card(
+      key: const Key('settingsAdPrivacyCard'),
+      padding: const EdgeInsets.all(16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useTrailingButton =
+              constraints.maxWidth >= 568 &&
+              MediaQuery.textScalerOf(context).scale(1) <= 1.3;
+          final action = SizedBox(
+            width: useTrailingButton ? 112 : double.infinity,
+            child: _buildTonalButton(
+              context: context,
+              key: const Key('settingsAdPrivacyAction'),
+              text: 'Review',
+              onPressed: _privacyOptionsOpening
+                  ? null
+                  : () async {
+                      setState(() => _privacyOptionsOpening = true);
+                      final result = await userState.monetization
+                          .showPrivacyOptions();
+                      if (!mounted) {
+                        return;
+                      }
+                      setState(() => _privacyOptionsOpening = false);
+                      if (result == AdPrivacyOptionsResult.alreadyInProgress) {
+                        return;
+                      }
+                      MSnackBar.showSnackBar(switch (result) {
+                        AdPrivacyOptionsResult.presented =>
+                          'Ad privacy choices closed. Your current choice is saved by Google.',
+                        AdPrivacyOptionsResult.notRequired =>
+                          'Google no longer requires additional ad privacy choices for this device.',
+                        AdPrivacyOptionsResult.unavailable =>
+                          'Ad privacy choices could not open. Check your connection and try again.',
+                        AdPrivacyOptionsResult.alreadyInProgress => '',
+                      }, result != AdPrivacyOptionsResult.unavailable);
+                    },
+            ),
+          );
+
+          if (useTrailingButton) {
+            return Row(
+              children: [
+                Expanded(child: copy),
+                const SizedBox(width: 16),
+                action,
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [copy, const SizedBox(height: 12), action],
           );
         },
       ),
@@ -372,9 +474,17 @@ class SettingsState extends State<Settings> {
   }
 
   changeUserInfo(
-      String userId, String name, String email, User user, String field) async {
-    var changeUserInfoResponse =
-        await serviceAgent.changeUserInfo(userId, name, email);
+    String userId,
+    String name,
+    String email,
+    User user,
+    String field,
+  ) async {
+    var changeUserInfoResponse = await serviceAgent.changeUserInfo(
+      userId,
+      name,
+      email,
+    );
 
     if (changeUserInfoResponse.statusCode == 200) {
       MSnackBar.showSnackBar('$field successfully changed', true);
@@ -391,8 +501,11 @@ class SettingsState extends State<Settings> {
   }
 
   changePassword(String userId, String oldPassword, String newPassword) async {
-    var changePasswordResponse =
-        await serviceAgent.changeUserPassword(userId, oldPassword, newPassword);
+    var changePasswordResponse = await serviceAgent.changeUserPassword(
+      userId,
+      oldPassword,
+      newPassword,
+    );
 
     if (changePasswordResponse.statusCode == 200) {
       MSnackBar.showSnackBar('Password successfully changed', true);
@@ -418,9 +531,9 @@ class SettingsState extends State<Settings> {
   }
 
   Future<void> _openSignIn() async {
-    final authenticated = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (context) => const Login()),
-    );
+    final authenticated = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (context) => const Login()));
 
     if (!mounted || authenticated != true) {
       return;
@@ -566,8 +679,8 @@ class SettingsState extends State<Settings> {
       'Settings',
       style: TextStyle(
         color: Md3Colors.text,
-        fontSize: 32,
-        height: 1.2,
+        fontSize: 34,
+        height: 41 / 34,
         fontWeight: FontWeight.w900,
       ),
     );
@@ -586,7 +699,7 @@ class SettingsState extends State<Settings> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: userState.isIncognitoMode
-                      ? const Color(0xffe8f0fb)
+                      ? Md3Colors.primarySoftStrong
                       : const Color(0xffe9f7ef),
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -620,8 +733,8 @@ class SettingsState extends State<Settings> {
                       userState.isIncognitoMode
                           ? 'Ratings, Watchlist, and Viewed stay with this guest profile on this device. Sign in to sync them with your account.'
                           : (userState.user?.email.isNotEmpty ?? false)
-                              ? userState.user!.email
-                              : 'Your MovieDiary account is active on this device.',
+                          ? userState.user!.email
+                          : 'Your MovieDiary account is active on this device.',
                       style: const TextStyle(
                         color: Md3Colors.muted,
                         fontSize: 15,
@@ -677,8 +790,13 @@ class SettingsState extends State<Settings> {
       title: 'Name',
       actionLabel: 'Save name',
       actionEnabled: nameButtonActive,
-      onAction: () => changeUserInfo(userState.userId!, nameController.text,
-          initialUserEmail!, userState.user!, 'Name'),
+      onAction: () => changeUserInfo(
+        userState.userId!,
+        nameController.text,
+        initialUserEmail!,
+        userState.user!,
+        'Name',
+      ),
       child: Form(
         key: _formNameKey,
         child: TextFormField(
@@ -704,8 +822,13 @@ class SettingsState extends State<Settings> {
       title: 'Email',
       actionLabel: 'Save email',
       actionEnabled: emailButtonActive,
-      onAction: () => changeUserInfo(userState.userId!, initialUserName!,
-          emailController.text, userState.user!, 'Email'),
+      onAction: () => changeUserInfo(
+        userState.userId!,
+        initialUserName!,
+        emailController.text,
+        userState.user!,
+        'Email',
+      ),
       child: Form(
         key: _formEmailKey,
         child: TextFormField(
@@ -732,7 +855,8 @@ class SettingsState extends State<Settings> {
       key: const Key('settingsPremiumCard'),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useTrailingButton = constraints.maxWidth >= 480 &&
+          final useTrailingButton =
+              constraints.maxWidth >= 480 &&
               MediaQuery.textScalerOf(context).scale(1) <= 1.3;
           final copy = Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -792,8 +916,9 @@ class SettingsState extends State<Settings> {
               context: context,
               text: 'View plans',
               onPressed: () {
-                Navigator.of(context)
-                    .push(RouteHelper.createRoute(() => const Premium()));
+                Navigator.of(
+                  context,
+                ).push(RouteHelper.createRoute(() => const Premium()));
               },
             ),
           );
@@ -814,11 +939,7 @@ class SettingsState extends State<Settings> {
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              copy,
-              const SizedBox(height: 12),
-              plansButton,
-            ],
+            children: [copy, const SizedBox(height: 12), plansButton],
           );
         },
       ),
@@ -850,7 +971,8 @@ class SettingsState extends State<Settings> {
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              final stackMetrics = constraints.maxWidth < 300 ||
+              final stackMetrics =
+                  constraints.maxWidth < 300 ||
                   MediaQuery.textScalerOf(context).scale(1) > 1.3;
               final metrics = [
                 _buildSummaryMetric(
@@ -949,8 +1071,11 @@ class SettingsState extends State<Settings> {
       title: 'Change password',
       actionLabel: 'Save password',
       actionEnabled: changePasswordButtonActive,
-      onAction: () => changePassword(userState.userId!,
-          oldPasswordController.text, newPasswordController.text),
+      onAction: () => changePassword(
+        userState.userId!,
+        oldPasswordController.text,
+        newPasswordController.text,
+      ),
       child: Form(
         key: _formChangePasswordKey,
         child: Column(
@@ -975,10 +1100,13 @@ class SettingsState extends State<Settings> {
               validator: (value) {
                 if (newPasswordController.text.isEmpty) return null;
 
-                var result =
-                    Validators.passwordValidator(newPasswordController.text);
+                var result = Validators.passwordValidator(
+                  newPasswordController.text,
+                );
                 result ??= Validators.passwordsMatchValidator(
-                    newPasswordController.text, confirmPasswordController.text);
+                  newPasswordController.text,
+                  confirmPasswordController.text,
+                );
                 return result;
               },
             ),
@@ -993,9 +1121,12 @@ class SettingsState extends State<Settings> {
                 if (confirmPasswordController.text.isEmpty) return null;
 
                 var result = Validators.passwordValidator(
-                    confirmPasswordController.text);
+                  confirmPasswordController.text,
+                );
                 result ??= Validators.passwordsMatchValidator(
-                    newPasswordController.text, confirmPasswordController.text);
+                  newPasswordController.text,
+                  confirmPasswordController.text,
+                );
                 return result;
               },
             ),
@@ -1021,11 +1152,7 @@ class SettingsState extends State<Settings> {
           const SizedBox(height: 4),
           const Text(
             'Permanently deactivate this account and remove its saved library.',
-            style: TextStyle(
-              color: Md3Colors.muted,
-              fontSize: 14,
-              height: 1.4,
-            ),
+            style: TextStyle(color: Md3Colors.muted, fontSize: 14, height: 1.4),
           ),
           const SizedBox(height: Md3Spacing.x12),
           SizedBox(
@@ -1083,55 +1210,76 @@ class SettingsState extends State<Settings> {
     );
 
     return Scaffold(
+      backgroundColor: Md3Colors.background,
+      body: Scaffold(
         backgroundColor: Md3Colors.background,
-        body: Scaffold(
-            backgroundColor: Md3Colors.background,
-            appBar: AppBar(
-              backgroundColor: Md3Colors.background,
-              foregroundColor: Md3Colors.text,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              title: headingField,
-            ),
-            body: Container(
-              key: globalKey,
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Container(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      8,
-                      16,
-                      Md3NavigationMetrics.contentBottomInset(context) + 24,
-                    ),
-                    color: Md3Colors.background,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        accountStatusCard,
-                        if (!userState.isIncognitoMode &&
-                            userState.user != null) ...[
-                          _buildSectionTitle('Account'),
-                          if (userState.user!.name.isNotEmpty) nameField,
-                          if (userState.user!.email.isNotEmpty &&
-                              !userState.user!.isIncognito)
-                            emailField,
-                          if (!userState.isSignedInWithGoogle &&
-                              !userState.user!.isIncognito)
-                            changePasswordField,
-                          if (!userState.user!.isIncognito) removeUserField,
-                        ],
-                        _buildSectionTitle('Movie activity'),
-                        userMoviesCountField,
-                        _buildSectionTitle('Purchases'),
-                        premiumField,
-                        if (!userState.isPremium) ...[
-                          const SizedBox(height: 12),
-                          _buildRestorePurchasesCard(context),
-                        ],
-                      ],
-                    )),
+        appBar: AppBar(
+          backgroundColor: Md3Colors.background,
+          foregroundColor: Md3Colors.text,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          title: headingField,
+        ),
+        body: Container(
+          key: globalKey,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                Md3NavigationMetrics.contentBottomInset(context) + 24,
               ),
-            )));
+              color: Md3Colors.background,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  accountStatusCard,
+                  if (!userState.isIncognitoMode && userState.user != null) ...[
+                    _buildSectionTitle('Account'),
+                    if (userState.user!.name.isNotEmpty) nameField,
+                    if (userState.user!.email.isNotEmpty &&
+                        !userState.user!.isIncognito)
+                      emailField,
+                    if (!userState.isSignedInWithGoogle &&
+                        !userState.user!.isIncognito)
+                      changePasswordField,
+                    if (!userState.user!.isIncognito) removeUserField,
+                  ],
+                  _buildSectionTitle('Movie activity'),
+                  userMoviesCountField,
+                  _buildSectionTitle('Purchases'),
+                  premiumField,
+                  if (!userState.isPremium) ...[
+                    const SizedBox(height: 12),
+                    _buildRestorePurchasesCard(context),
+                  ],
+                  ListenableBuilder(
+                    listenable: userState.monetization,
+                    builder: (context, _) {
+                      if (!userState.monetization.privacyOptionsRequired) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildSectionTitle(
+                            'Privacy',
+                            subtitle:
+                                'Advertising choices are separate from your MovieDiary ratings and recommendations.',
+                          ),
+                          _buildAdPrivacyCard(context, userState),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

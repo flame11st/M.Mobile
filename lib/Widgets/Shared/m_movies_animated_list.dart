@@ -4,7 +4,6 @@ class MMoviesAnimatedList extends StatelessWidget {
   final GlobalKey<AnimatedListState>? listKey;
   final List<dynamic> movies;
   final dynamic buildItemFunction;
-  final bool isPremium;
   final ScrollController? scrollController;
   final EdgeInsets padding;
 
@@ -13,7 +12,6 @@ class MMoviesAnimatedList extends StatelessWidget {
     this.listKey,
     required this.movies,
     required this.buildItemFunction,
-    required this.isPremium,
     this.scrollController,
     this.padding = const EdgeInsets.only(bottom: 16),
   });
@@ -30,7 +28,6 @@ class MMoviesAnimatedList extends StatelessWidget {
         return buildItemFunction(
           movies[index],
           animation,
-          isPremium: isPremium,
           context: context,
         );
       },

@@ -16,7 +16,7 @@ void main() {
     expect(Md3Colors.disliked, isNot(Md3Colors.destructive));
     expect(Md3Spacing.screen, 24);
     expect(Md3Radius.card, 24);
-    expect(theme.textTheme.displayLarge?.fontSize, 32);
+    expect(theme.textTheme.displayLarge?.fontSize, 34);
     expect(theme.textTheme.headlineMedium?.fontSize, 24);
     expect(theme.textTheme.bodyLarge?.fontSize, 16);
   });

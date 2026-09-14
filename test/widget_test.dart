@@ -13,80 +13,83 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'null and malformed poster URLs use stable branded fallbacks without network work',
-      (tester) async {
-    final parsedMovie = Movie.fromJson(_movieJson(posterPath: null));
-    expect(parsedMovie.posterPath, isEmpty);
+    'null and malformed poster URLs use stable branded fallbacks without network work',
+    (tester) async {
+      final parsedMovie = Movie.fromJson(_movieJson(posterPath: null));
+      expect(parsedMovie.posterPath, isEmpty);
 
-    await tester.pumpWidget(
-      _testApp(
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Md3MoviePoster(
-              movie: parsedMovie,
-              width: 72,
-              height: 108,
-              hydrateMissingPoster: false,
-            ),
-            const SizedBox(width: 12),
-            Md3MoviePoster(
-              movie: _movie(
-                id: 'malformed-poster',
-                posterPath: 'not a valid poster path',
+      await tester.pumpWidget(
+        _testApp(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Md3MoviePoster(
+                movie: parsedMovie,
+                width: 72,
+                height: 108,
+                hydrateMissingPoster: false,
               ),
-              width: 122,
-              height: 184,
-              hydrateMissingPoster: false,
-            ),
-          ],
+              const SizedBox(width: 12),
+              Md3MoviePoster(
+                movie: _movie(
+                  id: 'malformed-poster',
+                  posterPath: 'not a valid poster path',
+                ),
+                width: 122,
+                height: 184,
+                hydrateMissingPoster: false,
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byKey(const Key('md3-poster-fallback')), findsNWidgets(2));
-    expect(find.byIcon(Icons.movie_outlined), findsOneWidget);
-    expect(find.text('MD'), findsOneWidget);
-    expect(find.text('No poster'), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(Md3MoviePoster).first),
-      const Size(72, 108),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.byKey(const Key('md3-poster-fallback')), findsNWidgets(2));
+      expect(find.byIcon(Icons.movie_outlined), findsOneWidget);
+      expect(find.text('MD'), findsOneWidget);
+      expect(find.text('No poster'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(Md3MoviePoster).first),
+        const Size(72, 108),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
-      'row skeleton matches final geometry and becomes static for reduced motion',
-      (tester) async {
-    await tester.pumpWidget(
-      _testApp(
-        const Md3ListSkeletonCard(rows: 2),
-        disableAnimations: true,
-        textScale: 2,
-      ),
-    );
+    'row skeleton matches final geometry and becomes static for reduced motion',
+    (tester) async {
+      await tester.pumpWidget(
+        _testApp(
+          const Md3ListSkeletonCard(rows: 2),
+          disableAnimations: true,
+          textScale: 2,
+        ),
+      );
 
-    expect(find.byType(Md3ListSkeletonCard), findsOneWidget);
-    expect(find.byType(Md3SkeletonBox), findsNWidgets(12));
-    final firstBox = tester.widget<Md3SkeletonBox>(
-      find.byType(Md3SkeletonBox).first,
-    );
-    expect(firstBox.width, 72);
-    expect(firstBox.height, 108);
-    final renderedBox = tester.widget<Container>(
-      find
-          .descendant(
-            of: find.byType(Md3SkeletonBox).first,
-            matching: find.byType(Container),
-          )
-          .first,
-    );
-    expect((renderedBox.decoration! as BoxDecoration).gradient, isNull);
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.byType(Md3ListSkeletonCard), findsOneWidget);
+      expect(find.byType(Md3SkeletonBox), findsNWidgets(12));
+      final firstBox = tester.widget<Md3SkeletonBox>(
+        find.byType(Md3SkeletonBox).first,
+      );
+      expect(firstBox.width, 72);
+      expect(firstBox.height, 108);
+      final renderedBox = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(Md3SkeletonBox).first,
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect((renderedBox.decoration! as BoxDecoration).gradient, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('malformed network URL skips image resolution immediately',
-      (tester) async {
+  testWidgets('malformed network URL skips image resolution immediately', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _testApp(
         const Md3ProgressiveNetworkImage(
@@ -105,88 +108,90 @@ void main() {
 
     expect(find.byKey(const Key('direct-invalid-fallback')), findsOneWidget);
     expect(
-        find.byKey(const Key('md3-progressive-image-loading')), findsNothing);
+      find.byKey(const Key('md3-progressive-image-loading')),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'slow images keep exact geometry and cached success skips fallback',
-      (tester) async {
-    const slowProvider = _PendingImageProvider('slow-success');
+    'slow images keep exact geometry and cached success skips fallback',
+    (tester) async {
+      const slowProvider = _PendingImageProvider('slow-success');
 
-    await tester.pumpWidget(
-      _testApp(
-        const Md3ProgressiveNetworkImage(
-          imageUrl: null,
-          imageProvider: slowProvider,
-          width: 72,
-          height: 108,
-          borderRadius: 12,
-          loadingTimeout: Duration(milliseconds: 300),
-          placeholder: ColoredBox(
-            key: Key('slow-placeholder'),
-            color: Colors.yellow,
-          ),
-          fallback: ColoredBox(
-            key: Key('slow-fallback'),
-            color: Colors.red,
+      await tester.pumpWidget(
+        _testApp(
+          const Md3ProgressiveNetworkImage(
+            imageUrl: null,
+            imageProvider: slowProvider,
+            width: 72,
+            height: 108,
+            borderRadius: 12,
+            loadingTimeout: Duration(milliseconds: 300),
+            placeholder: ColoredBox(
+              key: Key('slow-placeholder'),
+              color: Colors.yellow,
+            ),
+            fallback: ColoredBox(key: Key('slow-fallback'), color: Colors.red),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byKey(const Key('slow-placeholder')), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(Md3ProgressiveNetworkImage)),
-      const Size(72, 108),
-    );
-    await tester.pump(const Duration(milliseconds: 301));
-    expect(find.byKey(const Key('slow-placeholder')), findsNothing);
-    expect(find.byKey(const Key('slow-fallback')), findsOneWidget);
+      expect(find.byKey(const Key('slow-placeholder')), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(Md3ProgressiveNetworkImage)),
+        const Size(72, 108),
+      );
+      await tester.pump(const Duration(milliseconds: 301));
+      expect(find.byKey(const Key('slow-placeholder')), findsNothing);
+      expect(find.byKey(const Key('slow-fallback')), findsOneWidget);
 
-    const cachedProvider = AssetImage('Assets/mdIcon_V_new_white.png');
-    await tester.pumpWidget(
-      _testApp(
-        Builder(
-          key: const Key('precache-context'),
-          builder: (context) => const SizedBox.shrink(),
-        ),
-      ),
-    );
-    final precacheContext =
-        tester.element(find.byKey(const Key('precache-context')));
-    await tester.runAsync(
-      () => precacheImage(cachedProvider, precacheContext),
-    );
-
-    await tester.pumpWidget(
-      _testApp(
-        const Md3ProgressiveNetworkImage(
-          imageUrl: null,
-          imageProvider: cachedProvider,
-          width: 72,
-          height: 108,
-          borderRadius: 12,
-          placeholder: ColoredBox(
-            key: Key('cached-placeholder'),
-            color: Colors.yellow,
-          ),
-          fallback: ColoredBox(
-            key: Key('cached-fallback'),
-            color: Colors.red,
+      const cachedProvider = AssetImage('Assets/mdIcon_V_new_white.png');
+      await tester.pumpWidget(
+        _testApp(
+          Builder(
+            key: const Key('precache-context'),
+            builder: (context) => const SizedBox.shrink(),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      final precacheContext = tester.element(
+        find.byKey(const Key('precache-context')),
+      );
+      await tester.runAsync(
+        () => precacheImage(cachedProvider, precacheContext),
+      );
 
-    expect(find.byKey(const Key('cached-placeholder')), findsNothing);
-    expect(find.byKey(const Key('cached-fallback')), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+      await tester.pumpWidget(
+        _testApp(
+          const Md3ProgressiveNetworkImage(
+            imageUrl: null,
+            imageProvider: cachedProvider,
+            width: 72,
+            height: 108,
+            borderRadius: 12,
+            placeholder: ColoredBox(
+              key: Key('cached-placeholder'),
+              color: Colors.yellow,
+            ),
+            fallback: ColoredBox(
+              key: Key('cached-fallback'),
+              color: Colors.red,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-  testWidgets('404 and image decode failures become deliberate fallbacks',
-      (tester) async {
+      expect(find.byKey(const Key('cached-placeholder')), findsNothing);
+      expect(find.byKey(const Key('cached-fallback')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('404 and image decode failures become deliberate fallbacks', (
+    tester,
+  ) async {
     for (final provider in <ImageProvider<Object>>[
       const _FailingImageProvider('404'),
       _DelayedMemoryImage(
@@ -212,25 +217,74 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const Key('failed-image-fallback')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('failed-image-fallback')), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
   });
 
-  testWidgets('provider fallback reserves 40px and keeps provider identity',
-      (tester) async {
+  testWidgets(
+    'list poster crops square and landscape sources in one stable frame',
+    (tester) async {
+      for (final sourceSize in [const Size(48, 48), const Size(96, 32)]) {
+        final bytes = (await tester.runAsync(() async {
+          final recorder = ui.PictureRecorder();
+          final canvas = ui.Canvas(recorder);
+          canvas.drawColor(Colors.blue, ui.BlendMode.src);
+          final image = await recorder.endRecording().toImage(
+            sourceSize.width.toInt(),
+            sourceSize.height.toInt(),
+          );
+          final bytes = (await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          ))!.buffer.asUint8List();
+          image.dispose();
+          return bytes;
+        }))!;
+        for (final width in [72.0, 80.0]) {
+          await tester.pumpWidget(
+            _testApp(
+              Center(
+                child: Md3MoviePoster(
+                  movie: _movie(
+                    id: 'odd-${sourceSize.width}-$width',
+                    posterPath: '',
+                  ),
+                  width: width,
+                  height: width * 1.5,
+                  hydrateMissingPoster: false,
+                  imageProvider: MemoryImage(bytes),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            tester.getSize(find.byType(Md3MoviePoster)),
+            Size(width, width * 1.5),
+          );
+          expect(
+            tester
+                .widget<Md3ProgressiveNetworkImage>(
+                  find.byType(Md3ProgressiveNetworkImage),
+                )
+                .fit,
+            BoxFit.cover,
+          );
+          expect(tester.takeException(), isNull);
+        }
+      }
+    },
+  );
+
+  testWidgets('provider fallback reserves 40px and keeps provider identity', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _testApp(
         const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Md3ProviderLogo(
-              providerName: 'Netflix',
-              logoPath: null,
-            ),
+            Md3ProviderLogo(providerName: 'Netflix', logoPath: null),
             SizedBox(width: 8),
             Text('Netflix'),
           ],
@@ -241,54 +295,53 @@ void main() {
     expect(find.byKey(const Key('md3-provider-fallback')), findsOneWidget);
     expect(find.text('N'), findsOneWidget);
     expect(find.text('Netflix'), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(Md3ProviderLogo)),
-      const Size(40, 40),
-    );
+    expect(tester.getSize(find.byType(Md3ProviderLogo)), const Size(40, 40));
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'missing poster metadata hydrates once per movie and caches failure',
-      (tester) async {
-    var hydrationCalls = 0;
-    Future<String?> loader(String movieId) async {
-      hydrationCalls++;
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      return null;
-    }
+    'missing poster metadata hydrates once per movie and caches failure',
+    (tester) async {
+      var hydrationCalls = 0;
+      Future<String?> loader(String movieId) async {
+        hydrationCalls++;
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return null;
+      }
 
-    final movie = _movie(id: 'legacy-history-cache', posterPath: '');
-    await tester.pumpWidget(
-      _testApp(
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Md3MoviePoster(
-              movie: movie,
-              width: 72,
-              height: 108,
-              metadataLoader: loader,
-            ),
-            Md3MoviePoster(
-              movie: movie,
-              width: 72,
-              height: 108,
-              metadataLoader: loader,
-            ),
-          ],
+      final movie = _movie(id: 'legacy-history-cache', posterPath: '');
+      await tester.pumpWidget(
+        _testApp(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Md3MoviePoster(
+                movie: movie,
+                width: 72,
+                height: 108,
+                metadataLoader: loader,
+              ),
+              Md3MoviePoster(
+                movie: movie,
+                width: 72,
+                height: 108,
+                metadataLoader: loader,
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(hydrationCalls, 1);
-    expect(find.byKey(const Key('md3-poster-fallback')), findsNWidgets(2));
-    expect(tester.takeException(), isNull);
-  });
+      expect(hydrationCalls, 1);
+      expect(find.byKey(const Key('md3-poster-fallback')), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('one hundred fallback posters scroll without overflow',
-      (tester) async {
+  testWidgets('one hundred fallback posters scroll without overflow', (
+    tester,
+  ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.binding.setSurfaceSize(const Size(320, 568));
 
@@ -321,64 +374,63 @@ void main() {
   });
 
   testWidgets(
-      'next-poster prefetch is bounded, deduplicated, and replaced with the deck',
-      (tester) async {
-    var providerBuilds = 0;
-    final controller = Md3PosterPrefetchController(
-      providerBuilder: (imageUrl, cacheWidth, cacheHeight) {
-        providerBuilds++;
-        return _PendingImageProvider(
-          '$imageUrl@$cacheWidth:$cacheHeight:$providerBuilds',
-        );
-      },
-    );
-    addTearDown(controller.dispose);
+    'next-poster prefetch is bounded, deduplicated, and replaced with the deck',
+    (tester) async {
+      var providerBuilds = 0;
+      final controller = Md3PosterPrefetchController(
+        providerBuilder: (imageUrl, cacheWidth, cacheHeight) {
+          providerBuilds++;
+          return _PendingImageProvider(
+            '$imageUrl@$cacheWidth:$cacheHeight:$providerBuilds',
+          );
+        },
+      );
+      addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
-      _testApp(
-        const SizedBox(key: Key('prefetch-context')),
-      ),
-    );
-    final context = tester.element(find.byKey(const Key('prefetch-context')));
-    final firstDeck = [
-      _movie(id: 'first', posterPath: '/first.jpg'),
-      _movie(id: 'second', posterPath: '/second.jpg'),
-    ];
+      await tester.pumpWidget(
+        _testApp(const SizedBox(key: Key('prefetch-context'))),
+      );
+      final context = tester.element(find.byKey(const Key('prefetch-context')));
+      final firstDeck = [
+        _movie(id: 'first', posterPath: '/first.jpg'),
+        _movie(id: 'second', posterPath: '/second.jpg'),
+      ];
 
-    controller.prefetchNext(
-      context,
-      movies: firstDeck,
-      currentIndex: 0,
-      deckKey: 'deck-a',
-    );
-    controller.prefetchNext(
-      context,
-      movies: firstDeck,
-      currentIndex: 0,
-      deckKey: 'deck-a',
-    );
-    expect(providerBuilds, 1);
+      controller.prefetchNext(
+        context,
+        movies: firstDeck,
+        currentIndex: 0,
+        deckKey: 'deck-a',
+      );
+      controller.prefetchNext(
+        context,
+        movies: firstDeck,
+        currentIndex: 0,
+        deckKey: 'deck-a',
+      );
+      expect(providerBuilds, 1);
 
-    controller.prefetchNext(
-      context,
-      movies: [
-        firstDeck.first,
-        _movie(id: 'replacement', posterPath: '/replacement.jpg'),
-      ],
-      currentIndex: 0,
-      deckKey: 'deck-b',
-    );
-    expect(providerBuilds, 2);
+      controller.prefetchNext(
+        context,
+        movies: [
+          firstDeck.first,
+          _movie(id: 'replacement', posterPath: '/replacement.jpg'),
+        ],
+        currentIndex: 0,
+        deckKey: 'deck-b',
+      );
+      expect(providerBuilds, 2);
 
-    controller.prefetchNext(
-      context,
-      movies: const [],
-      currentIndex: 0,
-      deckKey: 'empty',
-    );
-    expect(providerBuilds, 2);
-    expect(tester.takeException(), isNull);
-  });
+      controller.prefetchNext(
+        context,
+        movies: const [],
+        currentIndex: 0,
+        deckKey: 'empty',
+      );
+      expect(providerBuilds, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 Widget _testApp(
@@ -404,10 +456,7 @@ Widget _testApp(
   );
 }
 
-Movie _movie({
-  required String id,
-  required String posterPath,
-}) {
+Movie _movie({required String id, required String posterPath}) {
   return Movie(
     id: id,
     title: 'Test Movie',
@@ -463,10 +512,7 @@ class _DelayedMemoryImage extends ImageProvider<_DelayedMemoryImage> {
   final Uint8List bytes;
   final String cacheKey;
 
-  const _DelayedMemoryImage(
-    this.bytes, {
-    required this.cacheKey,
-  });
+  const _DelayedMemoryImage(this.bytes, {required this.cacheKey});
 
   @override
   Future<_DelayedMemoryImage> obtainKey(ImageConfiguration configuration) {

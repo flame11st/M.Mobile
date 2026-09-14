@@ -19,16 +19,19 @@ Future<int?> showMarkWatchedBottomSheet({
   String? recommendationSessionId,
   ServiceAgent? serviceAgent,
 }) {
-  unawaited(ProductAnalytics.instance.track(
-    ProductAnalyticsEventName.markWatchedStarted,
-    parameters: {
-      ProductAnalyticsParameter.movieId: movie.id,
-      ProductAnalyticsParameter.sourceSurface: sourceSurface,
-      if (recommendationSessionId != null)
-        ProductAnalyticsParameter.recommendationSessionId:
-            recommendationSessionId,
-    },
-  ));
+  final originIsRootRoute = ModalRoute.of(context)?.isFirst ?? false;
+  unawaited(
+    ProductAnalytics.instance.track(
+      ProductAnalyticsEventName.markWatchedStarted,
+      parameters: {
+        ProductAnalyticsParameter.movieId: movie.id,
+        ProductAnalyticsParameter.sourceSurface: sourceSurface,
+        if (recommendationSessionId != null)
+          ProductAnalyticsParameter.recommendationSessionId:
+              recommendationSessionId,
+      },
+    ),
+  );
   return showMd3BottomSheet<int>(
     context: context,
     builder: (context) => MarkWatchedBottomSheet(
@@ -36,6 +39,7 @@ Future<int?> showMarkWatchedBottomSheet({
       sourceSurface: sourceSurface,
       recommendationSessionId: recommendationSessionId,
       serviceAgent: serviceAgent,
+      originIsRootRoute: originIsRootRoute,
     ),
   );
 }
@@ -45,6 +49,7 @@ class MarkWatchedBottomSheet extends StatefulWidget {
   final String sourceSurface;
   final String? recommendationSessionId;
   final ServiceAgent? serviceAgent;
+  final bool originIsRootRoute;
 
   const MarkWatchedBottomSheet({
     super.key,
@@ -52,6 +57,7 @@ class MarkWatchedBottomSheet extends StatefulWidget {
     this.sourceSurface = 'watchlist',
     this.recommendationSessionId,
     this.serviceAgent,
+    required this.originIsRootRoute,
   });
 
   @override
@@ -114,7 +120,7 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
           _OpinionButton(
             label: 'Liked',
             icon: Icons.favorite_rounded,
-            color: Md3Colors.success,
+            color: Md3Colors.liked,
             busy: _savingRate == MovieRate.liked,
             enabled: _savingRate == null,
             onPressed: () => _rate(MovieRate.liked),
@@ -123,7 +129,7 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
           _OpinionButton(
             label: 'Okay',
             icon: Icons.sentiment_satisfied_alt_rounded,
-            color: Md3Colors.warning,
+            color: Md3Colors.okay,
             busy: _savingRate == MovieRate.okay,
             enabled: _savingRate == null,
             onPressed: () => _rate(MovieRate.okay),
@@ -169,10 +175,12 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
     final messenger = ScaffoldMessenger.of(context);
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
-    final matchingMovies =
-        moviesState.userMovies.where((movie) => movie.id == widget.movie.id);
-    final currentMovie =
-        matchingMovies.isNotEmpty ? matchingMovies.first : widget.movie;
+    final matchingMovies = moviesState.userMovies.where(
+      (movie) => movie.id == widget.movie.id,
+    );
+    final currentMovie = matchingMovies.isNotEmpty
+        ? matchingMovies.first
+        : widget.movie;
     final snapshot = moviesState.captureMovieState(
       currentMovie.id,
       currentMovie,
@@ -209,11 +217,7 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
         }
 
         final response = await _serviceAgent
-            .rateMovie(
-              currentMovie.id,
-              userId,
-              movieRate,
-            )
+            .rateMovie(currentMovie.id, userId, movieRate)
             .timeout(_mutationTimeout);
         if (response.statusCode < 200 || response.statusCode >= 300) {
           throw HttpException(
@@ -254,40 +258,48 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
       return;
     }
 
-    unawaited(trackMovieStateTransition(
-      movieId: currentMovie.id,
-      previousRate: snapshot.movieRate,
-      nextRate: movieRate,
-      sourceSurface: widget.sourceSurface,
-    ));
-    unawaited(ProductAnalytics.instance.track(
-      ProductAnalyticsEventName.markWatchedCompleted,
-      parameters: {
-        ProductAnalyticsParameter.movieId: currentMovie.id,
-        ProductAnalyticsParameter.opinionState:
-            MovieRate.opinionLabel(movieRate).toLowerCase(),
-        ProductAnalyticsParameter.sourceSurface: widget.sourceSurface,
-        if (widget.recommendationSessionId != null)
-          ProductAnalyticsParameter.recommendationSessionId:
-              widget.recommendationSessionId,
-      },
-    ));
-    if (widget.sourceSurface == 'recommendations') {
-      unawaited(ProductAnalytics.instance.track(
-        ProductAnalyticsEventName.recommendationSeenAlready,
+    unawaited(
+      trackMovieStateTransition(
+        movieId: currentMovie.id,
+        previousRate: snapshot.movieRate,
+        nextRate: movieRate,
+        sourceSurface: widget.sourceSurface,
+      ),
+    );
+    unawaited(
+      ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.markWatchedCompleted,
         parameters: {
           ProductAnalyticsParameter.movieId: currentMovie.id,
-          ProductAnalyticsParameter.opinionState:
-              MovieRate.opinionLabel(movieRate).toLowerCase(),
-          ProductAnalyticsParameter.sourceSurface: 'recommendations',
+          ProductAnalyticsParameter.opinionState: MovieRate.opinionLabel(
+            movieRate,
+          ).toLowerCase(),
+          ProductAnalyticsParameter.sourceSurface: widget.sourceSurface,
           if (widget.recommendationSessionId != null)
             ProductAnalyticsParameter.recommendationSessionId:
                 widget.recommendationSessionId,
         },
-        transitionId: widget.recommendationSessionId == null
-            ? null
-            : '${widget.recommendationSessionId}:${currentMovie.id}',
-      ));
+      ),
+    );
+    if (widget.sourceSurface == 'recommendations') {
+      unawaited(
+        ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.recommendationSeenAlready,
+          parameters: {
+            ProductAnalyticsParameter.movieId: currentMovie.id,
+            ProductAnalyticsParameter.opinionState: MovieRate.opinionLabel(
+              movieRate,
+            ).toLowerCase(),
+            ProductAnalyticsParameter.sourceSurface: 'recommendations',
+            if (widget.recommendationSessionId != null)
+              ProductAnalyticsParameter.recommendationSessionId:
+                  widget.recommendationSessionId,
+          },
+          transitionId: widget.recommendationSessionId == null
+              ? null
+              : '${widget.recommendationSessionId}:${currentMovie.id}',
+        ),
+      );
     }
 
     final savedAsLabel = MovieRate.opinionLabel(movieRate);
@@ -296,10 +308,28 @@ class _MarkWatchedBottomSheetState extends State<MarkWatchedBottomSheet> {
     navigator.pop(movieRate);
     MSnackBar.showWithMessenger(
       messenger,
-      'Moved to Viewed · Rated $savedAsLabel',
+      'Rated $savedAsLabel · Moved to Viewed',
       true,
-      duration: const Duration(seconds: 4),
+      duration: MSnackBar.actionDuration,
+      bottomMargin: widget.originIsRootRoute
+          ? MSnackBar.aboveRootNavigation(messenger.context)
+          : MSnackBar.actionBottomMargin,
       actionLabel: 'Undo',
+      feedbackIcon: switch (movieRate) {
+        MovieRate.liked => Icons.favorite_rounded,
+        MovieRate.okay => Icons.sentiment_satisfied_alt_rounded,
+        _ => Icons.thumb_down_alt_rounded,
+      },
+      feedbackIconColor: switch (movieRate) {
+        MovieRate.liked => Md3Colors.liked,
+        MovieRate.okay => Md3Colors.okay,
+        _ => Md3Colors.disliked,
+      },
+      feedbackIconBackgroundColor: switch (movieRate) {
+        MovieRate.liked => Md3Colors.likedSoft,
+        MovieRate.okay => Md3Colors.okaySoft,
+        _ => Md3Colors.dislikedSoft,
+      },
       onAction: () => unawaited(
         _undoMarkWatched(
           moviesState: moviesState,
@@ -341,8 +371,9 @@ Future<void> _undoMarkWatched({
 
   var didUndo = false;
   try {
-    final matchingMovies =
-        moviesState.userMovies.where((item) => item.id == movie.id);
+    final matchingMovies = moviesState.userMovies.where(
+      (item) => item.id == movie.id,
+    );
     final currentMovie = matchingMovies.isEmpty ? movie : matchingMovies.first;
     if (moviesState.movieMutationRevision(movie.id) != savedRevision ||
         currentMovie.movieRate != savedRate) {
@@ -373,9 +404,7 @@ Future<void> _undoMarkWatched({
           .rateMovie(movie.id, userId, snapshot.movieRate)
           .timeout(_MarkWatchedBottomSheetState._mutationTimeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw HttpException(
-          'Movie update failed with ${response.statusCode}.',
-        );
+        throw HttpException('Movie update failed with ${response.statusCode}.');
       }
     }
 
@@ -405,17 +434,19 @@ Future<void> _undoMarkWatched({
     return;
   }
 
-  unawaited(trackMovieStateTransition(
-    movieId: movie.id,
-    previousRate: savedRate,
-    nextRate: snapshot.movieRate,
-    sourceSurface: sourceSurface,
-  ));
+  unawaited(
+    trackMovieStateTransition(
+      movieId: movie.id,
+      previousRate: savedRate,
+      nextRate: snapshot.movieRate,
+      sourceSurface: sourceSurface,
+    ),
+  );
   final restoredLabel = snapshot.movieRate == MovieRate.addedToWatchlist
       ? 'Restored to Watchlist.'
       : snapshot.movieRate == MovieRate.notRated
-          ? 'Removed the rating.'
-          : 'Restored as ${MovieRate.opinionLabel(snapshot.movieRate)}.';
+      ? 'Removed the rating.'
+      : 'Restored as ${MovieRate.opinionLabel(snapshot.movieRate)}.';
   MSnackBar.showWithMessenger(
     messenger,
     'Undo complete · $restoredLabel',
@@ -463,16 +494,10 @@ class _OpinionButton extends StatelessWidget {
             ? SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: color,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
               )
             : Icon(icon, size: 21),
-        label: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w900),
-        ),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
       ),
     );
   }

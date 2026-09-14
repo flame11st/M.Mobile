@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/recommendations_history_page.dart';
 import 'package:provider/provider.dart';
@@ -160,6 +162,64 @@ void main() {
     expect(find.text('10 picks'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  for (final configuration in [
+    (size: const Size(390, 844), textScale: 1.0, name: '390x844 at 1.0x'),
+    (size: const Size(430, 930), textScale: 1.3, name: '430x930 at 1.3x'),
+  ]) {
+    testWidgets(
+      '${configuration.name} root and detail semantics expose one real activate action',
+      (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+        final user = await _userState();
+        final service = _FakeHistoryService(
+          pages: {
+            0: _historyPage([
+              _batch('semantic-batch', '2026-08-14T18:00:00Z', mode: 2),
+            ]),
+          },
+          details: {
+            'semantic-batch': _detail('semantic-batch'),
+          },
+        );
+
+        await _pumpHistory(
+          tester,
+          user,
+          service: service,
+          size: configuration.size,
+          textScale: configuration.textScale,
+        );
+
+        const rootLabel =
+            'Aug 14, 2026, Movies, Adventurous, 10 picks. Open deck.';
+        final rootControl = find.semantics.byLabel(rootLabel);
+        expect(rootControl, findsOne);
+        final rootData = rootControl.evaluate().single.getSemanticsData();
+        expect(rootData.flagsCollection.isButton, isTrue);
+        expect(rootData.hasAction(SemanticsAction.tap), isTrue);
+
+        tester.semantics.tap(rootControl);
+        await tester.pumpAndSettle();
+
+        const detailLabel =
+            'Rank 1. Dune. Strong match. Its Science Fiction overlap connects directly to your like for Arrival. Saved to Watchlist. Open details.';
+        final detailControl = find.semantics.byLabel(detailLabel);
+        expect(detailControl, findsOne);
+        final detailData = detailControl.evaluate().single.getSemanticsData();
+        expect(detailData.flagsCollection.isButton, isTrue);
+        expect(detailData.hasAction(SemanticsAction.tap), isTrue);
+        expect(detailData.label, isNot(contains('..')));
+
+        tester.semantics.tap(detailControl);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('movie-details-hero')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        semanticsHandle.dispose();
+      },
+    );
+  }
 }
 
 Future<UserState> _userState() async {
@@ -186,10 +246,16 @@ Future<void> _pumpHistory(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+  final movies = MoviesState(storage: const FlutterSecureStorage());
+  await movies.cacheInitialization;
+  addTearDown(movies.dispose);
 
   await tester.pumpWidget(
-    ChangeNotifierProvider<UserState>.value(
-      value: user,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<UserState>.value(value: user),
+        ChangeNotifierProvider<MoviesState>.value(value: movies),
+      ],
       child: MaterialApp(
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(

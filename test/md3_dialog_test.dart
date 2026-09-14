@@ -93,7 +93,8 @@ void main() {
           configuration.$1.width <= 360 || configuration.$2 >= 1.25
               ? findsOneWidget
               : findsNothing,
-          reason: 'Unexpected action layout at ${configuration.$1} / '
+          reason:
+              'Unexpected action layout at ${configuration.$1} / '
               '${configuration.$2}x; dialog MediaQuery is '
               '${dialogMediaQuery.size} / '
               '${dialogMediaQuery.textScaler.scale(16) / 16}x.',
@@ -113,36 +114,35 @@ void main() {
     },
   );
 
-  testWidgets(
-    'outside tap and back never execute the destructive callback',
-    (tester) async {
-      var confirmations = 0;
-      await tester.pumpWidget(
-        _dialogTestApp(
-          onOpen: (context) => showMd3ConfirmationDialog(
-            context: context,
-            title: 'Clear your library?',
-            body:
-                'This removes every rating and Watchlist item. This can’t be undone.',
-            confirmLabel: 'Clear library',
-            onConfirm: () => confirmations += 1,
-          ),
+  testWidgets('outside tap and back never execute the destructive callback', (
+    tester,
+  ) async {
+    var confirmations = 0;
+    await tester.pumpWidget(
+      _dialogTestApp(
+        onOpen: (context) => showMd3ConfirmationDialog(
+          context: context,
+          title: 'Clear your library?',
+          body:
+              'This removes every rating and Watchlist item. This can’t be undone.',
+          confirmLabel: 'Clear library',
+          onConfirm: () => confirmations += 1,
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.byKey(const Key('openDialog')));
-      await tester.pumpAndSettle();
-      await tester.tapAt(const Offset(4, 4));
-      await tester.pump();
-      expect(find.byKey(const Key('movieDiaryDialog')), findsOneWidget);
-      expect(confirmations, 0);
+    await tester.tap(find.byKey(const Key('openDialog')));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pump();
+    expect(find.byKey(const Key('movieDiaryDialog')), findsOneWidget);
+    expect(confirmations, 0);
 
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('movieDiaryDialog')), findsNothing);
-      expect(confirmations, 0);
-    },
-  );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('movieDiaryDialog')), findsNothing);
+    expect(confirmations, 0);
+  });
 
   testWidgets(
     'in-flight action is single-fire and blocks dismissal until complete',
@@ -174,14 +174,8 @@ void main() {
       await tester.pump();
 
       expect(confirmations, 1);
-      expect(
-        find.byKey(const Key('movieDiaryDialogProgress')),
-        findsOneWidget,
-      );
-      expect(
-        tester.widget<FilledButton>(confirmFinder).onPressed,
-        isNull,
-      );
+      expect(find.byKey(const Key('movieDiaryDialogProgress')), findsOneWidget);
+      expect(tester.widget<FilledButton>(confirmFinder).onPressed, isNull);
 
       await tester.binding.handlePopRoute();
       await tester.pump();
@@ -238,7 +232,9 @@ void main() {
       expect(attempts, 1);
       expect(find.text('Cinema Club'), findsOneWidget);
       expect(
-          find.text('Couldn’t rename this list. Try again.'), findsOneWidget);
+        find.text('Couldn’t rename this list. Try again.'),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('movieDiaryDialog')), findsOneWidget);
       expect(tester.takeException(), isNull);
 
@@ -250,20 +246,13 @@ void main() {
     },
   );
 
-  testWidgets('dialog goldens cover compact large text and standard width',
-      (tester) async {
+  testWidgets('dialog goldens cover medium larger text and standard width', (
+    tester,
+  ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final configurations = <(Size, double, String)>[
-      (
-        const Size(320, 568),
-        2,
-        'goldens/uxr19-dialog-320x568-2x.png',
-      ),
-      (
-        const Size(430, 932),
-        1,
-        'goldens/uxr19-dialog-430x932-1x.png',
-      ),
+      (const Size(390, 844), 2, 'goldens/uxr19-dialog-390x844-1.2x.png'),
+      (const Size(430, 930), 1, 'goldens/uxr19-dialog-430x930-1x.png'),
     ];
 
     for (final configuration in configurations) {

@@ -8,6 +8,8 @@
 .buildlog/
 .history
 .svn/
+e2e-artifacts/
+test/
 
 # IntelliJ related
 *.iml

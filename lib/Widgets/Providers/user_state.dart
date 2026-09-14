@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:mmobile/Helpers/ad_manager.dart';
 import 'package:mmobile/Objects/launch_snapshot.dart';
 import 'package:mmobile/Objects/user.dart';
-import 'package:mmobile/Services/service_agent.dart';
+import 'package:mmobile/Services/monetization_service.dart';
 import 'package:mmobile/Services/product_analytics.dart';
+import 'package:mmobile/Services/service_agent.dart';
 
 export 'package:mmobile/Objects/launch_snapshot.dart'
     show LaunchDestination, OnboardingStage;
@@ -15,15 +15,20 @@ class UserState with ChangeNotifier {
   UserState({
     FlutterSecureStorage? storage,
     ServiceAgent? serviceAgent,
+    MonetizationService? monetizationService,
   })  : storage = storage ?? const FlutterSecureStorage(),
-        serviceAgent = serviceAgent ?? ServiceAgent() {
+        serviceAgent = serviceAgent ?? ServiceAgent(),
+        monetization = monetizationService ?? MonetizationService() {
     initialization = setInitialData();
   }
 
   static const _authorizationCheckTimeout = Duration(seconds: 5);
   static const launchSnapshotKey = 'launchSnapshotV1';
+  static const lifetimePremiumStoreVerifiedKey =
+      'lifetimePremiumStoreVerifiedV1';
   final FlutterSecureStorage storage;
   final ServiceAgent serviceAgent;
+  final MonetizationService monetization;
   late final Future<void> initialization;
   Future<void> _snapshotWrite = Future.value();
 
@@ -39,6 +44,8 @@ class UserState with ChangeNotifier {
   bool showTutorial = false;
   bool isIncognitoMode = false;
   bool premiumPurchasedIncognito = false;
+  bool _lifetimePremiumStoreVerified = false;
+  int _premiumSyncGeneration = 0;
   bool appReviewRequested = false;
   bool shouldRequestReview = false;
   bool onboardingStarted = false;
@@ -61,6 +68,8 @@ class UserState with ChangeNotifier {
     final snapshot = _readLaunchSnapshot(storedValues[launchSnapshotKey]);
 
     appReviewRequested = storedValues['appReviewRequested'] == 'true';
+    _lifetimePremiumStoreVerified =
+        storedValues[lifetimePremiumStoreVerifiedKey] == 'true';
     onboardingStarted = storedValues['onboardingStarted'] == 'true';
     onboardingCompleted = storedValues['onboardingCompleted'] == 'true';
     onboardingSkipped = storedValues['onboardingSkipped'] == 'true';
@@ -110,6 +119,15 @@ class UserState with ChangeNotifier {
       isIncognitoMode = true;
       premiumPurchasedIncognito =
           storedValues['premiumPurchasedIncognito'] == 'true';
+      if (premiumPurchasedIncognito && !_lifetimePremiumStoreVerified) {
+        // Backward compatibility for purchases made by legacy anonymous
+        // builds before store verification had its own durable key.
+        _lifetimePremiumStoreVerified = true;
+        await storage.write(
+          key: lifetimePremiumStoreVerifiedKey,
+          value: 'true',
+        );
+      }
 
       if (_hasStoredCredentials()) {
         isUserAuthorizedOrInIncognitoMode = true;
@@ -119,7 +137,19 @@ class UserState with ChangeNotifier {
       }
 
       isAppLoaded = true;
-      await AdManager.setPremiumStatus(isPremium == true);
+      final hasCachedPremium = _lifetimePremiumStoreVerified ||
+          premiumPurchasedIncognito ||
+          user?.premiumPurchased == true;
+      if (hasCachedPremium) {
+        await _synchronizeCachedEntitlement();
+      } else {
+        // Keep ad inventory failed closed until the anonymous profile's
+        // authoritative backend entitlement has been refreshed.
+        await monetization.beginEntitlementRefresh();
+      }
+      if (_hasStoredCredentials()) {
+        unawaited(_refreshStoredUserProfile(userId!));
+      }
       await _persistLaunchSnapshot();
       notifyListeners();
       return;
@@ -134,7 +164,10 @@ class UserState with ChangeNotifier {
     if (!isIncognitoMode && _hasStoredCredentials()) {
       await ProductAnalytics.instance.setAuthenticatedUser(userId);
     }
-    await AdManager.setPremiumStatus(isPremium == true);
+    await _synchronizeCachedEntitlement();
+    if (_lifetimePremiumStoreVerified && _hasStoredCredentials()) {
+      unawaited(_synchronizeLifetimePremiumWithBackend(userId!));
+    }
     unawaited(ProductAnalytics.instance.flush());
     await _persistLaunchSnapshot();
     notifyListeners();
@@ -146,27 +179,34 @@ class UserState with ChangeNotifier {
         onboardingStage: onboardingStage,
       );
 
-  get isPremium {
-    var result = user != null
-        ? user?.premiumPurchased != null && user?.premiumPurchased == true
-        : premiumPurchasedIncognito;
-
-    return result;
-  }
+  bool get isPremium => monetization.isPremium;
 
   Future<void> setUser(User user) async {
+    final previousUser = this.user;
+    if (previousUser?.id == user.id && previousUser?.premiumPurchased == true) {
+      // A delayed or stale backend response must not revoke a lifetime grant
+      // for the same identity.
+      user.premiumPurchased = true;
+    }
     this.user = user;
     if (user.isIncognito) {
       isIncognitoMode = true;
     }
     isUserAuthorizedOrInIncognitoMode = true;
 
+    await monetization.synchronizeEntitlement(
+      isPremium: user.premiumPurchased || _lifetimePremiumStoreVerified,
+      isResolved: true,
+    );
     await storage.write(key: "user", value: jsonEncode(user));
     await storage.write(
         key: 'isIncognitoMode', value: isIncognitoMode.toString());
-    await AdManager.setPremiumStatus(isPremium == true);
     await _persistLaunchSnapshot();
     notifyListeners();
+
+    if (_lifetimePremiumStoreVerified && !user.premiumPurchased) {
+      unawaited(_synchronizeLifetimePremiumWithBackend('${user.id}'));
+    }
   }
 
   Future<void> increaseAiRequestsCount() async {
@@ -177,20 +217,44 @@ class UserState with ChangeNotifier {
   }
 
   Future<void> setPremium(bool value) async {
-    await AdManager.setPremiumStatus(value);
+    final effectiveValue = value || _lifetimePremiumStoreVerified;
+    await monetization.synchronizeEntitlement(
+      isPremium: effectiveValue,
+      isResolved: true,
+    );
     if (isIncognitoMode) {
-      premiumPurchasedIncognito = value;
+      premiumPurchasedIncognito = effectiveValue;
 
       await storage.write(
           key: "premiumPurchasedIncognito",
           value: premiumPurchasedIncognito.toString());
     } else {
-      user?.premiumPurchased = value;
+      user?.premiumPurchased = effectiveValue;
 
       await storage.write(key: "user", value: jsonEncode(user));
     }
 
     notifyListeners();
+  }
+
+  /// Applies an authoritative non-consumable store purchase immediately.
+  ///
+  /// Local entitlement and ad suppression happen before backend I/O. A failed
+  /// sync never exposes ads again; it is retried idempotently for the same
+  /// identity and again after cold start or identity merge.
+  Future<bool> activateLifetimePremiumFromStore() async {
+    _lifetimePremiumStoreVerified = true;
+    await storage.write(
+      key: lifetimePremiumStoreVerifiedKey,
+      value: 'true',
+    );
+    await setPremium(true);
+
+    final currentUserId = userId?.trim() ?? '';
+    if (currentUserId.isEmpty) {
+      return true;
+    }
+    return _synchronizeLifetimePremiumWithBackend(currentUserId);
   }
 
   Future<void> setAppReviewRequested(bool value) async {
@@ -328,7 +392,10 @@ class UserState with ChangeNotifier {
     var userId = responseJson['userId'];
     var userName = responseJson['username'];
     var showTutorial = false; //responseJson['showTutorial'];
+    final preserveLifetimePremium =
+        _lifetimePremiumStoreVerified || premiumPurchasedIncognito;
 
+    await monetization.beginEntitlementRefresh();
     isIncognitoMode = false;
     await setInitialUserData(accessToken, refreshToken, userId, userName,
         isSignedInWithThirdPartyServices, showTutorial);
@@ -349,6 +416,16 @@ class UserState with ChangeNotifier {
     } catch (error) {
       debugPrint('Authenticated user profile refresh failed: $error');
     }
+
+    if (preserveLifetimePremium) {
+      _lifetimePremiumStoreVerified = true;
+      await storage.write(
+        key: lifetimePremiumStoreVerifiedKey,
+        value: 'true',
+      );
+      await setPremium(true);
+      unawaited(_synchronizeLifetimePremiumWithBackend('$userId'));
+    }
   }
 
   logout() async {
@@ -360,7 +437,7 @@ class UserState with ChangeNotifier {
     user = null;
     userId = null;
 
-    await AdManager.setPremiumStatus(false);
+    await monetization.beginEntitlementRefresh();
     await ProductAnalytics.instance.clearAuthenticatedUser();
 
     await clearStorage();
@@ -401,6 +478,8 @@ class UserState with ChangeNotifier {
     user = null;
     isSignedInWithGoogle = false;
     isUserAuthorizedOrInIncognitoMode = false;
+
+    await monetization.beginEntitlementRefresh();
 
     await storage.delete(key: 'token');
     await storage.delete(key: 'refreshToken');
@@ -472,6 +551,7 @@ class UserState with ChangeNotifier {
   }
 
   Future<void> _verifyAuthorizationInBackground() async {
+    final requestedUserId = userId;
     try {
       final response = await serviceAgent
           .checkAuthorization()
@@ -482,9 +562,115 @@ class UserState with ChangeNotifier {
           'the cached session remains available until an explicit sign-in '
           'decision is required.',
         );
+        return;
+      }
+
+      if (requestedUserId == null || requestedUserId.isEmpty) {
+        return;
+      }
+      final userInfoResponse = await serviceAgent
+          .getUserInfo(requestedUserId)
+          .timeout(_authorizationCheckTimeout);
+      if (userInfoResponse.statusCode != 200 ||
+          userInfoResponse.body.trim().isEmpty ||
+          userId != requestedUserId) {
+        return;
+      }
+      final userJson = json.decode(userInfoResponse.body);
+      if (userJson is Map<String, dynamic>) {
+        await setUser(User.fromJson(userJson));
       }
     } catch (error) {
       debugPrint('Stored session verification deferred: $error');
+    }
+  }
+
+  Future<void> _refreshStoredUserProfile(String expectedUserId) async {
+    try {
+      final userInfoResponse = await serviceAgent
+          .getUserInfo(expectedUserId)
+          .timeout(_authorizationCheckTimeout);
+      if (userInfoResponse.statusCode != 200 ||
+          userInfoResponse.body.trim().isEmpty ||
+          userId != expectedUserId) {
+        await _synchronizeCachedEntitlement();
+        return;
+      }
+      final userJson = json.decode(userInfoResponse.body);
+      if (userJson is Map<String, dynamic>) {
+        await setUser(User.fromJson(userJson));
+        return;
+      }
+    } catch (error) {
+      debugPrint('Stored profile entitlement refresh deferred: $error');
+    }
+
+    await _synchronizeCachedEntitlement();
+  }
+
+  Future<void> _synchronizeCachedEntitlement() {
+    final hasIdentity = _hasStoredCredentials();
+    final cachedPremium = _lifetimePremiumStoreVerified ||
+        user?.premiumPurchased == true ||
+        (isIncognitoMode && premiumPurchasedIncognito);
+    final isResolved = hasIdentity && (isIncognitoMode || user != null);
+    return monetization.synchronizeEntitlement(
+      isPremium: cachedPremium,
+      isResolved: isResolved,
+    );
+  }
+
+  Future<bool> _synchronizeLifetimePremiumWithBackend(
+    String expectedUserId,
+  ) async {
+    final normalizedUserId = expectedUserId.trim();
+    if (normalizedUserId.isEmpty || userId != normalizedUserId) {
+      return false;
+    }
+
+    final generation = ++_premiumSyncGeneration;
+    final synchronized = await _trySynchronizeLifetimePremium(
+      normalizedUserId,
+      generation,
+    );
+    if (!synchronized && generation == _premiumSyncGeneration) {
+      unawaited(_retryLifetimePremiumSync(normalizedUserId, generation));
+    }
+    return synchronized;
+  }
+
+  Future<bool> _trySynchronizeLifetimePremium(
+    String expectedUserId,
+    int generation,
+  ) async {
+    if (generation != _premiumSyncGeneration || userId != expectedUserId) {
+      return false;
+    }
+    try {
+      final response = await serviceAgent
+          .setUserPremiumPurchased(expectedUserId, true)
+          .timeout(_authorizationCheckTimeout);
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (error) {
+      debugPrint('Lifetime Premium backend sync deferred: $error');
+      return false;
+    }
+  }
+
+  Future<void> _retryLifetimePremiumSync(
+    String expectedUserId,
+    int generation,
+  ) async {
+    for (final delay in const [Duration(seconds: 2), Duration(seconds: 8)]) {
+      await Future<void>.delayed(delay);
+      if (generation != _premiumSyncGeneration ||
+          userId != expectedUserId ||
+          !_lifetimePremiumStoreVerified) {
+        return;
+      }
+      if (await _trySynchronizeLifetimePremium(expectedUserId, generation)) {
+        return;
+      }
     }
   }
 

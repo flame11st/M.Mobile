@@ -7,6 +7,7 @@ import 'package:mmobile/Enums/recommendation_discovery_level.dart';
 import 'package:mmobile/Objects/movie_watch_provider_group.dart';
 import 'package:mmobile/Objects/recommendation_discovery_session.dart';
 import 'package:mmobile/Objects/user_taste_profile.dart';
+import 'package:mmobile/Services/remote_variables_client.dart';
 
 class ServiceAgent {
   static dynamic state;
@@ -17,17 +18,19 @@ class ServiceAgent {
       String.fromEnvironment('MOVIEDIARY_API_BASE_URL');
   static const baseUrlTimeout = Duration(seconds: 5);
   static const requestTimeout = Duration(seconds: 12);
-  final functionUriAWS =
-      "https://fe6b8miszj.execute-api.us-east-2.amazonaws.com/default/GetMovieDiaryVariables";
-  static bool showLoadingAd = false;
   final http.Client? client;
+  final RemoteVariablesClient remoteVariablesClient;
   final String baseUrlLocal = kDebugMode
       ? (Platform.isAndroid
           ? "http://10.0.2.2:5000/"
           : "http://localhost:5000/")
       : "http://51.81.79.14/";
 
-  ServiceAgent({this.client}) {
+  ServiceAgent({
+    this.client,
+    RemoteVariablesClient? remoteVariablesClient,
+  }) : remoteVariablesClient =
+            remoteVariablesClient ?? RemoteVariablesClient(client: client) {
     if (baseUrl.isEmpty) setBaseUrl();
   }
 
@@ -47,13 +50,10 @@ class ServiceAgent {
     }
 
     try {
-      var responseAWS =
-          await http.get(Uri.parse(functionUriAWS)).timeout(baseUrlTimeout);
-      if (responseAWS.statusCode == 200) {
-        var variables = jsonDecode(responseAWS.body);
-        var uri = variables["apiUrl"];
-        showLoadingAd = variables["showLoadingAd"] ?? false;
-        return "$uri/api/";
+      final variables = await remoteVariablesClient.fetch();
+      final uri = variables['apiUrl'];
+      if (uri is String && uri.isNotEmpty) {
+        return _normalizeBaseUrl('$uri/api/');
       }
     } catch (e) {
       debugPrint("Error fetching base URL from AWS: $e");
@@ -85,13 +85,6 @@ class ServiceAgent {
           'Password': password,
           if (incognitoUserId != null) 'IncognitoUserId': incognitoUserId,
         }));
-  }
-
-  requestPasswordReset(String email) {
-    return post(
-      'Identity/RequestPasswordReset',
-      jsonEncode({'Email': email}),
-    );
   }
 
   signInIncognito() {
@@ -257,6 +250,40 @@ class ServiceAgent {
     }
 
     return RecommendationDiscoverySession.fromJson(jsonDecode(response.body));
+  }
+
+  Future<RecommendationAllowance?> getRecommendationAllowance(
+      String userId) async {
+    final response = await get(
+      'Recommendations/GetRecommendationAllowance?userId=$userId',
+    );
+    if (response.statusCode != 200) {
+      return null;
+    }
+    return RecommendationAllowance.fromJson(jsonDecode(response.body));
+  }
+
+  Future<RewardedDeckCreditGrant?> grantRewardedDeckCredit({
+    required String userId,
+    required String transactionId,
+    required num rewardAmount,
+    required String rewardType,
+    String provider = 'google_mobile_ads',
+  }) async {
+    final response = await post(
+      'Recommendations/GrantRewardedDeckCredit',
+      jsonEncode({
+        'UserId': userId,
+        'Provider': provider,
+        'TransactionId': transactionId,
+        'RewardAmount': rewardAmount,
+        'RewardType': rewardType,
+      }),
+    );
+    if (response.statusCode != 200) {
+      return null;
+    }
+    return RewardedDeckCreditGrant.fromJson(jsonDecode(response.body));
   }
 
   getMovieRecommendationsByTitles(String titles, MovieType type) {

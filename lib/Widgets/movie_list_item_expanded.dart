@@ -10,6 +10,7 @@ import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/Shared/movie_rate_buttons.dart';
+import 'package:mmobile/Widgets/Shared/movie_community_signal.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -21,14 +22,15 @@ class MovieListItemExpanded extends StatefulWidget {
   final bool shouldRequestReview;
   final Future<MovieWatchProviderGroup> Function()? watchProviderLoader;
 
-  const MovieListItemExpanded(
-      {super.key,
-      required this.movie,
-      this.fromSearch = false,
-      required this.imageUrl,
-      this.moviesList,
-      this.shouldRequestReview = false,
-      this.watchProviderLoader});
+  const MovieListItemExpanded({
+    super.key,
+    required this.movie,
+    this.fromSearch = false,
+    required this.imageUrl,
+    this.moviesList,
+    this.shouldRequestReview = false,
+    this.watchProviderLoader,
+  });
 
   @override
   State<StatefulWidget> createState() {
@@ -53,24 +55,27 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     final request = widget.watchProviderLoader != null
         ? widget.watchProviderLoader!().timeout(_providerTimeout)
         : serviceAgent
-            .getWhereToWatchGrouped(widget.movie.id, 'US')
-            .timeout(_providerTimeout);
+              .getWhereToWatchGrouped(widget.movie.id, 'US')
+              .timeout(_providerTimeout);
 
     return request.then((group) {
       if (!_whereToWatchViewedTracked) {
         _whereToWatchViewedTracked = true;
         final resultCount =
             group.stream.length + group.rent.length + group.buy.length;
-        unawaited(ProductAnalytics.instance.track(
-          ProductAnalyticsEventName.whereToWatchViewed,
-          parameters: {
-            ProductAnalyticsParameter.movieId: widget.movie.id,
-            ProductAnalyticsParameter.resultCount: resultCount,
-            ProductAnalyticsParameter.outcomeCategory:
-                resultCount == 0 ? 'empty' : 'available',
-            ProductAnalyticsParameter.sourceSurface: 'movie_details',
-          },
-        ));
+        unawaited(
+          ProductAnalytics.instance.track(
+            ProductAnalyticsEventName.whereToWatchViewed,
+            parameters: {
+              ProductAnalyticsParameter.movieId: widget.movie.id,
+              ProductAnalyticsParameter.resultCount: resultCount,
+              ProductAnalyticsParameter.outcomeCategory: resultCount == 0
+                  ? 'empty'
+                  : 'available',
+              ProductAnalyticsParameter.sourceSurface: 'movie_details',
+            },
+          ),
+        );
       }
       return group;
     });
@@ -87,147 +92,139 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-    final matchingMovies = moviesState.userMovies
-        .where((element) => element.id == widget.movie.id);
-    final movie =
-        matchingMovies.isNotEmpty ? matchingMovies.first : widget.movie;
+    final matchingMovies = moviesState.userMovies.where(
+      (element) => element.id == widget.movie.id,
+    );
+    final movie = matchingMovies.isNotEmpty
+        ? matchingMovies.first
+        : widget.movie;
     final year = DateFormat('yyyy').format(movie.releaseDate);
     final runtime = movie.seasonsCount > 0
         ? '${movie.seasonsCount} season${movie.seasonsCount == 1 ? '' : 's'}'
         : movie.duration > 0
-            ? '${movie.duration} min'
-            : null;
+        ? '${movie.duration} min'
+        : null;
     final countries = _cleanCommaText(movie.countries);
     final hasDirectors = movie.directors.isNotEmpty;
     final hasActors = movie.actors.isNotEmpty;
     final hasCountries = countries.isNotEmpty;
     final visibleGenres = movie.genres.take(3).toList();
-    final movieDiarySignal =
-        movie.allVotes > 0 ? 'MovieDiary ${movie.rating}%' : null;
-    final imdbSignal = movie.imdbVotes > 0 ? 'IMDb ${movie.imdbRate}' : null;
+    final ratingsSignal = MovieCommunitySignal.forMovie(movie);
     final tagline = movie.tagline?.trim();
     final hasTagline = tagline != null && tagline.isNotEmpty;
-    final hasCompactSignals = movieDiarySignal != null || imdbSignal != null;
+    final hasCompactSignals = ratingsSignal != null;
     final useCompactPoster =
         !hasTagline && visibleGenres.isEmpty && !hasCompactSignals;
 
     return Scaffold(
+      backgroundColor: Md3Colors.background,
+      appBar: AppBar(
         backgroundColor: Md3Colors.background,
-        appBar: AppBar(
-          backgroundColor: Md3Colors.background,
-          foregroundColor: Md3Colors.text,
-          elevation: 0,
-          title: Text(
-            movie.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        foregroundColor: Md3Colors.text,
+        elevation: 0,
+        title: Text(movie.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          Md3Layout.pageHorizontalInset(context),
+          8,
+          Md3Layout.pageHorizontalInset(context),
+          32,
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            Md3Layout.pageHorizontalInset(context),
-            8,
-            Md3Layout.pageHorizontalInset(context),
-            32,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Md3Card(
-                key: const Key('movie-details-hero'),
-                padding: const EdgeInsets.all(14),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final textScale = MediaQuery.textScalerOf(context).scale(1);
-                    final stackHero = textScale > 1.45;
-                    final posterWidth = useCompactPoster ? 104.0 : 112.0;
-                    final posterHeight = useCompactPoster ? 156.0 : 168.0;
-                    final details = _buildHeroDetails(
-                      movie: movie,
-                      year: year,
-                      runtime: runtime,
-                      visibleGenres: visibleGenres,
-                      movieDiarySignal: movieDiarySignal,
-                      imdbSignal: imdbSignal,
-                      tagline: hasTagline ? tagline : null,
-                    );
-                    final poster = Md3MoviePoster(
-                      movie: movie,
-                      width: posterWidth,
-                      height: posterHeight,
-                    );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Md3Card(
+              key: const Key('movie-details-hero'),
+              padding: const EdgeInsets.all(14),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final textScale = MediaQuery.textScalerOf(context).scale(1);
+                  final stackHero = textScale > 1.45;
+                  final posterWidth = useCompactPoster ? 104.0 : 112.0;
+                  final posterHeight = useCompactPoster ? 156.0 : 168.0;
+                  final details = _buildHeroDetails(
+                    movie: movie,
+                    year: year,
+                    runtime: runtime,
+                    visibleGenres: visibleGenres,
+                    ratingsSignal: ratingsSignal,
+                    tagline: hasTagline ? tagline : null,
+                  );
+                  final poster = Md3MoviePoster(
+                    movie: movie,
+                    width: posterWidth,
+                    height: posterHeight,
+                  );
 
-                    if (stackHero) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(child: poster),
-                          const SizedBox(height: 16),
-                          details,
-                        ],
-                      );
-                    }
-
-                    return Row(
+                  if (stackHero) {
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        poster,
-                        const SizedBox(width: 14),
-                        Expanded(child: details),
+                        Center(child: poster),
+                        const SizedBox(height: 16),
+                        details,
                       ],
                     );
-                  },
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      poster,
+                      const SizedBox(width: 14),
+                      Expanded(child: details),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildStatusActionCard(movie),
+            if (movie.overview.isNotEmpty) ...[
+              const Md3SectionHeader(title: 'Story'),
+              Md3Card(
+                child: Md3ExpandableText(
+                  key: const Key('movie-story'),
+                  text: movie.overview,
+                  style: const TextStyle(
+                    color: Md3Colors.text,
+                    fontSize: 16,
+                    height: 23 / 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              _buildStatusActionCard(movie),
-              if (movie.overview.isNotEmpty) ...[
-                const Md3SectionHeader(title: 'Story'),
-                Md3Card(
-                  child: Md3ExpandableText(
-                    key: const Key('movie-story'),
-                    text: movie.overview,
-                    style: const TextStyle(
-                      color: Md3Colors.text,
-                      fontSize: 16,
-                      height: 23 / 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-              if (hasDirectors || hasActors || hasCountries) ...[
-                const Md3SectionHeader(title: 'Details'),
-                Md3Card(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (hasDirectors)
-                        _buildDetailRow(
-                          'Directed by',
-                          movie.directors.join(', '),
-                          isLast: !hasActors && !hasCountries,
-                        ),
-                      if (hasActors)
-                        _buildDetailRow(
-                          'Starring',
-                          movie.actors.join(', '),
-                          isLast: !hasCountries,
-                        ),
-                      if (hasCountries)
-                        _buildDetailRow(
-                          'Countries',
-                          countries,
-                          isLast: true,
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-              buildWhereToWatch(context),
             ],
-          ),
-        ));
+            if (hasDirectors || hasActors || hasCountries) ...[
+              const Md3SectionHeader(title: 'Details'),
+              Md3Card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (hasDirectors)
+                      _buildDetailRow(
+                        'Directed by',
+                        movie.directors.join(', '),
+                        isLast: !hasActors && !hasCountries,
+                      ),
+                    if (hasActors)
+                      _buildDetailRow(
+                        'Starring',
+                        movie.actors.join(', '),
+                        isLast: !hasCountries,
+                      ),
+                    if (hasCountries)
+                      _buildDetailRow('Countries', countries, isLast: true),
+                  ],
+                ),
+              ),
+            ],
+            buildWhereToWatch(context),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildHeroDetails({
@@ -235,8 +232,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     required String year,
     required String? runtime,
     required List<String> visibleGenres,
-    required String? movieDiarySignal,
-    required String? imdbSignal,
+    required MovieCommunitySignal? ratingsSignal,
     required String? tagline,
   }) {
     final metadata = [
@@ -289,17 +285,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
             children: visibleGenres.map(_buildHeroGenrePill).toList(),
           ),
         ],
-        if (movieDiarySignal != null || imdbSignal != null) ...[
+        if (ratingsSignal != null) ...[
           const SizedBox(height: 12),
-          Wrap(
-            key: const Key('movie-hero-signals'),
-            spacing: 10,
-            runSpacing: 8,
-            children: [
-              if (movieDiarySignal != null) _buildHeroSignal(movieDiarySignal),
-              if (imdbSignal != null) _buildHeroSignal(imdbSignal),
-            ],
-          ),
+          Container(key: const Key('movie-hero-signals'), child: ratingsSignal),
         ],
       ],
     );
@@ -326,26 +314,14 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     );
   }
 
-  Widget _buildHeroSignal(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: Md3Colors.primary,
-        fontSize: 12,
-        height: 16 / 12,
-        fontWeight: FontWeight.w800,
-      ),
-    );
-  }
-
   Widget _buildStatusActionCard(Movie movie) {
     final hasStatus = movie.movieRate != MovieRate.notRated;
     final title = hasStatus ? 'Your status' : 'Set your status';
     final detail = movie.movieRate == MovieRate.addedToWatchlist
         ? 'Mark it watched, or choose a different status.'
         : MovieRate.isViewed(movie.movieRate)
-            ? 'Change your opinion, or move it to Watchlist.'
-            : 'Rate it, or save it to Watchlist.';
+        ? 'Change your opinion, or move it to Watchlist.'
+        : 'Rate it, or save it to Watchlist.';
 
     return Md3Card(
       key: const Key('movie-status-card'),
@@ -430,12 +406,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
       ...group.stream.map(
         (provider) => _WatchProviderEntry('Stream', provider),
       ),
-      ...group.rent.map(
-        (provider) => _WatchProviderEntry('Rent', provider),
-      ),
-      ...group.buy.map(
-        (provider) => _WatchProviderEntry('Buy', provider),
-      ),
+      ...group.rent.map((provider) => _WatchProviderEntry('Rent', provider)),
+      ...group.buy.map((provider) => _WatchProviderEntry('Buy', provider)),
     ];
   }
 
@@ -448,13 +420,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
 
     return Column(
       children: groupedEntries.entries
-          .map(
-            (entry) => buildProviderRow(
-              context,
-              entry.key,
-              entry.value,
-            ),
-          )
+          .map((entry) => buildProviderRow(context, entry.key, entry.value))
           .toList(),
     );
   }
@@ -489,8 +455,9 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
           );
         }
 
-        final visibleEntries =
-            showAllWatchProviders ? entries : entries.take(4).toList();
+        final visibleEntries = showAllWatchProviders
+            ? entries
+            : entries.take(4).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,29 +520,19 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
     );
   }
 
-  Widget _buildProviderSection({
-    required Widget child,
-    String? semanticLabel,
-  }) {
+  Widget _buildProviderSection({required Widget child, String? semanticLabel}) {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Md3SectionHeader(title: 'Where to Watch'),
-        Md3Card(
-          padding: const EdgeInsets.all(16),
-          child: child,
-        ),
+        Md3Card(padding: const EdgeInsets.all(16), child: child),
       ],
     );
 
     if (semanticLabel == null) {
       return content;
     }
-    return Semantics(
-      liveRegion: true,
-      label: semanticLabel,
-      child: content,
-    );
+    return Semantics(liveRegion: true, label: semanticLabel, child: content);
   }
 
   Widget _buildProviderTerminalState({
@@ -655,7 +612,7 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
               const Padding(
                 padding: EdgeInsets.only(top: 14),
                 child: Divider(height: 1, color: Md3Colors.border),
-              )
+              ),
           ],
         ),
       ),
@@ -671,7 +628,10 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
   }
 
   Widget buildProviderRow(
-      BuildContext context, String title, List<MovieWatchProvider> providers) {
+    BuildContext context,
+    String title,
+    List<MovieWatchProvider> providers,
+  ) {
     if (providers.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -702,7 +662,8 @@ class MovieListItemExpandedState extends State<MovieListItemExpanded> {
                 spacing: gap,
                 runSpacing: gap,
                 children: providers.map((provider) {
-                  final useHalfWidth = textScale <= 1.3 &&
+                  final useHalfWidth =
+                      textScale <= 1.3 &&
                       halfWidth >= 132 &&
                       _providerNameFits(
                         context,

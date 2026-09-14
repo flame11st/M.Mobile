@@ -316,6 +316,152 @@ void main() {
   );
 
   testWidgets(
+    'create sheet starts truly empty with explicit example and matching semantics',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final states = await _testStates(const []);
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await _pumpLists(tester, states);
+
+      await tester.tap(find.byKey(const Key('lists-tab-personal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('personal-empty-create-list')));
+      await tester.pumpAndSettle();
+
+      final fieldFinder = find.byKey(const Key('create-list-name-field'));
+      final field = tester.widget<TextField>(fieldFinder);
+      expect(field.controller?.text, isEmpty);
+      expect(field.decoration?.hintText, 'Example: Best Sci-Fi');
+      expect(
+        field.decoration?.hintStyle?.fontStyle,
+        FontStyle.italic,
+      );
+      expect(
+        find.text('Example only — enter a name or choose a suggestion.'),
+        findsOneWidget,
+      );
+      expect(find.text('0/60'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const Key('create-list-submit')),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      final fieldSemantics = tester.getSemantics(fieldFinder);
+      expect(fieldSemantics.value, isEmpty);
+      final counterSemantics = tester.getSemantics(
+        find.byKey(const Key('create-list-name-counter')),
+      );
+      expect(counterSemantics.label, '0 of 60 characters used');
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'suggestion and manual input update value counter focus and Create state',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final states = await _testStates(const []);
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+      await _pumpLists(tester, states, textScale: 1.25);
+
+      await tester.tap(find.byKey(const Key('lists-tab-personal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('personal-empty-create-list')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Favorites'));
+      await tester.pump();
+
+      final fieldFinder = find.byKey(const Key('create-list-name-field'));
+      var field = tester.widget<TextField>(fieldFinder);
+      expect(field.controller?.text, 'Favorites');
+      expect(field.focusNode?.hasFocus, isTrue);
+      expect(find.text('9/60'), findsOneWidget);
+      expect(tester.getSemantics(find.byType(EditableText)).value, 'Favorites');
+      expect(
+        find.bySemanticsLabel('Favorites selected'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const Key('create-list-submit')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+
+      await tester.enterText(fieldFinder, 'Manual Picks');
+      await tester.pump();
+      field = tester.widget<TextField>(fieldFinder);
+      expect(field.controller?.text, 'Manual Picks');
+      expect(find.text('12/60'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byType(EditableText)).value,
+        'Manual Picks',
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'whitespace stays invalid and input is capped at sixty characters',
+    (tester) async {
+      final states = await _testStates(const []);
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+      await _pumpLists(tester, states);
+
+      await tester.tap(find.byKey(const Key('lists-tab-personal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('personal-empty-create-list')));
+      await tester.pumpAndSettle();
+      final fieldFinder = find.byKey(const Key('create-list-name-field'));
+
+      await tester.enterText(fieldFinder, '   ');
+      await tester.pump();
+      expect(find.text('A list name can’t be blank.'), findsOneWidget);
+      expect(find.text('3/60'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const Key('create-list-submit')),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      final sixtyOneCharacters = List.filled(61, 'x').join();
+      final sixtyCharacters = List.filled(60, 'x').join();
+      await tester.enterText(fieldFinder, sixtyOneCharacters);
+      await tester.pump();
+      expect(
+        tester.widget<TextField>(fieldFinder).controller?.text,
+        sixtyCharacters,
+      );
+      expect(find.text('60/60'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const Key('create-list-submit')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'delayed signed-in success has one truthful Creating state and cannot dismiss',
     (tester) async {
       final response = Completer<http.Response>();

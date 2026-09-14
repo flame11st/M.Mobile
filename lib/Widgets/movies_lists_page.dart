@@ -65,8 +65,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
     final profileKey = userId != null && userId.isNotEmpty
         ? userId
         : userState.isIncognitoMode
-            ? 'anonymous'
-            : 'signed-out';
+        ? 'anonymous'
+        : 'signed-out';
     final guidanceKey = 'movieListsGeneralGuidanceDismissed.$profileKey';
 
     if (_loadedGuidanceKey == guidanceKey) {
@@ -313,14 +313,15 @@ class MoviesListsPageState extends State<MoviesListsPage>
   Widget _buildGeneralGuidance() {
     final animationsDisabled =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final duration =
-        animationsDisabled ? Duration.zero : const Duration(milliseconds: 160);
+    final duration = animationsDisabled
+        ? Duration.zero
+        : const Duration(milliseconds: 160);
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final guidanceHeight = textScale > 1.5
         ? 240.0
         : textScale > 1.15
-            ? 208.0
-            : 176.0;
+        ? 208.0
+        : 176.0;
 
     return AnimatedSwitcher(
       duration: duration,
@@ -456,8 +457,9 @@ class MoviesListsPageState extends State<MoviesListsPage>
                 key: const Key('personal-empty-create-list'),
                 text: 'Create List',
                 icon: Icons.add_rounded,
-                height:
-                    MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 72 : 48,
+                height: MediaQuery.textScalerOf(context).scale(1) > 1.3
+                    ? 72
+                    : 48,
                 onPressed: addNewList,
               ),
             ],
@@ -540,12 +542,12 @@ class MoviesListsPageState extends State<MoviesListsPage>
       return;
     }
 
-    unawaited(ProductAnalytics.instance.track(
-      ProductAnalyticsEventName.personalListCreated,
-      parameters: const {
-        ProductAnalyticsParameter.sourceSurface: 'lists',
-      },
-    ));
+    unawaited(
+      ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.personalListCreated,
+        parameters: const {ProductAnalyticsParameter.sourceSurface: 'lists'},
+      ),
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
@@ -591,8 +593,8 @@ class MoviesListsPageState extends State<MoviesListsPage>
     var order = lists.isEmpty
         ? 0
         : lists
-            .reduce((curr, next) => curr.order > next.order ? curr : next)
-            .order;
+              .reduce((curr, next) => curr.order > next.order ? curr : next)
+              .order;
 
     return order;
   }
@@ -775,7 +777,7 @@ class _ListsSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? Md3Colors.text : Md3Colors.muted;
+    final foreground = selected ? Md3Colors.primary : Md3Colors.muted;
 
     return Expanded(
       child: Semantics(
@@ -876,8 +878,10 @@ class _ListCoverCollage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview =
-        movies.where(_hasUsablePoster).take(3).toList(growable: false);
+    final preview = movies
+        .where(_hasUsablePoster)
+        .take(3)
+        .toList(growable: false);
 
     return Semantics(
       image: true,
@@ -892,34 +896,34 @@ class _ListCoverCollage extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: switch (preview.length) {
             0 => Container(
-                key: ValueKey('list-cover-$listName-fallback'),
-                color: Md3Colors.primarySoft,
-                child: const Center(
-                  child: Icon(
-                    Icons.collections_bookmark_rounded,
-                    color: Md3Colors.primary,
-                    size: 28,
-                  ),
+              key: ValueKey('list-cover-$listName-fallback'),
+              color: Md3Colors.primarySoft,
+              child: const Center(
+                child: Icon(
+                  Icons.collections_bookmark_rounded,
+                  color: Md3Colors.primary,
+                  size: 28,
                 ),
               ),
+            ),
             1 => _poster(preview[0], 0, width: 84, height: 96),
             2 => Row(
-                children: [
-                  _poster(preview[0], 0, width: 42, height: 96),
-                  _poster(preview[1], 1, width: 42, height: 96),
-                ],
-              ),
+              children: [
+                _poster(preview[0], 0, width: 42, height: 96),
+                _poster(preview[1], 1, width: 42, height: 96),
+              ],
+            ),
             _ => Row(
-                children: [
-                  _poster(preview[0], 0, width: 42, height: 96),
-                  Column(
-                    children: [
-                      _poster(preview[1], 1, width: 42, height: 48),
-                      _poster(preview[2], 2, width: 42, height: 48),
-                    ],
-                  ),
-                ],
-              ),
+              children: [
+                _poster(preview[0], 0, width: 42, height: 96),
+                Column(
+                  children: [
+                    _poster(preview[1], 1, width: 42, height: 48),
+                    _poster(preview[2], 2, width: 42, height: 48),
+                  ],
+                ),
+              ],
+            ),
           },
         ),
       ),
@@ -945,12 +949,9 @@ class _CreateListSheet extends StatefulWidget {
 }
 
 class _CreateListSheetState extends State<_CreateListSheet> {
-  static const _suggestions = [
-    'Favorites',
-    'Best Sci-Fi',
-    'Weekend Picks',
-  ];
+  static const _suggestions = ['Favorites', 'Best Sci-Fi', 'Weekend Picks'];
   static const _maximumNameLength = 60;
+  static const _nameExample = 'Best Sci-Fi';
 
   final _nameController = TextEditingController();
   final _focusNode = FocusNode();
@@ -960,6 +961,8 @@ class _CreateListSheetState extends State<_CreateListSheet> {
   Set<String>? _namesBeforeSubmit;
 
   String get _trimmedName => _nameController.text.trim();
+
+  int get _inputLength => _nameController.text.characters.length;
 
   String _normalizeName(String name) =>
       name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
@@ -1020,14 +1023,19 @@ class _CreateListSheetState extends State<_CreateListSheet> {
       _namesBeforeSubmit = namesBeforeSubmit;
     });
 
-    final optimisticList =
-        widget.moviesState.addMoviesList(listName, widget.order);
+    final optimisticList = widget.moviesState.addMoviesList(
+      listName,
+      widget.order,
+    );
 
     try {
       final userId = widget.userState.userId?.trim();
       if (userId != null && userId.isNotEmpty) {
-        final dynamic response = await widget.serviceAgent
-            .createUserMoviesList(userId, listName, widget.order);
+        final dynamic response = await widget.serviceAgent.createUserMoviesList(
+          userId,
+          listName,
+          widget.order,
+        );
         final statusCode = response.statusCode as int;
         if (statusCode < 200 || statusCode >= 300) {
           throw StateError('Create list returned HTTP $statusCode.');
@@ -1066,13 +1074,14 @@ class _CreateListSheetState extends State<_CreateListSheet> {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final animationsDisabled =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final motionDuration =
-        animationsDisabled ? Duration.zero : const Duration(milliseconds: 180);
+    final motionDuration = animationsDisabled
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
     final buttonText = _submitting
         ? 'Creating…'
         : _requestError == null
-            ? 'Create List'
-            : 'Retry';
+        ? 'Create List'
+        : 'Retry';
     final disabledForValidation = !_submitting && !_canSubmit;
 
     return Semantics(
@@ -1088,13 +1097,16 @@ class _CreateListSheetState extends State<_CreateListSheet> {
           style: FilledButton.styleFrom(
             backgroundColor: Md3Colors.primary,
             foregroundColor: Colors.white,
-            disabledBackgroundColor:
-                _submitting ? Md3Colors.primary : Md3Colors.border,
-            disabledForegroundColor:
-                _submitting ? Colors.white : Md3Colors.muted,
+            disabledBackgroundColor: _submitting
+                ? Md3Colors.primary
+                : Md3Colors.border,
+            disabledForegroundColor: _submitting
+                ? Colors.white
+                : Md3Colors.muted,
             side: BorderSide(
-              color:
-                  disabledForValidation ? Md3Colors.border : Md3Colors.primary,
+              color: disabledForValidation
+                  ? Md3Colors.border
+                  : Md3Colors.primary,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -1152,8 +1164,18 @@ class _CreateListSheetState extends State<_CreateListSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final duplicateError =
-        _isDuplicate ? 'A list with this name already exists.' : null;
+    final duplicateError = _isDuplicate
+        ? 'A list with this name already exists.'
+        : null;
+    final blankError = _nameController.text.isNotEmpty && _trimmedName.isEmpty
+        ? 'A list name can’t be blank.'
+        : null;
+    final validationError = duplicateError ?? blankError;
+    final guidanceText =
+        validationError ??
+        (_trimmedName.isEmpty
+            ? 'Example only — enter a name or choose a suggestion.'
+            : '');
 
     return PopScope(
       canPop: !_submitting,
@@ -1200,8 +1222,9 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                   child: IconButton(
                     key: const Key('create-list-close'),
                     tooltip: 'Close',
-                    onPressed:
-                        _submitting ? null : () => Navigator.of(context).pop(),
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     icon: const Icon(
                       Icons.close_rounded,
                       color: Md3Colors.muted,
@@ -1218,13 +1241,13 @@ class _CreateListSheetState extends State<_CreateListSheet> {
               autofocus: true,
               enabled: !_submitting,
               maxLength: _maximumNameLength,
-              buildCounter: (
-                context, {
-                required currentLength,
-                required isFocused,
-                required maxLength,
-              }) =>
-                  null,
+              buildCounter:
+                  (
+                    context, {
+                    required currentLength,
+                    required isFocused,
+                    required maxLength,
+                  }) => null,
               textInputAction: TextInputAction.done,
               onChanged: (_) {
                 setState(() {
@@ -1238,7 +1261,14 @@ class _CreateListSheetState extends State<_CreateListSheet> {
               },
               decoration: InputDecoration(
                 labelText: 'List name',
-                hintText: 'Best Sci-Fi',
+                hintText: 'Example: $_nameExample',
+                hintStyle: TextStyle(
+                  color: Md3Colors.muted.withValues(alpha: 0.72),
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w400,
+                ),
+                semanticCounterText:
+                    '$_inputLength of $_maximumNameLength characters used',
                 filled: true,
                 fillColor: Md3Colors.background,
                 constraints: const BoxConstraints(minHeight: 52),
@@ -1253,7 +1283,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: duplicateError == null
+                    color: validationError == null
                         ? Md3Colors.border
                         : Md3Colors.error,
                   ),
@@ -1261,7 +1291,7 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: duplicateError == null
+                    color: validationError == null
                         ? Md3Colors.primary
                         : Md3Colors.error,
                     width: 1.4,
@@ -1276,26 +1306,37 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                 children: [
                   Expanded(
                     child: Semantics(
-                      liveRegion: duplicateError != null,
+                      liveRegion: validationError != null,
                       child: Text(
-                        duplicateError ?? '',
-                        style: const TextStyle(
-                          color: Md3Colors.error,
+                        guidanceText,
+                        key: const Key('create-list-name-guidance'),
+                        style: TextStyle(
+                          color: validationError == null
+                              ? Md3Colors.muted
+                              : Md3Colors.error,
                           fontSize: 13,
                           height: 1.38,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: validationError == null
+                              ? FontWeight.w500
+                              : FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '${_nameController.text.characters.length}/$_maximumNameLength',
-                    style: const TextStyle(
-                      color: Md3Colors.muted,
-                      fontSize: 13,
-                      height: 1.38,
-                      fontWeight: FontWeight.w500,
+                  Semantics(
+                    label:
+                        '$_inputLength of $_maximumNameLength characters used',
+                    excludeSemantics: true,
+                    child: Text(
+                      '$_inputLength/$_maximumNameLength',
+                      key: const Key('create-list-name-counter'),
+                      style: const TextStyle(
+                        color: Md3Colors.muted,
+                        fontSize: 13,
+                        height: 1.38,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -1319,6 +1360,9 @@ class _CreateListSheetState extends State<_CreateListSheet> {
                 for (final suggestion in _suggestions)
                   _SuggestionChip(
                     text: suggestion,
+                    selected:
+                        _normalizeName(_trimmedName) ==
+                        _normalizeName(suggestion),
                     onTap: _submitting
                         ? null
                         : () => _setSuggestedName(suggestion),
@@ -1375,10 +1419,12 @@ class _CreateListSheetState extends State<_CreateListSheet> {
 
 class _SuggestionChip extends StatelessWidget {
   final String text;
+  final bool selected;
   final VoidCallback? onTap;
 
   const _SuggestionChip({
     required this.text,
+    required this.selected,
     this.onTap,
   });
 
@@ -1387,7 +1433,8 @@ class _SuggestionChip extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: onTap != null,
-      label: 'Use $text',
+      selected: selected,
+      label: selected ? '$text selected' : 'Use $text',
       onTap: onTap,
       excludeSemantics: true,
       child: Material(
@@ -1399,18 +1446,37 @@ class _SuggestionChip extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 44),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Md3Colors.surface,
+              color: selected ? Md3Colors.primarySoft : Md3Colors.surface,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Md3Colors.border),
-            ),
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: Md3Colors.text,
-                fontSize: 14,
-                height: 1.43,
-                fontWeight: FontWeight.w700,
+              border: Border.all(
+                color: selected ? Md3Colors.primary : Md3Colors.border,
               ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selected) ...[
+                  const Icon(
+                    Icons.check_rounded,
+                    color: Md3Colors.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Flexible(
+                  child: Text(
+                    text,
+                    maxLines: 2,
+                    overflow: TextOverflow.fade,
+                    style: TextStyle(
+                      color: selected ? Md3Colors.primary : Md3Colors.text,
+                      fontSize: 14,
+                      height: 1.43,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

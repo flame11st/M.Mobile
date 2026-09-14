@@ -14,12 +14,14 @@ class MoviesBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomMargin = Md3NavigationMetrics.bottomMargin(context);
+    final horizontalMargin = Md3NavigationMetrics.horizontalMarginFor(context);
 
     return Padding(
+      key: const ValueKey('root-navigation-safe-area'),
       padding: EdgeInsets.fromLTRB(
-        Md3NavigationMetrics.horizontalMargin,
+        horizontalMargin,
         0,
-        Md3NavigationMetrics.horizontalMargin,
+        horizontalMargin,
         bottomMargin,
       ),
       child: Md3LiquidGlass(
@@ -28,6 +30,7 @@ class MoviesBottomNavigationBar extends StatelessWidget {
         borderColor: Md3Colors.navigationGlassBorder,
         shadows: Md3Shadows.navigation,
         child: SizedBox(
+          key: const ValueKey('root-navigation-dock'),
           height: Md3NavigationMetrics.dockHeight,
           child: Row(
             children: [
@@ -105,6 +108,8 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = selected ? Md3Colors.primary : Md3Colors.muted;
+    final selectionHorizontalPadding =
+        MediaQuery.sizeOf(context).width >= 390 ? 12.0 : 6.0;
 
     return Expanded(
       flex: flex,
@@ -127,12 +132,16 @@ class _NavItem extends StatelessWidget {
               ),
               onTap: onTap,
               child: AnimatedContainer(
+                key: ValueKey('root-navigation-selection-$index'),
                 duration: MediaQuery.disableAnimationsOf(context)
                     ? Duration.zero
                     : Md3Durations.standard,
                 curve: Curves.easeOutCubic,
                 constraints: const BoxConstraints(
                   minHeight: Md3NavigationMetrics.itemMinimumHeight,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: selectionHorizontalPadding,
                 ),
                 decoration: BoxDecoration(
                   color: selected
@@ -157,8 +166,8 @@ class _NavItem extends StatelessWidget {
                       color: foreground,
                     ),
                     const SizedBox(height: Md3NavigationMetrics.labelGap),
-                    SizedBox(
-                      width: double.infinity,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
                       child: MediaQuery.withClampedTextScaling(
                         minScaleFactor: 1,
                         maxScaleFactor: 1.3,
@@ -169,6 +178,7 @@ class _NavItem extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: Md3Typography.navigationLabel.copyWith(
                             color: foreground,
+                            fontSize: Md3NavigationMetrics.labelSize,
                             fontWeight:
                                 selected ? FontWeight.w800 : FontWeight.w700,
                           ),

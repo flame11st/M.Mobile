@@ -54,6 +54,7 @@ class MyMoviesState extends State<MyMovies> {
   String? _refreshError;
 
   int selectedNavigationIndex = 0;
+  int _lastMeaningfulNavigationIndex = 0;
 
   bool _isSuccessfulJsonResponse(String body, int statusCode) {
     return statusCode >= 200 && statusCode < 300 && body.trim().isNotEmpty;
@@ -62,17 +63,24 @@ class MyMoviesState extends State<MyMovies> {
   @override
   void initState() {
     super.initState();
-    selectedNavigationIndex =
-        widget.initialNavigationIndex.clamp(0, _visitedTabs.length - 1);
+    selectedNavigationIndex = widget.initialNavigationIndex.clamp(
+      0,
+      _visitedTabs.length - 1,
+    );
+    _lastMeaningfulNavigationIndex = selectedNavigationIndex == 1
+        ? 0
+        : selectedNavigationIndex;
     _visitedTabs[selectedNavigationIndex] = true;
 
     if (selectedNavigationIndex == 0) {
-      unawaited(ProductAnalytics.instance.track(
-        ProductAnalyticsEventName.discoverViewed,
-        parameters: const {
-          ProductAnalyticsParameter.sourceSurface: 'root_tab',
-        },
-      ));
+      unawaited(
+        ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.discoverViewed,
+          parameters: const {
+            ProductAnalyticsParameter.sourceSurface: 'root_tab',
+          },
+        ),
+      );
     }
 
     Future.microtask(() {
@@ -225,8 +233,9 @@ class MyMoviesState extends State<MyMovies> {
     final moviesState = Provider.of<MoviesState>(context, listen: false);
     final userState = Provider.of<UserState>(context, listen: false);
 
-    final moviesListsResponse =
-        await serviceAgent.getMoviesLists(userState.userId!);
+    final moviesListsResponse = await serviceAgent.getMoviesLists(
+      userState.userId!,
+    );
     final responseBody = moviesListsResponse.body.trim();
 
     if (moviesListsResponse.statusCode < 200 ||
@@ -277,8 +286,9 @@ class MyMoviesState extends State<MyMovies> {
     }
 
     if (userState.userId != null && userState.userId!.isNotEmpty) {
-      final userInfoResponse =
-          await serviceAgent.getUserInfo(userState.userId!);
+      final userInfoResponse = await serviceAgent.getUserInfo(
+        userState.userId!,
+      );
       final responseBody = userInfoResponse.body.trim();
 
       if (!_isSuccessfulJsonResponse(
@@ -363,13 +373,20 @@ class MyMoviesState extends State<MyMovies> {
       return true;
     });
     final listsFuture = _runRefreshTask('Movies lists', () => setMoviesLists());
-    final starterDeckFuture =
-        _runRefreshTask('Starter deck', _loadStarterDeckInBackground);
-    final librarySucceeded =
-        await _runRefreshTask('Library', _refreshUserMovies);
+    final starterDeckFuture = _runRefreshTask(
+      'Starter deck',
+      _loadStarterDeckInBackground,
+    );
+    final librarySucceeded = await _runRefreshTask(
+      'Library',
+      _refreshUserMovies,
+    );
 
-    final sideResults =
-        await Future.wait([userInfoFuture, listsFuture, starterDeckFuture]);
+    final sideResults = await Future.wait([
+      userInfoFuture,
+      listsFuture,
+      starterDeckFuture,
+    ]);
 
     if (!mounted) {
       return;
@@ -456,16 +473,21 @@ class MyMoviesState extends State<MyMovies> {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       selectedNavigationIndex = index;
+      if (index != 1) {
+        _lastMeaningfulNavigationIndex = index;
+      }
       _visitedTabs[index] = true;
     });
     widget.onNavigationIndexChanged?.call(index);
     if (index == 0) {
-      unawaited(ProductAnalytics.instance.track(
-        ProductAnalyticsEventName.discoverViewed,
-        parameters: const {
-          ProductAnalyticsParameter.sourceSurface: 'root_tab',
-        },
-      ));
+      unawaited(
+        ProductAnalytics.instance.track(
+          ProductAnalyticsEventName.discoverViewed,
+          parameters: const {
+            ProductAnalyticsParameter.sourceSurface: 'root_tab',
+          },
+        ),
+      );
     }
   }
 
@@ -504,6 +526,13 @@ class MyMoviesState extends State<MyMovies> {
     });
   }
 
+  void _exitRootSearch() {
+    final destination = _lastMeaningfulNavigationIndex == 1
+        ? 0
+        : _lastMeaningfulNavigationIndex;
+    selectNavigationTab(destination);
+  }
+
   Future<void> _startRatingFromLibrary() async {
     final userState = Provider.of<UserState>(context, listen: false);
     await userState.setOnboardingStage(OnboardingStage.rating);
@@ -516,30 +545,28 @@ class MyMoviesState extends State<MyMovies> {
 
     return switch (index) {
       0 => DiscoverPage(
-          key: _discoverKey,
-          isOffline: _refreshError != null,
-          isRefreshing: _refreshInFlight,
-          onRetry: _refreshRemoteData,
-          onOpenLists: () => selectNavigationTab(3),
-          onOpenWatchlist: _openWatchlistFromDiscover,
-        ),
+        key: _discoverKey,
+        isOffline: _refreshError != null,
+        isRefreshing: _refreshInFlight,
+        onRetry: _refreshRemoteData,
+        onOpenLists: () => selectNavigationTab(3),
+        onOpenWatchlist: _openWatchlistFromDiscover,
+      ),
       1 => SearchPage(
-          key: _searchKey,
-          isActive: selectedNavigationIndex == 1,
-          handlesBackNavigation: false,
-        ),
+        key: _searchKey,
+        isActive: selectedNavigationIndex == 1,
+        allowRoutePop: false,
+        onExitRequested: _exitRootSearch,
+      ),
       2 => MovieList(
-          key: _myMoviesKey,
-          onOpenDiscover: () => selectNavigationTab(0),
-          onStartRating: () => unawaited(_startRatingFromLibrary()),
-          isRefreshing: _refreshInFlight,
-          refreshError: _refreshError,
-          onRetry: _refreshRemoteData,
-        ),
-      3 => MoviesListsPage(
-          key: _listsKey,
-          initialPageIndex: 0,
-        ),
+        key: _myMoviesKey,
+        onOpenDiscover: () => selectNavigationTab(0),
+        onStartRating: () => unawaited(_startRatingFromLibrary()),
+        isRefreshing: _refreshInFlight,
+        refreshError: _refreshError,
+        onRetry: _refreshRemoteData,
+      ),
+      3 => MoviesListsPage(key: _listsKey, initialPageIndex: 0),
       4 => Settings(key: _settingsKey),
       _ => const SizedBox.shrink(),
     };
@@ -561,7 +588,7 @@ class MyMoviesState extends State<MyMovies> {
 
     final shouldShowOnboarding =
         userState.launchDestination == LaunchDestination.rateMovies ||
-            _retainOnboardingDuringExit;
+        _retainOnboardingDuringExit;
 
     if (shouldShowOnboarding) {
       return OnboardingWizardPage(
@@ -600,6 +627,9 @@ class MyMoviesState extends State<MyMovies> {
       selectedIndex: selectedNavigationIndex,
       tabs: List<Widget>.generate(5, _buildRootTab),
       onTabSelected: selectNavigationTab,
+      backNavigationIndex: selectedNavigationIndex == 1
+          ? _lastMeaningfulNavigationIndex
+          : 0,
       resizeToAvoidBottomInset: selectedNavigationIndex == 1,
       appBar: PreferredSize(
         preferredSize: const Size(0, 0),

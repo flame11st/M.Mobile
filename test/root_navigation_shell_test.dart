@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/root_navigation_shell.dart';
+import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -14,6 +15,36 @@ void main() {
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
   });
+
+  testWidgets(
+    'root-tab changes remove action feedback before the destination renders',
+    (tester) async {
+      final moviesState = MoviesState();
+      addTearDown(moviesState.dispose);
+      await tester.pumpWidget(_testApp(moviesState));
+      await tester.pump();
+
+      await tester.tap(find.text('Show action feedback'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('movie-diary-action-snackbar')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Search root'), findsOneWidget);
+      expect(
+        find.byKey(const Key('movie-diary-action-snackbar')),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp('Dismiss notification')),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets(
     'five root tabs preserve state and expose selected tab semantics',
@@ -190,6 +221,29 @@ void main() {
     },
   );
 
+  testWidgets('Search system back returns to the previous meaningful root tab',
+      (tester) async {
+    final moviesState = MoviesState();
+    addTearDown(moviesState.dispose);
+    await tester.pumpWidget(_testApp(moviesState));
+    await tester.pump();
+
+    await tester.tap(find.text('Lists'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('root-field-3')),
+      'Weekend Picks',
+    );
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Lists root'), findsOneWidget);
+    expect(find.text('Weekend Picks'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'compact text-scale layout keeps every root target at least 48 square',
     (tester) async {
@@ -240,7 +294,7 @@ void main() {
       ),
     );
 
-    expect(contentInset, 118);
+    expect(contentInset, 112);
   });
 }
 
@@ -278,6 +332,7 @@ class _RootShellHarnessState extends State<_RootShellHarness> {
   ];
 
   int selectedIndex = 0;
+  int lastMeaningfulIndex = 0;
   final reselectCounts = List<int>.filled(5, 0);
 
   void selectTab(int index) {
@@ -286,6 +341,9 @@ class _RootShellHarnessState extends State<_RootShellHarness> {
         reselectCounts[index] += 1;
       } else {
         selectedIndex = index;
+        if (index != 1) {
+          lastMeaningfulIndex = index;
+        }
       }
     });
   }
@@ -294,6 +352,7 @@ class _RootShellHarnessState extends State<_RootShellHarness> {
   Widget build(BuildContext context) {
     return MovieDiaryRootNavigationShell(
       selectedIndex: selectedIndex,
+      backNavigationIndex: selectedIndex == 1 ? lastMeaningfulIndex : 0,
       onTabSelected: selectTab,
       tabs: List<Widget>.generate(
         5,
@@ -335,6 +394,18 @@ class _PersistentTestTab extends StatelessWidget {
             TextField(
               key: Key('root-field-$index'),
               decoration: InputDecoration(labelText: '$label state'),
+            ),
+            FilledButton(
+              onPressed: () => MSnackBar.show(
+                context,
+                'Saved from $label',
+                true,
+                duration: MSnackBar.actionDuration,
+                bottomMargin: MSnackBar.aboveRootNavigation(context),
+                actionLabel: 'Undo',
+                onAction: () {},
+              ),
+              child: const Text('Show action feedback'),
             ),
             FilledButton(
               key: Key('open-detail-$index'),

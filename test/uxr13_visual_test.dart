@@ -13,7 +13,7 @@ void main() {
       'UXR13 shared loading and fallback catalog at ${density}x density',
       (tester) async {
         tester.view.devicePixelRatio = density;
-        tester.view.physicalSize = Size(390 * density, 760 * density);
+        tester.view.physicalSize = Size(390 * density, 844 * density);
         addTearDown(tester.view.resetDevicePixelRatio);
         addTearDown(tester.view.resetPhysicalSize);
 
@@ -23,7 +23,7 @@ void main() {
               return MediaQuery(
                 data: MediaQuery.of(context).copyWith(
                   disableAnimations: true,
-                  textScaler: const TextScaler.linear(2),
+                  textScaler: const TextScaler.linear(1.2),
                 ),
                 child: child!,
               );
@@ -106,7 +106,7 @@ void main() {
         await expectLater(
           find.byKey(const Key('uxr13-visual-catalog')),
           matchesGoldenFile(
-            'goldens/uxr13-components-${density.toInt()}x.png',
+            'goldens/uxr13-components-390x844-1.2text-${density.toInt()}dpr.png',
           ),
         );
       },

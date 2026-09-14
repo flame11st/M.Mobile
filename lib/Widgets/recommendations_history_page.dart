@@ -567,7 +567,8 @@ class _RecommendationHistoryDetailPageState
     return Scaffold(
       backgroundColor: Md3Colors.background,
       appBar: AppBar(
-        title: Text(widget.isLegacy ? 'Earlier recommendations' : 'Saved deck'),
+        title:
+            Text(widget.isLegacy ? 'Earlier recommendations' : 'From history'),
         backgroundColor: Md3Colors.background,
         foregroundColor: Md3Colors.text,
         elevation: 0,
@@ -696,12 +697,15 @@ class _HistoryBatchCard extends StatelessWidget {
     final modeLabel = _modeLabel(summary.discoveryLevel);
     final date =
         DateFormat('MMM d, yyyy').format(summary.generatedAt.toLocal());
-    final semantics =
-        '$date, $mediaLabel, $modeLabel, ${summary.itemCount} picks. Open deck.';
+    final semantics = _joinSemanticSentences([
+      '$date, $mediaLabel, $modeLabel, ${summary.itemCount} picks',
+      'Open deck',
+    ]);
 
     return Semantics(
       button: true,
       label: semantics,
+      onTap: onTap,
       excludeSemantics: true,
       child: Md3Card(
         onTap: onTap,
@@ -760,8 +764,11 @@ class _LegacyHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label:
-          'Earlier recommendations, ${summary.itemCount} picks. Open archive.',
+      label: _joinSemanticSentences([
+        'Earlier recommendations, ${summary.itemCount} picks',
+        'Open archive',
+      ]),
+      onTap: onTap,
       excludeSemantics: true,
       child: Md3Card(
         onTap: onTap,
@@ -956,18 +963,19 @@ class _HistoryItemCard extends StatelessWidget {
     final explanation = item.explanation?.trim().isNotEmpty == true
         ? item.explanation!.trim()
         : fallbackExplanation;
-    final semantics = [
+    final semantics = _joinSemanticSentences([
       'Rank ${item.rank}',
       movie.title,
       if (item.matchLabel != null) item.matchLabel!,
       explanation,
       action.label,
       'Open details',
-    ].join('. ');
+    ]);
 
     return Semantics(
       button: true,
       label: semantics,
+      onTap: onTap,
       excludeSemantics: true,
       child: Md3Card(
         onTap: onTap,
@@ -1318,6 +1326,25 @@ String _modeLabel(RecommendationDiscoveryLevel level) {
     RecommendationDiscoveryLevel.balanced => 'Balanced',
     RecommendationDiscoveryLevel.adventurous => 'Adventurous',
   };
+}
+
+String _joinSemanticSentences(Iterable<String> parts) {
+  final phrases = parts
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  final buffer = StringBuffer();
+  for (var index = 0; index < phrases.length; index++) {
+    final phrase = phrases[index];
+    buffer.write(phrase);
+    if (!RegExp(r'[.!?]$').hasMatch(phrase)) {
+      buffer.write('.');
+    }
+    if (index < phrases.length - 1) {
+      buffer.write(' ');
+    }
+  }
+  return buffer.toString();
 }
 
 ({String label, IconData icon, Color color}) _actionPresentation(

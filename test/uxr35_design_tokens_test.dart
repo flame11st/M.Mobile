@@ -29,6 +29,11 @@ void main() {
     expect(Md3Radius.sheet, 32);
     expect(Md3Radius.poster, 16);
     expect(Md3Radius.navigation, 28);
+    expect(Md3NavigationMetrics.dockHeight, 64);
+    expect(Md3NavigationMetrics.horizontalMargin, inInclusiveRange(20, 24));
+    expect(Md3NavigationMetrics.itemMinimumHeight, 56);
+    expect(Md3NavigationMetrics.iconSize, inInclusiveRange(24, 26));
+    expect(Md3NavigationMetrics.labelSize, inInclusiveRange(13, 14));
     expect(Md3Durations.feedback, const Duration(milliseconds: 160));
     expect(Md3Durations.standard, const Duration(milliseconds: 180));
   });
@@ -125,14 +130,27 @@ void main() {
         }
 
         final dock = tester.getSize(
-          find
-              .descendant(
-                of: find.byType(Md3LiquidGlass),
-                matching: find.byType(SizedBox),
-              )
-              .first,
+          find.byKey(const ValueKey('root-navigation-dock')),
         );
         expect(dock.height, Md3NavigationMetrics.dockHeight);
+        final safeArea = tester.getSize(
+          find.byKey(const ValueKey('root-navigation-safe-area')),
+        );
+        expect(
+          safeArea.height,
+          Md3NavigationMetrics.visibleDockHeight + configuration.safeBottom,
+        );
+        final selectedPill = tester.getSize(
+          find.byKey(const ValueKey('root-navigation-selection-0')),
+        );
+        expect(selectedPill.height, Md3NavigationMetrics.itemMinimumHeight);
+        final selectedContainer = tester.widget<AnimatedContainer>(
+          find.byKey(const ValueKey('root-navigation-selection-0')),
+        );
+        expect(
+          selectedContainer.padding,
+          const EdgeInsets.symmetric(horizontal: 12),
+        );
         expect(tester.takeException(), isNull);
       },
     );

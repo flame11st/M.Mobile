@@ -9,23 +9,24 @@ Details hero are therefore always banner-free.
 
 ## Free-tier interstitial contract
 
-The only supported placement is `recommendation_completion`. It becomes
-eligible after four successful, non-empty recommendation deck generations and
-at most once per rolling 24 hours. Both values are centralized and may be
-changed at build time with:
+UXR71 supersedes the legacy generation/action-threshold model. The only
+supported placement remains `recommendation_completion`, but eligibility is
+now evaluated only after the user explicitly finishes a complete 10-of-10
+recommendation deck and the product completion state is rendered.
 
-- `MOVIEDIARY_AD_COMPLETED_ACTION_THRESHOLD` (default `4`)
-- `MOVIEDIARY_AD_COOLDOWN_HOURS` (default `24`)
-- `MOVIEDIARY_AD_SHOW_WINDOW_SECONDS` (default `12`)
+The typed remote policy defaults to no interstitial in the first app session or
+on the first completed deck of each UTC day, a 10-minute minimum interval,
+maximum two shown per app session, and maximum three shown per UTC day. Recent
+native/rewarded interaction or a Premium prompt also starts the centralized
+10-minute adjacency guard. Premium and unresolved entitlement always fail
+closed.
 
-The defaults are deliberately conservative starting assumptions, not an
-optimization claim. A failed, empty, timed-out, cancelled, retry-error, or lazy
-page request does not count. The recommendation result state is committed and
-its `recommendation_generated` event is queued before the ad policy runs. If
-inventory is not ready within the short post-completion window, navigation
-continues and the eligibility remains durable for a later completed action.
-There is no attempt before first value, during onboarding/rating, while a deck
-is loading, or as a consequence of an error.
+Inventory may preload before an eligible completion. At the completion
+boundary the manager shows only already-ready inventory. Missing inventory,
+unresolved consent, or background state emits a skip and returns immediately;
+there is no candidate timer, load wait, spinner, or delayed surprise on resume.
+The incompatible encrypted `adPolicyV1` action state is deleted and replaced by
+versioned `adPolicyV2` completion/session/day state.
 
 ## Entitlement, consent, and lifecycle safety
 
@@ -53,7 +54,8 @@ cannot accidentally select test inventory.
 
 ## Telemetry definitions
 
-- `recommendation_generated`: the completed product event and value boundary.
+- `recommendation_deck_completed`: emitted after the explicit Finish action and
+  completion-state render; this is the only interstitial value boundary.
 - `interstitial_shown`: emitted only from the native full-screen shown callback.
 - `interstitial_closed`: emitted only from the dismissal callback with
   `outcome_category=dismissed_to_app`. This is the continuation population.
@@ -67,12 +69,22 @@ All ad events use `ad_placement=recommendation_completion` and
 without a matching defined exit; no ordinary pause, ad load failure, or
 pre-dismissal lifecycle callback fabricates an exit.
 
+UXR68 preserves these legacy fields/events and adds `placement`, `is_premium`,
+session/day shown counts, eligibility/load/failure/skip outcomes, and
+currency-specific paid-value telemetry. The admin report now classifies a
+meaningful product action within 120 seconds of close as continuation, keeps the
+existing qualified `user_exit_after_ad` as background/termination evidence, and
+marks incomplete observation windows pending. The full cross-format ownership
+and privacy contract is `M/UXR68_MONETIZATION_ANALYTICS.md`.
+
 ## Verification ownership
 
-`test/ad_policy_test.dart` covers threshold/cooldown, premium bypass,
-consent/inventory guards, durable pending eligibility, process recreation, and
-the exit/return definition. Recommendation widget tests prove only successful
-non-empty deck completion reaches the policy integration point. Physical
+`test/ad_policy_test.dart` covers first session/deck, 9:59 versus 10:00,
+session/day caps, UTC rollover, Premium/config/consent/inventory guards,
+adjacency, duplicate completion, V1 retirement, process recreation, and the
+exit/return definition. Recommendation widget tests prove cards one through
+nine cannot trigger policy, Finish renders before provider completion, and the
+boundary is exactly once. Physical
 release-candidate verification must still confirm the real Google inventory,
 iOS consent presentation, TalkBack/VoiceOver focus restoration, and app-store
 premium purchase/restore transitions.

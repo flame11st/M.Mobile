@@ -24,11 +24,7 @@ class Login extends StatefulWidget {
   final TargetPlatform? platformOverride;
   final bool loadMovieLists;
 
-  const Login({
-    super.key,
-    this.platformOverride,
-    this.loadMovieLists = true,
-  });
+  const Login({super.key, this.platformOverride, this.loadMovieLists = true});
 
   @override
   State<StatefulWidget> createState() {
@@ -79,12 +75,14 @@ class LoginState extends State<Login> {
     if (created) {
       if (!wasAlreadyAnonymous) {
         await userState.setOnboardingSkipped(true);
-        unawaited(ProductAnalytics.instance.track(
-          ProductAnalyticsEventName.onboardingSkipped,
-          parameters: const {
-            ProductAnalyticsParameter.sourceSurface: 'login',
-          },
-        ));
+        unawaited(
+          ProductAnalytics.instance.track(
+            ProductAnalyticsEventName.onboardingSkipped,
+            parameters: const {
+              ProductAnalyticsParameter.sourceSurface: 'login',
+            },
+          ),
+        );
       }
       loaderState.setIsLoaderVisible(false);
       if (mounted && Navigator.of(context).canPop()) {
@@ -100,16 +98,18 @@ class LoginState extends State<Login> {
   signInWithGoogle() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
-    unawaited(ProductAnalytics.instance.track(
-      ProductAnalyticsEventName.signInStarted,
-      parameters: const {
-        ProductAnalyticsParameter.authMethod: 'google',
-        ProductAnalyticsParameter.sourceSurface: 'login',
-      },
-    ));
+    unawaited(
+      ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.signInStarted,
+        parameters: const {
+          ProductAnalyticsParameter.authMethod: 'google',
+          ProductAnalyticsParameter.sourceSurface: 'login',
+        },
+      ),
+    );
 
-    final GoogleSignInAccount? googleSignInAccount =
-        await googleSignIn.signIn();
+    final GoogleSignInAccount? googleSignInAccount = await googleSignIn
+        .signIn();
 
     if (googleSignInAccount == null) {
       loaderState.setIsLoaderVisible(false);
@@ -121,10 +121,14 @@ class LoginState extends State<Login> {
 
     final incognitoUserId = _currentIncognitoUserId();
     var response = _isIOS
-        ? await serviceAgent.googleLoginIOS(googleSignInAuthentication.idToken!,
-            incognitoUserId: incognitoUserId)
-        : await serviceAgent.googleLogin(googleSignInAuthentication.idToken!,
-            incognitoUserId: incognitoUserId);
+        ? await serviceAgent.googleLoginIOS(
+            googleSignInAuthentication.idToken!,
+            incognitoUserId: incognitoUserId,
+          )
+        : await serviceAgent.googleLogin(
+            googleSignInAuthentication.idToken!,
+            incognitoUserId: incognitoUserId,
+          );
 
     if (response.statusCode == 200) {
       await processLoginResponse(response.body, true, 'google');
@@ -136,13 +140,15 @@ class LoginState extends State<Login> {
 
   Future<void> signInWithApple() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
-    unawaited(ProductAnalytics.instance.track(
-      ProductAnalyticsEventName.signInStarted,
-      parameters: const {
-        ProductAnalyticsParameter.authMethod: 'apple',
-        ProductAnalyticsParameter.sourceSurface: 'login',
-      },
-    ));
+    unawaited(
+      ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.signInStarted,
+        parameters: const {
+          ProductAnalyticsParameter.authMethod: 'apple',
+          ProductAnalyticsParameter.sourceSurface: 'login',
+        },
+      ),
+    );
 
     AuthorizationCredentialAppleID credential;
     try {
@@ -184,8 +190,11 @@ class LoginState extends State<Login> {
     loaderState.setIsLoaderVisible(true);
 
     var response = await serviceAgent.appleLogin(
-        credential.userIdentifier!, email, name,
-        incognitoUserId: _currentIncognitoUserId());
+      credential.userIdentifier!,
+      email,
+      name,
+      incognitoUserId: _currentIncognitoUserId(),
+    );
 
     if (response.statusCode == 200) {
       await processLoginResponse(response.body, true, 'apple');
@@ -196,7 +205,8 @@ class LoginState extends State<Login> {
   }
 
   setSignInButtonActive() {
-    var signInButtonActive = _formKey.currentState != null &&
+    var signInButtonActive =
+        _formKey.currentState != null &&
         _formKey.currentState!.validate() &&
         emailController.text.isNotEmpty &&
         passwordController.text.isNotEmpty;
@@ -211,13 +221,15 @@ class LoginState extends State<Login> {
   login() async {
     final loaderState = Provider.of<LoaderState>(context, listen: false);
     loaderState.setIsLoaderVisible(true);
-    unawaited(ProductAnalytics.instance.track(
-      ProductAnalyticsEventName.signInStarted,
-      parameters: const {
-        ProductAnalyticsParameter.authMethod: 'email',
-        ProductAnalyticsParameter.sourceSurface: 'login',
-      },
-    ));
+    unawaited(
+      ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.signInStarted,
+        parameters: const {
+          ProductAnalyticsParameter.authMethod: 'email',
+          ProductAnalyticsParameter.sourceSurface: 'login',
+        },
+      ),
+    );
 
     var response = await serviceAgent.login(
       emailController.text,
@@ -234,175 +246,28 @@ class LoginState extends State<Login> {
     }
   }
 
-  Future<void> _openForgotPassword() async {
-    final enteredEmail = emailController.text.trim();
-    final resetEmailController = TextEditingController(
-      text: Validators.emailValidator(enteredEmail) == null ? enteredEmail : '',
-    );
-
-    await showMd3BottomSheet<void>(
-      context: context,
-      builder: (sheetContext) {
-        var isSending = false;
-        var wasSent = false;
-        String? errorMessage;
-
-        return Md3BottomSheetSurface(
-          child: StatefulBuilder(
-            builder: (context, setSheetState) {
-              final email = resetEmailController.text.trim();
-              final isValid =
-                  email.isNotEmpty && Validators.emailValidator(email) == null;
-
-              Future<void> sendResetLink() async {
-                if (!isValid || isSending || wasSent) {
-                  return;
-                }
-
-                setSheetState(() {
-                  isSending = true;
-                  errorMessage = null;
-                });
-
-                try {
-                  final response =
-                      await serviceAgent.requestPasswordReset(email);
-                  if (!sheetContext.mounted) {
-                    return;
-                  }
-
-                  if (response.statusCode >= 200 && response.statusCode < 300) {
-                    setSheetState(() {
-                      isSending = false;
-                      wasSent = true;
-                    });
-                    return;
-                  }
-
-                  setSheetState(() {
-                    isSending = false;
-                    errorMessage =
-                        "We couldn't send a reset email. Try again later.";
-                  });
-                } on Object {
-                  if (!sheetContext.mounted) {
-                    return;
-                  }
-                  setSheetState(() {
-                    isSending = false;
-                    errorMessage =
-                        "We couldn't send a reset email. Check your connection and try again.";
-                  });
-                }
-              }
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Reset your password',
-                    style: TextStyle(
-                      color: Md3Colors.text,
-                      fontSize: 22,
-                      height: 1.25,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    wasSent
-                        ? 'Check $email for a password reset link.'
-                        : 'Enter the email for your MovieDiary account.',
-                    style: const TextStyle(
-                      color: Md3Colors.muted,
-                      fontSize: 15,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (!wasSent)
-                    TextFormField(
-                      key: const Key('passwordResetEmailField'),
-                      controller: resetEmailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.email],
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                              ? 'Enter your email'
-                              : Validators.emailValidator(value.trim()),
-                      decoration: _inputDecoration(
-                        'Email',
-                        Icons.mail_outline_rounded,
-                      ),
-                      onChanged: (_) {
-                        setSheetState(() {
-                          errorMessage = null;
-                        });
-                      },
-                      onFieldSubmitted: (_) => sendResetLink(),
-                    ),
-                  if (errorMessage != null) ...[
-                    const SizedBox(height: 12),
-                    Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        errorMessage!,
-                        key: const Key('passwordResetError'),
-                        style: const TextStyle(
-                          color: Md3Colors.error,
-                          fontSize: 14,
-                          height: 1.4,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  if (wasSent)
-                    Md3PrimaryButton(
-                      key: const Key('passwordResetDoneButton'),
-                      text: 'Done',
-                      icon: Icons.check_rounded,
-                      tonal: true,
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                    )
-                  else
-                    Md3PrimaryButton(
-                      key: const Key('passwordResetSendButton'),
-                      text:
-                          isSending ? 'Sending reset link' : 'Send reset link',
-                      icon: Icons.mark_email_read_outlined,
-                      onPressed: isValid && !isSending ? sendResetLink : null,
-                    ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    resetEmailController.dispose();
-  }
-
-  processLoginResponse(String response, bool isSignedInWithThirdPartyServices,
-      String authMethod) async {
+  processLoginResponse(
+    String response,
+    bool isSignedInWithThirdPartyServices,
+    String authMethod,
+  ) async {
     final userState = Provider.of<UserState>(context, listen: false);
     final loaderState = Provider.of<LoaderState>(context, listen: false);
 
     await userState.processLoginResponse(
-        response, isSignedInWithThirdPartyServices);
+      response,
+      isSignedInWithThirdPartyServices,
+    );
     await userState.setOnboardingCompleted(true);
-    unawaited(ProductAnalytics.instance.track(
-      ProductAnalyticsEventName.signInCompleted,
-      parameters: {
-        ProductAnalyticsParameter.authMethod: authMethod,
-        ProductAnalyticsParameter.sourceSurface: 'login',
-      },
-    ));
+    unawaited(
+      ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.signInCompleted,
+        parameters: {
+          ProductAnalyticsParameter.authMethod: authMethod,
+          ProductAnalyticsParameter.sourceSurface: 'login',
+        },
+      ),
+    );
     loaderState.setIsLoaderVisible(false);
 
     if (mounted && Navigator.of(context).canPop()) {
@@ -470,14 +335,16 @@ class LoginState extends State<Login> {
         style: FilledButton.styleFrom(
           backgroundColor: background,
           foregroundColor: foreground,
-          disabledBackgroundColor:
-              primary ? const Color(0xffeef2f7) : const Color(0xffeef0f4),
+          disabledBackgroundColor: primary
+              ? Md3Colors.primaryDisabled
+              : Md3Colors.surfaceMuted,
           disabledForegroundColor: Md3Colors.muted,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
             side: BorderSide(
-              color:
-                  primary && isEnabled ? Md3Colors.primary : Md3Colors.border,
+              color: primary && isEnabled
+                  ? Md3Colors.primary
+                  : Md3Colors.border,
             ),
           ),
           elevation: 0,
@@ -497,8 +364,10 @@ class LoginState extends State<Login> {
                 maxLines: 2,
                 overflow: TextOverflow.fade,
                 textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
@@ -666,10 +535,7 @@ class LoginState extends State<Login> {
         onPressed: () => proceedIncognitoMode(),
         style: TextButton.styleFrom(
           foregroundColor: Md3Colors.muted,
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
         child: const Text('Continue without account'),
       ),
@@ -690,10 +556,7 @@ class LoginState extends State<Login> {
         },
         style: TextButton.styleFrom(
           foregroundColor: Md3Colors.primary,
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
         child: const Text('Create account'),
       ),
@@ -812,25 +675,7 @@ class LoginState extends State<Login> {
                         emailField,
                         const SizedBox(height: 12),
                         passwordField,
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: SizedBox(
-                            height: 44,
-                            child: TextButton(
-                              key: const Key('forgotPasswordButton'),
-                              onPressed: _openForgotPassword,
-                              style: TextButton.styleFrom(
-                                foregroundColor: Md3Colors.primary,
-                                textStyle: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              child: const Text('Forgot password?'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 16),
                         loginButton,
                       ],
                     ),

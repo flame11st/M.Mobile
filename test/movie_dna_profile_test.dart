@@ -27,16 +27,20 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: preview, matching: find.text('Cross-format regular')),
-      findsOneWidget,
-    );
-    expect(
       find.descendant(of: preview, matching: find.text('Era-hopping explorer')),
       findsOneWidget,
     );
     expect(
       find.descendant(of: preview, matching: find.text('Sci-fi worldbuilder')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: preview, matching: find.text('Cross-format regular')),
       findsNothing,
+    );
+    expect(
+      tester.getSemantics(preview).label,
+      'Top MovieDNA traits: Superhero fan, Era-hopping explorer, Sci-fi worldbuilder',
     );
     expect(tester.takeException(), isNull);
   });
@@ -54,17 +58,22 @@ void main() {
     expect(find.textContaining('Very strong read · 28 likes · 3 dislikes'),
         findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
-    expect(
-      tester
-          .getSemantics(
-            find.byKey(
-              const ValueKey('moviedna-insight-superhero-stories'),
-            ),
-          )
-          .label,
-      isNot(contains('%')),
-    );
+    final firstInsightSemantics = tester
+        .getSemantics(
+          find.byKey(
+            const ValueKey('moviedna-insight-superhero-stories'),
+          ),
+        )
+        .label;
+    expect(firstInsightSemantics, isNot(contains('%')));
+    expect(firstInsightSemantics, contains('Superhero fan.'));
+    expect(firstInsightSemantics, isNot(contains('\nSuperhero fan')));
     expect(find.text('For your next deck'), findsOneWidget);
+    final firstInsight = find.byKey(
+      const ValueKey('moviedna-insight-superhero-stories'),
+    );
+    expect(tester.widget(firstInsight), isA<Padding>());
+    expect(tester.getSize(firstInsight).height, greaterThanOrEqualTo(120));
     final rateMore = find.text('Rate more');
     await tester.ensureVisible(rateMore);
     await tester.pump();
@@ -88,15 +97,69 @@ void main() {
         profile: profile,
       );
 
-      for (var index = 0; index < _profile.insights.length; index++) {
+      final presented = movieDnaPresentationInsights(profile.insights);
+      for (var index = 0; index < presented.length; index++) {
         expect(
           find.byKey(
-            ValueKey('moviedna-insight-${_profile.insights[index].key}'),
+            ValueKey('moviedna-insight-${presented[index].key}'),
           ),
           index < testCase.$2 ? findsOneWidget : findsNothing,
         );
       }
+
+      if (presented.length > testCase.$2) {
+        expect(find.text('Show more insights'), findsOneWidget);
+        await tester.ensureVisible(find.text('Show more insights'));
+        await tester.pump();
+        await tester.tap(find.text('Show more insights'));
+        await tester.pump();
+        expect(
+          find.byKey(ValueKey('moviedna-insight-${presented.last.key}')),
+          findsOneWidget,
+        );
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     }
+  });
+
+  test('specific traits precede generic traits and global signals deduplicate',
+      () {
+    final insights = movieDnaPresentationInsights([
+      _profile.insights[1],
+      const MovieDnaInsight(
+        key: 'international-language',
+        label: 'International language explorer',
+        description: 'International language stories often land well.',
+        category: 'era_international',
+        confidencePercent: 90,
+        positiveEvidenceCount: 30,
+        counterEvidenceCount: 0,
+      ),
+      const MovieDnaInsight(
+        key: 'global-cinema',
+        label: 'Global cinema explorer',
+        description: 'Global cinema often lands well.',
+        category: 'era_international',
+        confidencePercent: 94,
+        positiveEvidenceCount: 40,
+        counterEvidenceCount: 0,
+      ),
+      _profile.insights.first,
+      _profile.insights[3],
+    ]);
+
+    expect(
+      insights.take(2).map((insight) => insight.key),
+      ['global-cinema', 'superhero-stories'],
+    );
+    expect(
+      insights.where((insight) =>
+          insight.key == 'global-cinema' ||
+          insight.key == 'international-language'),
+      hasLength(1),
+    );
+    expect(insights.last.key, 'cross-format');
   });
 }
 

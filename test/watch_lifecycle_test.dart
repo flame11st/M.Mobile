@@ -51,10 +51,18 @@ void main() {
           await tester.pump(const Duration(milliseconds: 80));
 
           expect(
-            find.text('Moved to Viewed · Rated Okay'),
+            find.text('Rated Okay · Moved to Viewed'),
             findsOneWidget,
           );
           expect(find.text('Undo'), findsOneWidget);
+          expect(
+            find.byTooltip('Dismiss notification'),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const Key('movie-diary-action-snackbar-icon')),
+            findsOneWidget,
+          );
           expect(harness.movie.movieRate, MovieRate.okay);
           expect(harness.movies.ratingStateVersion, 1);
 
@@ -136,6 +144,41 @@ void main() {
     );
   });
 
+  testWidgets(
+    'accessible Dismiss keeps the saved opinion without invoking Undo',
+    (tester) async {
+      final harness = await _createHarness(isIncognito: true);
+      addTearDown(harness.dispose);
+      await _pumpLauncher(
+        tester,
+        harness,
+        textScale: 1.3,
+        accessibleNavigation: true,
+      );
+
+      await tester.tap(find.text('Mark Watched'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Liked'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(find.text('Rated Liked · Moved to Viewed'), findsOneWidget);
+      expect(harness.movie.movieRate, MovieRate.liked);
+      expect(harness.movies.ratingStateVersion, 1);
+
+      await tester.tap(
+        find.byKey(const Key('movie-diary-action-snackbar-dismiss')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(harness.movie.movieRate, MovieRate.liked);
+      expect(harness.movies.ratingStateVersion, 1);
+      expect(find.textContaining('Undo complete'), findsNothing);
+      expect(find.text('Rated Liked · Moved to Viewed'), findsNothing);
+    },
+  );
+
   testWidgets('global movie guard blocks a concurrent screen copy',
       (tester) async {
     final response = Completer<http.Response>();
@@ -160,7 +203,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(harness.movies.isMovieMutationActive(harness.movie.id), isFalse);
-    expect(find.text('Moved to Viewed · Rated Okay'), findsOneWidget);
+    expect(find.text('Rated Okay · Moved to Viewed'), findsOneWidget);
   });
 
   testWidgets('queued guest rating survives offline process recreation',
@@ -227,6 +270,7 @@ Future<void> _pumpLauncher(
   WidgetTester tester,
   _Harness harness, {
   double textScale = 1,
+  bool accessibleNavigation = false,
 }) {
   return tester.pumpWidget(
     MultiProvider(
@@ -238,6 +282,7 @@ Future<void> _pumpLauncher(
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(textScale),
+            accessibleNavigation: accessibleNavigation,
           ),
           child: child!,
         ),

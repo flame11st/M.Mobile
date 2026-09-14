@@ -5,7 +5,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mmobile/Enums/movie_rate.dart';
 import 'package:mmobile/Enums/movie_type.dart';
+import 'package:mmobile/Helpers/ad_inventory.dart';
+import 'package:mmobile/Helpers/ad_policy.dart';
 import 'package:mmobile/Objects/movie.dart';
+import 'package:mmobile/Services/monetization_config.dart';
+import 'package:mmobile/Services/monetization_service.dart';
+import 'package:mmobile/Services/ad_privacy_consent.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/movie_list.dart';
@@ -13,6 +18,156 @@ import 'package:provider/provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'Watchlist and filtered Viewed insert only bounded content-relative native slots',
+    (tester) async {
+      final movies = <Movie>[
+        for (var index = 0; index < 21; index++)
+          _movie('saved-$index', 'Saved $index', MovieRate.addedToWatchlist),
+        for (var index = 0; index < 21; index++)
+          _movie(
+            'viewed-$index',
+            'Viewed $index',
+            index.isEven ? MovieRate.liked : MovieRate.okay,
+          ),
+      ];
+      final states = await _testStates(movies);
+      final gateway = _ReadyNativeGateway();
+      final monetization = MonetizationService(
+        inventoryGateway: gateway,
+        configService: MonetizationConfigService(
+          transport: _RolloutConfigTransport(),
+          cache: _MemoryMonetizationCache(),
+        ),
+      );
+      await monetization.initializeConfiguration();
+      await monetization.synchronizeEntitlement(
+        isPremium: false,
+        isResolved: true,
+      );
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+      addTearDown(monetization.dispose);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(430, 930));
+
+      await _pumpLibrary(
+        tester,
+        states,
+        size: const Size(430, 930),
+        textScale: 1,
+        monetization: monetization,
+      );
+      await tester.pump();
+
+      await tester.drag(
+        find.byType(AnimatedList).hitTestable().first,
+        const Offset(0, -5000),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('my-movies-watchlist-native-after-20')),
+        findsOneWidget,
+      );
+      expect(
+        gateway.requests,
+        containsAll([
+          (placement: 'watchlist_native', surface: 'watchlist', position: 10),
+          (placement: 'watchlist_native', surface: 'watchlist', position: 20),
+        ]),
+      );
+
+      final firstBoundaryMovie = states.movies.userMovies.firstWhere(
+        (movie) => movie.id == 'saved-0',
+      );
+      final secondBoundaryMovie = states.movies.userMovies.firstWhere(
+        (movie) => movie.id == 'saved-1',
+      );
+      await states.movies.changeMovieRate(
+        firstBoundaryMovie.id,
+        MovieRate.liked,
+        false,
+        firstBoundaryMovie,
+      );
+      await tester.pumpAndSettle();
+      expect(states.movies.watchlistMovies, hasLength(20));
+      expect(
+        find.byKey(const Key('my-movies-watchlist-native-after-20')),
+        findsOneWidget,
+      );
+
+      await states.movies.changeMovieRate(
+        secondBoundaryMovie.id,
+        MovieRate.okay,
+        false,
+        secondBoundaryMovie,
+      );
+      await tester.pumpAndSettle();
+      expect(states.movies.watchlistMovies, hasLength(19));
+      expect(
+        find.byKey(const Key('my-movies-watchlist-native-after-20')),
+        findsNothing,
+      );
+
+      await states.movies.changeMovieRate(
+        firstBoundaryMovie.id,
+        MovieRate.addedToWatchlist,
+        false,
+        firstBoundaryMovie,
+      );
+      await states.movies.changeMovieRate(
+        secondBoundaryMovie.id,
+        MovieRate.addedToWatchlist,
+        false,
+        secondBoundaryMovie,
+      );
+      await tester.pumpAndSettle();
+      expect(states.movies.watchlistMovies, hasLength(21));
+      expect(
+        find.byKey(const Key('my-movies-watchlist-native-after-20')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('my-movies-tab-viewed')));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byType(AnimatedList).hitTestable().first,
+        const Offset(0, -5000),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('my-movies-viewed-native-after-20')),
+        findsOneWidget,
+      );
+      expect(
+        gateway.requests,
+        containsAll([
+          (placement: 'viewed_native', surface: 'viewed', position: 10),
+          (placement: 'viewed_native', surface: 'viewed', position: 20),
+        ]),
+      );
+
+      await tester.tap(find.byKey(const Key('viewed-filter-liked')));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byType(AnimatedList).hitTestable().first,
+        const Offset(0, -5000),
+      );
+      await tester.pumpAndSettle();
+      expect(states.movies.viewedMovies, hasLength(11));
+      expect(
+        find.byKey(const Key('my-movies-viewed-native-after-10')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('my-movies-viewed-native-after-20')),
+        findsNothing,
+      );
+      expect(find.text('Sponsored'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'external Watchlist selection overrides the previously viewed tab',
@@ -100,9 +255,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Nothing in Viewed yet'), findsOneWidget);
         expect(
-          find.text(
-            'Rate something you’ve seen to start your taste profile.',
-          ),
+          find.text('Rate something you’ve seen to start your taste profile.'),
           findsOneWidget,
         );
         expect(find.text('Rate Movies'), findsOneWidget);
@@ -254,9 +407,7 @@ void main() {
       expect(find.text('Comedy'), findsNothing);
 
       await tester.tap(find.byKey(const Key('viewed-media-movies')));
-      await tester.tap(
-        find.byKey(const Key('viewed-advanced-filter-close')),
-      );
+      await tester.tap(find.byKey(const Key('viewed-advanced-filter-close')));
       await tester.pumpAndSettle();
       expect(find.text('Liked TV'), findsOneWidget);
       expect(find.text('Disliked TV'), findsOneWidget);
@@ -265,9 +416,7 @@ void main() {
       await tester.tap(find.byKey(const Key('viewed-advanced-filters')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('viewed-media-movies')));
-      await tester.tap(
-        find.byKey(const Key('viewed-advanced-filter-apply')),
-      );
+      await tester.tap(find.byKey(const Key('viewed-advanced-filter-apply')));
       await tester.pumpAndSettle();
 
       expect(find.text('All 2'), findsOneWidget);
@@ -289,9 +438,7 @@ void main() {
       await tester.tap(find.byKey(const Key('viewed-advanced-filters')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('viewed-media-tv')));
-      await tester.tap(
-        find.byKey(const Key('viewed-advanced-filter-apply')),
-      );
+      await tester.tap(find.byKey(const Key('viewed-advanced-filter-apply')));
       await tester.pumpAndSettle();
       expect(find.text('Liked TV'), findsOneWidget);
       expect(find.text('Liked movie'), findsNothing);
@@ -312,9 +459,7 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey<String>('viewed-genre-sci-fi')),
       );
-      await tester.tap(
-        find.byKey(const Key('viewed-advanced-filter-apply')),
-      );
+      await tester.tap(find.byKey(const Key('viewed-advanced-filter-apply')));
       await tester.pumpAndSettle();
 
       await _tapViewedFilter(tester, const Key('viewed-filter-okay'));
@@ -325,9 +470,7 @@ void main() {
       await _tapViewedFilter(tester, const Key('viewed-filter-disliked'));
       expect(find.text('No Viewed titles match'), findsOneWidget);
       expect(find.textContaining('2 genres'), findsOneWidget);
-      await tester.tap(
-        find.byKey(const Key('viewed-filter-clear-advanced')),
-      );
+      await tester.tap(find.byKey(const Key('viewed-filter-clear-advanced')));
       await tester.pumpAndSettle();
 
       expect(find.text('Disliked TV'), findsOneWidget);
@@ -372,9 +515,7 @@ void main() {
 
         expect(
           tester
-              .getSize(
-                find.byKey(const Key('viewed-advanced-filter-apply')),
-              )
+              .getSize(find.byKey(const Key('viewed-advanced-filter-apply')))
               .height,
           greaterThanOrEqualTo(48),
         );
@@ -383,110 +524,98 @@ void main() {
         expect(find.text('Comedy'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        await tester.tap(
-          find.byKey(const Key('viewed-advanced-filter-close')),
-        );
+        await tester.tap(find.byKey(const Key('viewed-advanced-filter-close')));
         await tester.pumpAndSettle();
       }
     },
   );
 
-  testWidgets(
-    'back and scrim dismiss advanced drafts without applying',
-    (tester) async {
-      final states = await _testStates([
-        _movie('movie', 'Movie', MovieRate.liked),
-        _movie(
-          'tv',
-          'TV show',
-          MovieRate.liked,
-          movieType: MovieType.tv,
-        ),
-      ]);
-      addTearDown(states.movies.dispose);
-      addTearDown(states.user.dispose);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.binding.setSurfaceSize(const Size(390, 844));
-      await _pumpLibrary(
-        tester,
-        states,
-        size: const Size(390, 844),
-        textScale: 1,
-      );
-      await tester.tap(find.byKey(const Key('my-movies-tab-viewed')));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('viewed-advanced-filters')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('viewed-media-movies')));
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(
-          find.byKey(const Key('viewed-advanced-filter-sheet')), findsNothing);
-      expect(states.movies.hasViewedAdvancedFilters, isFalse);
-
-      await tester.tap(find.byKey(const Key('viewed-advanced-filters')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('viewed-media-tv')));
-      final sheetTop = tester
-          .getTopLeft(find.byKey(const Key('viewed-advanced-filter-sheet')))
-          .dy;
-      expect(sheetTop, greaterThan(0));
-      await tester.tapAt(Offset(20, sheetTop / 2));
-      await tester.pumpAndSettle();
-      expect(
-          find.byKey(const Key('viewed-advanced-filter-sheet')), findsNothing);
-      expect(states.movies.hasViewedAdvancedFilters, isFalse);
-      expect(find.text('Movie'), findsOneWidget);
-      expect(find.text('TV show'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  test('advanced filtering stays local and fast for a 240-title library',
-      () async {
-    final movies = List<Movie>.generate(
-      240,
-      (index) => _movie(
-        'rated-$index',
-        'Rated title $index',
-        MovieRate.liked,
-        movieType: index.isEven ? MovieType.movie : MovieType.tv,
-        genres: [index % 3 == 0 ? 'Drama' : 'Comedy'],
-      ),
-    );
-    final states = await _testStates(movies);
+  testWidgets('back and scrim dismiss advanced drafts without applying', (
+    tester,
+  ) async {
+    final states = await _testStates([
+      _movie('movie', 'Movie', MovieRate.liked),
+      _movie('tv', 'TV show', MovieRate.liked, movieType: MovieType.tv),
+    ]);
     addTearDown(states.movies.dispose);
     addTearDown(states.user.dispose);
-
-    final stopwatch = Stopwatch()..start();
-    states.movies.applyViewedAdvancedFilters(
-      mediaType: MovieType.tv,
-      genres: const ['Drama'],
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    await _pumpLibrary(
+      tester,
+      states,
+      size: const Size(390, 844),
+      textScale: 1,
     );
-    stopwatch.stop();
+    await tester.tap(find.byKey(const Key('my-movies-tab-viewed')));
+    await tester.pumpAndSettle();
 
-    expect(states.movies.viewedMovies, hasLength(40));
-    expect(
-      states.movies.viewedMovies.every(
-        (movie) =>
-            movie.movieType == MovieType.tv && movie.genres.contains('Drama'),
-      ),
-      isTrue,
-    );
-    expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 500)));
+    await tester.tap(find.byKey(const Key('viewed-advanced-filters')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('viewed-media-movies')));
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('viewed-advanced-filter-sheet')), findsNothing);
+    expect(states.movies.hasViewedAdvancedFilters, isFalse);
+
+    await tester.tap(find.byKey(const Key('viewed-advanced-filters')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('viewed-media-tv')));
+    final sheetTop = tester
+        .getTopLeft(find.byKey(const Key('viewed-advanced-filter-sheet')))
+        .dy;
+    expect(sheetTop, greaterThan(0));
+    await tester.tapAt(Offset(20, sheetTop / 2));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('viewed-advanced-filter-sheet')), findsNothing);
+    expect(states.movies.hasViewedAdvancedFilters, isFalse);
+    expect(find.text('Movie'), findsOneWidget);
+    expect(find.text('TV show'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
+
+  test(
+    'advanced filtering stays local and fast for a 240-title library',
+    () async {
+      final movies = List<Movie>.generate(
+        240,
+        (index) => _movie(
+          'rated-$index',
+          'Rated title $index',
+          MovieRate.liked,
+          movieType: index.isEven ? MovieType.movie : MovieType.tv,
+          genres: [index % 3 == 0 ? 'Drama' : 'Comedy'],
+        ),
+      );
+      final states = await _testStates(movies);
+      addTearDown(states.movies.dispose);
+      addTearDown(states.user.dispose);
+
+      final stopwatch = Stopwatch()..start();
+      states.movies.applyViewedAdvancedFilters(
+        mediaType: MovieType.tv,
+        genres: const ['Drama'],
+      );
+      stopwatch.stop();
+
+      expect(states.movies.viewedMovies, hasLength(40));
+      expect(
+        states.movies.viewedMovies.every(
+          (movie) =>
+              movie.movieType == MovieType.tv && movie.genres.contains('Drama'),
+        ),
+        isTrue,
+      );
+      expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 500)));
+    },
+  );
 
   testWidgets(
     'three-digit filter counts remain scrollable at compact text scale two',
     (tester) async {
       final movies = List<Movie>.generate(
         101,
-        (index) => _movie(
-          'liked-$index',
-          'Liked film $index',
-          MovieRate.liked,
-        ),
+        (index) => _movie('liked-$index', 'Liked film $index', MovieRate.liked),
       );
       final states = await _testStates(movies);
       addTearDown(states.movies.dispose);
@@ -505,49 +634,48 @@ void main() {
       expect(find.text('All 101'), findsOneWidget);
       expect(find.text('Liked 101'), findsOneWidget);
       expect(find.byKey(const Key('viewed-filter-scroll')), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'refresh failure is explicit and cached rows stay available',
-    (tester) async {
-      final states = await _testStates([
-        _movie('saved', 'Saved for later', MovieRate.addedToWatchlist),
-      ]);
-      addTearDown(states.movies.dispose);
-      addTearDown(states.user.dispose);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.binding.setSurfaceSize(const Size(360, 640));
-      var retries = 0;
-
-      await _pumpLibrary(
-        tester,
-        states,
-        size: const Size(360, 640),
-        textScale: 1,
-        refreshError: 'MovieDiary could not refresh your library.',
-        onRetry: () async => retries += 1,
+      expect(
+        tester.getSize(find.byKey(const Key('viewed-filter-all'))).height,
+        inInclusiveRange(44, 48),
       );
-
-      expect(find.text('Showing saved movies'), findsOneWidget);
-      expect(find.text('Saved for later'), findsOneWidget);
-      await tester.tap(find.byTooltip('Retry'));
-      await tester.pump();
-      expect(retries, 1);
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('refresh failure is explicit and cached rows stay available', (
+    tester,
+  ) async {
+    final states = await _testStates([
+      _movie('saved', 'Saved for later', MovieRate.addedToWatchlist),
+    ]);
+    addTearDown(states.movies.dispose);
+    addTearDown(states.user.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    var retries = 0;
+
+    await _pumpLibrary(
+      tester,
+      states,
+      size: const Size(360, 640),
+      textScale: 1,
+      refreshError: 'MovieDiary could not refresh your library.',
+      onRetry: () async => retries += 1,
+    );
+
+    expect(find.text('Showing saved movies'), findsOneWidget);
+    expect(find.text('Saved for later'), findsOneWidget);
+    await tester.tap(find.byTooltip('Retry'));
+    await tester.pump();
+    expect(retries, 1);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'tab progress owns segment selection and every page keeps its row mode',
     (tester) async {
       final states = await _testStates([
-        _movie(
-          'watchlist-row',
-          'Saved for later',
-          MovieRate.addedToWatchlist,
-        ),
+        _movie('watchlist-row', 'Saved for later', MovieRate.addedToWatchlist),
         _movie('viewed-row', 'Already watched', MovieRate.okay),
       ]);
       addTearDown(states.movies.dispose);
@@ -595,7 +723,7 @@ void main() {
       expect(
         find.descendant(
           of: viewedRow,
-          matching: find.text('Okay'),
+          matching: find.byIcon(Icons.sentiment_satisfied_alt_rounded),
           skipOffstage: false,
         ),
         findsOneWidget,
@@ -691,11 +819,7 @@ void main() {
       );
       final states = await _testStates([
         savedMovie,
-        _movie(
-          'stay-row',
-          'Keep this saved',
-          MovieRate.addedToWatchlist,
-        ),
+        _movie('stay-row', 'Keep this saved', MovieRate.addedToWatchlist),
       ]);
       addTearDown(states.movies.dispose);
       addTearDown(states.user.dispose);
@@ -741,7 +865,10 @@ void main() {
       );
       expect(viewedRow, findsOneWidget);
       expect(
-        find.descendant(of: viewedRow, matching: find.text('Okay')),
+        find.descendant(
+          of: viewedRow,
+          matching: find.byIcon(Icons.sentiment_satisfied_alt_rounded),
+        ),
         findsOneWidget,
       );
       expect(
@@ -779,19 +906,23 @@ Future<void> _pumpLibrary(
   String? refreshError,
   Future<void> Function()? onRetry,
   GlobalKey<MovieListState>? movieListKey,
+  MonetizationService? monetization,
 }) {
   return tester.pumpWidget(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<UserState>.value(value: states.user),
         ChangeNotifierProvider<MoviesState>.value(value: states.movies),
+        if (monetization != null)
+          ChangeNotifierProvider<MonetizationService>.value(
+            value: monetization,
+          ),
       ],
       child: MaterialApp(
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            size: size,
-            textScaler: TextScaler.linear(textScale),
-          ),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(size: size, textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
         home: MovieList(
@@ -858,8 +989,95 @@ class _TestStates {
   final UserState user;
   final MoviesState movies;
 
-  const _TestStates({
-    required this.user,
-    required this.movies,
-  });
+  const _TestStates({required this.user, required this.movies});
+}
+
+class _RolloutConfigTransport implements MonetizationConfigTransport {
+  @override
+  Future<Object?> fetch() async => MonetizationConfig.rolloutDefaults.toJson();
+}
+
+class _MemoryMonetizationCache implements MonetizationConfigCache {
+  String? value;
+
+  @override
+  Future<String?> read() async => value;
+
+  @override
+  Future<void> write(String value) async => this.value = value;
+}
+
+class _ReadyNativeGateway implements MonetizationInventoryGateway {
+  final List<({String placement, String surface, int position})> requests = [];
+
+  @override
+  Future<void> applyConfiguration(MonetizationConfig config) async {}
+
+  @override
+  NativeAdPlacementInventory createNativePlacementInventory({
+    required String placement,
+    required String sourceSurface,
+    required int contentPosition,
+  }) {
+    requests.add((
+      placement: placement,
+      surface: sourceSurface,
+      position: contentPosition,
+    ));
+    return _ReadyNativeInventory();
+  }
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> initializePrivacyForLaunch() async {}
+
+  @override
+  Future<void> markMeaningfulProductExperience() async {}
+
+  @override
+  Future<void> prepareRecommendationCompletionInterstitial() async {}
+
+  @override
+  Future<void> recordMonetizationInteraction(
+    MonetizationInteraction interaction,
+  ) async {}
+
+  @override
+  Future<void> recordRecommendationDeckCompleted({
+    required String completionId,
+    String? recommendationSessionId,
+    String? recommendationMode,
+    String? mediaType,
+  }) async {}
+
+  @override
+  Future<void> setEntitlementState({
+    required bool isPremium,
+    required bool isResolved,
+  }) async {}
+
+  @override
+  Future<AdPrivacyOptionsResult> showPrivacyOptions() async =>
+      AdPrivacyOptionsResult.notRequired;
+}
+
+class _ReadyNativeInventory extends ChangeNotifier
+    implements NativeAdPlacementInventory {
+  final NativeAdResource _resource = _TestNativeResource();
+
+  @override
+  NativeAdResource get resource => _resource;
+
+  @override
+  Future<AdPrepareResult> prepare() async => AdPrepareResult.ready;
+}
+
+class _TestNativeResource implements NativeAdResource {
+  @override
+  Widget buildView() => const ColoredBox(color: Color(0xffe6eef7));
+
+  @override
+  Future<void> dispose() async {}
 }

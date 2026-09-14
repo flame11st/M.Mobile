@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mmobile/Objects/recommendation_discovery_session.dart';
 import 'package:mmobile/Services/product_analytics.dart';
 
 void main() {
@@ -69,10 +70,203 @@ void main() {
           'premium_viewed',
           'premium_started',
           'premium_completed',
+          'native_ad_eligible',
+          'native_ad_impression',
+          'native_ad_clicked',
+          'native_ad_failed',
+          'interstitial_eligible',
+          'interstitial_loaded',
           'interstitial_shown',
           'interstitial_closed',
+          'interstitial_failed',
+          'interstitial_skipped_frequency_cap',
+          'interstitial_skipped_not_loaded',
+          'rewarded_offer_shown',
+          'rewarded_started',
+          'rewarded_completed',
+          'rewarded_dismissed',
+          'rewarded_failed',
+          'rewarded_credit_granted',
+          'rewarded_credit_consumed',
+          'rewarded_credit_restored',
+          'recommendation_free_deck_used',
+          'recommendation_limit_reached',
+          'recommendation_allowance_config_resolved',
+          'premium_offer_shown',
+          'premium_purchase_started',
+          'premium_purchase_completed',
+          'premium_purchase_failed',
+          'premium_restored',
+          'ad_revenue_paid',
           'user_exit_after_ad',
         ]));
+  });
+
+  test('monetization contract requires privacy-safe contexts', () async {
+    final analytics = createAnalytics();
+    await analytics.initialize();
+
+    expect(
+      await analytics.track(
+        ProductAnalyticsEventName.nativeAdImpression,
+        parameters: const {
+          ProductAnalyticsParameter.placement: 'discover_native',
+          ProductAnalyticsParameter.isPremium: false,
+          ProductAnalyticsParameter.movieId: 42,
+        },
+        transitionId: 'native-1',
+      ),
+      isFalse,
+    );
+    expect(
+      await analytics.track(
+        ProductAnalyticsEventName.interstitialShown,
+        parameters: const {
+          ProductAnalyticsParameter.placement: 'recommendation_completion',
+          ProductAnalyticsParameter.isPremium: false,
+        },
+        transitionId: 'interstitial-1',
+      ),
+      isFalse,
+    );
+    expect(analytics.queuedEvents, isEmpty);
+  });
+
+  test('completion and credit callbacks enqueue exactly once', () async {
+    final analytics = createAnalytics();
+    await analytics.initialize();
+    const parameters = {
+      ProductAnalyticsParameter.placement: 'extra_recommendation_rewarded',
+      ProductAnalyticsParameter.isPremium: false,
+    };
+
+    expect(
+      await analytics.track(
+        ProductAnalyticsEventName.rewardedCreditGranted,
+        parameters: parameters,
+      ),
+      isFalse,
+    );
+    expect(
+      await analytics.track(
+        ProductAnalyticsEventName.rewardedCreditGranted,
+        parameters: parameters,
+        transitionId: 'reward-callback-1',
+      ),
+      isTrue,
+    );
+    expect(
+      await analytics.track(
+        ProductAnalyticsEventName.rewardedCreditGranted,
+        parameters: parameters,
+        transitionId: 'reward-callback-1',
+      ),
+      isFalse,
+    );
+    expect(analytics.queuedEvents, hasLength(1));
+  });
+
+  test('durable reward ledger transitions emit after authority exactly once',
+      () async {
+    final analytics = createAnalytics();
+    const allowance = RecommendationAllowance(
+      limitReached: false,
+      isPremium: false,
+      meteringAvailable: true,
+      freeDecksPerDay: 2,
+      freeDecksUsed: 2,
+      freeDecksRemaining: 0,
+      rewardedDecksGranted: 1,
+      rewardedDecksUsed: 1,
+      resetAtUtc: null,
+      rewardedCreditTransitions: [
+        RewardedDeckCreditTransition(
+          transitionId: '11111111-1111-5111-8111-111111111111',
+          type: 'granted',
+          occurredAtUtc: null,
+        ),
+        RewardedDeckCreditTransition(
+          transitionId: '22222222-2222-5222-8222-222222222222',
+          type: 'consumed',
+          occurredAtUtc: null,
+        ),
+        RewardedDeckCreditTransition(
+          transitionId: '33333333-3333-5333-8333-333333333333',
+          type: 'restored',
+          occurredAtUtc: null,
+        ),
+      ],
+    );
+
+    await trackRewardedCreditTransitions(allowance, analytics: analytics);
+    await trackRewardedCreditTransitions(allowance, analytics: analytics);
+
+    expect(analytics.queuedEvents, hasLength(3));
+    expect(
+      analytics.queuedEvents.map((event) => event['name']),
+      containsAll([
+        'rewarded_credit_granted',
+        'rewarded_credit_consumed',
+        'rewarded_credit_restored',
+      ]),
+    );
+  });
+
+  test('allowance configuration outcome is privacy-safe and exactly once',
+      () async {
+    final analytics = createAnalytics();
+    const allowance = RecommendationAllowance(
+      limitReached: false,
+      isPremium: false,
+      meteringEnabled: false,
+      meteringAvailable: true,
+      rolloutConfigurationAvailable: false,
+      rolloutConfigurationSchemaVersion: 0,
+      rolloutConfigurationOutcome: 'remote_unavailable',
+      freeDecksPerDay: 2,
+      freeDecksUsed: 2,
+      freeDecksRemaining: 0,
+      resetAtUtc: null,
+    );
+
+    await trackRecommendationAllowanceConfiguration(
+      allowance,
+      analytics: analytics,
+    );
+    await trackRecommendationAllowanceConfiguration(
+      allowance,
+      analytics: analytics,
+    );
+
+    expect(analytics.queuedEvents, hasLength(1));
+    expect(
+      analytics.queuedEvents.single['name'],
+      'recommendation_allowance_config_resolved',
+    );
+    expect(
+      analytics.queuedEvents.single['parameters'],
+      {
+        'metering_enabled': false,
+        'rollout_configuration_available': false,
+        'rollout_configuration_schema_version': 0,
+        'rollout_configuration_outcome': 'remote_unavailable',
+      },
+    );
+  });
+
+  test('every monetization event declares required contexts', () {
+    expect(
+      MonetizationAnalyticsContract.requiredParameters.keys.toSet(),
+      MonetizationAnalyticsContract.eventNames,
+    );
+    expect(
+      MonetizationAnalyticsContract.allowedParameters,
+      isNot(contains(ProductAnalyticsParameter.movieId)),
+    );
+    expect(
+      MonetizationAnalyticsContract.allowedParameters,
+      isNot(contains(ProductAnalyticsParameter.opinionState)),
+    );
   });
 
   test('offline queue survives restart and drains with original event IDs',

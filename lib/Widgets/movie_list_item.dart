@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mmobile/Enums/movie_rate.dart';
+import 'package:flutter/semantics.dart';
 import 'package:mmobile/Enums/movie_type.dart';
 import 'package:mmobile/Objects/movie.dart';
 import 'package:mmobile/Objects/movies_list.dart';
@@ -10,21 +10,15 @@ import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Services/product_analytics.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
-import 'package:mmobile/Widgets/Shared/m_dialog.dart';
 import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:mmobile/Widgets/Shared/m_snack_bar.dart';
-import 'package:mmobile/Widgets/Shared/movie_rate_buttons.dart';
+import 'package:mmobile/Widgets/Shared/movie_status_control.dart';
 import 'package:mmobile/Widgets/mark_watched_bottom_sheet.dart';
 import 'package:mmobile/Widgets/movie_list_item_expanded.dart';
 import 'package:mmobile/Widgets/movies_lists_page.dart';
 import 'package:provider/provider.dart';
 
-enum MovieCardMode {
-  browse,
-  watchlist,
-  viewed,
-  personalList,
-}
+enum MovieCardMode { browse, watchlist, viewed, personalList }
 
 class MovieListItem extends StatelessWidget {
   final Movie movie;
@@ -33,6 +27,10 @@ class MovieListItem extends StatelessWidget {
   final bool shouldRequestReview;
   final MovieCardMode mode;
 
+  /// Optional contextual metadata below genres, sharing the canonical layout.
+  final Widget? supplementaryContent;
+  final EdgeInsetsGeometry margin;
+
   const MovieListItem({
     super.key,
     required this.movie,
@@ -40,34 +38,34 @@ class MovieListItem extends StatelessWidget {
     this.preferredPersonalList,
     this.shouldRequestReview = false,
     this.mode = MovieCardMode.browse,
+    this.supplementaryContent,
+    this.margin = const EdgeInsets.symmetric(
+      horizontal: Md3Spacing.x12,
+      vertical: 6,
+    ),
   });
 
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-    final matchingMovies =
-        moviesState.userMovies.where((element) => element.id == movie.id);
-    final currentMovie =
-        matchingMovies.isNotEmpty ? matchingMovies.first : movie;
+    final matchingMovies = moviesState.userMovies.where(
+      (element) => element.id == movie.id,
+    );
+    final currentMovie = matchingMovies.isNotEmpty
+        ? matchingMovies.first
+        : movie;
     final mediaQuery = MediaQuery.of(context);
     final isCompactPoster = mediaQuery.size.width <= 390;
-    final wrapsPrimaryAction =
-        mediaQuery.size.width < 390 || mediaQuery.textScaler.scale(1) >= 1.5;
     final posterWidth = isCompactPoster ? 72.0 : 80.0;
     final posterHeight = isCompactPoster ? 108.0 : 120.0;
     final isWatchlist = mode == MovieCardMode.watchlist;
-    final showStatus =
-        !isWatchlist && currentMovie.movieRate != MovieRate.notRated;
 
     return Hero(
       tag: 'movie-hero-animation${movie.id}',
       child: Material(
         color: Colors.transparent,
         child: Container(
-          margin: const EdgeInsets.symmetric(
-            horizontal: Md3Spacing.x12,
-            vertical: 6,
-          ),
+          margin: margin,
           decoration: BoxDecoration(
             color: Md3Colors.surface,
             borderRadius: BorderRadius.circular(Md3Radius.card),
@@ -75,58 +73,47 @@ class MovieListItem extends StatelessWidget {
             boxShadow: Md3Shadows.contentCard,
           ),
           child: Material(
+            key: ValueKey('movie-card-surface-${movie.id}'),
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(Md3Radius.card),
             clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.all(Md3Spacing.x12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
+            child: Semantics(
+              container: true,
+              explicitChildNodes: true,
+              button: true,
+              label: 'Open ${currentMovie.title} details',
+              onTap: () => _openDetails(context, currentMovie),
+              child: InkWell(
+                key: ValueKey('movie-card-details-action-${movie.id}'),
+                excludeFromSemantics: true,
+                borderRadius: BorderRadius.circular(Md3Radius.card),
+                onTap: () => _openDetails(context, currentMovie),
+                child: Padding(
+                  padding: const EdgeInsets.all(Md3Spacing.x12),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      InkWell(
-                        excludeFromSemantics: true,
-                        borderRadius: BorderRadius.circular(Md3Radius.poster),
-                        onTap: () => _openDetails(context, currentMovie),
-                        child: Md3MoviePoster(
-                          movie: currentMovie,
-                          width: posterWidth,
-                          height: posterHeight,
-                          borderRadius: Md3Radius.poster,
-                        ),
+                      Md3MoviePoster(
+                        movie: currentMovie,
+                        width: posterWidth,
+                        height: posterHeight,
+                        borderRadius: Md3Radius.poster,
                       ),
                       const SizedBox(width: Md3Spacing.x12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Semantics(
-                              container: true,
-                              button: true,
-                              excludeSemantics: true,
-                              label: 'Open ${currentMovie.title} details',
-                              onTap: () => _openDetails(context, currentMovie),
-                              child: InkWell(
-                                excludeFromSemantics: true,
-                                borderRadius: BorderRadius.circular(
-                                  Md3Radius.medium,
-                                ),
-                                onTap: () =>
-                                    _openDetails(context, currentMovie),
-                                child: _MovieCardContent(
-                                  movie: currentMovie,
-                                  showStatus: showStatus,
-                                ),
-                              ),
+                        child: _MovieCardContent(
+                          movie: currentMovie,
+                          supplementaryContent: supplementaryContent,
+                          trailingAction: MovieStatusControl(
+                            key: ValueKey(
+                              'movie-card-trailing-action-${movie.id}',
                             ),
-                            if (isWatchlist && !wrapsPrimaryAction) ...[
-                              const SizedBox(height: Md3Spacing.x12),
-                              ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 184),
-                                child: _MarkWatchedButton(
+                            movie: currentMovie,
+                            onPressed: () =>
+                                _openActionsSheet(context, currentMovie),
+                          ),
+                          markWatchedAction: isWatchlist
+                              ? _MarkWatchedButton(
                                   key: const Key(
                                     'movie-card-mark-watched-action',
                                   ),
@@ -134,29 +121,13 @@ class MovieListItem extends StatelessWidget {
                                     context,
                                     currentMovie,
                                   ),
-                                ),
-                              ),
-                            ],
-                          ],
+                                )
+                              : null,
                         ),
-                      ),
-                      const SizedBox(width: Md3Spacing.x8),
-                      _CardIconAction(
-                        tooltip: 'Movie actions',
-                        onPressed: () =>
-                            _openActionsSheet(context, currentMovie),
                       ),
                     ],
                   ),
-                  if (isWatchlist && wrapsPrimaryAction) ...[
-                    const SizedBox(height: Md3Spacing.x12),
-                    _MarkWatchedButton(
-                      key: const Key('movie-card-mark-watched-action'),
-                      onPressed: () =>
-                          _openMarkWatchedSheet(context, currentMovie),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
@@ -182,8 +153,8 @@ class MovieListItem extends StatelessWidget {
     showMarkWatchedBottomSheet(context: context, movie: currentMovie);
   }
 
-  void _openActionsSheet(BuildContext context, Movie currentMovie) {
-    showMd3BottomSheet<void>(
+  Future<void> _openActionsSheet(BuildContext context, Movie currentMovie) {
+    return showMd3BottomSheet<void>(
       context: context,
       builder: (sheetContext) => _MovieRowActionsSheet(
         movie: currentMovie,
@@ -192,10 +163,6 @@ class MovieListItem extends StatelessWidget {
         mode: mode,
         shouldRequestReview: shouldRequestReview,
         parentContext: context,
-        onOpenDetails: () {
-          Navigator.of(sheetContext).pop();
-          _openDetails(context, currentMovie);
-        },
       ),
     );
   }
@@ -203,71 +170,98 @@ class MovieListItem extends StatelessWidget {
 
 class _MovieCardContent extends StatelessWidget {
   final Movie movie;
-  final bool showStatus;
+  final Widget trailingAction;
+  final Widget? markWatchedAction;
+  final Widget? supplementaryContent;
 
   const _MovieCardContent({
     required this.movie,
-    required this.showStatus,
+    required this.trailingAction,
+    required this.markWatchedAction,
+    this.supplementaryContent,
   });
 
   @override
   Widget build(BuildContext context) {
     final runtime = movie.movieType == MovieType.tv
         ? movie.seasonsCount > 0
-            ? '${movie.seasonsCount} season${movie.seasonsCount == 1 ? '' : 's'}'
-            : movie.averageTimeOfEpisode > 0
-                ? '${movie.averageTimeOfEpisode} min'
-                : null
+              ? '${movie.seasonsCount} season${movie.seasonsCount == 1 ? '' : 's'}'
+              : movie.averageTimeOfEpisode > 0
+              ? '${movie.averageTimeOfEpisode} min'
+              : null
         : movie.duration > 0
-            ? '${movie.duration} min'
-            : null;
+        ? '${movie.duration} min'
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 1),
-          child: Text(
-            movie.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Md3Colors.text,
-              fontSize: 17,
-              height: 22 / 17,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _MetadataPill(text: '${movie.releaseDate.year}'),
-            if (runtime != null) _MetadataPill(text: runtime),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Text(
+                      movie.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Md3Colors.text,
+                        fontSize: 17,
+                        height: 22 / 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _MetadataPill(text: '${movie.releaseDate.year}'),
+                      if (runtime != null) _MetadataPill(text: runtime),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    movie.genres.isNotEmpty
+                        ? movie.genres.take(3).join(', ')
+                        : movie.movieType == MovieType.tv
+                        ? 'TV Series'
+                        : 'Movie',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Md3Colors.muted,
+                      fontSize: 13,
+                      height: 18 / 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (markWatchedAction != null) ...[
+                    const SizedBox(height: Md3Spacing.x8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: 1,
+                      heightFactor: 1,
+                      child: markWatchedAction!,
+                    ),
+                  ],
+                  if (supplementaryContent != null) ...[
+                    const SizedBox(height: Md3Spacing.x4),
+                    supplementaryContent!,
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: Md3Spacing.x8),
+            trailingAction,
           ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          movie.genres.isNotEmpty
-              ? movie.genres.take(3).join(', ')
-              : movie.movieType == MovieType.tv
-                  ? 'TV Series'
-                  : 'Movie',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Md3Colors.muted,
-            fontSize: 13,
-            height: 18 / 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (showStatus) ...[
-          const SizedBox(height: 10),
-          Md3OpinionBadge(movieRate: movie.movieRate),
-        ],
       ],
     );
   }
@@ -280,68 +274,35 @@ class _MarkWatchedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 44,
-      child: FilledButton.icon(
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          backgroundColor: Md3Colors.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        onPressed: onPressed,
-        icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-        label: const Text(
-          'Mark watched',
-          maxLines: 1,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: Md3Targets.minimum,
+        maxWidth: 184,
       ),
-    );
-  }
-}
-
-class _CardIconAction extends StatelessWidget {
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  const _CardIconAction({
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
       child: Semantics(
-        container: true,
-        button: true,
-        label: tooltip,
-        onTap: onPressed,
-        child: ExcludeSemantics(
-          child: IconButton(
-            tooltip: tooltip,
-            style: IconButton.styleFrom(
-              backgroundColor: Md3Colors.primarySoft,
-              foregroundColor: Md3Colors.primary,
-              minimumSize: const Size(44, 44),
-              maximumSize: const Size(44, 44),
-              padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+        sortKey: const OrdinalSortKey(2),
+        child: FilledButton.icon(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(0, Md3Targets.minimum),
+            padding: const EdgeInsets.symmetric(horizontal: Md3Spacing.x12),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            backgroundColor: Md3Colors.primarySoft,
+            foregroundColor: Md3Colors.primary,
+            elevation: 0,
+            side: BorderSide(color: Md3Colors.primary.withValues(alpha: 0.22)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Md3Radius.button),
             ),
-            onPressed: onPressed,
-            icon: const Icon(Icons.more_horiz_rounded, size: 21),
+          ),
+          onPressed: onPressed,
+          icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+          label: const Text(
+            'Mark watched',
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.fade,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
           ),
         ),
       ),
@@ -356,7 +317,6 @@ class _MovieRowActionsSheet extends StatefulWidget {
   final MovieCardMode mode;
   final bool shouldRequestReview;
   final BuildContext parentContext;
-  final VoidCallback onOpenDetails;
 
   const _MovieRowActionsSheet({
     required this.movie,
@@ -365,7 +325,6 @@ class _MovieRowActionsSheet extends StatefulWidget {
     required this.mode,
     required this.shouldRequestReview,
     required this.parentContext,
-    required this.onOpenDetails,
   });
 
   @override
@@ -373,18 +332,15 @@ class _MovieRowActionsSheet extends StatefulWidget {
 }
 
 class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
-  bool _updatingWatchlist = false;
-
   @override
   Widget build(BuildContext context) {
     final moviesState = Provider.of<MoviesState>(context);
-    final matchingMovies = moviesState.userMovies
-        .where((element) => element.id == widget.movie.id);
-    final currentMovie =
-        matchingMovies.isNotEmpty ? matchingMovies.first : widget.movie;
-    final isWatchlist = currentMovie.movieRate == MovieRate.addedToWatchlist ||
-        widget.mode == MovieCardMode.watchlist;
-    final isViewed = MovieRate.isViewed(currentMovie.movieRate);
+    final matchingMovies = moviesState.userMovies.where(
+      (element) => element.id == widget.movie.id,
+    );
+    final currentMovie = matchingMovies.isNotEmpty
+        ? matchingMovies.first
+        : widget.movie;
 
     return Md3BottomSheetSurface(
       child: Column(
@@ -440,56 +396,18 @@ class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
               ),
             ],
           ),
-          if (currentMovie.movieRate != MovieRate.notRated) ...[
-            const SizedBox(height: 12),
-            Md3OpinionBadge(movieRate: currentMovie.movieRate),
-          ],
           const SizedBox(height: 16),
-          if (isWatchlist)
-            _SheetActionButton(
-              label: 'Mark watched',
-              detail: 'Move to Viewed and save your opinion.',
-              icon: Icons.check_circle_outline_rounded,
-              color: Md3Colors.primary,
-              filled: true,
-              onTap: () => _openMarkWatched(currentMovie),
-            )
-          else
-            _SheetActionButton(
-              label: isViewed ? 'Move to Watchlist' : 'Add to Watchlist',
-              detail: isViewed
-                  ? 'Your current rating will be removed.'
-                  : 'Save it for later.',
-              icon: Icons.bookmark_add_rounded,
-              color: Md3Colors.primary,
-              filled: true,
-              busy: _updatingWatchlist,
-              onTap: _updatingWatchlist
-                  ? null
-                  : () => _moveToWatchlist(currentMovie, isViewed: isViewed),
-            ),
-          const SizedBox(height: 12),
-          _SheetActionButton(
-            label: isViewed ? 'Change rating' : 'Rate now',
-            detail: 'Pick Liked, Okay, or Disliked.',
-            icon: Icons.favorite_rounded,
-            color: Md3Colors.success,
-            onTap: () => _openRating(currentMovie),
+          MovieStatusSelector(
+            movie: currentMovie,
+            shouldRequestReview: widget.shouldRequestReview,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _PersonalListAction(
             movie: currentMovie,
             currentList: widget.moviesList,
             preferredList: widget.preferredPersonalList,
           ),
           const SizedBox(height: 12),
-          _SheetActionButton(
-            label: 'Open details',
-            detail: 'Open cast, story, ratings, and where to watch.',
-            icon: Icons.info_outline_rounded,
-            color: Md3Colors.muted,
-            onTap: widget.onOpenDetails,
-          ),
           if (widget.moviesList != null) ...[
             const SizedBox(height: 8),
             const Divider(color: Md3Colors.border),
@@ -501,129 +419,6 @@ class _MovieRowActionsSheetState extends State<_MovieRowActionsSheet> {
           ],
         ],
       ),
-    );
-  }
-
-  void _openMarkWatched(Movie currentMovie) {
-    Navigator.of(context).pop();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.parentContext.mounted) {
-        showMarkWatchedBottomSheet(
-          context: widget.parentContext,
-          movie: currentMovie,
-        );
-      }
-    });
-  }
-
-  void _openRating(Movie currentMovie) {
-    Navigator.of(context).pop();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!widget.parentContext.mounted) {
-        return;
-      }
-
-      showMd3BottomSheet<void>(
-        context: widget.parentContext,
-        builder: (context) => MovieRateButtons(
-          moviesList: widget.moviesList,
-          movie: currentMovie,
-          showTitle: true,
-          addMargin: false,
-          shouldRequestReview: widget.shouldRequestReview,
-        ),
-      );
-    });
-  }
-
-  Future<void> _moveToWatchlist(
-    Movie currentMovie, {
-    required bool isViewed,
-  }) async {
-    if (isViewed) {
-      final ratingLabel = MovieRate.opinionLabel(currentMovie.movieRate);
-      final confirmed = await showMd3ConfirmationDialog(
-        context: context,
-        title: 'Move to Watchlist?',
-        body: 'Your $ratingLabel rating will be removed when '
-            '${currentMovie.title} moves back to Watchlist.',
-        confirmLabel: 'Move to Watchlist',
-        onConfirm: () {},
-      );
-      if (!confirmed || !mounted) {
-        return;
-      }
-    }
-
-    setState(() => _updatingWatchlist = true);
-    final moviesState = Provider.of<MoviesState>(context, listen: false);
-    final userState = Provider.of<UserState>(context, listen: false);
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    final previousRate = currentMovie.movieRate;
-
-    try {
-      await moviesState.changeMovieRate(
-        currentMovie.id,
-        MovieRate.addedToWatchlist,
-        userState.isIncognitoMode,
-        currentMovie,
-      );
-
-      if (!userState.isIncognitoMode) {
-        final userId = userState.userId;
-        if (userId == null || userId.isEmpty || ServiceAgent.state == null) {
-          throw const HttpException('Signed-in movie update is unavailable.');
-        }
-
-        final response = await ServiceAgent().rateMovie(
-          currentMovie.id,
-          userId,
-          MovieRate.addedToWatchlist,
-        );
-        if (response.statusCode < 200 || response.statusCode >= 300) {
-          throw HttpException(
-            'Movie update failed with ${response.statusCode}.',
-          );
-        }
-      }
-    } catch (_) {
-      await moviesState.changeMovieRate(
-        currentMovie.id,
-        previousRate,
-        userState.isIncognitoMode,
-        currentMovie,
-      );
-      if (!mounted) {
-        return;
-      }
-
-      setState(() => _updatingWatchlist = false);
-      MSnackBar.showWithMessenger(
-        messenger,
-        'Couldn’t update ${currentMovie.title}. Try again.',
-        false,
-        duration: const Duration(milliseconds: 2500),
-      );
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    unawaited(trackMovieStateTransition(
-      movieId: currentMovie.id,
-      previousRate: previousRate,
-      nextRate: MovieRate.addedToWatchlist,
-      sourceSurface: 'movie_actions',
-    ));
-    navigator.pop();
-    MSnackBar.showWithMessenger(
-      messenger,
-      isViewed ? 'Moved to Watchlist. Rating removed.' : 'Added to Watchlist.',
-      true,
-      duration: const Duration(milliseconds: 2500),
     );
   }
 }
@@ -647,9 +442,9 @@ class _PersonalListAction extends StatelessWidget {
     final livePreferredList = preferredList == null
         ? null
         : userLists.cast<MoviesList?>().firstWhere(
-              (list) => identical(list, preferredList),
-              orElse: () => null,
-            );
+            (list) => identical(list, preferredList),
+            orElse: () => null,
+          );
 
     if (preferredList != null && livePreferredList == null) {
       return Column(
@@ -695,8 +490,9 @@ class _PersonalListAction extends StatelessWidget {
           ),
           if (otherLists.isNotEmpty)
             Theme(
-              data:
-                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
               child: Material(
                 color: Colors.transparent,
                 child: ExpansionTile(
@@ -802,9 +598,7 @@ class _OriginListUnavailableNotice extends StatelessWidget {
       decoration: BoxDecoration(
         color: Md3Colors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Md3Colors.warning.withValues(alpha: 0.32),
-        ),
+        border: Border.all(color: Md3Colors.warning.withValues(alpha: 0.32)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -853,19 +647,20 @@ class _ListChoiceState extends State<_ListChoice> {
 
   @override
   Widget build(BuildContext context) {
-    final movieInList = widget.moviesList.listMovies
-        .any((element) => element.id == widget.movie.id);
+    final movieInList = widget.moviesList.listMovies.any(
+      (element) => element.id == widget.movie.id,
+    );
     final title = widget.preferred
         ? movieInList
-            ? 'Added to ${widget.moviesList.name}'
-            : 'Add to ${widget.moviesList.name}'
+              ? 'Added to ${widget.moviesList.name}'
+              : 'Add to ${widget.moviesList.name}'
         : widget.moviesList.name;
     final detail = widget.preferred
         ? movieInList
-            ? 'Already in your open personal list.'
-            : 'Your open personal list.'
+              ? 'Already in your open personal list.'
+              : 'Your open personal list.'
         : '${widget.moviesList.listMovies.length} '
-            'item${widget.moviesList.listMovies.length == 1 ? '' : 's'}';
+              'item${widget.moviesList.listMovies.length == 1 ? '' : 's'}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -873,8 +668,8 @@ class _ListChoiceState extends State<_ListChoice> {
         color: widget.preferred
             ? Md3Colors.primarySoft
             : movieInList
-                ? Md3Colors.surfaceMuted
-                : Md3Colors.background,
+            ? Md3Colors.surfaceMuted
+            : Md3Colors.background,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -969,10 +764,7 @@ class _ListChoiceState extends State<_ListChoice> {
         }
       }
 
-      moviesState.addMovieToPersonalList(
-        widget.moviesList.name,
-        widget.movie,
-      );
+      moviesState.addMovieToPersonalList(widget.moviesList.name, widget.movie);
     } catch (_) {
       if (!mounted) {
         return;
@@ -992,13 +784,15 @@ class _ListChoiceState extends State<_ListChoice> {
       return;
     }
 
-    unawaited(ProductAnalytics.instance.track(
-      ProductAnalyticsEventName.personalListItemAdded,
-      parameters: {
-        ProductAnalyticsParameter.movieId: widget.movie.id,
-        ProductAnalyticsParameter.sourceSurface: 'movie_actions',
-      },
-    ));
+    unawaited(
+      ProductAnalytics.instance.track(
+        ProductAnalyticsEventName.personalListItemAdded,
+        parameters: {
+          ProductAnalyticsParameter.movieId: widget.movie.id,
+          ProductAnalyticsParameter.sourceSurface: 'movie_actions',
+        },
+      ),
+    );
     navigator.pop();
     MSnackBar.showWithMessenger(
       messenger,
@@ -1013,10 +807,7 @@ class _RemoveFromListAction extends StatefulWidget {
   final Movie movie;
   final MoviesList moviesList;
 
-  const _RemoveFromListAction({
-    required this.movie,
-    required this.moviesList,
-  });
+  const _RemoveFromListAction({required this.movie, required this.moviesList});
 
   @override
   State<_RemoveFromListAction> createState() => _RemoveFromListActionState();
@@ -1101,7 +892,7 @@ class _SheetActionButton extends StatelessWidget {
   final String detail;
   final IconData icon;
   final Color color;
-  final bool filled;
+  final bool filled = false;
   final bool busy;
   final VoidCallback? onTap;
 
@@ -1111,7 +902,6 @@ class _SheetActionButton extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onTap,
-    this.filled = false,
     this.busy = false,
   });
 
@@ -1120,8 +910,9 @@ class _SheetActionButton extends StatelessWidget {
     final isLargeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
     final background = filled ? color : Md3Colors.background;
     final foreground = filled ? Colors.white : Md3Colors.text;
-    final detailColor =
-        filled ? Colors.white.withValues(alpha: 0.82) : Md3Colors.muted;
+    final detailColor = filled
+        ? Colors.white.withValues(alpha: 0.82)
+        : Md3Colors.muted;
 
     return Material(
       color: background,
