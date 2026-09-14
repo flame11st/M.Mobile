@@ -886,7 +886,12 @@ void main() {
     expect(find.textContaining("used today's 2 free decks"), findsOneWidget);
     expect(find.textContaining('00:00 UTC'), findsOneWidget);
     expect(find.text('View saved decks'), findsOneWidget);
-    expect(find.text('Open saved decks'), findsOneWidget);
+    expect(find.text('Open saved decks'), findsNothing);
+    expect(find.text('Watch ad for another deck'), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(find.byKey(const Key('recommendation-primary-command'))).onPressed,
+      isNull,
+    );
     expect(find.text('Rate more'), findsNothing);
     expect(find.text('Try Adventurous'), findsNothing);
     expect(find.textContaining('reward'), findsNothing);
@@ -977,7 +982,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('reward credit refreshes a cached limited deck', (tester) async {
+  testWidgets('closing rewarded sheet refreshes the cached deck button', (
+    tester,
+  ) async {
     final states = await _testStates();
     final flow = _rewardedFlow();
     addTearDown(flow.dispose);
@@ -1050,7 +1057,14 @@ void main() {
 
     await tester.tap(find.text('Watch ad & continue'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Build recommendation deck'));
+    expect(service.calls, hasLength(1));
+    await tester.tap(find.text('Not now'));
+    await tester.pumpAndSettle();
+    expect(find.text('Watch ad for another deck'), findsNothing);
+    expect(find.text('Refresh Deck'), findsOneWidget);
+    expect(service.calls, hasLength(1));
+    expect(find.text('Cached Pick'), findsOneWidget);
+    await tester.tap(find.text('Refresh Deck'));
     await tester.pumpAndSettle();
 
     expect(service.calls, hasLength(2));
@@ -1106,10 +1120,10 @@ void main() {
 
     await tester.tap(find.text('Start Discovery'));
     await tester.pumpAndSettle();
-    expect(find.text('Use extra deck'), findsOneWidget);
+    expect(find.text('Refresh Deck'), findsOneWidget);
     expect(find.text('More recommendations'), findsNothing);
 
-    await tester.tap(find.text('Use extra deck'));
+    await tester.tap(find.text('Refresh Deck'));
     await tester.pumpAndSettle();
 
     expect(service.calls, hasLength(2));
@@ -1365,7 +1379,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Balanced'), findsOneWidget);
-      expect(find.text('Rate more'), findsOneWidget);
+      expect(find.text('Refresh Deck'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await _pumpRecommendations(

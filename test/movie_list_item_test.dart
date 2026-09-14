@@ -19,6 +19,49 @@ import 'package:provider/provider.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets('Mark watched hint appears above once and survives relaunch', (tester) async {
+    final states = await _testStates();
+    addTearDown(states.movies.dispose);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    await _pumpRow(tester, states, movieId: 'watchlist', mode: MovieCardMode.watchlist, textScale: 1, topPadding: 100);
+    await tester.pumpAndSettle();
+    final action = find.byKey(const Key('movie-card-mark-watched-action'));
+    final originalSize = tester.getSize(find.byKey(const ValueKey('movie-card-surface-watchlist')));
+    expect(find.text('Mark watched'), findsOneWidget);
+    expect(tester.getRect(find.text('Mark watched')).bottom, lessThan(tester.getRect(action).top));
+    expect(tester.getSize(action), const Size(44, 44));
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    expect(find.text('Mark watched'), findsNothing);
+    expect(tester.getSize(find.byKey(const ValueKey('movie-card-surface-watchlist'))), originalSize);
+    await tester.pumpWidget(const SizedBox.shrink());
+    final restartedUser = UserState(storage: states.user.storage);
+    await restartedUser.initialization;
+    final restarted = _TestStates(user: restartedUser, movies: states.movies);
+    await _pumpRow(tester, restarted, movieId: 'watchlist', mode: MovieCardMode.watchlist, textScale: 1, topPadding: 100);
+    await tester.pumpAndSettle();
+    expect(find.text('Mark watched'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  test('Mark watched hint is claimed once across rows and separately per profile', () async {
+    final states = await _testStates();
+    addTearDown(states.movies.dispose);
+    var shown = 0;
+    bool show() { shown++; return true; }
+    await states.user.showMarkWatchedHintOnce(() => false);
+    await Future.wait([
+      states.user.showMarkWatchedHintOnce(show),
+      states.user.showMarkWatchedHintOnce(show),
+    ]);
+    await states.user.showMarkWatchedHintOnce(show);
+    expect(shown, 1);
+    states.user.userId = 'another-profile';
+    await states.user.showMarkWatchedHintOnce(show);
+    expect(shown, 2);
+  });
+
   testWidgets('movie row system has no overflow across the target matrix', (
     tester,
   ) async {
@@ -48,12 +91,12 @@ void main() {
           );
 
           if (configuration.$2 == MovieCardMode.watchlist) {
-            expect(find.text('Mark watched'), findsOneWidget);
+            expect(find.byKey(const Key('movie-card-mark-watched-action')), findsOneWidget);
             expect(find.text('Mark\nWatched'), findsNothing);
           } else {
-            expect(find.text('Mark watched'), findsNothing);
+            expect(find.byKey(const Key('movie-card-mark-watched-action')), findsNothing);
           }
-          expect(find.byType(MovieStatusControl), findsOneWidget);
+          expect(find.byType(MovieStatusControl), configuration.$2 == MovieCardMode.watchlist ? findsNothing : findsOneWidget);
           expect(
             tester.takeException(),
             isNull,
@@ -330,8 +373,8 @@ void main() {
         final trailing = find.byKey(
           ValueKey('movie-card-trailing-action-${configuration.$3}'),
         );
-        expect(tester.getTopLeft(action).dx, closeTo(titleLeft, 0.5));
-        expect(actionSize.height, greaterThanOrEqualTo(Md3Targets.minimum));
+        expect(tester.getTopLeft(action).dx, greaterThan(titleLeft));
+        expect(actionSize, const Size(44, 44));
         expect(
           actionSize.width,
           lessThan(tester.getSize(rowCard).width * 0.62),
@@ -342,21 +385,34 @@ void main() {
           configuration.$2 == 1 ? lessThan(180) : lessThan(250),
           reason: '${configuration.$1} at ${configuration.$2}x',
         );
-        expect(find.text('Mark watched'), findsOneWidget);
+        expect(find.byKey(const Key('movie-card-mark-watched-action')), findsOneWidget);
         expect(
           find.bySemanticsLabel(RegExp(r'Movie actions\.')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(tester.takeException(), isNull);
 
-        final button = tester.widget<FilledButton>(
-          find.descendant(of: action, matching: find.byType(FilledButton)),
+        final button = tester.widget<IconButton>(
+          find.descendant(of: action, matching: find.byType(IconButton)),
         );
         expect(
           button.style?.backgroundColor?.resolve({}),
           Md3Colors.primarySoft,
         );
         expect(button.style?.foregroundColor?.resolve({}), Md3Colors.primary);
+        final watchlistSize = tester.getSize(rowCard);
+        final watchlistTitlePosition = tester.getTopLeft(find.text(movie.title));
+        await _pumpRow(
+          tester,
+          states,
+          movieId: configuration.$3,
+          mode: MovieCardMode.browse,
+          textScale: configuration.$2,
+        );
+        expect(tester.getSize(rowCard), watchlistSize);
+        expect(tester.getTopLeft(find.text(movie.title)), watchlistTitlePosition);
+        expect(find.byType(MovieStatusControl), findsOneWidget);
+        expect(find.byKey(const Key('movie-card-mark-watched-action')), findsNothing);
       }
     },
   );
@@ -379,9 +435,10 @@ void main() {
     );
     final pushesBeforeAction = observer.pushCount;
     expect(find.bySemanticsLabel('Mark watched'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp(r'Movie actions\.')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'Movie actions\.')), findsNothing);
 
-    await tester.tap(find.text('Mark watched'));
+    await tester.tap(find.byKey(const Key('movie-card-mark-watched-action')));
+    await tester.tap(find.byKey(const Key('movie-card-mark-watched-action')), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.text('How was it?'), findsOneWidget);
     expect(find.byType(Md3BottomSheetSurface), findsOneWidget);
@@ -772,6 +829,7 @@ Future<void> _pumpRow(
   required MovieCardMode mode,
   required double textScale,
   NavigatorObserver? observer,
+  double topPadding = 0,
 }) {
   return tester.pumpWidget(
     _app(
@@ -781,6 +839,7 @@ Future<void> _pumpRow(
       home: Scaffold(
         backgroundColor: Md3Colors.background,
         body: SingleChildScrollView(
+          padding: EdgeInsets.only(top: topPadding),
           child: MovieListItem(
             movie: states.movies.userMovies.firstWhere(
               (movie) => movie.id == movieId,

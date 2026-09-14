@@ -90,42 +90,60 @@ class MovieListItem extends StatelessWidget {
                 onTap: () => _openDetails(context, currentMovie),
                 child: Padding(
                   padding: const EdgeInsets.all(Md3Spacing.x12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Md3MoviePoster(
-                        movie: currentMovie,
-                        width: posterWidth,
-                        height: posterHeight,
-                        borderRadius: Md3Radius.poster,
-                      ),
-                      const SizedBox(width: Md3Spacing.x12),
-                      Expanded(
-                        child: _MovieCardContent(
-                          movie: currentMovie,
-                          supplementaryContent: supplementaryContent,
-                          trailingAction: MovieStatusControl(
-                            key: ValueKey(
-                              'movie-card-trailing-action-${movie.id}',
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          width: posterWidth,
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Md3MoviePoster(
+                              movie: currentMovie,
+                              width: posterWidth,
+                              height: posterHeight,
+                              borderRadius: Md3Radius.poster,
                             ),
-                            movie: currentMovie,
-                            onPressed: () =>
-                                _openActionsSheet(context, currentMovie),
                           ),
-                          markWatchedAction: isWatchlist
-                              ? _MarkWatchedButton(
-                                  key: const Key(
-                                    'movie-card-mark-watched-action',
-                                  ),
-                                  onPressed: () => _openMarkWatchedSheet(
-                                    context,
-                                    currentMovie,
-                                  ),
-                                )
-                              : null,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: Md3Spacing.x12),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: _MovieCardContent(
+                              movie: currentMovie,
+                              supplementaryContent: supplementaryContent,
+                              trailingAction: isWatchlist
+                                  ? KeyedSubtree(
+                                      key: ValueKey(
+                                        'movie-card-trailing-action-${movie.id}',
+                                      ),
+                                      child: _MarkWatchedButton(
+                                        key: const Key(
+                                          'movie-card-mark-watched-action',
+                                        ),
+                                        movie: currentMovie,
+                                        onPressed: () => _openMarkWatchedSheet(
+                                          context,
+                                          currentMovie,
+                                        ),
+                                      ),
+                                    )
+                                  : MovieStatusControl(
+                                      key: ValueKey(
+                                        'movie-card-trailing-action-${movie.id}',
+                                      ),
+                                      movie: currentMovie,
+                                      onPressed: () => _openActionsSheet(
+                                        context,
+                                        currentMovie,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -149,8 +167,8 @@ class MovieListItem extends StatelessWidget {
     );
   }
 
-  void _openMarkWatchedSheet(BuildContext context, Movie currentMovie) {
-    showMarkWatchedBottomSheet(context: context, movie: currentMovie);
+  Future<int?> _openMarkWatchedSheet(BuildContext context, Movie currentMovie) {
+    return showMarkWatchedBottomSheet(context: context, movie: currentMovie);
   }
 
   Future<void> _openActionsSheet(BuildContext context, Movie currentMovie) {
@@ -171,13 +189,11 @@ class MovieListItem extends StatelessWidget {
 class _MovieCardContent extends StatelessWidget {
   final Movie movie;
   final Widget trailingAction;
-  final Widget? markWatchedAction;
   final Widget? supplementaryContent;
 
   const _MovieCardContent({
     required this.movie,
     required this.trailingAction,
-    required this.markWatchedAction,
     this.supplementaryContent,
   });
 
@@ -242,15 +258,6 @@ class _MovieCardContent extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (markWatchedAction != null) ...[
-                    const SizedBox(height: Md3Spacing.x8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: 1,
-                      heightFactor: 1,
-                      child: markWatchedAction!,
-                    ),
-                  ],
                   if (supplementaryContent != null) ...[
                     const SizedBox(height: Md3Spacing.x4),
                     supplementaryContent!,
@@ -267,42 +274,128 @@ class _MovieCardContent extends StatelessWidget {
   }
 }
 
-class _MarkWatchedButton extends StatelessWidget {
-  final VoidCallback onPressed;
+class _MarkWatchedButton extends StatefulWidget {
+  final Movie movie;
+  final Future<int?> Function() onPressed;
 
-  const _MarkWatchedButton({super.key, required this.onPressed});
+  const _MarkWatchedButton({
+    super.key,
+    required this.movie,
+    required this.onPressed,
+  });
+
+  @override
+  State<_MarkWatchedButton> createState() => _MarkWatchedButtonState();
+}
+
+class _MarkWatchedButtonState extends State<_MarkWatchedButton> {
+  bool _opening = false;
+  final _hintKey = GlobalKey<TooltipState>();
+  Timer? _hintTimer;
+
+  bool get _canShowHint {
+    if (!mounted ||
+        _opening ||
+        !TickerMode.valuesOf(context).enabled ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return false;
+    }
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    final center = box.localToGlobal(box.size.center(Offset.zero));
+    final media = MediaQuery.of(context);
+    // Wait for an anchor with enough space above; never flip this hint below.
+    return center.dy > media.padding.top + 60 &&
+        center.dy < media.size.height - media.padding.bottom &&
+        center.dx > 0 &&
+        center.dx < media.size.width &&
+        !context.read<MoviesState>().isMovieMutationActive(widget.movie.id);
+  }
+
+  void _scheduleHint() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_canShowHint) return;
+      unawaited(
+        context.read<UserState>().showMarkWatchedHintOnce(() {
+          if (!_canShowHint) return false;
+          final shown = _hintKey.currentState?.ensureTooltipVisible() ?? false;
+          if (shown) {
+            _hintTimer = Timer(
+              const Duration(seconds: 4),
+              Tooltip.dismissAllToolTips,
+            );
+          }
+          return shown;
+        }),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _hintTimer?.cancel();
+    Tooltip.dismissAllToolTips();
+    super.dispose();
+  }
+
+  Future<void> _open() async {
+    if (_opening) return;
+    Tooltip.dismissAllToolTips();
+    setState(() => _opening = true);
+    try {
+      await widget.onPressed();
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: Md3Targets.minimum,
-        maxWidth: 184,
-      ),
+    _scheduleHint();
+    final pending = context.watch<MoviesState>().isMovieMutationActive(
+      widget.movie.id,
+    );
+    final enabled = !pending && !_opening;
+    return SizedBox(
+      width: 44,
+      height: 44,
       child: Semantics(
-        sortKey: const OrdinalSortKey(2),
-        child: FilledButton.icon(
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(0, Md3Targets.minimum),
-            padding: const EdgeInsets.symmetric(horizontal: Md3Spacing.x12),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: VisualDensity.compact,
-            backgroundColor: Md3Colors.primarySoft,
-            foregroundColor: Md3Colors.primary,
-            elevation: 0,
-            side: BorderSide(color: Md3Colors.primary.withValues(alpha: 0.22)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Md3Radius.button),
+        container: true,
+        sortKey: const OrdinalSortKey(1),
+        button: true,
+        enabled: enabled,
+        label: 'Mark watched',
+        hint: 'Rate ${widget.movie.title}: Liked, Okay, or Disliked',
+        onTap: enabled ? _open : null,
+        child: ExcludeSemantics(
+          child: Tooltip(
+            key: _hintKey,
+            message: 'Mark watched',
+            preferBelow: false,
+            verticalOffset: 30,
+            triggerMode: TooltipTriggerMode.manual,
+            showDuration: const Duration(seconds: 4),
+            ignorePointer: true,
+            child: IconButton(
+              style: IconButton.styleFrom(
+                minimumSize: const Size(44, 44),
+                maximumSize: const Size(44, 44),
+                padding: EdgeInsets.zero,
+                backgroundColor: Md3Colors.primarySoft,
+                foregroundColor: Md3Colors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: enabled ? _open : null,
+              icon: pending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check_circle_outline_rounded, size: 21),
             ),
-          ),
-          onPressed: onPressed,
-          icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-          label: const Text(
-            'Mark watched',
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.fade,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
           ),
         ),
       ),

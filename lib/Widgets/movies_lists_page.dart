@@ -186,7 +186,7 @@ class MoviesListsPageState extends State<MoviesListsPage>
         borderRadius: 20,
         onTap: openList,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 112),
+          constraints: const BoxConstraints(minHeight: 96),
           child: Row(
             children: [
               _ListCoverCollage(

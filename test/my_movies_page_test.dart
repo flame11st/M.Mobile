@@ -699,7 +699,7 @@ void main() {
       expect(
         find.descendant(
           of: watchlistRow,
-          matching: find.text('Mark watched'),
+          matching: find.byKey(const Key('movie-card-mark-watched-action')),
           skipOffstage: false,
         ),
         findsOneWidget,
@@ -715,7 +715,7 @@ void main() {
       expect(
         find.descendant(
           of: viewedRow,
-          matching: find.text('Mark watched'),
+          matching: find.byKey(const Key('movie-card-mark-watched-action')),
           skipOffstage: false,
         ),
         findsNothing,
@@ -748,7 +748,7 @@ void main() {
       expect(
         find.descendant(
           of: viewedRow,
-          matching: find.text('Mark watched'),
+          matching: find.byKey(const Key('movie-card-mark-watched-action')),
           skipOffstage: false,
         ),
         findsNothing,
@@ -785,7 +785,7 @@ void main() {
       expect(
         find.descendant(
           of: watchlistRow,
-          matching: find.text('Mark watched'),
+          matching: find.byKey(const Key('movie-card-mark-watched-action')),
           skipOffstage: false,
         ),
         findsOneWidget,
@@ -848,7 +848,7 @@ void main() {
       expect(
         find.descendant(
           of: removingWatchlistRow,
-          matching: find.text('Mark watched'),
+          matching: find.byKey(const Key('movie-card-mark-watched-action')),
           skipOffstage: false,
         ),
         findsOneWidget,
@@ -872,7 +872,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.descendant(of: viewedRow, matching: find.text('Mark watched')),
+        find.descendant(of: viewedRow, matching: find.byKey(const Key('movie-card-mark-watched-action'))),
         findsNothing,
       );
       expect(tester.takeException(), isNull);

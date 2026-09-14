@@ -143,6 +143,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     _ownsRewardedAllowanceFlow = widget.rewardedAllowanceFlow == null;
     rewardedAllowanceFlow =
         widget.rewardedAllowanceFlow ?? RewardedAllowanceFlowController();
+    rewardedAllowanceFlow.addListener(_syncRewardedAllowance);
 
     if (widget.autoStart) {
       Future.microtask(() {
@@ -159,10 +160,27 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     _deckRevision++;
     _posterPrefetchController.dispose();
     pageController.dispose();
+    rewardedAllowanceFlow.removeListener(_syncRewardedAllowance);
     if (_ownsRewardedAllowanceFlow) {
       rewardedAllowanceFlow.dispose();
     }
     super.dispose();
+  }
+
+
+  void _syncRewardedAllowance() {
+    final allowance = rewardedAllowanceFlow.allowance;
+    if (!mounted ||
+        rewardedAllowanceFlow.state != RewardedAllowanceFlowState.completed ||
+        allowance == null ||
+        identical(recommendationAllowance, allowance)) {
+      return;
+    }
+    // Persisted credits belong to the page, not to the sheet's build action.
+    // This also handles confirmation arriving after the sheet is dismissed.
+    setState(() {
+      recommendationAllowance = allowance;
+    });
   }
 
   void setSelectedType(MovieType type) {
@@ -961,11 +979,10 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   Widget _buildTopGenerationAction(UserState userState) {
     final label = _primaryCommandLabel(userState);
     final onPressed =
-        isButtonDisabled ? null : () => _runPrimaryCommand(userState);
+        _primaryCommandDisabled(userState) ? null : () => _runPrimaryCommand(userState);
     final icon = switch (label) {
       'Refresh Deck' || 'Try again' => Icons.refresh_rounded,
       'Watch ad for another deck' => Icons.play_circle_fill_rounded,
-      'Open saved decks' => Icons.history_rounded,
       _ => Icons.auto_awesome_rounded,
     };
 
@@ -2721,7 +2738,6 @@ class RecommendationsPageState extends State<RecommendationsPage> {
       'Refresh Deck' || 'Retry' => Icons.refresh_rounded,
       'Build a new deck' || 'Use extra deck' => Icons.auto_awesome_rounded,
       'Watch ad for another deck' => Icons.play_circle_fill_rounded,
-      'Open saved decks' => Icons.history_rounded,
       'Try Adventurous' => Icons.explore_rounded,
       'Rate more' => Icons.swipe_rounded,
       _ => Icons.bolt_rounded,
@@ -2754,7 +2770,7 @@ class RecommendationsPageState extends State<RecommendationsPage> {
                 ),
               ),
               onPressed:
-                  isButtonDisabled ? null : () => _runPrimaryCommand(userState),
+                  _primaryCommandDisabled(userState) ? null : () => _runPrimaryCommand(userState),
               icon: Icon(icon, size: 20),
               label: Text(
                 label,
@@ -2774,14 +2790,11 @@ class RecommendationsPageState extends State<RecommendationsPage> {
   }
 
   String _primaryCommandLabel(UserState userState) {
+    if ((recommendationAllowance?.rewardedCreditsAvailable ?? 0) > 0) {
+      return 'Refresh Deck';
+    }
     if (recommendationAllowance?.limitReached ?? false) {
-      if ((recommendationAllowance?.rewardedCreditsAvailable ?? 0) > 0) {
-        return 'Use extra deck';
-      }
-      if (_canOfferRewardedDeck(userState)) {
-        return 'Watch ad for another deck';
-      }
-      return 'Open saved decks';
+      return 'Watch ad for another deck';
     }
     if (recommendationAllowance?.requestInProgress ?? false) {
       return 'Try again';
@@ -2800,11 +2813,11 @@ class RecommendationsPageState extends State<RecommendationsPage> {
     }
 
     if (deckOrigin == RecommendationDeckOrigin.saved) {
-      return 'Build a new deck';
+      return 'Refresh Deck';
     }
 
     if (recommendedMovies.isNotEmpty) {
-      return alternativesExhausted ? 'Rate more' : 'Refresh Deck';
+      return 'Refresh Deck';
     }
 
     if (!hasRequestedRecommendations) {
@@ -2840,22 +2853,21 @@ class RecommendationsPageState extends State<RecommendationsPage> {
         .isEligible;
   }
 
+  bool _primaryCommandDisabled(UserState userState) =>
+      isButtonDisabled ||
+      (_primaryCommandLabel(userState) == 'Watch ad for another deck' &&
+          !_canOfferRewardedDeck(userState));
+
   Future<void> _runPrimaryCommand(UserState userState) async {
     final label = _primaryCommandLabel(userState);
-
-    if (label == 'Open saved decks') {
-      await Navigator.of(context).push(
-        RouteHelper.createRoute(() => const RecommendationsHistoryPage()),
-      );
-      return;
-    }
 
     if (label == 'Watch ad for another deck') {
       await _presentRewardedAllowanceOffer(_requestToken);
       return;
     }
 
-    if (label == 'Use extra deck') {
+    if (label == 'Refresh Deck' &&
+        (recommendationAllowance?.rewardedCreditsAvailable ?? 0) > 0) {
       await _getRecommendations(
         refresh: recommendedMovies.isNotEmpty,
         retryRequest: recommendedMovies.isEmpty ? _retryRequest : null,

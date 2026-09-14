@@ -13,6 +13,7 @@ import 'package:mmobile/Services/service_agent.dart';
 import 'package:mmobile/Widgets/Providers/movies_state.dart';
 import 'package:mmobile/Widgets/Providers/user_state.dart';
 import 'package:mmobile/Widgets/movies_lists_page.dart';
+import 'package:mmobile/Widgets/Shared/md3_ui.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -164,6 +165,14 @@ void main() {
       expect(find.byKey(const Key('list-cover-One-tile-0')), findsOneWidget);
       expect(find.byKey(const Key('list-cover-One-tile-1')), findsNothing);
       expect(find.byKey(const Key('list-cover-One-fallback')), findsNothing);
+      final cardFinder = find.byKey(const Key('list-card-external-Zero'));
+      final card = tester.widget<Md3Card>(cardFinder);
+      final cardRect = tester.getRect(cardFinder);
+      final coverRect = tester.getRect(find.byKey(const Key('list-cover-Zero')));
+      final leftInset = coverRect.left - cardRect.left - card.margin.left;
+      expect(coverRect.top - cardRect.top - card.margin.top, closeTo(leftInset, 0.1));
+      expect(cardRect.bottom - coverRect.bottom - card.margin.bottom, closeTo(leftInset, 0.1));
+      expect(card.padding, const EdgeInsets.all(12));
       expect(find.byKey(const Key('list-cover-Two-tile-0')), findsOneWidget);
       expect(find.byKey(const Key('list-cover-Two-tile-1')), findsOneWidget);
 

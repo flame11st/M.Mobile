@@ -56,6 +56,33 @@ class UserState with ChangeNotifier {
   int? cachedRatedMoviesCount;
   DateTime? lastSuccessfulLibraryRefreshAt;
   int aiRequestsCount = 2;
+  final Set<String> _markWatchedHintSeen = {};
+  final Set<String> _markWatchedHintChecks = {};
+
+  /// Claims only a hint that actually becomes visible, across all row copies.
+  Future<void> showMarkWatchedHintOnce(bool Function() show) async {
+    await initialization;
+    final profile = userId?.trim() ?? '';
+    if (profile.isEmpty ||
+        _markWatchedHintSeen.contains(profile) ||
+        !_markWatchedHintChecks.add(profile)) {
+      return;
+    }
+    final key = 'watchlistMarkWatchedHintV1:$profile';
+    try {
+      if (await storage.read(key: key) == 'true') {
+        _markWatchedHintSeen.add(profile);
+        return;
+      }
+      if (userId?.trim() != profile || !show()) return;
+      _markWatchedHintSeen.add(profile);
+      await storage.write(key: key, value: 'true');
+    } catch (error) {
+      debugPrint('Mark watched hint storage unavailable: $error');
+    } finally {
+      _markWatchedHintChecks.remove(profile);
+    }
+  }
 
   Future<void> setInitialData() async {
     Map<String, String> storedValues = const {};
